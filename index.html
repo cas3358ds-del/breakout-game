@@ -112,28 +112,28 @@
   // === 全域設定：難度 / 磚塊 / 道具 / 上限 ===
   const GAME_CONFIG = {
     difficulty: {
-      easy:   { paddleBaseW: 180, baseSpeed: 5, rowsBase: 6, dropRate: 0.22 },
-      normal: { paddleBaseW: 150, baseSpeed: 6, rowsBase: 7, dropRate: 0.18 },
-      hard:   { paddleBaseW: 120, baseSpeed: 7, rowsBase: 8, dropRate: 0.14 },
+      easy:   { paddleBaseW: 220, baseSpeed: 4, rowsBase: 6, dropRate: 0.42 },
+      normal: { paddleBaseW: 180, baseSpeed: 5, rowsBase: 7, dropRate: 0.32 },
+      hard:   { paddleBaseW: 140, baseSpeed: 6, rowsBase: 8, dropRate: 0.22 },
     },
     bricks: {
-      explosiveChance: 0.10,
+      explosiveChance: 0.20,
       brickHeight: 30,
       padding: 9,
       topOffset: 60,
       cols: 12
     },
     powers: {
-      WIDE:   { label:'平台變寬',   type:'buff',   durationMs:15000, paddleWidthAdd:50,  badge:'↔️' },
-      LONG:   { label:'平台變長',   type:'buff',   durationMs:15000, longPerStackAdd:40, stacksMax:2, badge:'📏' },
-      STICKY: { label:'黏性平台',   type:'buff',   durationMs:12000, sticky:true,        badge:'🧲' },
+      WIDE:   { label:'平台變寬',   type:'buff',   durationMs:30000, paddleWidthAdd:50,  badge:'↔️' },
+      LONG:   { label:'平台變長',   type:'buff',   durationMs:30000, longPerStackAdd:40, stacksMax:2, badge:'📏' },
+      STICKY: { label:'黏性平台',   type:'buff',   durationMs:5000, sticky:true,        badge:'🧲' },
       MULTI:  { label:'多球',       type:'buff',   multiDuplicate:true, maxBalls:4,      badge:'✨' },
-      SLOW:   { label:'全局慢速',   type:'buff',   durationMs:8000,   speedMul:0.8,     badge:'🐢' },
-      PIERCE: { label:'穿透球',     type:'buff',   durationMs:8000,   piercing:true,     badge:'🎯' },
+      SLOW:   { label:'全局慢速',   type:'buff',   durationMs:15000,   speedMul:0.6,     badge:'🐢' },
+      PIERCE: { label:'穿透球',     type:'buff',   durationMs:12000,   piercing:true,     badge:'🎯' },
       SHIELD: { label:'護盾',       type:'buff',   oneShotShield:true,                  badge:'🛡' },
-      RAMPAGE:{ label:'暴走球',     type:'buff',   durationMs:3000,   forcePiercing:true, rampageMs:3000, badge:'🔥' },
-      FAST:   { label:'快速球',     type:'debuff', durationMs:10000,  globalSpeedMul:3.0, screenShakeOnApply:6, badge:'⚡' },
-      WAVY:   { label:'變速球',     type:'debuff', durationMs:10000,  wavy:{amp:0.6, base:1.2, periodMs:200}, badge:'〰️' }
+      RAMPAGE:{ label:'暴走球',     type:'buff',   durationMs:5000,   forcePiercing:true, rampageMs:5000, badge:'🔥' },
+      FAST:   { label:'快速球',     type:'debuff', durationMs:5000,  globalSpeedMul:2.0, screenShakeOnApply:6, badge:'⚡' },
+      WAVY:   { label:'變速球',     type:'debuff', durationMs:5000,  wavy:{amp:0.6, base:1.2, periodMs:200}, badge:'〰️' }
     },
     powerCapsule: { width:24, height:16, fallVy:2.2 },
     caps: { paddleMaxW:300, ballSpeedMax:16 }
