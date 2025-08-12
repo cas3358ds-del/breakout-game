@@ -8,7 +8,7 @@
     :root {
       --bg:#0b1022; --bg2:#0a0f1e; --fg:#e9ecf1; --accent:#66b2ff;
       --brick1:#ff6b6b; --brick2:#ffd166; --brick3:#06d6a0; --brick4:#4cc9f0;
-      --expl:#ff8c00; --power:#2b7bff; --debuff:#ff2b2b;
+      --expl:#ff8c00; --power:#7aa2ff; --debuff:#ff6aa3;
       --glass: rgba(255,255,255,.06); --glass-stroke: rgba(255,255,255,.12);
       --btn:#1a2448; --btn-stroke:#2a3974; --pill:#121a36;
       --led:#8fb3ff;
@@ -36,8 +36,9 @@
       border:1px solid #1a2348; border-radius:16px; max-width:min(1120px, 98vw); width: min(1120px, 98vw); height: auto; display:block;
       box-shadow: 0 30px 80px rgba(0,0,0,.35), inset 0 0 120px rgba(255,255,255,.02); touch-action:none;}
     .overlay{position:relative}
-    .center-note{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:3}
+    .center-note{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:auto; z-index:10}
     .note-box{background:linear-gradient(180deg, rgba(8,12,28,.9), rgba(8,12,28,.85));
+      max-height: min(86vh, 640px); overflow: auto;
       border:1px solid var(--glass-stroke); padding:16px 18px; border-radius:14px; text-align:center; max-width:min(90vw,860px);
       box-shadow: 0 12px 60px rgba(0,0,0,.5); font-size:14px}
     .note-box h2{margin:0 0 8px 0; font-size:18px}
@@ -63,6 +64,9 @@
 
     /* 勝利畫面 */
     .win{position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:6;}
+    .gameover{position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:8;}
+    .gameover.show{display:flex;}
+    .gameover .backdrop{position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.88));}
     .win.show{display:flex;}
     .win .backdrop{position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.88));}
     .thumb-ring{position:absolute; inset:16px; pointer-events:none; display:grid; grid-template-columns:repeat(10,1fr); gap:6px; opacity:.95}
@@ -143,11 +147,12 @@
       <button class="btn" id="soundBtn">音效：關</button>
       <span class="range">BGM
         <button class="btn" id="bgmBtn">關</button>
-        <input id="bgmVol" type="range" min="0" max="1" step="0.01" value="0.8" style="width:120px">
+        <input id="bgmVol" type="range" min="0" max="1" step="0.01" value="0.5" style="width:120px">
       </span>
       <button class="btn" id="saveBtn">存檔</button>
       <button class="btn" id="loadBtn">讀檔</button>
       <button class="btn" id="clearSaveBtn">清除存檔</button>
+      <button class="btn" id="levelSelBtn">選關</button>
     </div>
 
     <div class="legend">
@@ -177,6 +182,15 @@
           <div>總分數：<span id="finalScore">0</span></div>
           <div class="small">作者： ChatGPT　／　指導者： Rock</div>
           <div class="again"><button class="btn" id="againBtn">再玩一次</button></div>
+        </div>
+      </div>
+
+      <div class="gameover" id="gameover">
+        <div class="backdrop"></div>
+        <div class="center">
+          <h2>遊戲結束</h2>
+          <div>最終分數：<span id="finalScore2">0</span></div>
+          <div class="again"><button class="btn" id="retryBtn">再次遊戲</button></div>
         </div>
       </div>
 
@@ -266,9 +280,12 @@
   const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn');
   const centerNote=document.getElementById('centerNote'), noteTitle=document.getElementById('noteTitle'), noteText=document.getElementById('noteText'), noteBox=document.getElementById('noteBox');
   const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('activeBuffs');
+  const ledStyleSel=document.getElementById('ledStyle');
   const gallery=document.getElementById('gallery'), galleryImg=document.getElementById('galleryImg');
   const win=document.getElementById('win'), ring=document.getElementById('ring'), finalScore=document.getElementById('finalScore'), againBtn=document.getElementById('againBtn');
+  const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2'), retryBtn=document.getElementById('retryBtn');
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
+  const levelSelBtn=document.getElementById('levelSelBtn');
 
 
   // 關閉視窗按鈕（關閉後立即倒數、繼續遊戲）
@@ -278,6 +295,7 @@
     if(running){ startCountdown(); } else { startGameWithCountdown(); }
   }
   noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+  centerNote.addEventListener('click', (e)=>{ if(helpMode){ e.preventDefault(); e.stopPropagation(); hideCenter(); helpMode=null; if(running){ startCountdown(); } } });
 
 
   // === DPR 縮放 ===
@@ -286,7 +304,10 @@
 
   // === 狀態 ===
   let running=false, paused=true, level=1, score=0, lives=3, soundsOn=false;
+  let gameOver=false;
+  let ledStyle = (localStorage.getItem('led_style')||'classic');
   let bgTime=0; let screenShake=0;
+  let nineLivesPickups=0;
   let countdownTimer=null, countdownShow=0, resumePending=false;
   // 影像選擇：1~10 隨機 bg/cg，11~20 用對應未用者
   let imageChoice = new Array(10).fill(-1); // 0=bg,1=cg; -1: 未決
@@ -456,19 +477,7 @@
     for(let i=0;i<count;i++){ const a=Math.random()*Math.PI*2; const v=speed*(.4+Math.random()); particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:400+Math.random()*300,size:size*(.6+Math.random()*0.8),color}); }
   }
 
-  
-  function roundRect(ctx, x, y, w, h, r, fill, stroke){
-    if (w<2*r) r = w/2; if (h<2*r) r = h/2;
-    ctx.beginPath();
-    ctx.moveTo(x+r, y);
-    ctx.arcTo(x+w, y, x+w, y+h, r);
-    ctx.arcTo(x+w, y+h, x, y+h, r);
-    ctx.arcTo(x, y+h, x, y, r);
-    ctx.arcTo(x, y, x+w, y, r);
-    if(fill) ctx.fill();
-    if(stroke) ctx.stroke();
-  }
-// === 工具 ===
+  // === 工具 ===
   function getDiff(){ return GAME_CONFIG.difficulty[difficultySel.value]; }
   function brickColor(i){ return [getVar('--brick1'),getVar('--brick2'),getVar('--brick3'),getVar('--brick4')][i%4]; }
   function getVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
@@ -562,156 +571,59 @@
 
   // === BGM 主題依關卡段落 ===
   function bgmThemeForLevel(lv){
-    if(lv>=1 && lv<=4) return 'savanna';      // 草原的野獸戰鬥，高速感
-    if(lv===5) return 'lion';                 // 獅子王的決戰，驚險萬分
-    if(lv>=6 && lv<=9) return 'castle';       // 攻入城堡，步步為營
-    if(lv===10) return 'duel';                // 騎士對決，優雅勝負
-    if(lv>=11 && lv<=14) return 'valley';     // 潛入巨人山谷，熱血感
-    if(lv===15) return 'giant';               // 決戰巨人，極度壯烈
-    if(lv>=16 && lv<=19) return 'demoncastle';// 惡魔城，群魔亂舞
-    return 'darklord';                         // 決戰魔王，光與暗的最後廝殺
+    if(lv<=5) return 'whimsy';       // 輕快奇妙
+    if(lv<=10) return 'knight';      // 騎士戰鬥
+    if(lv<=15) return 'colossus';    // 巨人威壓
+    return 'demon';                  // 魔王決戰
   }
   let currentBGMTheme = null;
-  
   function startBGMTheme(theme){
     if(!audioCtx) ensureAudio();
     if(!audioCtx || !bgmOn) return;
     stopBGM();
     bgmStarted=true;
     currentBGMTheme = theme;
-    const now0=audioCtx.currentTime;
-    let barCount = 0;
-    let varIdx = 0; // 0..3, 4種變化輪替
-    const barsPerChange = 8;
-
-    function toneAt(t0, freq, type, dur, gain=0.04){
-      const o=audioCtx.createOscillator();
-      const g=audioCtx.createGain();
-      o.type=type; o.frequency.value=freq;
-      g.gain.value=0.0001;
-      o.connect(g); g.connect(bgmGain);
-      o.start(t0);
-      g.gain.setTargetAtTime(Math.max(0.0001,gain), t0+0.005, 0.02);
-      g.gain.setTargetAtTime(0.0001, t0+dur-0.03, 0.02);
-      o.stop(t0+dur+0.1);
-      bgmNodes.push(o,g);
+    const now=audioCtx.currentTime;
+    function tone(freq, type, start, dur, gain=0.03){
+      const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
+      o.type=type; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(bgmGain);
+      o.start(now+start); g.gain.setTargetAtTime(gain, now+start, 0.015);
+      g.gain.setTargetAtTime(0.0001, now+start+dur-0.03, 0.02);
+      o.stop(now+start+dur+0.1); bgmNodes.push(o,g);
     }
-
-    // 輔助：簡易節拍器（kick/snare/hat 的合成）
-    function drumAt(t0, kick=true, snr=false, hat=false, amp=0.06){
-      if(kick){
-        const o=audioCtx.createOscillator(), g=audioCtx.createGain();
-        o.type='sine'; o.frequency.setValueAtTime(120, t0);
-        o.frequency.exponentialRampToValueAtTime(45, t0+0.12);
-        g.gain.setValueAtTime(amp, t0);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0+0.18);
-        o.connect(g); g.connect(bgmGain); o.start(t0); o.stop(t0+0.2); bgmNodes.push(o,g);
-      }
-      if(snr){
-        const n=audioCtx.createBufferSource(), g=audioCtx.createGain();
-        const buf=audioCtx.createBuffer(1, 4410, 44100);
-        const data=buf.getChannelData(0); for(let i=0;i<data.length;i++){ data[i]=(Math.random()*2-1)*Math.exp(-i/1200); }
-        n.buffer=buf; g.gain.value=amp*0.6; n.connect(g); g.connect(bgmGain); n.start(t0); n.stop(t0+0.2); bgmNodes.push(n,g);
-      }
-      if(hat){
-        const n=audioCtx.createBufferSource(), g=audioCtx.createGain();
-        const buf=audioCtx.createBuffer(1, 2205, 44100);
-        const data=buf.getChannelData(0); for(let i=0;i<data.length;i++){ data[i]=(Math.random()*2-1)*Math.exp(-i/500); }
-        n.buffer=buf; g.gain.value=amp*0.35; n.connect(g); g.connect(bgmGain); n.start(t0); n.stop(t0+0.08); bgmNodes.push(n,g);
-      }
-    }
-
-    // 主排程：依主題+變奏輸出 8 小節一段，輪替 4 種變化
     function scheduleLoop(){
-      if(!bgmOn) return;
-      if(!audioCtx) return;
-      const now = audioCtx.currentTime;
-      // 主題參數
-      let tempo, scale, bass, chordProg, inst='sawtooth', lead='square', pad='triangle', drumAmp=0.06;
-      // 各主題設定
-      switch(theme){
-        case 'savanna': // 草原的野獸戰鬥：高速、奔馳
-          tempo = 138/60; scale=[196.00,220.00,246.94,277.18,293.66,329.63,369.99];
-          chordProg=[[196,293,369],[220,329,392],[246,369,440],[220,329,392]];
-          inst='sawtooth'; lead='sine'; pad='triangle'; drumAmp=0.08;
-          break;
-        case 'lion': // 獅子王的決戰：驚險萬分、威壓銅管
-          tempo = 132/60; scale=[174.61,196.00,220.00,246.94,261.63,293.66,329.63];
-          chordProg=[[174,261,329],[196,293,349],[220,293,392],[246,329,392]];
-          inst='square'; lead='sawtooth'; pad='triangle'; drumAmp=0.09;
-          break;
-        case 'castle': // 攻入城堡：步步為營、低頻推進
-          tempo = 112/60; scale=[146.83,164.81,174.61,196.00,220.00,246.94,261.63];
-          chordProg=[[147,220,261],[165,220,261],[174,220,246],[165,220,261]];
-          inst='triangle'; lead='square'; pad='sine'; drumAmp=0.06;
-          break;
-        case 'duel': // 騎士對決：優雅、精緻
-          tempo = 128/60; scale=[196,220,246.94,261.63,293.66,329.63,392.00];
-          chordProg=[[196,261,329],[220,293,392],[246,329,392],[220,293,392]];
-          inst='triangle'; lead='sine'; pad='sine'; drumAmp=0.05;
-          break;
-        case 'valley': // 巨人山谷：熱血律動
-          tempo = 126/60; scale=[130.81,146.83,164.81,174.61,196.00,220.00,246.94];
-          chordProg=[[131,196,246],[147,196,247],[165,220,262],[147,196,247]];
-          inst='sawtooth'; lead='square'; pad='triangle'; drumAmp=0.085;
-          break;
-        case 'giant': // 決戰巨人：沉重、壯烈
-          tempo = 88/60; scale=[98.00,110.00,123.47,130.81,146.83,164.81,174.61];
-          chordProg=[[98,146,196],[110,147,196],[123,165,220],[110,147,196]];
-          inst='sine'; lead='square'; pad='triangle'; drumAmp=0.1;
-          break;
-        case 'demoncastle': // 惡魔城：群魔亂舞、偏暗
-          tempo = 140/60; scale=[155.56,174.61,196.00,207.65,233.08,246.94,277.18];
-          chordProg=[[156,207,246],[175,233,277],[196,246,311],[175,233,277]];
-          inst='sawtooth'; lead='triangle'; pad='sine'; drumAmp=0.09;
-          break;
-        default: // darklord：最後廝殺
-          tempo = 148/60; scale=[174.61,196.00,220.00,246.94,277.18,293.66,329.63];
-          chordProg=[[175,233,311],[196,246,329],[220,277,349],[246,311,392]];
-          inst='sawtooth'; lead='square'; pad='triangle'; drumAmp=0.11;
-          break;
+      if(!bgmOn || !bgmStarted) return;
+      const base=audioCtx.currentTime;
+      bgmNodes=[];
+      if(theme==='whimsy'){
+        const tempo=96/60;
+        const chords=[[261.63,329.63,392.00],[293.66,349.23,440.00],[329.63,392.00,493.88],[293.66,392.00,523.25]];
+        for(let i=0;i<4;i++){ for(const f of chords[i]) tone(f,'triangle', i*2/tempo, 1.8/tempo, 0.02); }
+        const mel=[659.25,698.46,783.99,880.00,783.99,698.46,659.25,587.33];
+        mel.forEach((f,idx)=> tone(f,'sine', idx*0.4/tempo, 0.28/tempo, 0.03));
+        setTimeout(scheduleLoop, 3200);
+      }else if(theme==='knight'){
+        const tempo=128/60;
+        const riff=[196.00,246.94,293.66,246.94,196.00,220.00,246.94,220.00];
+        riff.forEach((f,idx)=> tone(f,'sawtooth', idx*0.25/tempo, 0.22/tempo, 0.035));
+        const stab=[392.00,392.00,349.23,440.00];
+        stab.forEach((f,idx)=> tone(f,'square', 1.2 + idx*0.5/tempo, 0.3/tempo, 0.045));
+        setTimeout(scheduleLoop, 3000);
+      }else if(theme==='colossus'){
+        const tempo=72/60;
+        const bass=[98.00,87.31,82.41,73.42];
+        bass.forEach((f,idx)=> tone(f,'sine', idx*1.5/tempo, 1.2/tempo, 0.06));
+        const hit=[196.00,174.61,196.00];
+        hit.forEach((f,idx)=> tone(f,'square', 0.9 + idx*0.7/tempo, 0.2/tempo, 0.05));
+        setTimeout(scheduleLoop, 4200);
+      }else{ // demon
+        const tempo=140/60;
+        const ost=[293.66,277.18,261.63,246.94,233.08,246.94,261.63,277.18];
+        ost.forEach((f,idx)=> tone(f,'sawtooth', idx*0.22/tempo, 0.2/tempo, 0.04));
+        const stab=[587.33,554.37,523.25,493.88];
+        stab.forEach((f,idx)=> tone(f,'square', 1.3 + idx*0.4/tempo, 0.22/tempo, 0.05));
+        setTimeout(scheduleLoop, 2800);
       }
-      const secPerBeat = 1/tempo;
-      const beatsPerBar = 4;
-      const barDur = secPerBeat * beatsPerBar;
-
-      // 四種變化的副旋律/節拍填充
-      const varMelodies = [
-        [0,2,4,5,4,2,0,-1],
-        [0,1,3,4,6,4,3,1],
-        [4,3,2,1,0,1,2,3],
-        [0,4,5,7,5,4,2,0]
-      ];
-
-      const tBase = audioCtx.currentTime;
-      // 8 小節排列
-      for(let bar=0; bar<barsPerChange; bar++){
-        const tBar = tBase + bar*barDur;
-        // 低音 & 和弦墊
-        const chord = chordProg[bar%chordProg.length];
-        chord.forEach(f=> toneAt(tBar, f, pad, barDur*0.95, 0.035));
-        toneAt(tBar, chord[0]/2, inst, barDur*0.95, 0.06);
-
-        // 節拍：每小節四拍
-        for(let bt=0; bt<4; bt++){
-          const tBeat = tBar + bt*secPerBeat;
-          const isBack = (bt%4===2);
-          drumAt(tBeat, true, isBack, true, drumAmp);
-        }
-
-        // 副旋律（根據 varIdx 切換）
-        const m = varMelodies[varIdx%varMelodies.length];
-        for(let i=0;i<m.length;i++){
-          const deg = Math.max(0, Math.min(scale.length-1, m[i]));
-          const f = scale[deg];
-          const t = tBar + i*(secPerBeat*0.5);
-          toneAt(t, f, lead, secPerBeat*0.45, 0.05);
-        }
-      }
-      barCount += barsPerChange;
-      varIdx = (varIdx+1)%4;
-      // 下一段
-      setTimeout(scheduleLoop, barDur*barsPerChange*1000 - 20);
     }
     scheduleLoop();
   }
@@ -720,7 +632,7 @@
     if(theme!==currentBGMTheme){ startBGMTheme(theme); }
   }
 
-  function ensureAudio(){ if(!audioCtx){ const AC=(window.AudioContext||window.webkitAudioContext); if(AC){ audioCtx=new AC(); } } if(audioCtx && !bgmGain){ bgmGain=audioCtx.createGain(); bgmGain.gain.value=parseFloat(localStorage.getItem('bgm_vol')||'0.8'); bgmGain.connect(audioCtx.destination); } }
+  function ensureAudio(){ if(!audioCtx){ const AC=(window.AudioContext||window.webkitAudioContext); if(AC){ audioCtx=new AC(); } } if(audioCtx && !bgmGain){ bgmGain=audioCtx.createGain(); bgmGain.gain.value=parseFloat(localStorage.getItem('bgm_vol')||'0.5'); bgmGain.connect(audioCtx.destination); } }
   function beep(freq=600,dur=0.05,vol=0.06){ if(!soundsOn||!audioCtx) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='square'; o.frequency.value=freq; g.gain.value=vol; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{ o.stop(); }, Math.max(10, dur*1000)); }
 
   function startBGM(){
@@ -981,8 +893,6 @@ function generateLevel(lv, L){
   }
 
   // === 掉落道具 ===
-  let lastBeneficialPickupAt = performance.now();
-  let lastSkyForceDropAt = 0;
   const powerups=[]; const ALL_TYPES=Object.keys(GAME_CONFIG.powers); const NORMAL_TYPES=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='rare'); const RARE_TYPES=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type==='rare');
 
   // === 天空隨機增益掉落（第1關每25秒 → 第20關每6秒 線性遞減） ===
@@ -993,36 +903,30 @@ function generateLevel(lv, L){
     return s;
   }
   function scheduleNextSkyDrop(){ nextSkyDropAt = performance.now() + skyDropIntervalMs(level); }
-  
   function spawnBeneficialAtTop(){
     const x = 40 + Math.random()*(1100-80);
     const y = layout().top - 20;
-    // 選非減益道具
-    const goodTypes = Object.keys(GAME_CONFIG.powers).filter(k=>GAME_CONFIG.powers[k].type!=='debuff');
-    let type = goodTypes[(Math.random()*goodTypes.length)|0];
-    const def = GAME_CONFIG.powers[type];
-    const baseVy = GAME_CONFIG.powerCapsule.fallVy;
-    let vy = baseVy;
-    if(def.type==='special' || def.type==='rare') vy = baseVy*0.85;
-    powerups.push({
-      x,y,
-      w:GAME_CONFIG.powerCapsule.width,
-      h:GAME_CONFIG.powerCapsule.height,
-      vy,
-      type,
-      isDebuff:false,
-      isSpecial:(def.type==='special' || def.type==='rare'),
-      phase:Math.random()*Math.PI*2
-    });
+    // 抽非減益道具（含稀有，但機率較低）
+    const goodTypes = ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='debuff');
+    let type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
+    powerups.push({x, y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy:GAME_CONFIG.powerCapsule.fallVy, type, isDebuff:false, phase:Math.random()*Math.PI*2});
   }
 
   
 
+  const recentBreaks=[]; // timestamps within last 0.5s for drop suppression
   function maybeDropFromBrick(b){
     if(!b || b.unbreakable) return;
     // Boss不會掉落一般增益（保持平衡）
     if(b.boss) return;
-    if(Math.random()<dropRateForLevel(level)) spawnPower(b.x + b.w/2 - 12, b.y + b.h/2);
+    const now = performance.now();
+    while(recentBreaks.length && now - recentBreaks[0] > 500){ recentBreaks.shift(); }
+    const k = recentBreaks.length + 1; // this brick index in burst
+    let factor = 1.0;
+    if(k>=4){ factor = (k===4)?0.8 : (k===5)?0.6 : (k===6)?0.4 : 0.2; }
+    const chance = dropRateForLevel(level) * factor;
+    if(Math.random()<chance) spawnPower(b.x + b.w/2 - 12, b.y + b.h/2);
+    recentBreaks.push(now);
   }
 
   function dropRateForLevel(lv){
@@ -1038,43 +942,11 @@ function generateLevel(lv, L){
     return Math.min(max, base + inc);
   }
 
-  
-  function spawnPower(x,y){
-    // Build weighted pool: buff(1x), debuff(1x), special(0.1x), rare(0.1x)
-    const keys = Object.keys(GAME_CONFIG.powers);
-    const pool = [];
-    for(const k of keys){
-      const t = GAME_CONFIG.powers[k].type;
-      if(t==='rare' || t==='special'){
-        // 0.1 倍機率
-        if(Math.random()<0.1) pool.push(k);
-      }else{
-        pool.push(k);
-      }
-    }
-    // fallback
-    const type = pool.length ? pool[(Math.random()*pool.length)|0] : 'WIDE';
-    const def = GAME_CONFIG.powers[type];
-    const baseVy = GAME_CONFIG.powerCapsule.fallVy;
-    let vy = baseVy;
-    if(def.type==='debuff') vy = baseVy*1.35;
-    else if(def.type==='special' || def.type==='rare') vy = baseVy*0.85;
-
-    powerups.push({
-      x,y,
-      w:GAME_CONFIG.powerCapsule.width,
-      h:GAME_CONFIG.powerCapsule.height,
-      vy,
-      type,
-      isDebuff:(def.type==='debuff'),
-      isSpecial:(def.type==='special' || def.type==='rare'),
-      phase:Math.random()*Math.PI*2
-    });
-  }
+  function spawnPower(x,y){ const rareChance=(GAME_CONFIG.powers.PHOENIX?.rareFactor)||0.1; const pickRare=RARE_TYPES.length && Math.random()<rareChance; const pool=(pickRare?RARE_TYPES:NORMAL_TYPES).filter(t=>!(t==='NINE' && nineLivesPickups>=2)); const type=pool[Math.floor(Math.random()*pool.length)]; const def=GAME_CONFIG.powers[type];
+    powerups.push({x,y,w:GAME_CONFIG.powerCapsule.width,h:GAME_CONFIG.powerCapsule.height,vy:GAME_CONFIG.powerCapsule.fallVy,type,isDebuff:(def.type==='debuff'),phase:Math.random()*Math.PI*2}); }
 
   function applyPower(type){
     const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
-    if(def.type!=='debuff'){ lastBeneficialPickupAt = performance.now(); }
     // 罕見瞬發
     if(def.instant && def.type==='rare'){
       if(type==='PHOENIX'){ // 鳳凰飛過 + 火焰 + 隨機一半消除（Boss只扣1）
@@ -1088,7 +960,7 @@ function generateLevel(lv, L){
           } else keep.push(b);
         }
         bricks=keep; screenShake=6; beep(180,0.12,0.1);
-      } else if(type==='NINE'){ lives=9; updateHUD(); spawnParticles(550,350,'#ffd',40,2.2,3.5,4); beep(880,0.1,0.06); }
+      } else if(type==='NINE'){ if(nineLivesPickups>=2){ return; } nineLivesPickups++; lives=9; updateHUD(); spawnParticles(550,350,'#ffd',40,2.2,3.5,4); beep(880,0.1,0.06); }
       return;
     }
     // 定時類
@@ -1135,50 +1007,16 @@ function generateLevel(lv, L){
     updateBuffBadges();
   }
 
-  
-  function drawPower(p){
-    // Base colors
-    const baseColor = p.isDebuff ? getVar('--debuff') : getVar('--power');
-    const gold1='#f6d365', gold2='#fda085';
-    const x=p.x, y=p.y, w=p.w, h=p.h;
-    const scaleY = 1.0 + 0.06*Math.sin(p.phase*1.2);
-    const wobble = Math.sin(p.phase)*1.5; p.phase += 0.04;
-
-    ctx.save();
-    ctx.translate(0, wobble);
-
-    // Capsule body
-    const grd = ctx.createLinearGradient(x, y, x, y+h*scaleY);
-    if(p.isSpecial){ grd.addColorStop(0, gold1); grd.addColorStop(1, gold2); }
-    else{ grd.addColorStop(0, baseColor); grd.addColorStop(1, baseColor); }
-    ctx.fillStyle = grd;
-    ctx.strokeStyle = p.isSpecial ? 'rgba(255,255,200,.9)' : 'rgba(255,255,255,.25)';
-    roundRect(ctx, x, y, w, h*scaleY, 6, true, true);
-
-    // Shine overlay
-    if(p.isSpecial){
-      const g2 = ctx.createLinearGradient(x, y, x+w, y+h*scaleY);
-      g2.addColorStop(0, 'rgba(255,255,255,.55)');
-      g2.addColorStop(0.5, 'rgba(255,255,255,.05)');
-      g2.addColorStop(1, 'rgba(255,255,255,.55)');
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.fillStyle = g2;
-      roundRect(ctx, x+2, y+2, w-4, h*scaleY-4, 5, true, false);
-      ctx.globalCompositeOperation = 'source-over';
-    }
-
-    // Text
-    ctx.font = `${Math.floor(h*0.7)}px ui-monospace,Consolas,monospace`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = p.isSpecial ? '#000' : (p.isDebuff ? '#000' : '#fff');
-    ctx.fillText(p.type[0], x + w/2, y + (h*scaleY)/2 + 0.5);
-
-    ctx.restore();
-  }
+  function drawPower(p){ const base=p.isDebuff?getVar('--debuff'):getVar('--power'); const gold1='#f6d365', gold2='#fda085'; const color = p.isSpecial ? gold1 : base; const x=p.x*scaleX, y=p.y*scaleY, w=p.w*scaleX, h=p.h*scaleY; const wobble=Math.sin(p.phase)*1.5; p.phase+=0.04;
+    ctx.save(); ctx.translate(0,wobble); const grd=ctx.createLinearGradient(x,y,x,y+h); grd.addColorStop(0,color); grd.addColorStop(1,p.isSpecial?gold2:(p.isDebuff?'#a33':'#3a56a8')); ctx.fillStyle=grd; roundedRect(x,y,w,h,8); ctx.fill(); ctx.strokeStyle=p.isSpecial?'rgba(255,220,150,.8)':'rgba(255,255,255,.25)'; ctx.stroke();
+    ctx.fillStyle = p.isSpecial ? '#402a00' : '#fff'; ctx.font=`${Math.max(10,Math.round(12*scaleY))}px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.type[0], x+w/2, y+h/2+0.5); ctx.restore(); }
 
   function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textContent=level + '/'+ GAME_CONFIG.totalLevels; livesEl.textContent=lives; }
   function showCenter(t,txt){ noteTitle.textContent=t; noteText.innerHTML=txt||''; centerNote.style.display='flex'; }
   function hideCenter(){ centerNote.style.display='none'; }
+
+  function showGameOver(){ paused=true; running=false; gameOver=true; hideCenter(); finalScore2.textContent = Math.max(0|score,0); gameover.classList.add('show'); }
+  function hideGameOver(){ gameover.classList.remove('show'); gameOver=false; }
 
   function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; updateHUD(); initBricks(); resetBalls(); paused=true; running=false;
     for(const k of Object.keys(buffs)){ if(k!=='LONG'){ buffs[k].active=false; buffs[k].until=0; } } buffs.LONG.stacks=[]; powerups.length=0; particles.length=0; plasmas.length=0; holyFlashes.length=0; phoenixAnim=null; fireBursts.length=0;
@@ -1198,7 +1036,7 @@ function generateLevel(lv, L){
 
   // === 輸入（含觸控） ===
   let keyL=false, keyR=false; let touchActive=false;
-  window.addEventListener('keydown',(e)=>{
+  window.addEventListener('keydown',(e)=>{ if(gameOver){ e.preventDefault(); return; }
     if(e.code==='ArrowLeft'||e.key==='a'||e.key==='A') keyL=true;
     if(e.code==='ArrowRight'||e.key==='d'||e.key==='D') keyR=true;
     if(e.code==='Space'){ // 開始 / 暫停 / 倒數
@@ -1215,14 +1053,14 @@ function generateLevel(lv, L){
   });
   window.addEventListener('keyup',(e)=>{ if(e.code==='ArrowLeft'||e.key==='a'||e.key==='A') keyL=false; if(e.code==='ArrowRight'||e.key==='d'||e.key==='D') keyR=false; });
   canvas.addEventListener('mousemove',(e)=>{ const rect=canvas.getBoundingClientRect(); if(performance.now()<=paddleStunUntil) return; if(!orientLeft){ const x=(e.clientX-rect.left)*(1100/rect.width); paddle.x=Math.max(0, Math.min(1100-paddle.w, x - paddle.w/2)); } else { const y=(e.clientY-rect.top)*(700/rect.height); paddle.y=Math.max(0, Math.min(700-paddle.w, y - paddle.w/2)); } });
-  canvas.addEventListener('click',()=>{
+  canvas.addEventListener('click',()=>{ if(gameOver){ return; }
     if(!running){ startGameWithCountdown(); return; }
     if(running && !paused){
       let released=false; for(const b of balls){ if(b.stuck){ b.stuck=false; b.vy=-Math.abs(b.vy||6); released=true; } }
       if(released) return;
     }
   });
-  canvas.addEventListener('touchstart',(e)=>{ touchActive=true; 
+  canvas.addEventListener('touchstart',(e)=>{ if(gameOver){ return; } touchActive=true; 
     if(!running){ startGameWithCountdown(); return; }
     if(running && !paused){
       let released=false; for(const b of balls){ if(b.stuck){ b.stuck=false; b.vy=-Math.abs(b.vy||6); released=true; } }
@@ -1234,10 +1072,19 @@ function generateLevel(lv, L){
   pauseBtn.addEventListener('click',()=>togglePause()); resetBtn.addEventListener('click',()=>resetGame()); fsBtn.addEventListener('click',()=>toggleFullscreen());
   soundBtn.addEventListener('click',()=>{ soundsOn=!soundsOn; localStorage.setItem('sfx_on', soundsOn?'1':'0'); soundBtn.textContent=`音效：${soundsOn?'開':'關'}`; ensureAudio(); audioCtx?.resume?.(); beep(880,0.06,0.05); });
   difficultySel.addEventListener('change',()=>{ resetGame(); });
+  if(ledStyleSel){ ledStyleSel.value = ledStyle; ledStyleSel.addEventListener('change', ()=>{ ledStyle = ledStyleSel.value; localStorage.setItem('led_style', ledStyle); }); }
   saveBtn.addEventListener('click',saveProgress); loadBtn.addEventListener('click',loadProgress); clearSaveBtn.addEventListener('click',clearSave);
   tutorBtn.addEventListener('click', ()=> toggleHelp('tutor'));
   effectsBtn.addEventListener('click', ()=> toggleHelp('effects'));
   againBtn.addEventListener('click', ()=>{ win.classList.remove('show'); resetGame(); });
+  levelSelBtn.addEventListener('click', ()=>{
+    const v = prompt('輸入關卡 1-'+GAME_CONFIG.totalLevels+' 開始', String(level));
+    const lv = parseInt(v||'',10);
+    if(!Number.isFinite(lv) || lv<1 || lv>GAME_CONFIG.totalLevels) return;
+    level = lv; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; showCenter('按 Space 或點畫面開始', '已切換到第 '+level+' 關');
+    if(bgmOn){ ensureAudio(); applyBGMThemeForLevel(); }
+  });
+  retryBtn.addEventListener('click', ()=>{ hideGameOver(); resetGame(); });
 
   // BGM UI
   bgmBtn.addEventListener('click', ()=>{
@@ -1262,7 +1109,7 @@ function generateLevel(lv, L){
     soundsOn = (localStorage.getItem('sfx_on')||'0')==='1';
     soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
     bgmOn = (localStorage.getItem('bgm_on')||'0')==='1';
-    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.8'); bgmVol.value=String(v); ensureAudio(); if(bgmGain) bgmGain.gain.value=v;
+    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.5'); bgmVol.value=String(v); ensureAudio(); if(bgmGain) bgmGain.gain.value=v;
     bgmBtn.textContent = bgmOn?'開':'關';
     if(bgmOn) startBGM(); applyBGMThemeForLevel();
     startCountdown();
@@ -1363,107 +1210,19 @@ function generateLevel(lv, L){
     for(let i=fireBursts.length-1;i>=0;i--){ const f=fireBursts[i]; f.life-=16; if(f.life<=0){ fireBursts.splice(i,1); continue; } const a=Math.min(1, f.life/600); const rx= (f.x*scaleX), ry=(f.y*scaleY); const r=60*((scaleX+scaleY)/2); const g=ctx.createRadialGradient(rx,ry,1,rx,ry,r); g.addColorStop(0,`rgba(255,180,0,${0.6*a})`); g.addColorStop(1,'rgba(255,100,0,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(rx,ry,r,0,Math.PI*2); ctx.fill(); }
 
 
-    // LED 科技邊框替換
-
-    // === LED Frame Styles ===
-    const c = ledColor();
-    const nowms = performance.now();
-    const spAvgCalc = ()=>{ let s=0; for(const b of balls){ s+=Math.hypot(b.vx,b.vy);} return balls.length? s/balls.length : 8; };
-    function breathe(periodMs){ return (Math.sin(nowms/periodMs*Math.PI*2)+1)/2; }
-    const breathClassic = (Math.sin(nowms / (180 - Math.min(120, spAvgCalc()*6)))+1)/2;
-    const breathe5 = breathe(5000), breathe3 = breathe(3000), breathe8 = breathe(8000);
-
-    function hexToRgb(h){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h); return m?{r:parseInt(m[1],16),g:parseInt(m[2],16),b:parseInt(m[3],16)}:{r:200,g:220,b:255}; }
-    function rgbaStr(o, a){ return `rgba(${o.r},${o.g},${o.b},${a})`; }
-    const col = hexToRgb(c);
-
-    function drawEdges(strokeCb){
-      ctx.beginPath();
-      if(!orientLeft){
-        ctx.moveTo(6,6); ctx.lineTo(w-6,6);
-        ctx.moveTo(6,6); ctx.lineTo(6,h-6);
-        ctx.moveTo(w-6,6); ctx.lineTo(w-6,h-6);
-      }else{
-        ctx.moveTo(6,6); ctx.lineTo(w-6,6);
-        ctx.moveTo(w-6,6); ctx.lineTo(w-6,h-6);
-        ctx.moveTo(6,h-6); ctx.lineTo(w-6,h-6);
-      }
-      strokeCb();
-    }
-
-    if(ledStyle==='tech'){
-      // 單色高亮呼吸 5s
-      ctx.save();
-      ctx.lineWidth = 3.5 + 1.5*breathe5;
-      ctx.strokeStyle = rgbaStr(col, 0.68 + 0.2*breathe5);
-      drawEdges(()=>ctx.stroke());
-      ctx.restore();
-    }else if(ledStyle==='arc'){
-      // 電弧沿邊滑行，呼吸 5s；背景能量 8s
-      ctx.save();
-      ctx.lineWidth = 2.2;
-      ctx.setLineDash([10, 8]);
-      ctx.lineDashOffset = - (nowms/40 % 18);
-      ctx.strokeStyle = rgbaStr(col, 0.55 + 0.35*breathe5);
-      drawEdges(()=>ctx.stroke());
-      // 微閃亮點
-      ctx.setLineDash([]);
-      ctx.fillStyle = rgbaStr(col, 0.5 + 0.4*breathe8);
-      for(let i=0;i<8;i++){
-        const rx = 12 + (w-24)*Math.random();
-        const ry = 12 + (h-24)*Math.random();
-        if(orientLeft && ry>h-18) continue;
-        if(!orientLeft && ry>h-18 && rx>12 && rx<w-12) continue;
-        ctx.beginPath(); ctx.arc(rx, ry, 1.3+Math.random()*1.5, 0, Math.PI*2); ctx.fill();
-      }
-      ctx.restore();
-    }else if(ledStyle==='steel'){
-      // 金屬呼吸 + 兩端圓球
-      ctx.save();
-      ctx.lineWidth = 4;
-      const grad = ctx.createLinearGradient(0,0,w,h);
-      grad.addColorStop(0, rgbaStr(col, 0.35 + 0.3*breathe5));
-      grad.addColorStop(1, rgbaStr({r:220,g:230,b:255}, 0.15 + 0.2*breathe5));
-      ctx.strokeStyle = grad;
-      drawEdges(()=>ctx.stroke());
-      // 端點圓球
-      const ends = !orientLeft ? [{x:6,y:6},{x:w-6,y:6},{x:6,y:h-6}] : [{x:w-6,y:6},{x:6,y:6},{x:w-6,y:h-6}];
-      ctx.fillStyle = rgbaStr(col, 0.75);
-      for(const e of ends){
-        ctx.beginPath(); ctx.arc(e.x, e.y, 4.5 + 2*breathe5, 0, Math.PI*2); ctx.fill();
-      }
-      ctx.restore();
-    }else if(ledStyle==='vivid'){
-      // 三條平行漸層線，3s 呼吸
-      ctx.save();
-      const alpha = 0.35 + 0.4*breathe3;
-      ctx.lineWidth = 2.2;
-      const cc = hexToRgb(c);
-      const leftToRight = ctx.createLinearGradient(0,0,w,0);
-      leftToRight.addColorStop(0, rgbaStr({r:cc.r+20,g:cc.g+20,b:cc.b+20}, alpha));
-      leftToRight.addColorStop(1, rgbaStr({r:cc.r-20,g:cc.g-20,b:cc.b-20}, alpha));
-      ctx.strokeStyle = leftToRight;
-      for(let i=0;i<3;i++){
-        ctx.beginPath();
-        if(!orientLeft){
-          ctx.moveTo(6, 6 + i*3);
-          ctx.lineTo(w-6, 6 + i*3);
-        }else{
-          ctx.moveTo(6 + i*3, 6);
-          ctx.lineTo(6 + i*3, h-6);
-        }
-        ctx.stroke();
-      }
-      ctx.restore();
-    }else{
-      // 經典：原本的呼吸（球越快越急促）
-      ctx.save();
-      ctx.lineWidth = 3 + 2*breathClassic;
-      ctx.strokeStyle = `rgba(${col.r},${col.g},${col.b},${0.5 + 0.35*breathClassic})`;
-      drawEdges(()=>ctx.stroke());
-      ctx.restore();
-    }
-    
+    // LED 科技邊框（呼吸，落球區域無燈條）
+    const c=ledColor();
+    // 平均球速估計
+    let spAvg=0; for(const b of balls){ spAvg += Math.hypot(b.vx,b.vy); } spAvg = balls.length? spAvg/balls.length : 8;
+    const breath = (Math.sin(performance.now()/ (180 - Math.min(120, spAvg*6)))+1)/2; // 球越快越急促
+    ctx.save();
+    ctx.globalAlpha = 0.6 + 0.3*breath;
+    ctx.strokeStyle=c;
+    ctx.lineWidth=6;
+    ctx.shadowColor=c;
+    ctx.shadowBlur=20 + 10*breath;
+    // 三邊畫框：正常省略底邊；天地翻轉則省略左邊
+    ctx.beginPath();
     if(!orientLeft){
       // 上
       ctx.moveTo(6,6); ctx.lineTo(w-6,6);
@@ -1971,7 +1730,7 @@ function generateLevel(lv, L){
     // 球全沒了
     if(balls.length===0){
       lives--; updateHUD();
-      if(lives<=0){ running=false; paused=true; showCenter('遊戲結束', `分數：${score}<br>按 Space 或點畫面再來一局，或按 R 重開。`); return; }
+      if(lives<=0){ showGameOver(); return; }
       else { resetBalls(false); startCountdown(); return; }
     }
 
@@ -1985,15 +1744,7 @@ function generateLevel(lv, L){
     }
 
         // 天空定時掉落
-    if(performance.now() >= nextSkyDropAt){ spawnBeneficialAtTop();
-    // 10秒未取得任何增益時保底掉落
-    const now = performance.now();
-    if(now - lastBeneficialPickupAt >= 10000 && now - lastSkyForceDropAt >= 2000){
-      spawnBeneficialAtTop();
-      lastSkyForceDropAt = now;
-      lastBeneficialPickupAt = now;
-    }
- scheduleNextSkyDrop(); }
+    if(performance.now() >= nextSkyDropAt){ spawnBeneficialAtTop(); scheduleNextSkyDrop(); }
 
     // 清關（進入畫廊或通關）
     if(!hasBreakables()){
@@ -2022,7 +1773,7 @@ function generateLevel(lv, L){
     resetGame(); updateHUD(); loop();
     // 自動讀取音效/BGM偏好
     soundsOn = (localStorage.getItem('sfx_on')||'0')==='1'; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
-    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.8'); bgmVol.value=String(v);
+    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.5'); bgmVol.value=String(v);
     bgmOn = (localStorage.getItem('bgm_on')||'0')==='1'; bgmBtn.textContent = bgmOn?'開':'關';
     // 若有存檔給提示
     const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4');
