@@ -132,6 +132,7 @@
       <button class="btn info" id="tutorBtn">教學</button>
       <button class="btn info" id="effectsBtn">效果說明</button>
       <button class="btn" id="soundBtn">音效：關</button>
+      <button class="btn" id="hapticsBtn">震動：開</button>
       <span class="range">BGM
         <button class="btn" id="bgmBtn">關</button>
         <input id="bgmVol" type="range" min="0" max="1" step="0.01" value="0.5" style="width:120px">
@@ -260,6 +261,7 @@
   const gallery=document.getElementById('gallery'), galleryImg=document.getElementById('galleryImg');
   const win=document.getElementById('win'), ring=document.getElementById('ring'), finalScore=document.getElementById('finalScore'), againBtn=document.getElementById('againBtn');
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
+  const hapticsBtn=document.getElementById('hapticsBtn');
 
 
   // 關閉視窗按鈕（關閉後立即倒數、繼續遊戲）
@@ -276,7 +278,7 @@
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
 
   // === 狀態 ===
-  let running=false, paused=true, level=1, score=0, lives=3, soundsOn=false;
+  let running=false, paused=true, level=1, score=0, lives=3, soundsOn=false; let gameOver=false;
   let bgTime=0; let screenShake=0;
   let countdownTimer=null, countdownShow=0, resumePending=false;
   // 影像選擇：1~10 隨機 bg/cg，11~20 用對應未用者
@@ -312,14 +314,14 @@
     const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
     const ang=Math.atan2(ty-bc.y, tx-bc.x);
     const speed=6.0;
-    hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); }});
+    hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); haptic('boss'); }});
   }
   function spawnKnightArc(){
     const bc=bossCenter(); if(!bc) return;
     const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
     const ang=Math.atan2(ty-bc.y, tx-bc.x);
     const speed=3.8;
-    hostileArcs.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, phase:0, amp:32, color:'silver', onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
+    hostileArcs.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, phase:0, amp:32, color:'silver', onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); haptic('boss'); }});
   }
   function spawnCyclopsColumn(){
     const bc=bossCenter(); if(!bc) return;
@@ -334,7 +336,7 @@
     const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
     const ang=Math.atan2(ty-bc.y, tx-bc.x);
     const speed=7.2;
-    hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'#ff3355', hit:false, onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
+    hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'#ff3355', hit:false, onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); haptic('boss'); }});
   }
   function spawnDemonClouds(){
     const picks = Array.from({length:5}, ()=> 40 + Math.random()*(1100-80));
@@ -413,7 +415,7 @@
       const pr = paddleRect();
       if(!c.applied){
         const inter = !( pr.x+pr.w < (c.x - c.w/2) || pr.x > (c.x + c.w/2) );
-        if(inter){ paddleStunUntil = Math.max(paddleStunUntil, performance.now()+3000); c.applied=true; }
+        if(inter){ paddleStunUntil = Math.max(paddleStunUntil, performance.now()+3000); c.applied=true; haptic('boss'); }
       }
     }
     // 烏雲
@@ -605,7 +607,29 @@
   function ensureAudio(){ if(!audioCtx){ const AC=(window.AudioContext||window.webkitAudioContext); if(AC){ audioCtx=new AC(); } } if(audioCtx && !bgmGain){ bgmGain=audioCtx.createGain(); bgmGain.gain.value=parseFloat(localStorage.getItem('bgm_vol')||'0.5'); bgmGain.connect(audioCtx.destination); } }
   function beep(freq=600,dur=0.05,vol=0.06){ if(!soundsOn||!audioCtx) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='square'; o.frequency.value=freq; g.gain.value=vol; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{ o.stop(); }, Math.max(10, dur*1000)); }
 
-  function startBGM(){
+  
+
+  // === 觸控震動回饋 ===
+  let hapticsOn = (localStorage.getItem('haptics_on')||'1')==='1';
+  function haptic(kind){
+    if(!hapticsOn) return;
+    try{
+      if(typeof navigator==='undefined' || !navigator.vibrate) return;
+      const map = {
+        tap: 10,
+        paddle: 12,
+        brick: [8, 8, 12],
+        power: 18,
+        life: [0, 60, 60],
+        boss: [20, 20, 20],
+        win: [25, 25],
+        over: [30, 20, 30]
+      };
+      const pat = map[kind] || 10;
+      navigator.vibrate(pat);
+    }catch(e){}
+  }
+function startBGM(){
     if(!audioCtx) ensureAudio();
     if(!audioCtx || bgmStarted) return; audioCtx.resume?.(); bgmStarted=true; applyBGMThemeForLevel();
   }
@@ -833,8 +857,8 @@ function generateLevel(lv, L){
 
 
   function canDestroyBrick(b){ const now=performance.now(); if(b.unbreakable) return false; if(b.lockedUntil && now < b.lockedUntil) return false; return true; }
-  function damageOrDestroy(i, amount=1){ const b=bricks[i]; if(!b) return; if(b.unbreakable) return; const now=performance.now(); if(b.lockedUntil && now < b.lockedUntil) return; b.hp = (b.hp||1) - amount; if(b.hp<=0){ revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD(); } }
-  function destroyBrick(i){ const b=bricks[i]; if(!b) return; if(!canDestroyBrick(b)) return; if(b.boss){ b.hp-=1; if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; updateHUD(); } return; } revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD(); }
+  function damageOrDestroy(i, amount=1){ const b=bricks[i]; if(!b) return; if(b.unbreakable) return; const now=performance.now(); if(b.lockedUntil && now < b.lockedUntil) return; b.hp = (b.hp||1) - amount; if(b.hp<=0){ revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD(); haptic('brick'); } }
+  function destroyBrick(i){ const b=bricks[i]; if(!b) return; if(!canDestroyBrick(b)) return; if(b.boss){ b.hp-=1; if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; updateHUD(); haptic('brick'); } return; } revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD(); }
   function destroyNeighbors(idx){ const b=bricks[idx]; if(!b) return; const L=layout(); const near=[]; for(let j=bricks.length-1;j>=0;j--){ if(j===idx) continue; const t=bricks[j]; const dx=Math.abs((t.x+t.w/2)-(b.x+b.w/2)); const dy=Math.abs((t.y+t.h/2)-(b.y+b.h/2)); const thx=brickW+L.pad+2, thy=brickH+L.pad+2; if(dx<=thx && dy<=thy){ // 鄰近一格
         if(canDestroyBrick(t)){ if(t.boss){ t.hp-=1; if(t.hp<=0){ revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); score+=50; } } else { revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); score+=10; } }
       }
@@ -859,7 +883,7 @@ function generateLevel(lv, L){
         spawnParticles(bx,by,'#ffdd99',14,1.7,2.6,3);
       }
     }
-    spawnParticles(cx,cy,'#ffbb55',24,2.1,3.2,4); updateHUD(); beep(200,0.08,0.08);
+    spawnParticles(cx,cy,'#ffbb55',24,2.1,3.2,4); updateHUD(); beep(200,0.08,0.08); haptic('brick');
   }
 
   // === 掉落道具 ===
@@ -977,20 +1001,34 @@ function generateLevel(lv, L){
   function showCenter(t,txt){ noteTitle.textContent=t; noteText.innerHTML=txt||''; centerNote.style.display='flex'; }
   function hideCenter(){ centerNote.style.display='none'; }
 
+  // === 結算畫面（Game Over） ===
+  function showGameOver(){
+    paused = true; running = false; gameOver = true;
+    finalScore.textContent = String(score);
+    // 調整結算標題
+    const h2 = win.querySelector('h2');
+    if(h2) h2.textContent = '遊戲結束';
+    // 清空/隱藏縮圖環
+    if(ring){ ring.innerHTML=''; }
+    win.classList.add('show');
+    haptic('over');
+  }
+
+
   function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; updateHUD(); initBricks(); resetBalls(); paused=true; running=false;
     for(const k of Object.keys(buffs)){ if(k!=='LONG'){ buffs[k].active=false; buffs[k].until=0; } } buffs.LONG.stacks=[]; powerups.length=0; particles.length=0; plasmas.length=0; holyFlashes.length=0; phoenixAnim=null; fireBursts.length=0;
     updateBuffBadges(); computePaddleWidth(); paddle.x=1100/2-paddle.w/2; showCenter('按 Space 或點畫面開始','用 ←/→ 或 A/D 移動；手指拖曳畫面也可。'); countdownShow=0; scheduleNextSkyDrop(); }
 
   // === 存讀檔（含音效/BGM與影像選擇） ===
   function saveProgress(){ try{
-      const data={level,score,lives,difficulty:difficultySel.value, imageChoice, soundsOn, bgmOn, bgmVol: parseFloat(bgmVol.value)};
+      const data={level,score,lives,difficulty:difficultySel.value, imageChoice, soundsOn, bgmOn, bgmVol: parseFloat(bgmVol.value), hapticsOn};
       localStorage.setItem('breakout_save_v_final_cfg', JSON.stringify(data)); alert('已存檔！');
     }catch(e){ alert('存檔失敗：'+e); } }
-  function loadProgress(){ try{ const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4'); if(!raw){ alert('沒有存檔'); return; } const data=JSON.parse(raw);
+  function loadProgress(){ try{ const rawNew=localStorage.getItem('breakout_save_v_final_cfg'); const rawOld=localStorage.getItem('breakout_save_v4'); const raw = rawNew || rawOld; if(!raw){ alert('沒有存檔'); return; } const data=JSON.parse(raw);
       difficultySel.value=data.difficulty||'normal'; level=data.level||1; score=data.score||0; lives=data.lives||3; if(Array.isArray(data.imageChoice)) imageChoice=data.imageChoice;
       soundsOn=!!data.soundsOn; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
       if(typeof data.bgmOn==='boolean'){ bgmOn=data.bgmOn; } if(typeof data.bgmVol==='number'){ bgmVol.value=String(data.bgmVol); if(bgmGain) bgmGain.gain.value=data.bgmVol; localStorage.setItem('bgm_vol', data.bgmVol); }
-      resetGame(true); updateHUD(); alert(`已讀檔：等級 ${level}，分數 ${score}，生命 ${lives}`);}catch(e){ alert('讀檔失敗：'+e); } }
+      resetGame(true); updateHUD(); hapticsOn = (data.hapticsOn ?? ((localStorage.getItem('haptics_on')||'1')==='1')); hapticsBtn.textContent = `震動：${hapticsOn?'開':'關'}`; localStorage.setItem('haptics_on', hapticsOn ? '1':'0'); if(!rawNew && rawOld){ try{ localStorage.setItem('breakout_save_v_final_cfg', JSON.stringify(data)); localStorage.removeItem('breakout_save_v4'); }catch(e){} } alert(`已讀檔：等級 ${level}，分數 ${score}，生命 ${lives}`);}catch(e){ alert('讀檔失敗：'+e); } }
   function clearSave(){ localStorage.removeItem('breakout_save_v_final_cfg'); alert('已清除存檔'); }
 
   // === 輸入（含觸控） ===
@@ -999,7 +1037,7 @@ function generateLevel(lv, L){
     if(e.code==='ArrowLeft'||e.key==='a'||e.key==='A') keyL=true;
     if(e.code==='ArrowRight'||e.key==='d'||e.key==='D') keyR=true;
     if(e.code==='Space'){ // 開始 / 暫停 / 倒數
-      if(!running){ startGameWithCountdown(); } else { togglePause(); }
+      if(!running){ if(gameOver) return; startGameWithCountdown(); } else { togglePause(); }
       return;
     }
     if((e.code==='ArrowUp' || e.key==='Shift') && !paused && running){
@@ -1013,14 +1051,14 @@ function generateLevel(lv, L){
   window.addEventListener('keyup',(e)=>{ if(e.code==='ArrowLeft'||e.key==='a'||e.key==='A') keyL=false; if(e.code==='ArrowRight'||e.key==='d'||e.key==='D') keyR=false; });
   canvas.addEventListener('mousemove',(e)=>{ const rect=canvas.getBoundingClientRect(); if(performance.now()<=paddleStunUntil) return; if(!orientLeft){ const x=(e.clientX-rect.left)*(1100/rect.width); paddle.x=Math.max(0, Math.min(1100-paddle.w, x - paddle.w/2)); } else { const y=(e.clientY-rect.top)*(700/rect.height); paddle.y=Math.max(0, Math.min(700-paddle.w, y - paddle.w/2)); } });
   canvas.addEventListener('click',()=>{
-    if(!running){ startGameWithCountdown(); return; }
+    if(!running){ if(gameOver) return; startGameWithCountdown(); return; }
     if(running && !paused){
       let released=false; for(const b of balls){ if(b.stuck){ b.stuck=false; b.vy=-Math.abs(b.vy||6); released=true; } }
       if(released) return;
     }
   });
-  canvas.addEventListener('touchstart',(e)=>{ touchActive=true; 
-    if(!running){ startGameWithCountdown(); return; }
+  canvas.addEventListener('touchstart',(e)=>{ touchActive=true; haptic('tap'); 
+    if(!running){ if(gameOver) return; startGameWithCountdown(); return; }
     if(running && !paused){
       let released=false; for(const b of balls){ if(b.stuck){ b.stuck=false; b.vy=-Math.abs(b.vy||6); released=true; } }
       if(released) return;
@@ -1034,7 +1072,7 @@ function generateLevel(lv, L){
   saveBtn.addEventListener('click',saveProgress); loadBtn.addEventListener('click',loadProgress); clearSaveBtn.addEventListener('click',clearSave);
   tutorBtn.addEventListener('click', ()=> toggleHelp('tutor'));
   effectsBtn.addEventListener('click', ()=> toggleHelp('effects'));
-  againBtn.addEventListener('click', ()=>{ win.classList.remove('show'); resetGame(); });
+  againBtn.addEventListener('click', ()=>{ win.classList.remove('show'); gameOver=false; resetGame(); });
 
   // BGM UI
   bgmBtn.addEventListener('click', ()=>{
@@ -1044,9 +1082,17 @@ function generateLevel(lv, L){
   bgmVol.addEventListener('input', ()=>{
     ensureAudio(); const v=parseFloat(bgmVol.value||'0.5'); if(bgmGain) bgmGain.gain.value=v; localStorage.setItem('bgm_vol', v);
   });
+  // 震動 UI
+  hapticsBtn.addEventListener('click', ()=>{
+    hapticsOn = !hapticsOn;
+    localStorage.setItem('haptics_on', hapticsOn ? '1' : '0');
+    hapticsBtn.textContent = `震動：${hapticsOn?'開':'關'}`;
+    if(hapticsOn) haptic('tap');
+  });
+
 
   function togglePause(){
-    if(!running){ startGameWithCountdown(); return; }
+    if(!running){ if(gameOver) return; startGameWithCountdown(); return; }
     paused=!paused;
     if(paused){ showCenter('已暫停','按 Space / 點畫面繼續'); }
     else { startCountdown(); }
@@ -1406,7 +1452,7 @@ function generateLevel(lv, L){
 
   function startCountdown(){
     paused=true; countdownShow=3; showCenter('', ''); centerNote.style.display='none'; // 用畫面倒數
-    resumePending=true;
+    resumePending=true; const _now=performance.now(); const _grace=2000; if(nextBossAtkA<_now+_grace) nextBossAtkA=_now+_grace; if(nextBossAtkB<_now+_grace) nextBossAtkB=_now+_grace;
     const tick=()=>{
       if(countdownShow<=0){ resumePending=false; paused=false; return; }
       beep(600 + (3-countdownShow)*100, 0.07, 0.05);
@@ -1562,7 +1608,7 @@ function generateLevel(lv, L){
           const hitPos=(b.y-(pr.y+pr.h/2))/(pr.h/2); const sp=Math.min(Math.hypot(b.vx,b.vy)*1.02, b.speedCap); const angle=hitPos*(Math.PI/3);
           b.vx=Math.cos(angle)*sp; b.vy=Math.sin(angle)*sp; b.x=pr.x+pr.w+b.r+0.1;
         }
-        beep(880,0.03); spawnParticles(b.x,b.y,'#caddff',8,1.3,1.5,2.5);
+        beep(880,0.03); haptic('paddle'); spawnParticles(b.x,b.y,'#caddff',8,1.3,1.5,2.5);
         if(buffs.STICKY.active){ b.stuck=true; b.offsetX= (!orientLeft) ? (b.x-(paddle.x+paddle.w/2)) : 0; }
 
         // MISSILE：擋板彈出時發射三枚
@@ -1679,8 +1725,8 @@ function generateLevel(lv, L){
 
     // 球全沒了
     if(balls.length===0){
-      lives--; updateHUD();
-      if(lives<=0){ running=false; paused=true; showCenter('遊戲結束', `分數：${score}<br>按 Space 或點畫面再來一局，或按 R 重開。`); return; }
+      lives--; updateHUD(); haptic('life');
+      if(lives<=0){ showGameOver(); return; }
       else { resetBalls(false); startCountdown(); return; }
     }
 
@@ -1689,7 +1735,7 @@ function generateLevel(lv, L){
       const p=powerups[i]; p.y+=p.vy;
       const pr=paddleRect();
       const hit = (!orientLeft) ? (p.y+p.h>=pr.y && p.x+p.w>=pr.x && p.x<=pr.x+pr.w && p.y<=pr.y+pr.h) : (p.x+p.w>=pr.x && p.x<=pr.x+pr.w && p.y+p.h>=pr.y && p.y<=pr.y+pr.h);
-      if(hit){ applyPower(p.type); powerups.splice(i,1); continue; }
+      if(hit){ applyPower(p.type); haptic('power'); powerups.splice(i,1); continue; }
       if(p.y>710) powerups.splice(i,1);
     }
 
@@ -1723,6 +1769,7 @@ function generateLevel(lv, L){
     resetGame(); updateHUD(); loop();
     // 自動讀取音效/BGM偏好
     soundsOn = (localStorage.getItem('sfx_on')||'0')==='1'; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
+    hapticsOn = (localStorage.getItem('haptics_on')||'1')==='1'; hapticsBtn.textContent = `震動：${hapticsOn?'開':'關'}`;
     const v = parseFloat(localStorage.getItem('bgm_vol')||'0.5'); bgmVol.value=String(v);
     bgmOn = (localStorage.getItem('bgm_on')||'0')==='1'; bgmBtn.textContent = bgmOn?'開':'關';
     // 若有存檔給提示
