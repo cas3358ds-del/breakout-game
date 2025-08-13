@@ -1042,8 +1042,6 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     const so  = document.getElementById('statsOver'); if(so)  so.innerHTML = renderStatsHtml();
     gameover?.classList.add('show');
   }
-
-t,txt){ noteTitle.textContent=t; noteText.innerHTML=txt||''; centerNote.style.display='flex'; }
   function hideCenter(){ centerNote.style.display='none'; }
 
   function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; updateHUD(); initBricks(); resetBalls(); paused=true; running=false;
