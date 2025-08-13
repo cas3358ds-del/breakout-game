@@ -37,7 +37,7 @@
       border:1px solid #1a2348; border-radius:16px; max-width:min(1120px, 98vw); width: min(1120px, 98vw); height: auto; display:block;
       box-shadow: 0 30px 80px rgba(0,0,0,.35), inset 0 0 120px rgba(255,255,255,.02); touch-action:none;}
     .overlay{position:relative}
-    .center-note{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:9999}
+    .center-note{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:auto; z-index:9999}
     .note-box{background:linear-gradient(180deg, rgba(8,12,28,.9), rgba(8,12,28,.85));
       border:1px solid var(--glass-stroke); padding:16px 18px; border-radius:14px; text-align:center; max-width:min(90vw,860px);
       box-shadow: 0 12px 60px rgba(0,0,0,.5); font-size:14px}
@@ -71,7 +71,7 @@
     .gameover .center{position:relative; z-index:2; text-align:center; background:linear-gradient(180deg, rgba(10,14,30,.85), rgba(10,14,30,.75)); padding:18px 22px; border:1px solid var(--glass-stroke); border-radius:16px; box-shadow:0 20px 90px rgba(0,0,0,.5)}
     
     .win .backdrop{position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.88));}
-    .thumb-ring{position:absolute; inset:16px; pointer-events:none; display:grid; grid-template-columns:repeat(10,1fr); gap:6px; opacity:.95}
+    .thumb-ring{position:absolute; inset:16px; pointer-events:auto; display:grid; grid-template-columns:repeat(10,1fr); gap:6px; opacity:.95}
     .thumb-ring img{width:100%; height:100%; object-fit:cover; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,.5);}
     .win .center{position:relative; z-index:2; text-align:center; background:linear-gradient(180deg, rgba(10,14,30,.85), rgba(10,14,30,.75)); padding:18px 22px; border:1px solid var(--glass-stroke); border-radius:16px; box-shadow:0 20px 90px rgba(0,0,0,.5)}
     .win h2{margin:4px 0 6px; font-size:28px; letter-spacing:2px}
@@ -294,7 +294,13 @@
     hideCenter();
     if(running){ startCountdown(); } else { startGameWithCountdown(); }
   }
-  noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+  noteClose.addEventListener('click', (e)=>{ e.stopPropagation();
+  // 允許點擊整個教學/說明覆蓋層即可開始或繼續（避免行動裝置誤觸無法啟動）
+  centerNote.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+  noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
+  // 任何地方點擊（例如 HUD）也能觸發首次啟動，強化容錯
+  document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } });
+ closeNoteAndResume(); });
 
 
   // === DPR 縮放 ===
@@ -1210,7 +1216,7 @@ px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; 
   window.addEventListener('keydown',(e)=>{ if(gameOver){ e.preventDefault(); return; }
     if(e.code==='ArrowLeft'||e.key==='a'||e.key==='A') keyL=true;
     if(e.code==='ArrowRight'||e.key==='d'||e.key==='D') keyR=true;
-    if(e.code==='Space'){ // 開始 / 暫停 / 倒數
+    if(e.code==='Space'){ e.preventDefault(); // 開始 / 暫停 / 倒數
       if(!running){ startGameWithCountdown(); } else { togglePause(); }
       return;
     }
