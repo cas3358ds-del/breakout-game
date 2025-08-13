@@ -282,7 +282,7 @@
   const ledStyleSel=document.getElementById('ledStyle');
   const gallery=document.getElementById('gallery'), galleryImg=document.getElementById('galleryImg');
   const win=document.getElementById('win'), ring=document.getElementById('ring'), finalScore=document.getElementById('finalScore'), againBtn=document.getElementById('againBtn');
-  document.getElementById('retryBtn')?.addEventListener('click', ()=>{ const go=document.getElementById('gameover'); if(go) go.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });
+  (function(){var el=document.getElementById('retryBtn');if(el) el.addEventListener('click', ()=>{ const go=document.getElementById('gameover'); if(go) go.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });})();
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
   const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2');
   const retryBtn=document.getElementById('retryBtn');
@@ -415,7 +415,7 @@
       ctx.restore();
       // hit check
       if(!b.hit && x2>=pr.x*scaleX && x2<= (pr.x+pr.w)*scaleX && y2>=pr.y*scaleY && y2<= (pr.y+pr.h)*scaleY){
-        b.hit=true; b.onHit?.(pr); spawnParticles(b.x,b.y,'#ffd',12,1.6,2.2,2.5);
+        b.hit=true; b.onHit&&b.onHit(pr); spawnParticles(b.x,b.y,'#ffd',12,1.6,2.2,2.5);
       }
       // out of bounds
       if(b.x<0||b.x>1100||b.y<0||b.y>700){ hostileBeams.splice(i,1); }
@@ -437,7 +437,7 @@
       ctx.restore();
       // hit
       if(a.x>=pr.x && a.x<=pr.x+pr.w && a.y>=pr.y && a.y<=pr.y+pr.h){
-        a.onHit?.(); hostileArcs.splice(i,1);
+        a.onHit&&a.onHit(); hostileArcs.splice(i,1);
       }
       if(a.x<0||a.x>1100||a.y>700||a.y<0){ hostileArcs.splice(i,1); }
     }
@@ -567,12 +567,12 @@
   }
 
   // === Buff/De-buff 顯示 ===
-  function badgeIcon(k){ return (GAME_CONFIG.powers[k]?.badge)||'●'; }
+  function badgeIcon(k){ return ((GAME_CONFIG.powers[k] && GAME_CONFIG.powers[k].badge))||'●'; }
   function updateBuffBadges(){ activeBuffsEl.innerHTML=''; const now=performance.now();
     // LONG 堆疊
     const longAct=buffs.LONG.stacks.filter(t=>t>now); if(longAct.length){ const s=document.createElement('span'); s.className='badge'; s.textContent=`${badgeIcon('LONG')} LONG×${longAct.length} ${Math.max(0,Math.max(...longAct)-now|0)}ms`; activeBuffsEl.appendChild(s); }
     // 其它
-    for(const key of Object.keys(GAME_CONFIG.powers)){ if(key==='LONG') continue; const b=buffs[key]; if(!b?.active) continue; const left=b.until&&b.until>now?((b.until-now)/1000).toFixed(1)+'s':''; const s=document.createElement('span'); s.className='badge'; s.textContent=`${badgeIcon(key)} ${key}${left?' '+left:''}`; activeBuffsEl.appendChild(s); }
+    for(const key of Object.keys(GAME_CONFIG.powers)){ if(key==='LONG') continue; const b=buffs[key]; if(! (b && b.active)) continue; const left=b.until&&b.until>now?((b.until-now)/1000).toFixed(1)+'s':''; const s=document.createElement('span'); s.className='badge'; s.textContent=`${badgeIcon(key)} ${key}${left?' '+left:''}`; activeBuffsEl.appendChild(s); }
   }
 
   // === Buff 狀態 ===
@@ -580,7 +580,7 @@
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
-  let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0}}; }
+  let balls=[]; function makeBall(stuck=false,x=null){ return (({x:x)!=null?({x:x):((1100/2))),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0}}; }
 
   // === 聲音與BGM ===
 
@@ -730,9 +730,9 @@ function startBGMTheme(theme){
 
   function startBGM(){
     if(!audioCtx) ensureAudio();
-    if(!audioCtx || bgmStarted) return; audioCtx.resume?.(); bgmStarted=true; applyBGMThemeForLevel();
+    if(!audioCtx || bgmStarted) return; if(audioCtx && audioCtx.resume) audioCtx.resume(); bgmStarted=true; applyBGMThemeForLevel();
   }
-  function stopBGM(){ bgmStarted=false; bgmNodes.forEach(n=>{try{n.disconnect?.()}catch{} }); bgmNodes.length=0; }
+  function stopBGM(){ bgmStarted=false; bgmNodes.forEach(n=>{try{(n && n.disconnect && n.disconnect())}catch{} }); bgmNodes.length=0; }
 
   // === 磚塊與揭示 ===
   let bricks=[]; let brickW=0, brickH=GAME_CONFIG.bricks.brickHeight; let revealRects=[];
@@ -1013,7 +1013,7 @@ function generateLevel(lv, L){
     // 抽非減益道具（含稀有，但機率較低）
     const goodTypes = ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='debuff');
     let type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
-    powerups.push({x, y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy:GAME_CONFIG.powerCapsule.fallVy, type, isDebuff:false, isSpecial:(GAME_CONFIG.powers[type]?.type==='rare'), phase:Math.random()*Math.PI*2});
+    powerups.push({x, y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy:GAME_CONFIG.powerCapsule.fallVy, type, isDebuff:false, isSpecial:(GAME_CONFIG.powers[type] && GAME_CONFIG.powers[type].type==='rare'), phase:Math.random()*Math.PI*2});
   }
 
   
@@ -1095,9 +1095,9 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     // 定時類
     if(def.durationMs){ if(type!=='LONG'){ const b=buffs[type]||(buffs[type]={active:false,until:0}); b.active=true; b.until=now+def.durationMs; } }
     if(def.paddleWidthAdd){ buffs.WIDE.active=true; buffs.WIDE.until=now+def.durationMs; }
-    if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const max=def.stacksMax??2; if(act.length<max){ buffs.LONG.stacks.push(now+def.durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+def.durationMs; } }
+    if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const ((max=def.stacksMax)!=null?(max=def.stacksMax):(2)); if(act.length<max){ buffs.LONG.stacks.push(now+def.durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+def.durationMs; } }
     if(def.sticky){ buffs.STICKY.active=true; buffs.STICKY.until=now+def.durationMs; }
-    if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; news.push(b1);} balls=balls.concat(news); const cap=def.maxBalls??4; if(balls.length>cap) balls.length=cap; } }
+    if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; news.push(b1);} balls=balls.concat(news); const ((cap=def.maxBalls)!=null?(cap=def.maxBalls):(4)); if(balls.length>cap) balls.length=cap; } }
     if(def.speedMul){ buffs.SLOW.active=true; buffs.SLOW.until=now+def.durationMs; }
     if(def.piercing){ buffs.PIERCE.active=true; buffs.PIERCE.until=now+def.durationMs; for(const b of balls) b.piercing=true; }
     if(def.oneShotShield){ buffs.SHIELD.active=true; }
@@ -1172,7 +1172,9 @@ function drawPower(p){
   ctx.fillText(p.type[0], x+w/2, y+h/2+0.5);
   ctx.restore();
 }
-function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textContent=level + '/'+ GAME_CONFIG.totalLevels; livesEl.textContent=lives; }
+px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.type[0], x+w/2, y+h/2+0.5); ctx.restore(); }
+
+  function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textContent=level + '/'+ GAME_CONFIG.totalLevels; livesEl.textContent=lives; }
   function showCenter(t, txt){
     noteTitle.textContent = t;
     noteText.innerHTML = txt || '';
@@ -1183,7 +1185,7 @@ function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textConte
     hideCenter();
     const fs2 = document.getElementById('finalScore2'); if(fs2) fs2.textContent = String(Math.max(0|score,0));
     const so  = document.getElementById('statsOver'); if(so)  so.innerHTML = renderStatsHtml();
-    gameover?.classList.add('show');
+    if(gameover&&gameover.classList)gameover.classList.add('show');
   }
   function hideCenter(){ centerNote.style.display='none'; }
 
@@ -1239,7 +1241,7 @@ function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textConte
   canvas.addEventListener('touchmove',(e)=>{ if(!touchActive) return; if(performance.now()<=paddleStunUntil) return; const t=e.touches[0]; const rect=canvas.getBoundingClientRect(); if(!orientLeft){ const x=(t.clientX-rect.left)*(1100/rect.width); paddle.x=Math.max(0, Math.min(1100-paddle.w, x - paddle.w/2)); } else { const y=(t.clientY-rect.top)*(700/rect.height); paddle.y=Math.max(0, Math.min(700-paddle.w, y - paddle.w/2)); } }, {passive:true});
   canvas.addEventListener('touchend',()=>{ touchActive=false; }, {passive:true});
   pauseBtn.addEventListener('click',()=>togglePause()); resetBtn.addEventListener('click',()=>resetGame()); fsBtn.addEventListener('click',()=>toggleFullscreen());
-  soundBtn.addEventListener('click',()=>{ soundsOn=!soundsOn; localStorage.setItem('sfx_on', soundsOn?'1':'0'); soundBtn.textContent=`音效：${soundsOn?'開':'關'}`; ensureAudio(); audioCtx?.resume?.(); beep(880,0.06,0.05); });
+  soundBtn.addEventListener('click',()=>{ soundsOn=!soundsOn; localStorage.setItem('sfx_on', soundsOn?'1':'0'); soundBtn.textContent=`音效：${soundsOn?'開':'關'}`; ensureAudio(); if(audioCtx && audioCtx.resume) audioCtx.resume(); beep(880,0.06,0.05); });
   difficultySel.addEventListener('change',()=>{ resetGame(); });
   if(ledStyleSel){ ledStyleSel.value = ledStyle; ledStyleSel.addEventListener('change', ()=>{ ledStyle = ledStyleSel.value; localStorage.setItem('led_style', ledStyle); }); }
   saveBtn.addEventListener('click',saveProgress); loadBtn.addEventListener('click',loadProgress); clearSaveBtn.addEventListener('click',clearSave);
@@ -1265,7 +1267,7 @@ function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textConte
 
   function startGameWithCountdown(){
     running=true; paused=true; hideCenter();
-    ensureAudio(); audioCtx?.resume?.();
+    ensureAudio(); if(audioCtx && audioCtx.resume) audioCtx.resume();
     // 音效與BGM設定載入
     soundsOn = (localStorage.getItem('sfx_on')||'0')==='1';
     soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
@@ -1339,7 +1341,7 @@ function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textConte
   function computePaddleWidth(){ const now=performance.now(); buffs.LONG.stacks=buffs.LONG.stacks.filter(t=>t>now); const longStacks=Math.min(GAME_CONFIG.powers.LONG.stacksMax, buffs.LONG.stacks.length);
     const addLong=longStacks*(GAME_CONFIG.powers.LONG.longPerStackAdd||0); const addWide=(buffs.WIDE.active?(GAME_CONFIG.powers.WIDE.paddleWidthAdd||0):0); const base=getDiff().paddleBaseW;
     let newW=Math.min(GAME_CONFIG.caps.paddleMaxW, base+addWide+addLong);
-    if(buffs.NARROW?.active) newW = Math.max(60, newW*0.5);
+    if((buffs.NARROW && buffs.NARROW.active)) newW = Math.max(60, newW*0.5);
     const center=paddle.x+paddle.w/2; paddle.w=newW; paddle.x=Math.max(0, Math.min(1100-paddle.w, center - paddle.w/2)); }
 
   // 擋板在不同朝向下的實際矩形
@@ -1357,7 +1359,7 @@ function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textConte
   }
 
 
-  function speedMultiplier(now){ let mul=1.0; if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul??1.0);} if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul??1.0);} if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); } return mul; }
+  function speedMultiplier(now){ let mul=1.0; if(buffs.SLOW.active){ ((mul*=(GAME_CONFIG.powers.SLOW.speedMul)!=null?(mul*=(GAME_CONFIG.powers.SLOW.speedMul):(1.0)));} if(buffs.FAST.active){ ((mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul)!=null?(mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul):(1.0)));} if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); } return mul; }
 
   // === 背景裝飾 & LED 燈條 ===
   function ledColor(){
@@ -1465,7 +1467,16 @@ function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textConte
         ctx.strokeStyle=c; ctx.lineWidth=2.2; pathThreeSides(); ctx.stroke();
         break;
       }
-default: {
+      
+        ctx.globalAlpha = 0.5 + 0.5*breath3;
+        const grad = ctx.createLinearGradient(0,0,w,0);
+        grad.addColorStop(0, 'rgba(255,255,255,0.85)');
+        grad.addColorStop(1, c);
+        ctx.strokeStyle=grad; ctx.lineWidth=4.5;
+        for(const off of [-4,0,4]){ ctx.save(); ctx.translate(0,off); pathThreeSides(); ctx.stroke(); ctx.restore(); }
+        break;
+      }
+      default: {
         ctx.globalAlpha = 0.6 + 0.3*breathClassic;
         ctx.strokeStyle=c; ctx.lineWidth=6; ctx.shadowColor=c; ctx.shadowBlur=20 + 10*breathClassic; pathThreeSides(); ctx.stroke();
         break;
@@ -1723,7 +1734,7 @@ if(performance.now() >= nextForcedDropAt){
     for(const key of Object.keys(GAME_CONFIG.powers)){
       if(key==='LONG') continue; 
       const b=buffs[key];
-      if(b?.active && b.until && now>b.until){
+      if((b && b.active) && b.until && now>b.until){
         b.active=false;
         if(key==='PIERCE'){ for(const ball of balls) ball.piercing=false; }
         if(key==='STICKY'){ for(const ball of balls){ if(ball.stuck){ ball.stuck=false; ball.vy = -Math.abs(ball.vy||6); } } }
@@ -1765,8 +1776,8 @@ if(performance.now() >= nextForcedDropAt){
     function effectiveMul(){
       if(buffs.GODSPEED.active) return 1.0;
       let mul=1.0;
-      if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul??1.0); }
-      if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul??1.0); }
+      if(buffs.SLOW.active){ ((mul*=(GAME_CONFIG.powers.SLOW.speedMul)!=null?(mul*=(GAME_CONFIG.powers.SLOW.speedMul):(1.0))); }
+      if(buffs.FAST.active){ ((mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul)!=null?(mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul):(1.0))); }
       if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); }
       if(buffs.HELL.active){ mul*=(GAME_CONFIG.powers.HELL.hell.speedMul); }
       if(buffs.MEGA.active){ mul*=(GAME_CONFIG.powers.MEGA.mega.speedMul); }
@@ -1876,7 +1887,7 @@ if(performance.now() >= nextForcedDropAt){
           const candidates = bricks.map((bk,idx)=>({idx, d: (bk.x+bk.w/2-src.x)**2 + (bk.y+bk.h/2-src.y)**2 })).sort((a,b)=>a.d-b.d);
           const pickIdxs = [0, Math.floor(candidates.length/2), candidates.length-1].filter(i=>i>=0 && i<candidates.length);
           for(const i of pickIdxs){
-            const targetId = candidates[i]?.idx;
+            const targetId = (candidates[i] ? candidates[i].idx : undefined);
             if(targetId==null) continue;
             const ang=Math.random()*Math.PI*2;
             missiles.push({x:src.x,y:src.y,vx:Math.cos(ang)*2,vy:Math.sin(ang)*2,targetId,lifeUntil:now+GAME_CONFIG.powers.MISSILE.missile.lifeMs,trail:[]});
