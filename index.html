@@ -586,7 +586,34 @@
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
-  let balls=[]; function makeBall(stuck=false,x=null){ return (({x:x)!=null?({x:x):((1100/2))),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0}}; }
+  let balls=[];
+  // Helper to construct a new ball. Fix incorrect object literal syntax that prevented the game from loading.
+  // We want to return an object describing the ball with sensible defaults.  If an explicit x-coordinate
+  // is provided we use that, otherwise we default to the horizontal centre of the playfield (1100/2).
+  function makeBall(stuck = false, x = null) {
+    return {
+      x: x != null ? x : (1100 / 2),
+      y: 700 / 2,
+      r: 10,
+      vx: 5,
+      vy: -5,
+      speedCap: GAME_CONFIG.caps.ballSpeedMax,
+      piercing: false,
+      stuck: stuck,
+      offsetX: 0,
+      rampageUntil: 0,
+      trail: [],
+      freeze: {
+        state: 'idle',
+        t0: 0,
+        until: 0,
+        oldVX: 0,
+        oldVY: 0,
+        delay: 0,
+        stop: 0
+      }
+    };
+  }
 
   // === 聲音與BGM ===
 
@@ -1053,31 +1080,40 @@ function spawnPower(x,y){
 
   // 構建權重：一般增益 = 1，特殊增益 = 0.1，減益 = 0.6（維持些許威脅）
   const weighted = [];
-  for(const k of normals)  for(let i=0;i<10;i++) weighted.push({k, kind:'normal'});     // 1.0
-  for(const k of specials) for(let i=0;i<1;i++)  weighted.push({k, kind:'special'});    // 0.1
-  for(const k of debuffs)  for(let i=0;i<6;i++)  weighted.push({k, kind:'debuff'});     // 0.6
+  // 普通增益 1.0 權重：10 個樣本
+  for (const k of normals) {
+    for (let i = 0; i < 10; i++) weighted.push(k);
+  }
+  // 特殊增益/稀有增益 0.1 權重：1 個樣本
+  for (const k of specials) {
+    weighted.push(k);
+  }
+  // 減益 0.6 權重：6 個樣本
+  for (const k of debuffs) {
+    for (let i = 0; i < 6; i++) weighted.push(k);
+  }
 
-  const pick = weighted[Math.floor(Math.random()*weighted.length)];
-  const type = pick.k;
-  const def  = defs[type];
+  // 隨機選取類型
+  const type = weighted[Math.floor(Math.random() * weighted.length)];
+  const def = defs[type];
 
-  // 速度：特殊稍慢、減益稍快、一般不變
+  // 調整下落速度：減益稍快，特殊/稀有稍慢
   let vy = GAME_CONFIG.powerCapsule.fallVy;
-  if(def.type==='debuff') vy *= 1.18;
-  else if(def.type==='special' || def.type==='rare') vy *= 0.88;
+  if (def.type === 'debuff') vy *= 1.18;
+  else if (def.type === 'special' || def.type === 'rare') vy *= 0.88;
 
   powerups.push({
-    x, y,
-    w:GAME_CONFIG.powerCapsule.width,
-    h:GAME_CONFIG.powerCapsule.height,
-    vy,
-    type,
-    isDebuff:(def.type==='debuff'),
-    isSpecial:(def.type==='special' || def.type==='rare'),
-    phase:Math.random()*Math.PI*2
+    x: x,
+    y: y,
+    w: GAME_CONFIG.powerCapsule.width,
+    h: GAME_CONFIG.powerCapsule.height,
+    vy: vy,
+    type: type,
+    isDebuff: def.type === 'debuff',
+    isSpecial: def.type === 'special' || def.type === 'rare',
+    phase: Math.random() * Math.PI * 2,
   });
 }
-); }
 
   function applyPower(type){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type){ stats.buffs++; lastGainPickupAt = performance.now(); nextForcedDropAt = lastGainPickupAt + 10000; } }
@@ -1101,9 +1137,36 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     // 定時類
     if(def.durationMs){ if(type!=='LONG'){ const b=buffs[type]||(buffs[type]={active:false,until:0}); b.active=true; b.until=now+def.durationMs; } }
     if(def.paddleWidthAdd){ buffs.WIDE.active=true; buffs.WIDE.until=now+def.durationMs; }
-    if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const ((max=def.stacksMax)!=null?(max=def.stacksMax):(2)); if(act.length<max){ buffs.LONG.stacks.push(now+def.durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+def.durationMs; } }
-    if(def.sticky){ buffs.STICKY.active=true; buffs.STICKY.until=now+def.durationMs; }
-    if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; news.push(b1);} balls=balls.concat(news); const ((cap=def.maxBalls)!=null?(cap=def.maxBalls):(4)); if(balls.length>cap) balls.length=cap; } }
+    if (def.longPerStackAdd) {
+      // LONG 類型可疊加 buff：計算當前尚未過期的堆疊數量，若未達最大堆疊則新增，否則覆蓋最早過期者
+      const act = buffs.LONG.stacks.filter(t => t > now);
+      const maxStacks = (def.stacksMax != null ? def.stacksMax : 2);
+      if (act.length < maxStacks) {
+        buffs.LONG.stacks.push(now + def.durationMs);
+      } else {
+        const earliest = Math.min(...act);
+        const idx = buffs.LONG.stacks.indexOf(earliest);
+        if (idx >= 0) buffs.LONG.stacks[idx] = now + def.durationMs;
+      }
+    }
+    if (def.sticky) {
+      buffs.STICKY.active = true;
+      buffs.STICKY.until = now + def.durationMs;
+    }
+    if (def.multiDuplicate) {
+      // 複製球體，限制最大數量（預設 4 顆）；原始邏輯在球數少於 3 時複製
+      const cap = (def.maxBalls != null ? def.maxBalls : 4);
+      if (balls.length < 3) {
+        const news = [];
+        for (const b of balls) {
+          const b1 = { ...b };
+          b1.trail = [];
+          news.push(b1);
+        }
+        balls = balls.concat(news);
+        if (balls.length > cap) balls.length = cap;
+      }
+    }
     if(def.speedMul){ buffs.SLOW.active=true; buffs.SLOW.until=now+def.durationMs; }
     if(def.piercing){ buffs.PIERCE.active=true; buffs.PIERCE.until=now+def.durationMs; for(const b of balls) b.piercing=true; }
     if(def.oneShotShield){ buffs.SHIELD.active=true; }
@@ -1177,8 +1240,10 @@ function drawPower(p){
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(p.type[0], x+w/2, y+h/2+0.5);
   ctx.restore();
+
+  // close drawPower function
 }
-px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.type[0], x+w/2, y+h/2+0.5); ctx.restore(); }
+
 
   function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textContent=level + '/'+ GAME_CONFIG.totalLevels; livesEl.textContent=lives; }
   function showCenter(t, txt){
@@ -1365,7 +1430,24 @@ px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; 
   }
 
 
-  function speedMultiplier(now){ let mul=1.0; if(buffs.SLOW.active){ ((mul*=(GAME_CONFIG.powers.SLOW.speedMul)!=null?(mul*=(GAME_CONFIG.powers.SLOW.speedMul):(1.0)));} if(buffs.FAST.active){ ((mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul)!=null?(mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul):(1.0)));} if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); } return mul; }
+  function speedMultiplier(now){
+    // 計算當前速度倍率：慢速、快速、波浪等 buff 可能影響速度
+    let mul = 1.0;
+    if (buffs.SLOW.active) {
+      const s = GAME_CONFIG.powers.SLOW.speedMul;
+      mul *= (s != null ? s : 1.0);
+    }
+    if (buffs.FAST.active) {
+      const s = GAME_CONFIG.powers.FAST.globalSpeedMul;
+      mul *= (s != null ? s : 1.0);
+    }
+    if (buffs.WAVY.active) {
+      const w = GAME_CONFIG.powers.WAVY.wavy || {amp: 0.6, base: 1.2, periodMs: 200};
+      const phase = (now - (buffs.WAVY.start || now)) / (w.periodMs);
+      mul *= (w.base + w.amp * Math.sin(phase));
+    }
+    return mul;
+  }
 
   // === 背景裝飾 & LED 燈條 ===
   function ledColor(){
@@ -1471,15 +1553,6 @@ px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; 
         for(let i=0;i<h;i+=50){ drawFlame(8, i+8); drawFlame(w-8, i+8); }
         // 外框淡光
         ctx.strokeStyle=c; ctx.lineWidth=2.2; pathThreeSides(); ctx.stroke();
-        break;
-      }
-      
-        ctx.globalAlpha = 0.5 + 0.5*breath3;
-        const grad = ctx.createLinearGradient(0,0,w,0);
-        grad.addColorStop(0, 'rgba(255,255,255,0.85)');
-        grad.addColorStop(1, c);
-        ctx.strokeStyle=grad; ctx.lineWidth=4.5;
-        for(const off of [-4,0,4]){ ctx.save(); ctx.translate(0,off); pathThreeSides(); ctx.stroke(); ctx.restore(); }
         break;
       }
       default: {
@@ -1780,13 +1853,36 @@ if(performance.now() >= nextForcedDropAt){
 
     // 全局速度倍率（GODSPEED 時忽略其它）
     function effectiveMul(){
-      if(buffs.GODSPEED.active) return 1.0;
-      let mul=1.0;
-      if(buffs.SLOW.active){ ((mul*=(GAME_CONFIG.powers.SLOW.speedMul)!=null?(mul*=(GAME_CONFIG.powers.SLOW.speedMul):(1.0))); }
-      if(buffs.FAST.active){ ((mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul)!=null?(mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul):(1.0))); }
-      if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); }
-      if(buffs.HELL.active){ mul*=(GAME_CONFIG.powers.HELL.hell.speedMul); }
-      if(buffs.MEGA.active){ mul*=(GAME_CONFIG.powers.MEGA.mega.speedMul); }
+      // 全局速度倍率：整合慢速、快速、波浪、地獄與特大球等 buff。若 GODSPEED 生效則直接返回 1。
+      if (buffs.GODSPEED.active) return 1.0;
+      let mul = 1.0;
+      // 慢速 buff
+      if (buffs.SLOW.active) {
+        const s = GAME_CONFIG.powers.SLOW.speedMul;
+        mul *= (s != null ? s : 1.0);
+      }
+      // 快速 buff
+      if (buffs.FAST.active) {
+        const s = GAME_CONFIG.powers.FAST.globalSpeedMul;
+        mul *= (s != null ? s : 1.0);
+      }
+      // 波浪 buff
+      if (buffs.WAVY.active) {
+        const w = GAME_CONFIG.powers.WAVY.wavy || {amp: 0.6, base: 1.2, periodMs: 200};
+        const nowTime = performance.now();
+        const phase = (nowTime - (buffs.WAVY.start || nowTime)) / (w.periodMs);
+        mul *= (w.base + w.amp * Math.sin(phase));
+      }
+      // 地獄 buff
+      if (buffs.HELL.active) {
+        const s = GAME_CONFIG.powers.HELL.hell.speedMul;
+        mul *= (s != null ? s : 1.0);
+      }
+      // 特大球 buff
+      if (buffs.MEGA.active) {
+        const s = GAME_CONFIG.powers.MEGA.mega.speedMul;
+        mul *= (s != null ? s : 1.0);
+      }
       return mul;
     }
 
