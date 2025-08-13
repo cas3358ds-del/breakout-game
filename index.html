@@ -36,7 +36,7 @@
       border:1px solid #1a2348; border-radius:16px; max-width:min(1120px, 98vw); width: min(1120px, 98vw); height: auto; display:block;
       box-shadow: 0 30px 80px rgba(0,0,0,.35), inset 0 0 120px rgba(255,255,255,.02); touch-action:none;}
     .overlay{position:relative}
-    .center-note{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:3}
+    .center-note{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:9999}
     .note-box{background:linear-gradient(180deg, rgba(8,12,28,.9), rgba(8,12,28,.85));
       border:1px solid var(--glass-stroke); padding:16px 18px; border-radius:14px; text-align:center; max-width:min(90vw,860px);
       box-shadow: 0 12px 60px rgba(0,0,0,.5); font-size:14px}
@@ -139,6 +139,8 @@
           <option value="arc">電弧</option>
           <option value="steel">鋼鐵</option>
           <option value="vivid">絢麗</option>
+          <option value="reaper">死神</option>
+          <option value="flame">烈焰</option>
         </select>
       </label>
       <button class="btn" id="resetBtn">重開 (<kbd>R</kbd>)</button>
@@ -148,7 +150,7 @@
       <button class="btn" id="soundBtn">音效：關</button>
       <span class="range">BGM
         <button class="btn" id="bgmBtn">關</button>
-        <input id="bgmVol" type="range" min="0" max="1" step="0.01" value="0.7" style="width:120px">
+        <input id="bgmVol" type="range" min="0" max="1" step="0.01" value="0.85" style="width:120px">
       </span>
       <button class="btn" id="saveBtn">存檔</button>
       <button class="btn" id="loadBtn">讀檔</button>
@@ -589,64 +591,142 @@
   // === 聲音與BGM ===
 
   // === BGM 主題依關卡段落 ===
-  function bgmThemeForLevel(lv){
-    if(lv<=5) return 'whimsy';       // 輕快奇妙
-    if(lv<=10) return 'knight';      // 騎士戰鬥
-    if(lv<=15) return 'colossus';    // 巨人威壓
-    return 'demon';                  // 魔王決戰
-  }
+  
+function bgmThemeForLevel(lv){
+    // 依需求重新設計 8 段風格
+    // 1~4 草原野獸高速、5 獅子王決戰、6~9 攻入城堡、10 騎士對決、11~14 巨人山谷、15 決戰巨人、16~19 惡魔城、20 魔王最終
+    if(lv<=4) return 'beast';
+    if(lv===5) return 'lion';
+    if(lv<=9) return 'castle';
+    if(lv===10) return 'knight_duel';
+    if(lv<=14) return 'giant_valley';
+    if(lv===15) return 'giant_final';
+    if(lv<=19) return 'demon_castle';
+    return 'final_boss';
+}
+
   let currentBGMTheme = null;
-  function startBGMTheme(theme){
+  
+function startBGMTheme(theme){
     if(!audioCtx) ensureAudio();
     if(!audioCtx || !bgmOn) return;
     stopBGM();
     bgmStarted=true;
     currentBGMTheme = theme;
     const now=audioCtx.currentTime;
-    function tone(freq, type, start, dur, gain=0.045){
-      const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
-      o.type=type; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(bgmGain);
-      o.start(now+start); g.gain.setTargetAtTime(gain, now+start, 0.015);
+
+    // 讓整體更大聲一點（同時由 UI 滑桿控制總音量）
+    function tone(freq, type, start, dur, gain=0.075){
+      const o=audioCtx.createOscillator();
+      const g=audioCtx.createGain();
+      o.type=type; o.frequency.value=freq; g.gain.value=0;
+      o.connect(g); g.connect(bgmGain);
+      o.start(now+start);
+      g.gain.setTargetAtTime(gain, now+start, 0.015);
       g.gain.setTargetAtTime(0.0001, now+start+dur-0.03, 0.02);
-      o.stop(now+start+dur+0.1); bgmNodes.push(o,g);
+      o.stop(now+start+dur+0.1);
+      bgmNodes.push(o,g);
     }
+
+    // 依球速加快呼吸（最多 2 倍）
+    function speedFactor(){
+      let spAvg=0; for(const b of balls){ spAvg += Math.hypot(b.vx,b.vy); }
+      spAvg = balls.length? spAvg/balls.length : 8;
+      const f = 1 + Math.min(1, Math.max(0,(spAvg-8)/8)); // 8~16 線性 1~2 倍
+      return f;
+    }
+
+    let step=0; // 用於 8 小節變奏
     function scheduleLoop(){
       if(!bgmOn || !bgmStarted) return;
-      const base=audioCtx.currentTime;
+      const f = speedFactor();
+
+      // 每種主題準備至少 4 種變奏，依 step(每 8 小節) 輪換
+      const varIdx = (Math.floor(step/8)) % 4;
+
+      // 針對不同主題設定
       bgmNodes=[];
-      if(theme==='whimsy'){
-        const tempo=96/60;
-        const chords=[[261.63,329.63,392.00],[293.66,349.23,440.00],[329.63,392.00,493.88],[293.66,392.00,523.25]];
-        for(let i=0;i<4;i++){ for(const f of chords[i]) tone(f,'triangle', i*2/tempo, 1.8/tempo, 0.035); }
-        const mel=[659.25,698.46,783.99,880.00,783.99,698.46,659.25,587.33];
-        mel.forEach((f,idx)=> tone(f,'sine', idx*0.4/tempo, 0.28/tempo, 0.045));
-        setTimeout(scheduleLoop, 3200);
-      }else if(theme==='knight'){
-        const tempo=128/60;
-        const riff=[196.00,246.94,293.66,246.94,196.00,220.00,246.94,220.00];
-        riff.forEach((f,idx)=> tone(f,'sawtooth', idx*0.25/tempo, 0.22/tempo, 0.055));
-        const stab=[392.00,392.00,349.23,440.00];
-        stab.forEach((f,idx)=> tone(f,'square', 1.2 + idx*0.5/tempo, 0.3/tempo, 0.065));
-        setTimeout(scheduleLoop, 3000);
-      }else if(theme==='colossus'){
-        const tempo=72/60;
-        const bass=[98.00,87.31,82.41,73.42];
-        bass.forEach((f,idx)=> tone(f,'sine', idx*1.5/tempo, 1.2/tempo, 0.06));
-        const hit=[196.00,174.61,196.00];
-        hit.forEach((f,idx)=> tone(f,'square', 0.9 + idx*0.7/tempo, 0.2/tempo, 0.05));
-        setTimeout(scheduleLoop, 4200);
-      }else{ // demon
-        const tempo=140/60;
+      if(theme==='beast'){ // 草原野獸：高速感
+        const tempo = (150/60) * f;
+        const kits = [
+          {bass:[110,123.47,146.83,164.81], lead:[329.63,349.23,392.00,440.00]},
+          {bass:[146.83,164.81,146.83,123.47], lead:[392.00,440.00,392.00,349.23]},
+          {bass:[98,110,123.47,110], lead:[293.66,329.63,349.23,392.00]},
+          {bass:[130.81,146.83,164.81,146.83], lead:[392.00,440.00,493.88,440.00]},
+        ];
+        const k = kits[varIdx];
+        k.bass.forEach((f0,i)=> tone(f0,'sawtooth', i*0.5/tempo, 0.45/tempo, 0.08));
+        k.lead.forEach((f0,i)=> tone(f0,'square', 1 + i*0.25/tempo, 0.20/tempo, 0.07));
+        setTimeout(scheduleLoop, Math.round(4000/f));
+      }else if(theme==='lion'){ // 獅子王決戰：驚險萬分
+        const tempo = (132/60) * f;
+        const stabs = [
+          [220.00,246.94,293.66,261.63],
+          [246.94,293.66,329.63,293.66],
+          [261.63,246.94,220.00,196.00],
+          [293.66,329.63,369.99,329.63],
+        ][varIdx];
+        stabs.forEach((f0,i)=> tone(f0,'square', i*0.5/tempo, 0.35/tempo, 0.085));
+        for(let i=0;i<8;i++) tone(98,'sine', i*0.25/tempo, 0.24/tempo, 0.06);
+        setTimeout(scheduleLoop, Math.round(3200/f));
+      }else if(theme==='castle'){ // 攻入城堡：步步為營
+        const tempo = (104/60) * f;
+        const arp = [
+          [261.63,329.63,392.00,523.25],
+          [293.66,369.99,440.00,587.33],
+          [246.94,329.63,392.00,493.88],
+          [329.63,392.00,493.88,659.25],
+        ][varIdx];
+        arp.forEach((f0,i)=> tone(f0,'triangle', i*0.5/tempo, 0.46/tempo, 0.07));
+        setTimeout(scheduleLoop, Math.round(3600/f));
+      }else if(theme==='knight_duel'){ // 騎士對決：優雅
+        const tempo = (126/60) * f;
+        const riff = [
+          [196.00,246.94,293.66,246.94],
+          [220.00,261.63,329.63,261.63],
+          [246.94,293.66,369.99,293.66],
+          [261.63,329.63,392.00,329.63],
+        ][varIdx];
+        riff.forEach((f0,i)=> tone(f0,'sawtooth', i*0.5/tempo, 0.40/tempo, 0.075));
+        setTimeout(scheduleLoop, Math.round(3400/f));
+      }else if(theme==='giant_valley'){ // 巨人山谷：熱血
+        const tempo = (114/60) * f;
+        const drums = [98,82.41,73.42,87.31][varIdx];
+        for(let i=0;i<8;i++) tone(drums,'sine', i*0.25/tempo, 0.22/tempo, 0.085);
+        const shout=[392,440,392,349.23][varIdx];
+        tone(shout,'square', 1.0, 0.3/tempo, 0.09);
+        setTimeout(scheduleLoop, Math.round(3600/f));
+      }else if(theme==='giant_final'){ // 決戰巨人：壯烈
+        const tempo = (92/60) * f;
+        const bass=[65.41,73.42,82.41,98.00][varIdx];
+        for(let i=0;i<8;i++) tone(bass,'sine', i*0.5/tempo, 0.40/tempo, 0.1);
+        const hits=[196,174.61,196,220][varIdx];
+        tone(hits,'square', 1.2, 0.28/tempo, 0.09);
+        setTimeout(scheduleLoop, Math.round(4200/f));
+      }else if(theme==='demon_castle'){ // 惡魔城：群魔亂舞
+        const tempo = (140/60) * f;
+        const osts = [
+          [293.66,277.18,261.63,246.94],
+          [246.94,261.63,277.18,293.66],
+          [233.08,246.94,261.63,277.18],
+          [261.63,246.94,233.08,246.94],
+        ][varIdx];
+        osts.forEach((f0,i)=> tone(f0,'sawtooth', i*0.25/tempo, 0.22/tempo, 0.08));
+        setTimeout(scheduleLoop, Math.round(3000/f));
+      }else{ // final_boss：光與暗的最後廝殺
+        const tempo = (148/60) * f;
         const ost=[293.66,277.18,261.63,246.94,233.08,246.94,261.63,277.18];
-        ost.forEach((f,idx)=> tone(f,'sawtooth', idx*0.22/tempo, 0.2/tempo, 0.04));
+        ost.forEach((f0,i)=> tone(f0,'sawtooth', i*0.22/tempo, 0.20/tempo, 0.09));
         const stab=[587.33,554.37,523.25,493.88];
-        stab.forEach((f,idx)=> tone(f,'square', 1.3 + idx*0.4/tempo, 0.22/tempo, 0.05));
-        setTimeout(scheduleLoop, 2800);
+        stab.forEach((f0,i)=> tone(f0,'square', 1.3 + i*0.4/tempo, 0.22/tempo, 0.095));
+        setTimeout(scheduleLoop, Math.round(2800/f));
       }
+      step++;
     }
     scheduleLoop();
   }
   function applyBGMThemeForLevel(){
+
     const theme = bgmThemeForLevel(level);
     if(theme!==currentBGMTheme){ startBGMTheme(theme); }
   }
@@ -746,6 +826,7 @@
   }
 
   function initBricks(){
+    applyBGMThemeForLevel();
     const L=layout();
     const totalPad=(L.cols+1)*L.pad; brickW=Math.floor((1100-totalPad)/L.cols); brickH=L.h; bricks=[]; revealRects=[];
     // 依關卡設計關卡布局
@@ -920,6 +1001,10 @@ function generateLevel(lv, L){
   // === 掉落道具 ===
   const powerups=[]; const ALL_TYPES=Object.keys(GAME_CONFIG.powers); const NORMAL_TYPES=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='rare'); const RARE_TYPES=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type==='rare');
 
+  // 10 秒未取得任何增益 → 天空隨機掉 1 個增益
+  let lastGainPickupAt = performance.now();
+  let nextForcedDropAt = lastGainPickupAt + 10000;
+
   // === 天空隨機增益掉落（第1關每25秒 → 第20關每6秒 線性遞減） ===
   let nextSkyDropAt = 0;
   function skyDropIntervalMs(lv){
@@ -959,11 +1044,43 @@ function generateLevel(lv, L){
     return Math.min(max, base + inc);
   }
 
-  function spawnPower(x,y){ const rareChance=(GAME_CONFIG.powers.PHOENIX?.rareFactor)||0.1; const pickRare=RARE_TYPES.length && Math.random()<rareChance; const pool=pickRare?RARE_TYPES:NORMAL_TYPES; const type=pool[Math.floor(Math.random()*pool.length)]; const def=GAME_CONFIG.powers[type];
-    powerups.push({x,y,w:GAME_CONFIG.powerCapsule.width,h:GAME_CONFIG.powerCapsule.height,vy:GAME_CONFIG.powerCapsule.fallVy,type,isDebuff:(def.type==='debuff'),phase:Math.random()*Math.PI*2}); }
+  
+function spawnPower(x,y){
+  const defs = GAME_CONFIG.powers;
+  const normals = Object.keys(defs).filter(k=>defs[k].type==='buff');
+  const specials = Object.keys(defs).filter(k=>defs[k].type==='special' || defs[k].type==='rare');
+  const debuffs  = Object.keys(defs).filter(k=>defs[k].type==='debuff');
+
+  // 構建權重：一般增益 = 1，特殊增益 = 0.1，減益 = 0.6（維持些許威脅）
+  const weighted = [];
+  for(const k of normals)  for(let i=0;i<10;i++) weighted.push({k, kind:'normal'});     // 1.0
+  for(const k of specials) for(let i=0;i<1;i++)  weighted.push({k, kind:'special'});    // 0.1
+  for(const k of debuffs)  for(let i=0;i<6;i++)  weighted.push({k, kind:'debuff'});     // 0.6
+
+  const pick = weighted[Math.floor(Math.random()*weighted.length)];
+  const type = pick.k;
+  const def  = defs[type];
+
+  // 速度：特殊稍慢、減益稍快、一般不變
+  let vy = GAME_CONFIG.powerCapsule.fallVy;
+  if(def.type==='debuff') vy *= 1.18;
+  else if(def.type==='special' || def.type==='rare') vy *= 0.88;
+
+  powerups.push({
+    x, y,
+    w:GAME_CONFIG.powerCapsule.width,
+    h:GAME_CONFIG.powerCapsule.height,
+    vy,
+    type,
+    isDebuff:(def.type==='debuff'),
+    isSpecial:(def.type==='special' || def.type==='rare'),
+    phase:Math.random()*Math.PI*2
+  });
+}
+); }
 
   function applyPower(type){
-    const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type) stats.buffs++; }
+    const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type){ stats.buffs++; lastGainPickupAt = performance.now(); nextForcedDropAt = lastGainPickupAt + 10000; } }
 const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
     // 罕見瞬發
     if(def.instant && def.type==='rare'){
@@ -1025,9 +1142,43 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     updateBuffBadges();
   }
 
-  function drawPower(p){ const base=p.isDebuff?getVar('--debuff'):getVar('--power'); const gold1='#f6d365', gold2='#fda085'; const color = p.isSpecial ? gold1 : base; const x=p.x*scaleX, y=p.y*scaleY, w=p.w*scaleX, h=p.h*scaleY; const wobble=Math.sin(p.phase)*1.5; p.phase+=0.04;
-    ctx.save(); ctx.translate(0,wobble); const grd=ctx.createLinearGradient(x,y,x,y+h); grd.addColorStop(0,color); grd.addColorStop(1,p.isSpecial?gold2:(p.isDebuff?'#a33':'#3a56a8')); ctx.fillStyle=grd; roundedRect(x,y,w,h,8); ctx.fill(); ctx.strokeStyle=p.isSpecial?'rgba(255,220,150,.8)':'rgba(255,255,255,.25)'; ctx.stroke();
-    ctx.fillStyle=p.isSpecial?'#402a00':'#fff'; ctx.font=`${Math.max(10,Math.round(12*scaleY))}px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.type[0], x+w/2, y+h/2+0.5); ctx.restore(); }
+  
+function drawPower(p){
+  const x=p.x*scaleX, y=p.y*scaleY, w=p.w*scaleX, h=p.h*scaleY;
+  const wobble=Math.sin(p.phase)*1.5; p.phase+=0.04;
+  ctx.save(); ctx.translate(0,wobble);
+  let top,bottom,textColor='#fff';
+
+  if(p.isDebuff){ // 減益：紅底白字、掉落更快
+    top='#ff4d6d'; bottom='#a33';
+  }else if(p.isSpecial){ // 特殊增益：金底黑字，閃亮
+    top='#f6d365'; bottom='#fda085'; textColor='#111';
+  }else{ // 一般增益：藍底白字
+    top='#6aa2ff'; bottom='#3a56a8';
+  }
+
+  const grd=ctx.createLinearGradient(x,y,x,y+h);
+  grd.addColorStop(0,top); grd.addColorStop(1,bottom);
+  ctx.fillStyle=grd; roundedRect(x,y,w,h,8); ctx.fill();
+  ctx.strokeStyle=p.isSpecial?'rgba(255,220,150,.85)':'rgba(255,255,255,.25)'; ctx.stroke();
+
+  // 閃亮邊光（特殊）
+  if(p.isSpecial){
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.shadowColor='rgba(255,230,160,1)'; ctx.shadowBlur=18;
+    ctx.strokeStyle='rgba(255,230,160,0.8)';
+    roundedRect(x-1,y-1,w+2,h+2,9); ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.fillStyle=textColor;
+  ctx.font=`${Math.max(10,Math.round(12*scaleY))}px ui-monospace, monospace`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(p.type[0], x+w/2, y+h/2+0.5);
+  ctx.restore();
+}
+px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.type[0], x+w/2, y+h/2+0.5); ctx.restore(); }
 
   function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textContent=level + '/'+ GAME_CONFIG.totalLevels; livesEl.textContent=lives; }
   function showCenter(t, txt){
@@ -1243,10 +1394,11 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     const c=ledColor();
     let spAvg=0; for(const b of balls){ spAvg += Math.hypot(b.vx,b.vy); } spAvg = balls.length? spAvg/balls.length : 8;
     const nowT = performance.now();
-    const breathClassic = (Math.sin(nowT / (180 - Math.min(120, spAvg*6)))+1)/2; // 原：依球速
-    const breath5 = (Math.sin(nowT / (5000 / (2*Math.PI)))+1)/2;  // 5s
-    const breath3 = (Math.sin(nowT / (3000 / (2*Math.PI)))+1)/2;  // 3s
-    const breath8 = (Math.sin(nowT / (8000 / (2*Math.PI)))+1)/2;  // 8s
+    const fSp = (function(){ let spAvg=0; for(const b of balls){ spAvg += Math.hypot(b.vx,b.vy); } spAvg = balls.length? spAvg/balls.length : 8; return 1 + Math.min(1, Math.max(0,(spAvg-8)/8)); })();
+    const breathClassic = (Math.sin(nowT / ((180 - Math.min(120, spAvg*6)) / fSp))+1)/2; // 原：依球速
+    const breath5 = (Math.sin(nowT / ((5000/fSp) / (2*Math.PI)))+1)/2;  // 5s
+    const breath3 = (Math.sin(nowT / ((3000/fSp) / (2*Math.PI)))+1)/2;  // 3s
+    const breath8 = (Math.sin(nowT / ((8000/fSp) / (2*Math.PI)))+1)/2;  // 8s
 
     function pathThreeSides(){
       ctx.beginPath();
@@ -1291,6 +1443,37 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
         break;
       }
       case 'vivid': {
+        ctx.globalAlpha = 0.5 + 0.5*breath3;
+        const grad = ctx.createLinearGradient(0,0,w,0);
+        grad.addColorStop(0, 'rgba(255,255,255,0.85)');
+        grad.addColorStop(1, c);
+        ctx.strokeStyle=grad; ctx.lineWidth=4.5;
+        for(const off of [-4,0,4]){ ctx.save(); ctx.translate(0,off); pathThreeSides(); ctx.stroke(); ctx.restore(); }
+        break;
+      }
+      case 'reaper': {
+        // 銀灰鎖鏈 + 血紅初始色 + 鐮刀
+        const cc = '#c0c3cc';
+        ctx.globalAlpha = 0.6 + 0.3*breath5;
+        ctx.strokeStyle=cc; ctx.lineWidth=3.5; ctx.setLineDash([8,6]); ctx.lineDashOffset = -(nowT/25);
+        pathThreeSides(); ctx.stroke(); ctx.setLineDash([]);
+        // 鐮刀刀刃（轉折處）
+        ctx.fillStyle = 'rgba(220,220,230,0.9)';
+        const blades = !orientLeft ? [[6,6],[w-6,6],[6,h-6]] : [[6,6],[w-6,6],[w-6,h-6]];
+        for(const [bx,by] of blades){ ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+16,by-8); ctx.lineTo(bx+8,by+12); ctx.closePath(); ctx.fill(); }
+        break;
+      }
+      case 'flame': {
+        // 火焰簇
+        ctx.globalAlpha = 0.5 + 0.3*breath5;
+        const drawFlame = (px,py)=>{ ctx.save(); ctx.translate(px,py); ctx.rotate((Math.sin(nowT/700+px*0.01)+1)/10); const g=ctx.createRadialGradient(0,0,0,0,0,14); g.addColorStop(0,'rgba(255,230,120,0.95)'); g.addColorStop(1,'rgba(255,120,60,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,14,0,Math.PI*2); ctx.fill(); ctx.restore(); };
+        for(let i=0;i<w;i+=48){ drawFlame(i+8, 8+6*Math.sin(i+nowT/500)); }
+        for(let i=0;i<h;i+=50){ drawFlame(8, i+8); drawFlame(w-8, i+8); }
+        // 外框淡光
+        ctx.strokeStyle=c; ctx.lineWidth=2.2; pathThreeSides(); ctx.stroke();
+        break;
+      }
+      
         ctx.globalAlpha = 0.5 + 0.5*breath3;
         const grad = ctx.createLinearGradient(0,0,w,0);
         grad.addColorStop(0, 'rgba(255,255,255,0.85)');
@@ -1351,6 +1534,22 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     ctx.restore(); if(now>=t.tEnd) phoenixAnim=null; }
 
   function draw(){
+
+// 10s 未取得增益時的保底掉落
+if(performance.now() >= nextForcedDropAt){
+  // 只投放「非減益」
+  const goodTypes = ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='debuff');
+  const type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
+  const x = 40 + Math.random()*(1100-80);
+  const y = layout().top - 20;
+  const def = GAME_CONFIG.powers[type];
+  let vy = GAME_CONFIG.powerCapsule.fallVy;
+  if(def.type==='special' || def.type==='rare') vy *= 0.88;
+  powerups.push({x,y,w:GAME_CONFIG.powerCapsule.width,h:GAME_CONFIG.powerCapsule.height,vy,type,isDebuff:false,isSpecial:(def.type==='special'||def.type==='rare'),phase:Math.random()*Math.PI*2});
+  // 下一個保底在 10 秒後（若期間有撿到增益會再被重設）
+  nextForcedDropAt = performance.now() + 10000;
+}
+
     if(screenShake>0){ const s=screenShake*0.6; ctx.save(); ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); screenShake*=0.9; }
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawBGDecor();
