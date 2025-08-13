@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Rock打磚塊 Breakout（最終增強版）</title>
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>Rock打磚塊 Breakout（最終增強版）</title>
+<style>
     :root {
       --bg:#0b1022; --bg2:#0a0f1e; --fg:#e9ecf1; --accent:#66b2ff;
       --brick1:#ff6b6b; --brick2:#ffd166; --brick3:#06d6a0; --brick4:#4cc9f0;
@@ -36,7 +37,7 @@
       border:1px solid #1a2348; border-radius:16px; max-width:min(1120px, 98vw); width: min(1120px, 98vw); height: auto; display:block;
       box-shadow: 0 30px 80px rgba(0,0,0,.35), inset 0 0 120px rgba(255,255,255,.02); touch-action:none;}
     .overlay{position:relative}
-    .center-note{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:3}
+    .center-note{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:auto; z-index:9999}
     .note-box{background:linear-gradient(180deg, rgba(8,12,28,.9), rgba(8,12,28,.85));
       border:1px solid var(--glass-stroke); padding:16px 18px; border-radius:14px; text-align:center; max-width:min(90vw,860px);
       box-shadow: 0 12px 60px rgba(0,0,0,.5); font-size:14px}
@@ -70,7 +71,7 @@
     .gameover .center{position:relative; z-index:2; text-align:center; background:linear-gradient(180deg, rgba(10,14,30,.85), rgba(10,14,30,.75)); padding:18px 22px; border:1px solid var(--glass-stroke); border-radius:16px; box-shadow:0 20px 90px rgba(0,0,0,.5)}
     
     .win .backdrop{position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.88));}
-    .thumb-ring{position:absolute; inset:16px; pointer-events:none; display:grid; grid-template-columns:repeat(10,1fr); gap:6px; opacity:.95}
+    .thumb-ring{position:absolute; inset:16px; pointer-events:auto; display:grid; grid-template-columns:repeat(10,1fr); gap:6px; opacity:.95}
     .thumb-ring img{width:100%; height:100%; object-fit:cover; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,.5);}
     .win .center{position:relative; z-index:2; text-align:center; background:linear-gradient(180deg, rgba(10,14,30,.85), rgba(10,14,30,.75)); padding:18px 22px; border:1px solid var(--glass-stroke); border-radius:16px; box-shadow:0 20px 90px rgba(0,0,0,.5)}
     .win h2{margin:4px 0 6px; font-size:28px; letter-spacing:2px}
@@ -115,169 +116,96 @@
     /* 鎖定框（統一 1s） */
     .lockbox { /* canvas-rendered; this is for reference */ }
 
-/* === Skin 面板：LED+背版一起變化（不影響既有遊戲邏輯） === */
-.overlay{position:relative}
-.overlay::before{
-  content:""; position:absolute; inset:-14px; border-radius:22px;
-  z-index:-1; pointer-events:none; 
-  background: var(--skin-bg, radial-gradient(800px 400px at 50% -10%, #152040, #0a0f1e 60%));
-  box-shadow: 0 30px 120px rgba(0,0,0,.45), inset 0 0 160px rgba(255,255,255,.04);
-  transition: background 600ms ease, filter 600ms ease, box-shadow 600ms ease;
-  filter: saturate(1.1);
-}
-/* 預設（經典）維持原樣 */
-body[data-skin="classic"] .overlay::before{
-  background: radial-gradient(1000px 600px at 50% -10%, #152040, #0a0f1e 60%);
-}
-/* 科技感：螢光綠雙層光路與格紋 */
-body[data-skin="tech"] .overlay::before{
-  --g: rgba(90,255,170,.12);
-  background:
-    radial-gradient(900px 480px at 50% -10%, rgba(120,255,200,.12), transparent 60%),
-    linear-gradient(135deg, rgba(0,0,0,.25), rgba(0,0,0,.4)),
-    repeating-linear-gradient(90deg, rgba(120,255,200,.08) 0 2px, transparent 2px 6px),
-    radial-gradient(1200px 700px at 50% -10%, #0d1c1a, #08161a 60%);
-  box-shadow: 0 40px 140px rgba(0,0,0,.5), inset 0 0 200px rgba(120,255,200,.08);
-}
-/* 電弧：藍電弧暈與掃描線 */
-body[data-skin="arc"] .overlay::before{
-  background:
-    radial-gradient(900px 520px at 50% -10%, rgba(120,180,255,.22), transparent 65%),
-    repeating-linear-gradient(180deg, rgba(255,255,255,.03) 0 2px, transparent 2px 6px),
-    radial-gradient(1200px 700px at 50% -10%, #0a1024, #070d1a 60%);
-  box-shadow: 0 40px 140px rgba(0,0,0,.55), 0 0 80px rgba(90,160,255,.15) inset;
-}
-/* 鋼鐵：金屬拉絲質感 */
-body[data-skin="steel"] .overlay::before{
-  background:
-    linear-gradient(110deg, rgba(255,255,255,.05), rgba(255,255,255,0) 35%),
-    repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, transparent 1px 3px),
-    radial-gradient(1100px 650px at 50% -10%, #0a0f18, #0a0e16 60%);
-  box-shadow: inset 0 0 160px rgba(255,255,255,.06), 0 40px 140px rgba(0,0,0,.55);
-  filter: saturate(1.05) contrast(1.02);
-}
-/* 絢麗：三色漸層滑動 */
-body[data-skin="vivid"] .overlay::before{
-  background:
-    linear-gradient(120deg, rgba(255,120,180,.18), rgba(120,200,255,.16), rgba(120,255,190,.16)),
-    radial-gradient(1100px 650px at 50% -10%, #0a0f1e, #0a0f18 60%);
-  animation: skinSlide 6s linear infinite;
-}
-@keyframes skinSlide { to { background-position: 120% 0, 0 0; } }
-/* 死神：鎖鏈壓紋與血紅暈 */
-body[data-skin="reaper"] .overlay::before{
-  background:
-    radial-gradient(900px 520px at 50% -10%, rgba(220,30,60,.20), transparent 65%),
-    repeating-linear-gradient(135deg, rgba(180,180,190,.08) 0 10px, transparent 10px 20px),
-    radial-gradient(1200px 700px at 50% -10%, #0a0b0f, #0a0a0e 60%);
-  box-shadow: inset 0 0 160px rgba(255,0,80,.08), 0 40px 140px rgba(0,0,0,.55);
-}
-/* 烈焰：熱浪與煙燻 */
-body[data-skin="flame"] .overlay::before{
-  background:
-    radial-gradient(900px 520px at 50% -10%, rgba(255,130,60,.22), transparent 60%),
-    radial-gradient(1200px 700px at 50% -10%, #140d0a, #0d0a09 60%);
-  filter: saturate(1.15) contrast(1.05);
-  box-shadow: inset 0 0 200px rgba(255,120,60,.08), 0 40px 140px rgba(0,0,0,.55);
-}
-/* 依增益/減益主色調整面板光暈色（與既有 ledColor 同步）*/
-:root{ --skin-accent: var(--accent); }
-
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Rock打磚塊 Breakout（最終增強版）</h1>
-    <div class="hud">
-      <div class="pill">分數 <span id="score">0</span></div>
-      <div class="pill">關卡 <span id="level">1</span>/20</div>
-      <div class="pill life">生命 <span id="lives">3</span></div>
-      <label>難度
+<div class="wrap">
+<h1>Rock打磚塊 Breakout（最終增強版）</h1>
+<div class="hud">
+<div class="pill">分數 <span id="score">0</span></div>
+<div class="pill">關卡 <span id="level">1</span>/20</div>
+<div class="pill life">生命 <span id="lives">3</span></div>
+<label>難度
         <select id="difficulty">
-          <option value="easy">Easy</option>
-          <option value="normal" selected>Normal</option>
-          <option value="hard">Hard</option>
-        </select>
-      </label>
-      <button class="btn" id="pauseBtn">開始 / 暫停 (<kbd>Space</kbd>)</button>
-      <label>燈條
+<option value="easy">Easy</option>
+<option selected="" value="normal">Normal</option>
+<option value="hard">Hard</option>
+</select>
+</label>
+<button class="btn" id="pauseBtn">開始 / 暫停 (<kbd>Space</kbd>)</button>
+<label>燈條
         <select id="ledStyle">
-          <option value="classic" selected>經典風格</option>
-          <option value="tech">科技感</option>
-          <option value="arc">電弧</option>
-          <option value="steel">鋼鐵</option>
-          <option value="vivid">絢麗</option>
-        </select>
-      </label>
-      <button class="btn" id="resetBtn">重開 (<kbd>R</kbd>)</button>
-      <button class="btn" id="fsBtn">全螢幕 (<kbd>F</kbd>)</button>
-      <button class="btn info" id="tutorBtn">教學</button>
-      <button class="btn info" id="effectsBtn">效果說明</button>
-      <button class="btn" id="soundBtn">音效：關</button>
-      <span class="range">BGM
+<option selected="" value="classic">經典風格</option>
+<option value="tech">科技感</option>
+<option value="arc">電弧</option>
+<option value="steel">鋼鐵</option>
+<option value="vivid">絢麗</option>
+<option value="reaper">死神</option>
+<option value="flame">烈焰</option>
+</select>
+</label>
+<button class="btn" id="resetBtn">重開 (<kbd>R</kbd>)</button>
+<button class="btn" id="fsBtn">全螢幕 (<kbd>F</kbd>)</button>
+<button class="btn info" id="tutorBtn">教學</button>
+<button class="btn info" id="effectsBtn">效果說明</button>
+<button class="btn" id="soundBtn">音效：關</button>
+<span class="range">BGM
         <button class="btn" id="bgmBtn">關</button>
-        <input id="bgmVol" type="range" min="0" max="1" step="0.01" value="0.7" style="width:120px">
-      </span>
-      <button class="btn" id="saveBtn">存檔</button>
-      <button class="btn" id="loadBtn">讀檔</button>
-      <button class="btn" id="clearSaveBtn">清除存檔</button>
-    </div>
-
-    <div class="legend">
-      <span class="item"><span class="box" style="background:var(--expl)"></span>爆炸磚</span>
-      <span class="item"><span class="box" style="background:var(--brick2)"></span>一般磚</span>
-      <span class="item"><span class="box" style="background:#888"></span>不可破壞磚</span>
-      <span class="item"><span class="box" style="background:#bb7aff"></span>強反彈磚</span>
-      <span class="item"><span class="box" style="background:#6ec6ff"></span>移動磚</span>
-      <span class="item"><span class="box" style="background:#ff4d6d"></span>Boss磚</span>
-      <span class="item"><span class="box" style="background:var(--power)"></span>增益道具</span>
-      <span class="item"><span class="box" style="background:var(--debuff)"></span>減益道具</span>
-    </div>
-    <div class="badges" id="activeBuffs"></div>
-
-    <div class="overlay">
-      <div class="gallery" id="gallery">
-        <div class="backdrop"></div>
-        <img id="galleryImg" src="" alt="關卡大圖" />
-        <div class="hint">點一下進入下一關 ▶</div>
-      </div>
-
-      <div class="win" id="win">
-        <div class="backdrop"></div>
-        <div class="thumb-ring" id="ring"></div>
-        <div class="center">
-          <h2>恭喜過關！</h2>
-          <div style="font-size:28px;margin:6px 0;">總分數：<span id="finalScore">0</span></div>
-          <div id="statsWin" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:360px"></div>
-          <div class="small">作者： ChatGPT　／　指導者： Rock</div>
-          <div class="again"><button class="btn" id="againBtn">再玩一次</button></div>
-        </div>
-      </div>
-
-      <canvas id="game" width="1100" height="700"></canvas>
-      <div class="gameover" id="gameover">
-        <div class="backdrop"></div>
-        <div class="center">
-          <h2>遊戲結束</h2>
-          <div style="font-size:28px;margin:6px 0;">最終分數：<span id="finalScore2">0</span></div>
-          <div id="statsOver" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:320px"></div>
-          <div class="again"><button class="btn" id="retryBtn">再次遊戲</button></div>
-        </div>
-      </div>
-    
-     
-      <div class="center-note" id="centerNote">
-        <div class="note-box" id="noteBox"><button class="note-close" id="noteClose" aria-label="關閉">×</button>
-          <h2 id="noteTitle">按 <kbd>Space</kbd> 或點畫面開始</h2>
-          <p id="noteText">
-            操作：<kbd>←</kbd>/<kbd>→</kbd> 或 <kbd>A</kbd>/<kbd>D</kbd>；手指拖曳畫面也可移動平台。<br>
+<input id="bgmVol" max="1" min="0" step="0.01" style="width:120px" type="range" value="0.85"/>
+</span>
+<button class="btn" id="saveBtn">存檔</button>
+<button class="btn" id="loadBtn">讀檔</button>
+<button class="btn" id="clearSaveBtn">清除存檔</button>
+</div>
+<div class="legend">
+<span class="item"><span class="box" style="background:var(--expl)"></span>爆炸磚</span>
+<span class="item"><span class="box" style="background:var(--brick2)"></span>一般磚</span>
+<span class="item"><span class="box" style="background:#888"></span>不可破壞磚</span>
+<span class="item"><span class="box" style="background:#bb7aff"></span>強反彈磚</span>
+<span class="item"><span class="box" style="background:#6ec6ff"></span>移動磚</span>
+<span class="item"><span class="box" style="background:#ff4d6d"></span>Boss磚</span>
+<span class="item"><span class="box" style="background:var(--power)"></span>增益道具</span>
+<span class="item"><span class="box" style="background:var(--debuff)"></span>減益道具</span>
+</div>
+<div class="badges" id="activeBuffs"></div>
+<div class="overlay">
+<div class="gallery" id="gallery">
+<div class="backdrop"></div>
+<img alt="關卡大圖" id="galleryImg" src=""/>
+<div class="hint">點一下進入下一關 ▶</div>
+</div>
+<div class="win" id="win">
+<div class="backdrop"></div>
+<div class="thumb-ring" id="ring"></div>
+<div class="center">
+<h2>恭喜過關！</h2>
+<div style="font-size:28px;margin:6px 0;">總分數：<span id="finalScore">0</span></div>
+<div id="statsWin" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:360px"></div>
+<div class="small">作者： ChatGPT　／　指導者： Rock</div>
+<div class="again"><button class="btn" id="againBtn">再玩一次</button></div>
+</div>
+</div>
+<canvas height="700" id="game" width="1100"></canvas>
+<div class="gameover" id="gameover">
+<div class="backdrop"></div>
+<div class="center">
+<h2>遊戲結束</h2>
+<div style="font-size:28px;margin:6px 0;">最終分數：<span id="finalScore2">0</span></div>
+<div id="statsOver" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:320px"></div>
+<div class="again"><button class="btn" id="retryBtn">再次遊戲</button></div>
+</div>
+</div>
+<div class="center-note" id="centerNote">
+<div class="note-box" id="noteBox"><button aria-label="關閉" class="note-close" id="noteClose">×</button>
+<h2 id="noteTitle">按 <kbd>Space</kbd> 或點畫面開始</h2>
+<p id="noteText">
+            操作：<kbd>←</kbd>/<kbd>→</kbd> 或 <kbd>A</kbd>/<kbd>D</kbd>；手指拖曳畫面也可移動平台。<br/>
             已整合：背景逐步揭示 + 清關畫廊、增益/減益（含電漿球/凍結球/神聖球/鳳凰審判/9命怪貓）、爆炸磚、音效、難度、存讀檔、BGM、教學/效果說明、Boss與進階磚。
           </p>
-        </div>
-      </div>
-    </div>
-  </div>
-
+</div>
+</div>
+</div>
+</div>
 <script>
 (() => {
   // === 設定 ===
@@ -354,7 +282,7 @@ body[data-skin="flame"] .overlay::before{
   const ledStyleSel=document.getElementById('ledStyle');
   const gallery=document.getElementById('gallery'), galleryImg=document.getElementById('galleryImg');
   const win=document.getElementById('win'), ring=document.getElementById('ring'), finalScore=document.getElementById('finalScore'), againBtn=document.getElementById('againBtn');
-  document.getElementById('retryBtn')?.addEventListener('click', ()=>{ gameover.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });
+  (function(){var el=document.getElementById('retryBtn');if(el) el.addEventListener('click', ()=>{ const go=document.getElementById('gameover'); if(go) go.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });})();
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
   const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2');
   const retryBtn=document.getElementById('retryBtn');
@@ -366,7 +294,13 @@ body[data-skin="flame"] .overlay::before{
     hideCenter();
     if(running){ startCountdown(); } else { startGameWithCountdown(); }
   }
-  noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+  noteClose.addEventListener('click', (e)=>{ e.stopPropagation();
+  // 允許點擊整個教學/說明覆蓋層即可開始或繼續（避免行動裝置誤觸無法啟動）
+  centerNote.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+  noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
+  // 任何地方點擊（例如 HUD）也能觸發首次啟動，強化容錯
+  document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } });
+ closeNoteAndResume(); });
 
 
   // === DPR 縮放 ===
@@ -378,11 +312,6 @@ body[data-skin="flame"] .overlay::before{
   let gameOver=false;
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0};
   let ledStyle = (localStorage.getItem('led_style')||'classic');
-  function applySkin(name){
-    try{ document.body.setAttribute('data-skin', name||'classic'); }catch(e){}
-  }
-  applySkin(ledStyle);
-
   function renderStatsHtml(){
     const fd = (stats.fastestDeath===Infinity)? '-' : stats.fastestDeath.toFixed(2);
     const ld = (stats.longestLife===0)? '-' : stats.longestLife.toFixed(2);
@@ -492,7 +421,7 @@ body[data-skin="flame"] .overlay::before{
       ctx.restore();
       // hit check
       if(!b.hit && x2>=pr.x*scaleX && x2<= (pr.x+pr.w)*scaleX && y2>=pr.y*scaleY && y2<= (pr.y+pr.h)*scaleY){
-        b.hit=true; b.onHit?.(pr); spawnParticles(b.x,b.y,'#ffd',12,1.6,2.2,2.5);
+        b.hit=true; b.onHit&&b.onHit(pr); spawnParticles(b.x,b.y,'#ffd',12,1.6,2.2,2.5);
       }
       // out of bounds
       if(b.x<0||b.x>1100||b.y<0||b.y>700){ hostileBeams.splice(i,1); }
@@ -514,7 +443,7 @@ body[data-skin="flame"] .overlay::before{
       ctx.restore();
       // hit
       if(a.x>=pr.x && a.x<=pr.x+pr.w && a.y>=pr.y && a.y<=pr.y+pr.h){
-        a.onHit?.(); hostileArcs.splice(i,1);
+        a.onHit&&a.onHit(); hostileArcs.splice(i,1);
       }
       if(a.x<0||a.x>1100||a.y>700||a.y<0){ hostileArcs.splice(i,1); }
     }
@@ -644,12 +573,12 @@ body[data-skin="flame"] .overlay::before{
   }
 
   // === Buff/De-buff 顯示 ===
-  function badgeIcon(k){ return (GAME_CONFIG.powers[k]?.badge)||'●'; }
+  function badgeIcon(k){ return ((GAME_CONFIG.powers[k] && GAME_CONFIG.powers[k].badge))||'●'; }
   function updateBuffBadges(){ activeBuffsEl.innerHTML=''; const now=performance.now();
     // LONG 堆疊
     const longAct=buffs.LONG.stacks.filter(t=>t>now); if(longAct.length){ const s=document.createElement('span'); s.className='badge'; s.textContent=`${badgeIcon('LONG')} LONG×${longAct.length} ${Math.max(0,Math.max(...longAct)-now|0)}ms`; activeBuffsEl.appendChild(s); }
     // 其它
-    for(const key of Object.keys(GAME_CONFIG.powers)){ if(key==='LONG') continue; const b=buffs[key]; if(!b?.active) continue; const left=b.until&&b.until>now?((b.until-now)/1000).toFixed(1)+'s':''; const s=document.createElement('span'); s.className='badge'; s.textContent=`${badgeIcon(key)} ${key}${left?' '+left:''}`; activeBuffsEl.appendChild(s); }
+    for(const key of Object.keys(GAME_CONFIG.powers)){ if(key==='LONG') continue; const b=buffs[key]; if(! (b && b.active)) continue; const left=b.until&&b.until>now?((b.until-now)/1000).toFixed(1)+'s':''; const s=document.createElement('span'); s.className='badge'; s.textContent=`${badgeIcon(key)} ${key}${left?' '+left:''}`; activeBuffsEl.appendChild(s); }
   }
 
   // === Buff 狀態 ===
@@ -657,81 +586,186 @@ body[data-skin="flame"] .overlay::before{
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
-  let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0}}; }
+  let balls=[];
+  // Helper to construct a new ball. Fix incorrect object literal syntax that prevented the game from loading.
+  // We want to return an object describing the ball with sensible defaults.  If an explicit x-coordinate
+  // is provided we use that, otherwise we default to the horizontal centre of the playfield (1100/2).
+  function makeBall(stuck = false, x = null) {
+    return {
+      x: x != null ? x : (1100 / 2),
+      y: 700 / 2,
+      r: 10,
+      vx: 5,
+      vy: -5,
+      speedCap: GAME_CONFIG.caps.ballSpeedMax,
+      piercing: false,
+      stuck: stuck,
+      offsetX: 0,
+      rampageUntil: 0,
+      trail: [],
+      freeze: {
+        state: 'idle',
+        t0: 0,
+        until: 0,
+        oldVX: 0,
+        oldVY: 0,
+        delay: 0,
+        stop: 0
+      }
+    };
+  }
 
   // === 聲音與BGM ===
 
   // === BGM 主題依關卡段落 ===
-  function bgmThemeForLevel(lv){
-    if(lv<=5) return 'whimsy';       // 輕快奇妙
-    if(lv<=10) return 'knight';      // 騎士戰鬥
-    if(lv<=15) return 'colossus';    // 巨人威壓
-    return 'demon';                  // 魔王決戰
-  }
+  
+function bgmThemeForLevel(lv){
+    // 依需求重新設計 8 段風格
+    // 1~4 草原野獸高速、5 獅子王決戰、6~9 攻入城堡、10 騎士對決、11~14 巨人山谷、15 決戰巨人、16~19 惡魔城、20 魔王最終
+    if(lv<=4) return 'beast';
+    if(lv===5) return 'lion';
+    if(lv<=9) return 'castle';
+    if(lv===10) return 'knight_duel';
+    if(lv<=14) return 'giant_valley';
+    if(lv===15) return 'giant_final';
+    if(lv<=19) return 'demon_castle';
+    return 'final_boss';
+}
+
   let currentBGMTheme = null;
-  function startBGMTheme(theme){
+  
+function startBGMTheme(theme){
     if(!audioCtx) ensureAudio();
     if(!audioCtx || !bgmOn) return;
     stopBGM();
     bgmStarted=true;
     currentBGMTheme = theme;
     const now=audioCtx.currentTime;
-    function tone(freq, type, start, dur, gain=0.045){
-      const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
-      o.type=type; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(bgmGain);
-      o.start(now+start); g.gain.setTargetAtTime(gain, now+start, 0.015);
+
+    // 讓整體更大聲一點（同時由 UI 滑桿控制總音量）
+    function tone(freq, type, start, dur, gain=0.075){
+      const o=audioCtx.createOscillator();
+      const g=audioCtx.createGain();
+      o.type=type; o.frequency.value=freq; g.gain.value=0;
+      o.connect(g); g.connect(bgmGain);
+      o.start(now+start);
+      g.gain.setTargetAtTime(gain, now+start, 0.015);
       g.gain.setTargetAtTime(0.0001, now+start+dur-0.03, 0.02);
-      o.stop(now+start+dur+0.1); bgmNodes.push(o,g);
+      o.stop(now+start+dur+0.1);
+      bgmNodes.push(o,g);
     }
+
+    // 依球速加快呼吸（最多 2 倍）
+    function speedFactor(){
+      let spAvg=0; for(const b of balls){ spAvg += Math.hypot(b.vx,b.vy); }
+      spAvg = balls.length? spAvg/balls.length : 8;
+      const f = 1 + Math.min(1, Math.max(0,(spAvg-8)/8)); // 8~16 線性 1~2 倍
+      return f;
+    }
+
+    let step=0; // 用於 8 小節變奏
     function scheduleLoop(){
       if(!bgmOn || !bgmStarted) return;
-      const base=audioCtx.currentTime;
+      const f = speedFactor();
+
+      // 每種主題準備至少 4 種變奏，依 step(每 8 小節) 輪換
+      const varIdx = (Math.floor(step/8)) % 4;
+
+      // 針對不同主題設定
       bgmNodes=[];
-      if(theme==='whimsy'){
-        const tempo=96/60;
-        const chords=[[261.63,329.63,392.00],[293.66,349.23,440.00],[329.63,392.00,493.88],[293.66,392.00,523.25]];
-        for(let i=0;i<4;i++){ for(const f of chords[i]) tone(f,'triangle', i*2/tempo, 1.8/tempo, 0.035); }
-        const mel=[659.25,698.46,783.99,880.00,783.99,698.46,659.25,587.33];
-        mel.forEach((f,idx)=> tone(f,'sine', idx*0.4/tempo, 0.28/tempo, 0.045));
-        setTimeout(scheduleLoop, 3200);
-      }else if(theme==='knight'){
-        const tempo=128/60;
-        const riff=[196.00,246.94,293.66,246.94,196.00,220.00,246.94,220.00];
-        riff.forEach((f,idx)=> tone(f,'sawtooth', idx*0.25/tempo, 0.22/tempo, 0.055));
-        const stab=[392.00,392.00,349.23,440.00];
-        stab.forEach((f,idx)=> tone(f,'square', 1.2 + idx*0.5/tempo, 0.3/tempo, 0.065));
-        setTimeout(scheduleLoop, 3000);
-      }else if(theme==='colossus'){
-        const tempo=72/60;
-        const bass=[98.00,87.31,82.41,73.42];
-        bass.forEach((f,idx)=> tone(f,'sine', idx*1.5/tempo, 1.2/tempo, 0.06));
-        const hit=[196.00,174.61,196.00];
-        hit.forEach((f,idx)=> tone(f,'square', 0.9 + idx*0.7/tempo, 0.2/tempo, 0.05));
-        setTimeout(scheduleLoop, 4200);
-      }else{ // demon
-        const tempo=140/60;
+      if(theme==='beast'){ // 草原野獸：高速感
+        const tempo = (150/60) * f;
+        const kits = [
+          {bass:[110,123.47,146.83,164.81], lead:[329.63,349.23,392.00,440.00]},
+          {bass:[146.83,164.81,146.83,123.47], lead:[392.00,440.00,392.00,349.23]},
+          {bass:[98,110,123.47,110], lead:[293.66,329.63,349.23,392.00]},
+          {bass:[130.81,146.83,164.81,146.83], lead:[392.00,440.00,493.88,440.00]},
+        ];
+        const k = kits[varIdx];
+        k.bass.forEach((f0,i)=> tone(f0,'sawtooth', i*0.5/tempo, 0.45/tempo, 0.08));
+        k.lead.forEach((f0,i)=> tone(f0,'square', 1 + i*0.25/tempo, 0.20/tempo, 0.07));
+        setTimeout(scheduleLoop, Math.round(4000/f));
+      }else if(theme==='lion'){ // 獅子王決戰：驚險萬分
+        const tempo = (132/60) * f;
+        const stabs = [
+          [220.00,246.94,293.66,261.63],
+          [246.94,293.66,329.63,293.66],
+          [261.63,246.94,220.00,196.00],
+          [293.66,329.63,369.99,329.63],
+        ][varIdx];
+        stabs.forEach((f0,i)=> tone(f0,'square', i*0.5/tempo, 0.35/tempo, 0.085));
+        for(let i=0;i<8;i++) tone(98,'sine', i*0.25/tempo, 0.24/tempo, 0.06);
+        setTimeout(scheduleLoop, Math.round(3200/f));
+      }else if(theme==='castle'){ // 攻入城堡：步步為營
+        const tempo = (104/60) * f;
+        const arp = [
+          [261.63,329.63,392.00,523.25],
+          [293.66,369.99,440.00,587.33],
+          [246.94,329.63,392.00,493.88],
+          [329.63,392.00,493.88,659.25],
+        ][varIdx];
+        arp.forEach((f0,i)=> tone(f0,'triangle', i*0.5/tempo, 0.46/tempo, 0.07));
+        setTimeout(scheduleLoop, Math.round(3600/f));
+      }else if(theme==='knight_duel'){ // 騎士對決：優雅
+        const tempo = (126/60) * f;
+        const riff = [
+          [196.00,246.94,293.66,246.94],
+          [220.00,261.63,329.63,261.63],
+          [246.94,293.66,369.99,293.66],
+          [261.63,329.63,392.00,329.63],
+        ][varIdx];
+        riff.forEach((f0,i)=> tone(f0,'sawtooth', i*0.5/tempo, 0.40/tempo, 0.075));
+        setTimeout(scheduleLoop, Math.round(3400/f));
+      }else if(theme==='giant_valley'){ // 巨人山谷：熱血
+        const tempo = (114/60) * f;
+        const drums = [98,82.41,73.42,87.31][varIdx];
+        for(let i=0;i<8;i++) tone(drums,'sine', i*0.25/tempo, 0.22/tempo, 0.085);
+        const shout=[392,440,392,349.23][varIdx];
+        tone(shout,'square', 1.0, 0.3/tempo, 0.09);
+        setTimeout(scheduleLoop, Math.round(3600/f));
+      }else if(theme==='giant_final'){ // 決戰巨人：壯烈
+        const tempo = (92/60) * f;
+        const bass=[65.41,73.42,82.41,98.00][varIdx];
+        for(let i=0;i<8;i++) tone(bass,'sine', i*0.5/tempo, 0.40/tempo, 0.1);
+        const hits=[196,174.61,196,220][varIdx];
+        tone(hits,'square', 1.2, 0.28/tempo, 0.09);
+        setTimeout(scheduleLoop, Math.round(4200/f));
+      }else if(theme==='demon_castle'){ // 惡魔城：群魔亂舞
+        const tempo = (140/60) * f;
+        const osts = [
+          [293.66,277.18,261.63,246.94],
+          [246.94,261.63,277.18,293.66],
+          [233.08,246.94,261.63,277.18],
+          [261.63,246.94,233.08,246.94],
+        ][varIdx];
+        osts.forEach((f0,i)=> tone(f0,'sawtooth', i*0.25/tempo, 0.22/tempo, 0.08));
+        setTimeout(scheduleLoop, Math.round(3000/f));
+      }else{ // final_boss：光與暗的最後廝殺
+        const tempo = (148/60) * f;
         const ost=[293.66,277.18,261.63,246.94,233.08,246.94,261.63,277.18];
-        ost.forEach((f,idx)=> tone(f,'sawtooth', idx*0.22/tempo, 0.2/tempo, 0.04));
+        ost.forEach((f0,i)=> tone(f0,'sawtooth', i*0.22/tempo, 0.20/tempo, 0.09));
         const stab=[587.33,554.37,523.25,493.88];
-        stab.forEach((f,idx)=> tone(f,'square', 1.3 + idx*0.4/tempo, 0.22/tempo, 0.05));
-        setTimeout(scheduleLoop, 2800);
+        stab.forEach((f0,i)=> tone(f0,'square', 1.3 + i*0.4/tempo, 0.22/tempo, 0.095));
+        setTimeout(scheduleLoop, Math.round(2800/f));
       }
+      step++;
     }
     scheduleLoop();
   }
   function applyBGMThemeForLevel(){
+
     const theme = bgmThemeForLevel(level);
     if(theme!==currentBGMTheme){ startBGMTheme(theme); }
   }
 
-  function ensureAudio(){ if(!audioCtx){ const AC=(window.AudioContext||window.webkitAudioContext); if(AC){ audioCtx=new AC(); } } if(audioCtx && !bgmGain){ bgmGain=audioCtx.createGain(); bgmGain.gain.value=parseFloat(localStorage.getItem('bgm_vol')||'0.7'); bgmGain.connect(audioCtx.destination); } }
+  function ensureAudio(){ if(!audioCtx){ const AC=(window.AudioContext||window.webkitAudioContext); if(AC){ audioCtx=new AC(); } } if(audioCtx && !bgmGain){ bgmGain=audioCtx.createGain(); bgmGain.gain.value=parseFloat(localStorage.getItem('bgm_vol')||'0.85'); bgmGain.connect(audioCtx.destination); } }
   function beep(freq=600,dur=0.05,vol=0.06){ if(!soundsOn||!audioCtx) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='square'; o.frequency.value=freq; g.gain.value=vol; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{ o.stop(); }, Math.max(10, dur*1000)); }
 
   function startBGM(){
     if(!audioCtx) ensureAudio();
-    if(!audioCtx || bgmStarted) return; audioCtx.resume?.(); bgmStarted=true; applyBGMThemeForLevel();
+    if(!audioCtx || bgmStarted) return; if(audioCtx && audioCtx.resume) audioCtx.resume(); bgmStarted=true; applyBGMThemeForLevel();
   }
-  function stopBGM(){ bgmStarted=false; bgmNodes.forEach(n=>{try{n.disconnect?.()}catch{} }); bgmNodes.length=0; }
+  function stopBGM(){ bgmStarted=false; bgmNodes.forEach(n=>{try{(n && n.disconnect && n.disconnect())}catch{} }); bgmNodes.length=0; }
 
   // === 磚塊與揭示 ===
   let bricks=[]; let brickW=0, brickH=GAME_CONFIG.bricks.brickHeight; let revealRects=[];
@@ -819,6 +853,7 @@ body[data-skin="flame"] .overlay::before{
   }
 
   function initBricks(){
+    applyBGMThemeForLevel();
     const L=layout();
     const totalPad=(L.cols+1)*L.pad; brickW=Math.floor((1100-totalPad)/L.cols); brickH=L.h; bricks=[]; revealRects=[];
     // 依關卡設計關卡布局
@@ -993,6 +1028,10 @@ function generateLevel(lv, L){
   // === 掉落道具 ===
   const powerups=[]; const ALL_TYPES=Object.keys(GAME_CONFIG.powers); const NORMAL_TYPES=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='rare'); const RARE_TYPES=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type==='rare');
 
+  // 10 秒未取得任何增益 → 天空隨機掉 1 個增益
+  let lastGainPickupAt = performance.now();
+  let nextForcedDropAt = lastGainPickupAt + 10000;
+
   // === 天空隨機增益掉落（第1關每25秒 → 第20關每6秒 線性遞減） ===
   let nextSkyDropAt = 0;
   function skyDropIntervalMs(lv){
@@ -1007,7 +1046,7 @@ function generateLevel(lv, L){
     // 抽非減益道具（含稀有，但機率較低）
     const goodTypes = ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='debuff');
     let type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
-    powerups.push({x, y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy:GAME_CONFIG.powerCapsule.fallVy, type, isDebuff:false, phase:Math.random()*Math.PI*2});
+    powerups.push({x, y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy:GAME_CONFIG.powerCapsule.fallVy, type, isDebuff:false, isSpecial:(GAME_CONFIG.powers[type] && GAME_CONFIG.powers[type].type==='rare'), phase:Math.random()*Math.PI*2});
   }
 
   
@@ -1032,11 +1071,52 @@ function generateLevel(lv, L){
     return Math.min(max, base + inc);
   }
 
-  function spawnPower(x,y){ const rareChance=(GAME_CONFIG.powers.PHOENIX?.rareFactor)||0.1; const pickRare=RARE_TYPES.length && Math.random()<rareChance; const pool=pickRare?RARE_TYPES:NORMAL_TYPES; const type=pool[Math.floor(Math.random()*pool.length)]; const def=GAME_CONFIG.powers[type];
-    powerups.push({x,y,w:GAME_CONFIG.powerCapsule.width,h:GAME_CONFIG.powerCapsule.height,vy:GAME_CONFIG.powerCapsule.fallVy,type,isDebuff:(def.type==='debuff'),phase:Math.random()*Math.PI*2}); }
+  
+function spawnPower(x,y){
+  const defs = GAME_CONFIG.powers;
+  const normals = Object.keys(defs).filter(k=>defs[k].type==='buff');
+  const specials = Object.keys(defs).filter(k=>defs[k].type==='special' || defs[k].type==='rare');
+  const debuffs  = Object.keys(defs).filter(k=>defs[k].type==='debuff');
+
+  // 構建權重：一般增益 = 1，特殊增益 = 0.1，減益 = 0.6（維持些許威脅）
+  const weighted = [];
+  // 普通增益 1.0 權重：10 個樣本
+  for (const k of normals) {
+    for (let i = 0; i < 10; i++) weighted.push(k);
+  }
+  // 特殊增益/稀有增益 0.1 權重：1 個樣本
+  for (const k of specials) {
+    weighted.push(k);
+  }
+  // 減益 0.6 權重：6 個樣本
+  for (const k of debuffs) {
+    for (let i = 0; i < 6; i++) weighted.push(k);
+  }
+
+  // 隨機選取類型
+  const type = weighted[Math.floor(Math.random() * weighted.length)];
+  const def = defs[type];
+
+  // 調整下落速度：減益稍快，特殊/稀有稍慢
+  let vy = GAME_CONFIG.powerCapsule.fallVy;
+  if (def.type === 'debuff') vy *= 1.18;
+  else if (def.type === 'special' || def.type === 'rare') vy *= 0.88;
+
+  powerups.push({
+    x: x,
+    y: y,
+    w: GAME_CONFIG.powerCapsule.width,
+    h: GAME_CONFIG.powerCapsule.height,
+    vy: vy,
+    type: type,
+    isDebuff: def.type === 'debuff',
+    isSpecial: def.type === 'special' || def.type === 'rare',
+    phase: Math.random() * Math.PI * 2,
+  });
+}
 
   function applyPower(type){
-    const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type) stats.buffs++; }
+    const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type){ stats.buffs++; lastGainPickupAt = performance.now(); nextForcedDropAt = lastGainPickupAt + 10000; } }
 const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
     // 罕見瞬發
     if(def.instant && def.type==='rare'){
@@ -1057,9 +1137,36 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     // 定時類
     if(def.durationMs){ if(type!=='LONG'){ const b=buffs[type]||(buffs[type]={active:false,until:0}); b.active=true; b.until=now+def.durationMs; } }
     if(def.paddleWidthAdd){ buffs.WIDE.active=true; buffs.WIDE.until=now+def.durationMs; }
-    if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const max=def.stacksMax??2; if(act.length<max){ buffs.LONG.stacks.push(now+def.durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+def.durationMs; } }
-    if(def.sticky){ buffs.STICKY.active=true; buffs.STICKY.until=now+def.durationMs; }
-    if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; news.push(b1);} balls=balls.concat(news); const cap=def.maxBalls??4; if(balls.length>cap) balls.length=cap; } }
+    if (def.longPerStackAdd) {
+      // LONG 類型可疊加 buff：計算當前尚未過期的堆疊數量，若未達最大堆疊則新增，否則覆蓋最早過期者
+      const act = buffs.LONG.stacks.filter(t => t > now);
+      const maxStacks = (def.stacksMax != null ? def.stacksMax : 2);
+      if (act.length < maxStacks) {
+        buffs.LONG.stacks.push(now + def.durationMs);
+      } else {
+        const earliest = Math.min(...act);
+        const idx = buffs.LONG.stacks.indexOf(earliest);
+        if (idx >= 0) buffs.LONG.stacks[idx] = now + def.durationMs;
+      }
+    }
+    if (def.sticky) {
+      buffs.STICKY.active = true;
+      buffs.STICKY.until = now + def.durationMs;
+    }
+    if (def.multiDuplicate) {
+      // 複製球體，限制最大數量（預設 4 顆）；原始邏輯在球數少於 3 時複製
+      const cap = (def.maxBalls != null ? def.maxBalls : 4);
+      if (balls.length < 3) {
+        const news = [];
+        for (const b of balls) {
+          const b1 = { ...b };
+          b1.trail = [];
+          news.push(b1);
+        }
+        balls = balls.concat(news);
+        if (balls.length > cap) balls.length = cap;
+      }
+    }
     if(def.speedMul){ buffs.SLOW.active=true; buffs.SLOW.until=now+def.durationMs; }
     if(def.piercing){ buffs.PIERCE.active=true; buffs.PIERCE.until=now+def.durationMs; for(const b of balls) b.piercing=true; }
     if(def.oneShotShield){ buffs.SHIELD.active=true; }
@@ -1098,9 +1205,45 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     updateBuffBadges();
   }
 
-  function drawPower(p){ const base=p.isDebuff?getVar('--debuff'):getVar('--power'); const gold1='#f6d365', gold2='#fda085'; const color = p.isSpecial ? gold1 : base; const x=p.x*scaleX, y=p.y*scaleY, w=p.w*scaleX, h=p.h*scaleY; const wobble=Math.sin(p.phase)*1.5; p.phase+=0.04;
-    ctx.save(); ctx.translate(0,wobble); const grd=ctx.createLinearGradient(x,y,x,y+h); grd.addColorStop(0,color); grd.addColorStop(1,p.isSpecial?gold2:(p.isDebuff?'#a33':'#3a56a8')); ctx.fillStyle=grd; roundedRect(x,y,w,h,8); ctx.fill(); ctx.strokeStyle=p.isSpecial?'rgba(255,220,150,.8)':'rgba(255,255,255,.25)'; ctx.stroke();
-    ctx.fillStyle=p.isSpecial?'#402a00':'#fff'; ctx.font=`${Math.max(10,Math.round(12*scaleY))}px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.type[0], x+w/2, y+h/2+0.5); ctx.restore(); }
+  
+function drawPower(p){
+  const x=p.x*scaleX, y=p.y*scaleY, w=p.w*scaleX, h=p.h*scaleY;
+  const wobble=Math.sin(p.phase)*1.5; p.phase+=0.04;
+  ctx.save(); ctx.translate(0,wobble);
+  let top,bottom,textColor='#fff';
+
+  if(p.isDebuff){ // 減益：紅底白字、掉落更快
+    top='#ff4d6d'; bottom='#a33';
+  }else if(p.isSpecial){ // 特殊增益：金底黑字，閃亮
+    top='#f6d365'; bottom='#fda085'; textColor='#111';
+  }else{ // 一般增益：藍底白字
+    top='#6aa2ff'; bottom='#3a56a8';
+  }
+
+  const grd=ctx.createLinearGradient(x,y,x,y+h);
+  grd.addColorStop(0,top); grd.addColorStop(1,bottom);
+  ctx.fillStyle=grd; roundedRect(x,y,w,h,8); ctx.fill();
+  ctx.strokeStyle=p.isSpecial?'rgba(255,220,150,.85)':'rgba(255,255,255,.25)'; ctx.stroke();
+
+  // 閃亮邊光（特殊）
+  if(p.isSpecial){
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.shadowColor='rgba(255,230,160,1)'; ctx.shadowBlur=18;
+    ctx.strokeStyle='rgba(255,230,160,0.8)';
+    roundedRect(x-1,y-1,w+2,h+2,9); ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.fillStyle=textColor;
+  ctx.font=`${Math.max(10,Math.round(12*scaleY))}px ui-monospace, monospace`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(p.type[0], x+w/2, y+h/2+0.5);
+  ctx.restore();
+
+  // close drawPower function
+}
+
 
   function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textContent=level + '/'+ GAME_CONFIG.totalLevels; livesEl.textContent=lives; }
   function showCenter(t, txt){
@@ -1113,7 +1256,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     hideCenter();
     const fs2 = document.getElementById('finalScore2'); if(fs2) fs2.textContent = String(Math.max(0|score,0));
     const so  = document.getElementById('statsOver'); if(so)  so.innerHTML = renderStatsHtml();
-    gameover?.classList.add('show');
+    if(gameover&&gameover.classList)gameover.classList.add('show');
   }
   function hideCenter(){ centerNote.style.display='none'; }
 
@@ -1138,7 +1281,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
   window.addEventListener('keydown',(e)=>{ if(gameOver){ e.preventDefault(); return; }
     if(e.code==='ArrowLeft'||e.key==='a'||e.key==='A') keyL=true;
     if(e.code==='ArrowRight'||e.key==='d'||e.key==='D') keyR=true;
-    if(e.code==='Space'){ // 開始 / 暫停 / 倒數
+    if(e.code==='Space'){ e.preventDefault(); // 開始 / 暫停 / 倒數
       if(!running){ startGameWithCountdown(); } else { togglePause(); }
       return;
     }
@@ -1169,7 +1312,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
   canvas.addEventListener('touchmove',(e)=>{ if(!touchActive) return; if(performance.now()<=paddleStunUntil) return; const t=e.touches[0]; const rect=canvas.getBoundingClientRect(); if(!orientLeft){ const x=(t.clientX-rect.left)*(1100/rect.width); paddle.x=Math.max(0, Math.min(1100-paddle.w, x - paddle.w/2)); } else { const y=(t.clientY-rect.top)*(700/rect.height); paddle.y=Math.max(0, Math.min(700-paddle.w, y - paddle.w/2)); } }, {passive:true});
   canvas.addEventListener('touchend',()=>{ touchActive=false; }, {passive:true});
   pauseBtn.addEventListener('click',()=>togglePause()); resetBtn.addEventListener('click',()=>resetGame()); fsBtn.addEventListener('click',()=>toggleFullscreen());
-  soundBtn.addEventListener('click',()=>{ soundsOn=!soundsOn; localStorage.setItem('sfx_on', soundsOn?'1':'0'); soundBtn.textContent=`音效：${soundsOn?'開':'關'}`; ensureAudio(); audioCtx?.resume?.(); beep(880,0.06,0.05); });
+  soundBtn.addEventListener('click',()=>{ soundsOn=!soundsOn; localStorage.setItem('sfx_on', soundsOn?'1':'0'); soundBtn.textContent=`音效：${soundsOn?'開':'關'}`; ensureAudio(); if(audioCtx && audioCtx.resume) audioCtx.resume(); beep(880,0.06,0.05); });
   difficultySel.addEventListener('change',()=>{ resetGame(); });
   if(ledStyleSel){ ledStyleSel.value = ledStyle; ledStyleSel.addEventListener('change', ()=>{ ledStyle = ledStyleSel.value; localStorage.setItem('led_style', ledStyle); }); }
   saveBtn.addEventListener('click',saveProgress); loadBtn.addEventListener('click',loadProgress); clearSaveBtn.addEventListener('click',clearSave);
@@ -1195,12 +1338,12 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
 
   function startGameWithCountdown(){
     running=true; paused=true; hideCenter();
-    ensureAudio(); audioCtx?.resume?.();
+    ensureAudio(); if(audioCtx && audioCtx.resume) audioCtx.resume();
     // 音效與BGM設定載入
     soundsOn = (localStorage.getItem('sfx_on')||'0')==='1';
     soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
     bgmOn = (localStorage.getItem('bgm_on')||'0')==='1';
-    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.7'); bgmVol.value=String(v); ensureAudio(); if(bgmGain) bgmGain.gain.value=v;
+    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.85'); bgmVol.value=String(v); ensureAudio(); if(bgmGain) bgmGain.gain.value=v;
     bgmBtn.textContent = bgmOn?'開':'關';
     if(bgmOn) startBGM(); applyBGMThemeForLevel();
     startCountdown();
@@ -1269,7 +1412,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
   function computePaddleWidth(){ const now=performance.now(); buffs.LONG.stacks=buffs.LONG.stacks.filter(t=>t>now); const longStacks=Math.min(GAME_CONFIG.powers.LONG.stacksMax, buffs.LONG.stacks.length);
     const addLong=longStacks*(GAME_CONFIG.powers.LONG.longPerStackAdd||0); const addWide=(buffs.WIDE.active?(GAME_CONFIG.powers.WIDE.paddleWidthAdd||0):0); const base=getDiff().paddleBaseW;
     let newW=Math.min(GAME_CONFIG.caps.paddleMaxW, base+addWide+addLong);
-    if(buffs.NARROW?.active) newW = Math.max(60, newW*0.5);
+    if((buffs.NARROW && buffs.NARROW.active)) newW = Math.max(60, newW*0.5);
     const center=paddle.x+paddle.w/2; paddle.w=newW; paddle.x=Math.max(0, Math.min(1100-paddle.w, center - paddle.w/2)); }
 
   // 擋板在不同朝向下的實際矩形
@@ -1287,7 +1430,24 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
   }
 
 
-  function speedMultiplier(now){ let mul=1.0; if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul??1.0);} if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul??1.0);} if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); } return mul; }
+  function speedMultiplier(now){
+    // 計算當前速度倍率：慢速、快速、波浪等 buff 可能影響速度
+    let mul = 1.0;
+    if (buffs.SLOW.active) {
+      const s = GAME_CONFIG.powers.SLOW.speedMul;
+      mul *= (s != null ? s : 1.0);
+    }
+    if (buffs.FAST.active) {
+      const s = GAME_CONFIG.powers.FAST.globalSpeedMul;
+      mul *= (s != null ? s : 1.0);
+    }
+    if (buffs.WAVY.active) {
+      const w = GAME_CONFIG.powers.WAVY.wavy || {amp: 0.6, base: 1.2, periodMs: 200};
+      const phase = (now - (buffs.WAVY.start || now)) / (w.periodMs);
+      mul *= (w.base + w.amp * Math.sin(phase));
+    }
+    return mul;
+  }
 
   // === 背景裝飾 & LED 燈條 ===
   function ledColor(){
@@ -1316,10 +1476,11 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     const c=ledColor();
     let spAvg=0; for(const b of balls){ spAvg += Math.hypot(b.vx,b.vy); } spAvg = balls.length? spAvg/balls.length : 8;
     const nowT = performance.now();
-    const breathClassic = (Math.sin(nowT / (180 - Math.min(120, spAvg*6)))+1)/2; // 原：依球速
-    const breath5 = (Math.sin(nowT / (5000 / (2*Math.PI)))+1)/2;  // 5s
-    const breath3 = (Math.sin(nowT / (3000 / (2*Math.PI)))+1)/2;  // 3s
-    const breath8 = (Math.sin(nowT / (8000 / (2*Math.PI)))+1)/2;  // 8s
+    const fSp = (function(){ let spAvg=0; for(const b of balls){ spAvg += Math.hypot(b.vx,b.vy); } spAvg = balls.length? spAvg/balls.length : 8; return 1 + Math.min(1, Math.max(0,(spAvg-8)/8)); })();
+    const breathClassic = (Math.sin(nowT / ((180 - Math.min(120, spAvg*6)) / fSp))+1)/2; // 原：依球速
+    const breath5 = (Math.sin(nowT / ((5000/fSp) / (2*Math.PI)))+1)/2;  // 5s
+    const breath3 = (Math.sin(nowT / ((3000/fSp) / (2*Math.PI)))+1)/2;  // 3s
+    const breath8 = (Math.sin(nowT / ((8000/fSp) / (2*Math.PI)))+1)/2;  // 8s
 
     function pathThreeSides(){
       ctx.beginPath();
@@ -1370,6 +1531,28 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
         grad.addColorStop(1, c);
         ctx.strokeStyle=grad; ctx.lineWidth=4.5;
         for(const off of [-4,0,4]){ ctx.save(); ctx.translate(0,off); pathThreeSides(); ctx.stroke(); ctx.restore(); }
+        break;
+      }
+      case 'reaper': {
+        // 銀灰鎖鏈 + 血紅初始色 + 鐮刀
+        const cc = '#c0c3cc';
+        ctx.globalAlpha = 0.6 + 0.3*breath5;
+        ctx.strokeStyle=cc; ctx.lineWidth=3.5; ctx.setLineDash([8,6]); ctx.lineDashOffset = -(nowT/25);
+        pathThreeSides(); ctx.stroke(); ctx.setLineDash([]);
+        // 鐮刀刀刃（轉折處）
+        ctx.fillStyle = 'rgba(220,220,230,0.9)';
+        const blades = !orientLeft ? [[6,6],[w-6,6],[6,h-6]] : [[6,6],[w-6,6],[w-6,h-6]];
+        for(const [bx,by] of blades){ ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+16,by-8); ctx.lineTo(bx+8,by+12); ctx.closePath(); ctx.fill(); }
+        break;
+      }
+      case 'flame': {
+        // 火焰簇
+        ctx.globalAlpha = 0.5 + 0.3*breath5;
+        const drawFlame = (px,py)=>{ ctx.save(); ctx.translate(px,py); ctx.rotate((Math.sin(nowT/700+px*0.01)+1)/10); const g=ctx.createRadialGradient(0,0,0,0,0,14); g.addColorStop(0,'rgba(255,230,120,0.95)'); g.addColorStop(1,'rgba(255,120,60,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,14,0,Math.PI*2); ctx.fill(); ctx.restore(); };
+        for(let i=0;i<w;i+=48){ drawFlame(i+8, 8+6*Math.sin(i+nowT/500)); }
+        for(let i=0;i<h;i+=50){ drawFlame(8, i+8); drawFlame(w-8, i+8); }
+        // 外框淡光
+        ctx.strokeStyle=c; ctx.lineWidth=2.2; pathThreeSides(); ctx.stroke();
         break;
       }
       default: {
@@ -1424,6 +1607,22 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     ctx.restore(); if(now>=t.tEnd) phoenixAnim=null; }
 
   function draw(){
+
+// 10s 未取得增益時的保底掉落
+if(performance.now() >= nextForcedDropAt){
+  // 只投放「非減益」
+  const goodTypes = ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='debuff');
+  const type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
+  const x = 40 + Math.random()*(1100-80);
+  const y = layout().top - 20;
+  const def = GAME_CONFIG.powers[type];
+  let vy = GAME_CONFIG.powerCapsule.fallVy;
+  if(def.type==='special' || def.type==='rare') vy *= 0.88;
+  powerups.push({x,y,w:GAME_CONFIG.powerCapsule.width,h:GAME_CONFIG.powerCapsule.height,vy,type,isDebuff:false,isSpecial:(def.type==='special'||def.type==='rare'),phase:Math.random()*Math.PI*2});
+  // 下一個保底在 10 秒後（若期間有撿到增益會再被重設）
+  nextForcedDropAt = performance.now() + 10000;
+}
+
     if(screenShake>0){ const s=screenShake*0.6; ctx.save(); ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); screenShake*=0.9; }
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawBGDecor();
@@ -1614,7 +1813,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     for(const key of Object.keys(GAME_CONFIG.powers)){
       if(key==='LONG') continue; 
       const b=buffs[key];
-      if(b?.active && b.until && now>b.until){
+      if((b && b.active) && b.until && now>b.until){
         b.active=false;
         if(key==='PIERCE'){ for(const ball of balls) ball.piercing=false; }
         if(key==='STICKY'){ for(const ball of balls){ if(ball.stuck){ ball.stuck=false; ball.vy = -Math.abs(ball.vy||6); } } }
@@ -1654,13 +1853,36 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
 
     // 全局速度倍率（GODSPEED 時忽略其它）
     function effectiveMul(){
-      if(buffs.GODSPEED.active) return 1.0;
-      let mul=1.0;
-      if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul??1.0); }
-      if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul??1.0); }
-      if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); }
-      if(buffs.HELL.active){ mul*=(GAME_CONFIG.powers.HELL.hell.speedMul); }
-      if(buffs.MEGA.active){ mul*=(GAME_CONFIG.powers.MEGA.mega.speedMul); }
+      // 全局速度倍率：整合慢速、快速、波浪、地獄與特大球等 buff。若 GODSPEED 生效則直接返回 1。
+      if (buffs.GODSPEED.active) return 1.0;
+      let mul = 1.0;
+      // 慢速 buff
+      if (buffs.SLOW.active) {
+        const s = GAME_CONFIG.powers.SLOW.speedMul;
+        mul *= (s != null ? s : 1.0);
+      }
+      // 快速 buff
+      if (buffs.FAST.active) {
+        const s = GAME_CONFIG.powers.FAST.globalSpeedMul;
+        mul *= (s != null ? s : 1.0);
+      }
+      // 波浪 buff
+      if (buffs.WAVY.active) {
+        const w = GAME_CONFIG.powers.WAVY.wavy || {amp: 0.6, base: 1.2, periodMs: 200};
+        const nowTime = performance.now();
+        const phase = (nowTime - (buffs.WAVY.start || nowTime)) / (w.periodMs);
+        mul *= (w.base + w.amp * Math.sin(phase));
+      }
+      // 地獄 buff
+      if (buffs.HELL.active) {
+        const s = GAME_CONFIG.powers.HELL.hell.speedMul;
+        mul *= (s != null ? s : 1.0);
+      }
+      // 特大球 buff
+      if (buffs.MEGA.active) {
+        const s = GAME_CONFIG.powers.MEGA.mega.speedMul;
+        mul *= (s != null ? s : 1.0);
+      }
       return mul;
     }
 
@@ -1767,7 +1989,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
           const candidates = bricks.map((bk,idx)=>({idx, d: (bk.x+bk.w/2-src.x)**2 + (bk.y+bk.h/2-src.y)**2 })).sort((a,b)=>a.d-b.d);
           const pickIdxs = [0, Math.floor(candidates.length/2), candidates.length-1].filter(i=>i>=0 && i<candidates.length);
           for(const i of pickIdxs){
-            const targetId = candidates[i]?.idx;
+            const targetId = (candidates[i] ? candidates[i].idx : undefined);
             if(targetId==null) continue;
             const ang=Math.random()*Math.PI*2;
             missiles.push({x:src.x,y:src.y,vx:Math.cos(ang)*2,vy:Math.sin(ang)*2,targetId,lifeUntil:now+GAME_CONFIG.powers.MISSILE.missile.lifeMs,trail:[]});
@@ -1919,27 +2141,12 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     resetGame(); updateHUD(); loop();
     // 自動讀取音效/BGM偏好
     soundsOn = (localStorage.getItem('sfx_on')||'0')==='1'; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
-    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.7'); bgmVol.value=String(v);
+    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.85'); bgmVol.value=String(v);
     bgmOn = (localStorage.getItem('bgm_on')||'0')==='1'; bgmBtn.textContent = bgmOn?'開':'關';
     // 若有存檔給提示
     const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4');
     if(raw){ setTimeout(()=>{ if(confirm('偵測到存檔，要讀取進度嗎？')) loadProgress(); }, 400); }
   }
-
-  // 皮膚選擇（僅影響視覺，不碰遊戲邏輯）
-  try{
-    const __skinSel = document.getElementById('ledStyle');
-    if(__skinSel){
-      __skinSel.addEventListener('change', ()=>{ 
-        ledStyle = __skinSel.value; 
-        localStorage.setItem('led_style', ledStyle);
-        applySkin(ledStyle);
-      });
-      // 以目前值套用
-      applySkin(__skinSel.value || ledStyle);
-    }
-  }catch(e){}
-
   boot();
 })();
 </script>
