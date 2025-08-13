@@ -233,8 +233,8 @@
       PLASMA:{label:'電漿球(擊中放出電漿圈清列)',type:'buff',durationMs:10000,plasma:{drift:1.2,radius:38,lifeMs:3000},badge:'⚡️'},
       FREEZE:{label:'凍結球(延遲停頓一下)',type:'buff',durationMs:10000,freeze:{delayMs:300,stopMs:2000},badge:'❄️'},
       HOLY:{label:'神聖球(十字清線)',type:'buff',durationMs:5000,holy:{},badge:'✝️'},
-      PHOENIX:{label:'鳳凰審判(消半場/不秒殺Boss)',type:'special',rareFactor:0.08,instant:true,badge:'🪽'},
-      NINE:{label:'9命怪貓(生命變9)',type:'special',rareFactor:0.08,instant:true,badge:'🐱'}
+      PHOENIX:{label:'鳳凰審判(消半場/不秒殺Boss)',type:'rare',rareFactor:0.08,instant:true,badge:'🪽'},
+      NINE:{label:'9命怪貓(生命變9)',type:'rare',rareFactor:0.08,instant:true,badge:'🐱'}
       ,TRACK:{label:'追蹤球(自動修正軌跡)',type:'buff',durationMs:10000,track:{},badge:'🧭'}
       ,MISSILE:{label:'飛彈球(擋板反彈時發射3枚)',type:'buff',durationMs:5000,missile:{speed:7,turn:0.08,lifeMs:4000},badge:'🚀'}
       ,HELL:{label:'地獄球(黑洞吞鄰近格)',type:'buff',durationMs:5000,hell:{speedMul:1.2,haloMs:2000},badge:'🕳️'}
@@ -327,7 +327,7 @@
     </div>`;
   }
 
-  let bgTime=0; let screenShake=0; let flipHintUntil=0, slowMoUntil=0, debuffEaseUntil=0;
+  let bgTime=0; let screenShake=0;
   let countdownTimer=null, countdownShow=0, resumePending=false;
   // 影像選擇：1~10 隨機 bg/cg，11~20 用對應未用者
   let imageChoice = new Array(10).fill(-1); // 0=bg,1=cg; -1: 未決
@@ -617,19 +617,6 @@
 
   // === 聲音與BGM ===
 
-  // === SFX 表（可統一管理事件音色） ===
-  const SFX = {
-    wall: {freq: 620, dur: 0.05, vol: 0.055},
-    brick:{freq: 740, dur: 0.05, vol: 0.06},
-    paddle:{freq: 520, dur: 0.05, vol: 0.06},
-    drop:{freq: 330, dur: 0.06, vol: 0.07},
-    danger:{freq: 200, dur: 0.10, vol: 0.08}
-  };
-  function playSfx(name){
-    const s = SFX[name]; if(!s) return; beep(s.freq, s.dur, s.vol);
-  }
-
-
   // === BGM 主題依關卡段落 ===
   
 function bgmThemeForLevel(lv){
@@ -771,10 +758,7 @@ function startBGMTheme(theme){
     if(theme!==currentBGMTheme){ startBGMTheme(theme); }
   }
 
-  function ensureAudio(){ if(!audioCtx){ const AC=(window.AudioContext||window.webkitAudioContext); if(AC){ audioCtx=new AC(); } } if(audioCtx && !bgmGain){ bgmGain=audioCtx.createGain(); bgmGain.gain.value=parseFloat(localStorage.getItem('bgm_vol')||'0.85'); 
-      // 自動混音：加入壓縮器避免爆音
-      const comp = audioCtx.createDynamicsCompressor(); comp.threshold.value=-18; comp.knee.value=24; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.25; 
-      bgmGain.connect(comp); comp.connect(audioCtx.destination); } }
+  function ensureAudio(){ if(!audioCtx){ const AC=(window.AudioContext||window.webkitAudioContext); if(AC){ audioCtx=new AC(); } } if(audioCtx && !bgmGain){ bgmGain=audioCtx.createGain(); bgmGain.gain.value=parseFloat(localStorage.getItem('bgm_vol')||'0.85'); bgmGain.connect(audioCtx.destination); } }
   function beep(freq=600,dur=0.05,vol=0.06){ if(!soundsOn||!audioCtx) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='square'; o.frequency.value=freq; g.gain.value=vol; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{ o.stop(); }, Math.max(10, dur*1000)); }
 
   function startBGM(){
@@ -1038,7 +1022,7 @@ function generateLevel(lv, L){
         spawnParticles(bx,by,'#ffdd99',14,1.7,2.6,3);
       }
     }
-    spawnParticles(cx,cy,'#ffbb55',24,2.1,3.2,4); updateHUD(); playSfx('danger');
+    spawnParticles(cx,cy,'#ffbb55',24,2.1,3.2,4); updateHUD(); beep(200,0.08,0.08);
   }
 
   // === 掉落道具 ===
@@ -1059,18 +1043,10 @@ function generateLevel(lv, L){
   function spawnBeneficialAtTop(){
     const x = 40 + Math.random()*(1100-80);
     const y = layout().top - 20;
-    const defs = GAME_CONFIG.powers;
-    const goodBuffs = Object.keys(defs).filter(k=>defs[k].type==='buff');
-    const specials  = Object.keys(defs).filter(k=>defs[k].type==='special');
-    // weighting: buff = 1.0, special = 0.1
-    const weighted = [];
-    for(const k of goodBuffs){ for(let i=0;i<10;i++) weighted.push(k); }
-    for(const k of specials){ weighted.push(k); }
-    const type = weighted[Math.floor(Math.random()*weighted.length)];
-    const def = defs[type];
-    let vy = GAME_CONFIG.powerCapsule.fallVy;
-    if(def.type==='special') vy *= 0.88;
-    powerups.push({x, y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy, type, isDebuff:false, isSpecial:(def.type==='special'), phase:Math.random()*Math.PI*2});
+    // 抽非減益道具（含稀有，但機率較低）
+    const goodTypes = ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='debuff');
+    let type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
+    powerups.push({x, y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy:GAME_CONFIG.powerCapsule.fallVy, type, isDebuff:false, isSpecial:(GAME_CONFIG.powers[type] && GAME_CONFIG.powers[type].type==='rare'), phase:Math.random()*Math.PI*2});
   }
 
   
@@ -1143,7 +1119,7 @@ function spawnPower(x,y){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type){ stats.buffs++; lastGainPickupAt = performance.now(); nextForcedDropAt = lastGainPickupAt + 10000; } }
 const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
     // 罕見瞬發
-    if(def.instant && def.type==='special'){
+    if(def.instant && def.type==='rare'){
       if(type==='PHOENIX'){ // 鳳凰飛過 + 火焰 + 隨機一半消除（Boss只扣1）
         phoenixAnim={x:canvas.width+220,tEnd:now+1200};
         const keep=[]; for(const b of bricks){
@@ -1154,7 +1130,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
             fireBursts.push({x:b.x+b.w/2,y:b.y+b.h/2,life:400+Math.random()*400});
           } else keep.push(b);
         }
-        bricks=keep; screenShake=6; playSfx('danger');
+        bricks=keep; screenShake=6; beep(180,0.12,0.1);
       } else if(type==='NINE'){ lives=9; updateHUD(); spawnParticles(550,350,'#ffd',40,2.2,3.5,4); beep(880,0.1,0.06); }
       return;
     }
@@ -1196,7 +1172,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     if(def.oneShotShield){ buffs.SHIELD.active=true; }
     if(def.forcePiercing && def.rampageMs){ buffs.RAMPAGE.active=true; buffs.RAMPAGE.until=now+def.durationMs; for(const b of balls){ b.rampageUntil=now+def.rampageMs; b.piercing=true; } }
     if(def.globalSpeedMul){ buffs.FAST.active=true; buffs.FAST.until=now+def.durationMs; if(def.screenShakeOnApply) screenShake=def.screenShakeOnApply; }
-    if(def.wavy){ buffs.WAVY.active=true; buffs.WAVY.until=now+def.durationMs; buffs.WAVY.start=now; if(buffs.CHAIN.active) debuffEaseUntil = Math.max(debuffEaseUntil, now + 5000); }
+    if(def.wavy){ buffs.WAVY.active=true; buffs.WAVY.until=now+def.durationMs; buffs.WAVY.start=now; }
     if(type==='PLASMA'){ buffs.PLASMA.active=true; buffs.PLASMA.until=now+def.durationMs; }
     if(type==='FREEZE'){ buffs.FREEZE.active=true; buffs.FREEZE.until=now+def.durationMs; }
     if(type==='HOLY'){ buffs.HOLY.active=true; buffs.HOLY.until=now+def.durationMs; }
@@ -1205,10 +1181,10 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     if(type==='MISSILE'){ buffs.MISSILE.active=true; buffs.MISSILE.until=now+def.durationMs; }
     if(type==='HELL'){ buffs.HELL.active=true; buffs.HELL.until=now+def.durationMs; }
     if(type==='MEGA'){ if(!buffs.MEGA.active){ for(const ball of balls){ ball.r*=GAME_CONFIG.powers.MEGA.mega.sizeMul; } buffs.MEGA.applied=true; } buffs.MEGA.active=true; buffs.MEGA.until=now+def.durationMs; }
-    if(type==='CHAIN'){ buffs.CHAIN.active=true; buffs.CHAIN.until=now+def.durationMs; if(buffs.WAVY.active) debuffEaseUntil = Math.max(debuffEaseUntil, now + 5000); }
+    if(type==='CHAIN'){ buffs.CHAIN.active=true; buffs.CHAIN.until=now+def.durationMs; }
     if(type==='NARROW'){ buffs.NARROW.active=true; buffs.NARROW.until=now+def.durationMs; }
     if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+def.durationMs; }
-    if(type==='FLIP'){ buffs.FLIP.active=true; buffs.FLIP.until=now+def.durationMs; orientLeft=true; paddle.y=700/2-paddle.w/2; flipHintUntil = now + 800; slowMoUntil = now + 500; 
+    if(type==='FLIP'){ buffs.FLIP.active=true; buffs.FLIP.until=now+def.durationMs; orientLeft=true; paddle.y=700/2-paddle.w/2; 
         /* AIM BALLS TO LEFT PADDLE ON FLIP START */
         (function(){ 
           const pr = paddleRect();
@@ -1402,7 +1378,7 @@ function drawPower(p){
     }else{
       // 效果說明：從 powers 輸出
       let html = '<div class="cols">';
-      html += '<div><strong>增益/特殊</strong><br>';
+      html += '<div><strong>增益/稀有</strong><br>';
       for(const k of Object.keys(GAME_CONFIG.powers)){
         const p=GAME_CONFIG.powers[k]; if(p.type==='debuff') continue;
         html += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
@@ -1466,14 +1442,10 @@ function drawPower(p){
       mul *= (s != null ? s : 1.0);
     }
     if (buffs.WAVY.active) {
-      const w = { ...(GAME_CONFIG.powers.WAVY.wavy || {amp: 0.6, base: 1.2, periodMs: 200}) };
-      // 若啟動減益友善化窗口，降低 WAVY 擾動強度 50%
-      if (performance.now() < debuffEaseUntil) { w.amp *= 0.5; w.base = 1 + (w.base-1)*0.5; }
+      const w = GAME_CONFIG.powers.WAVY.wavy || {amp: 0.6, base: 1.2, periodMs: 200};
       const phase = (now - (buffs.WAVY.start || now)) / (w.periodMs);
       mul *= (w.base + w.amp * Math.sin(phase));
     }
-    // FLIP 觸發後 0.5s 進入子彈時間（0.85x）
-    if (performance.now() < slowMoUntil) mul *= 0.85;
     return mul;
   }
 
@@ -1638,53 +1610,23 @@ function drawPower(p){
 
 // 10s 未取得增益時的保底掉落
 if(performance.now() >= nextForcedDropAt){
-  // 只投放「非減益」；buff 權重 1.0、special 權重 0.1
-  const defs = GAME_CONFIG.powers;
-  const goodBuffs = Object.keys(defs).filter(k=>defs[k].type==='buff');
-  const specials  = Object.keys(defs).filter(k=>defs[k].type==='special');
-  const weighted = [];
-  for(const k of goodBuffs){ for(let i=0;i<10;i++) weighted.push(k); }
-  for(const k of specials){ weighted.push(k); }
-  const type = weighted[Math.floor(Math.random()*weighted.length)];
+  // 只投放「非減益」
+  const goodTypes = ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='debuff');
+  const type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
   const x = 40 + Math.random()*(1100-80);
   const y = layout().top - 20;
-  const def = defs[type];
+  const def = GAME_CONFIG.powers[type];
   let vy = GAME_CONFIG.powerCapsule.fallVy;
-  if(def.type==='special') vy *= 0.88;
-  powerups.push({x,y,w:GAME_CONFIG.powerCapsule.width,h:GAME_CONFIG.powerCapsule.height,vy,type,isDebuff:false,isSpecial:(def.type==='special'),phase:Math.random()*Math.PI*2});
+  if(def.type==='special' || def.type==='rare') vy *= 0.88;
+  powerups.push({x,y,w:GAME_CONFIG.powerCapsule.width,h:GAME_CONFIG.powerCapsule.height,vy,type,isDebuff:false,isSpecial:(def.type==='special'||def.type==='rare'),phase:Math.random()*Math.PI*2});
   // 下一個保底在 10 秒後（若期間有撿到增益會再被重設）
   nextForcedDropAt = performance.now() + 10000;
-}
 }
 
     if(screenShake>0){ const s=screenShake*0.6; ctx.save(); ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); screenShake*=0.9; }
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawBGDecor();
     drawRevealTiles();
-    // 減益友善化：FLIP 提示箭頭
-    if (performance.now() < flipHintUntil) {
-      ctx.save();
-      ctx.globalAlpha = 0.85;
-      ctx.fillStyle = 'rgba(20,30,60,0.6)';
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.font = Math.round(28*scaleY)+'px system-ui, sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillStyle = '#cfe3ff';
-      const msg = orientLeft ? '方向翻轉：改用左側擋板！' : '方向正常：底部擋板';
-      ctx.fillText(msg, canvas.width/2, canvas.height*0.25);
-      // 箭頭
-      ctx.strokeStyle = '#cfe3ff'; ctx.lineWidth = 6;
-      if (orientLeft){
-        const x = 70*scaleX;
-        ctx.beginPath(); ctx.moveTo(x, canvas.height*0.45); ctx.lineTo(x, canvas.height*0.75); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x-14, canvas.height*0.55); ctx.lineTo(x, canvas.height*0.45); ctx.lineTo(x+14, canvas.height*0.55); ctx.stroke();
-      } else {
-        const y = canvas.height - 70*scaleY;
-        ctx.beginPath(); ctx.moveTo(canvas.width*0.35, y); ctx.lineTo(canvas.width*0.65, y); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(canvas.width*0.55, y-14); ctx.lineTo(canvas.width*0.65, y); ctx.lineTo(canvas.width*0.55, y+14); ctx.stroke();
-      }
-      ctx.restore();
-    }
 
     // 磚塊
     for(const b of bricks){
