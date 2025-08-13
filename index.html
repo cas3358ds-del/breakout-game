@@ -1172,9 +1172,7 @@ function drawPower(p){
   ctx.fillText(p.type[0], x+w/2, y+h/2+0.5);
   ctx.restore();
 }
-px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.type[0], x+w/2, y+h/2+0.5); ctx.restore(); }
-
-  function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textContent=level + '/'+ GAME_CONFIG.totalLevels; livesEl.textContent=lives; }
+function updateHUD(){ scoreEl.textContent=Math.max(0|score,0); levelEl.textContent=level + '/'+ GAME_CONFIG.totalLevels; livesEl.textContent=lives; }
   function showCenter(t, txt){
     noteTitle.textContent = t;
     noteText.innerHTML = txt || '';
@@ -1467,16 +1465,7 @@ px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; 
         ctx.strokeStyle=c; ctx.lineWidth=2.2; pathThreeSides(); ctx.stroke();
         break;
       }
-      
-        ctx.globalAlpha = 0.5 + 0.5*breath3;
-        const grad = ctx.createLinearGradient(0,0,w,0);
-        grad.addColorStop(0, 'rgba(255,255,255,0.85)');
-        grad.addColorStop(1, c);
-        ctx.strokeStyle=grad; ctx.lineWidth=4.5;
-        for(const off of [-4,0,4]){ ctx.save(); ctx.translate(0,off); pathThreeSides(); ctx.stroke(); ctx.restore(); }
-        break;
-      }
-      default: {
+default: {
         ctx.globalAlpha = 0.6 + 0.3*breathClassic;
         ctx.strokeStyle=c; ctx.lineWidth=6; ctx.shadowColor=c; ctx.shadowBlur=20 + 10*breathClassic; pathThreeSides(); ctx.stroke();
         break;
