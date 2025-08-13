@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Rock打磚塊 Breakout（最終增強版）</title>
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>Rock打磚塊 Breakout（最終增強版）</title>
+<style>
     :root {
       --bg:#0b1022; --bg2:#0a0f1e; --fg:#e9ecf1; --accent:#66b2ff;
       --brick1:#ff6b6b; --brick2:#ffd166; --brick3:#06d6a0; --brick4:#4cc9f0;
@@ -118,100 +119,93 @@
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Rock打磚塊 Breakout（最終增強版）</h1>
-    <div class="hud">
-      <div class="pill">分數 <span id="score">0</span></div>
-      <div class="pill">關卡 <span id="level">1</span>/20</div>
-      <div class="pill life">生命 <span id="lives">3</span></div>
-      <label>難度
+<div class="wrap">
+<h1>Rock打磚塊 Breakout（最終增強版）</h1>
+<div class="hud">
+<div class="pill">分數 <span id="score">0</span></div>
+<div class="pill">關卡 <span id="level">1</span>/20</div>
+<div class="pill life">生命 <span id="lives">3</span></div>
+<label>難度
         <select id="difficulty">
-          <option value="easy">Easy</option>
-          <option value="normal" selected>Normal</option>
-          <option value="hard">Hard</option>
-        </select>
-      </label>
-      <button class="btn" id="pauseBtn">開始 / 暫停 (<kbd>Space</kbd>)</button>
-      <label>燈條
+<option value="easy">Easy</option>
+<option selected="" value="normal">Normal</option>
+<option value="hard">Hard</option>
+</select>
+</label>
+<button class="btn" id="pauseBtn">開始 / 暫停 (<kbd>Space</kbd>)</button>
+<label>燈條
         <select id="ledStyle">
-          <option value="classic" selected>經典風格</option>
-          <option value="tech">科技感</option>
-          <option value="arc">電弧</option>
-          <option value="steel">鋼鐵</option>
-          <option value="vivid">絢麗</option>
-          <option value="reaper">死神</option>
-          <option value="flame">烈焰</option>
-        </select>
-      </label>
-      <button class="btn" id="resetBtn">重開 (<kbd>R</kbd>)</button>
-      <button class="btn" id="fsBtn">全螢幕 (<kbd>F</kbd>)</button>
-      <button class="btn info" id="tutorBtn">教學</button>
-      <button class="btn info" id="effectsBtn">效果說明</button>
-      <button class="btn" id="soundBtn">音效：關</button>
-      <span class="range">BGM
+<option selected="" value="classic">經典風格</option>
+<option value="tech">科技感</option>
+<option value="arc">電弧</option>
+<option value="steel">鋼鐵</option>
+<option value="vivid">絢麗</option>
+<option value="reaper">死神</option>
+<option value="flame">烈焰</option>
+</select>
+</label>
+<button class="btn" id="resetBtn">重開 (<kbd>R</kbd>)</button>
+<button class="btn" id="fsBtn">全螢幕 (<kbd>F</kbd>)</button>
+<button class="btn info" id="tutorBtn">教學</button>
+<button class="btn info" id="effectsBtn">效果說明</button>
+<button class="btn" id="soundBtn">音效：關</button>
+<span class="range">BGM
         <button class="btn" id="bgmBtn">關</button>
-        <input id="bgmVol" type="range" min="0" max="1" step="0.01" value="0.85" style="width:120px">
-      </span>
-      <button class="btn" id="saveBtn">存檔</button>
-      <button class="btn" id="loadBtn">讀檔</button>
-      <button class="btn" id="clearSaveBtn">清除存檔</button>
-    </div>
-
-    <div class="legend">
-      <span class="item"><span class="box" style="background:var(--expl)"></span>爆炸磚</span>
-      <span class="item"><span class="box" style="background:var(--brick2)"></span>一般磚</span>
-      <span class="item"><span class="box" style="background:#888"></span>不可破壞磚</span>
-      <span class="item"><span class="box" style="background:#bb7aff"></span>強反彈磚</span>
-      <span class="item"><span class="box" style="background:#6ec6ff"></span>移動磚</span>
-      <span class="item"><span class="box" style="background:#ff4d6d"></span>Boss磚</span>
-      <span class="item"><span class="box" style="background:var(--power)"></span>增益道具</span>
-      <span class="item"><span class="box" style="background:var(--debuff)"></span>減益道具</span>
-    </div>
-    <div class="badges" id="activeBuffs"></div>
-
-    <div class="overlay">
-      <div class="gallery" id="gallery">
-        <div class="backdrop"></div>
-        <img id="galleryImg" src="" alt="關卡大圖" />
-        <div class="hint">點一下進入下一關 ▶</div>
-      </div>
-
-      <div class="win" id="win">
-        <div class="backdrop"></div>
-        <div class="thumb-ring" id="ring"></div>
-        <div class="center">
-          <h2>恭喜過關！</h2>
-          <div style="font-size:28px;margin:6px 0;">總分數：<span id="finalScore">0</span></div>
-          <div id="statsWin" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:360px"></div>
-          <div class="small">作者： ChatGPT　／　指導者： Rock</div>
-          <div class="again"><button class="btn" id="againBtn">再玩一次</button></div>
-        </div>
-      </div>
-
-      <canvas id="game" width="1100" height="700"></canvas>
-      <div class="gameover" id="gameover">
-        <div class="backdrop"></div>
-        <div class="center">
-          <h2>遊戲結束</h2>
-          <div style="font-size:28px;margin:6px 0;">最終分數：<span id="finalScore2">0</span></div>
-          <div id="statsOver" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:320px"></div>
-          <div class="again"><button class="btn" id="retryBtn">再次遊戲</button></div>
-        </div>
-      </div>
-    
-     
-      <div class="center-note" id="centerNote">
-        <div class="note-box" id="noteBox"><button class="note-close" id="noteClose" aria-label="關閉">×</button>
-          <h2 id="noteTitle">按 <kbd>Space</kbd> 或點畫面開始</h2>
-          <p id="noteText">
-            操作：<kbd>←</kbd>/<kbd>→</kbd> 或 <kbd>A</kbd>/<kbd>D</kbd>；手指拖曳畫面也可移動平台。<br>
+<input id="bgmVol" max="1" min="0" step="0.01" style="width:120px" type="range" value="0.85"/>
+</span>
+<button class="btn" id="saveBtn">存檔</button>
+<button class="btn" id="loadBtn">讀檔</button>
+<button class="btn" id="clearSaveBtn">清除存檔</button>
+</div>
+<div class="legend">
+<span class="item"><span class="box" style="background:var(--expl)"></span>爆炸磚</span>
+<span class="item"><span class="box" style="background:var(--brick2)"></span>一般磚</span>
+<span class="item"><span class="box" style="background:#888"></span>不可破壞磚</span>
+<span class="item"><span class="box" style="background:#bb7aff"></span>強反彈磚</span>
+<span class="item"><span class="box" style="background:#6ec6ff"></span>移動磚</span>
+<span class="item"><span class="box" style="background:#ff4d6d"></span>Boss磚</span>
+<span class="item"><span class="box" style="background:var(--power)"></span>增益道具</span>
+<span class="item"><span class="box" style="background:var(--debuff)"></span>減益道具</span>
+</div>
+<div class="badges" id="activeBuffs"></div>
+<div class="overlay">
+<div class="gallery" id="gallery">
+<div class="backdrop"></div>
+<img alt="關卡大圖" id="galleryImg" src=""/>
+<div class="hint">點一下進入下一關 ▶</div>
+</div>
+<div class="win" id="win">
+<div class="backdrop"></div>
+<div class="thumb-ring" id="ring"></div>
+<div class="center">
+<h2>恭喜過關！</h2>
+<div style="font-size:28px;margin:6px 0;">總分數：<span id="finalScore">0</span></div>
+<div id="statsWin" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:360px"></div>
+<div class="small">作者： ChatGPT　／　指導者： Rock</div>
+<div class="again"><button class="btn" id="againBtn">再玩一次</button></div>
+</div>
+</div>
+<canvas height="700" id="game" width="1100"></canvas>
+<div class="gameover" id="gameover">
+<div class="backdrop"></div>
+<div class="center">
+<h2>遊戲結束</h2>
+<div style="font-size:28px;margin:6px 0;">最終分數：<span id="finalScore2">0</span></div>
+<div id="statsOver" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:320px"></div>
+<div class="again"><button class="btn" id="retryBtn">再次遊戲</button></div>
+</div>
+</div>
+<div class="center-note" id="centerNote">
+<div class="note-box" id="noteBox"><button aria-label="關閉" class="note-close" id="noteClose">×</button>
+<h2 id="noteTitle">按 <kbd>Space</kbd> 或點畫面開始</h2>
+<p id="noteText">
+            操作：<kbd>←</kbd>/<kbd>→</kbd> 或 <kbd>A</kbd>/<kbd>D</kbd>；手指拖曳畫面也可移動平台。<br/>
             已整合：背景逐步揭示 + 清關畫廊、增益/減益（含電漿球/凍結球/神聖球/鳳凰審判/9命怪貓）、爆炸磚、音效、難度、存讀檔、BGM、教學/效果說明、Boss與進階磚。
           </p>
-        </div>
-      </div>
-    </div>
-  </div>
-
+</div>
+</div>
+</div>
+</div>
 <script>
 (() => {
   // === 設定 ===
@@ -288,7 +282,7 @@
   const ledStyleSel=document.getElementById('ledStyle');
   const gallery=document.getElementById('gallery'), galleryImg=document.getElementById('galleryImg');
   const win=document.getElementById('win'), ring=document.getElementById('ring'), finalScore=document.getElementById('finalScore'), againBtn=document.getElementById('againBtn');
-  document.getElementById('retryBtn')?.addEventListener('click', ()=>{ gameover.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });
+  document.getElementById('retryBtn')?.addEventListener('click', ()=>{ const go=document.getElementById('gameover'); if(go) go.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
   const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2');
   const retryBtn=document.getElementById('retryBtn');
@@ -731,7 +725,7 @@ function startBGMTheme(theme){
     if(theme!==currentBGMTheme){ startBGMTheme(theme); }
   }
 
-  function ensureAudio(){ if(!audioCtx){ const AC=(window.AudioContext||window.webkitAudioContext); if(AC){ audioCtx=new AC(); } } if(audioCtx && !bgmGain){ bgmGain=audioCtx.createGain(); bgmGain.gain.value=parseFloat(localStorage.getItem('bgm_vol')||'0.7'); bgmGain.connect(audioCtx.destination); } }
+  function ensureAudio(){ if(!audioCtx){ const AC=(window.AudioContext||window.webkitAudioContext); if(AC){ audioCtx=new AC(); } } if(audioCtx && !bgmGain){ bgmGain=audioCtx.createGain(); bgmGain.gain.value=parseFloat(localStorage.getItem('bgm_vol')||'0.85'); bgmGain.connect(audioCtx.destination); } }
   function beep(freq=600,dur=0.05,vol=0.06){ if(!soundsOn||!audioCtx) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='square'; o.frequency.value=freq; g.gain.value=vol; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{ o.stop(); }, Math.max(10, dur*1000)); }
 
   function startBGM(){
@@ -1019,7 +1013,7 @@ function generateLevel(lv, L){
     // 抽非減益道具（含稀有，但機率較低）
     const goodTypes = ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='debuff');
     let type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
-    powerups.push({x, y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy:GAME_CONFIG.powerCapsule.fallVy, type, isDebuff:false, phase:Math.random()*Math.PI*2});
+    powerups.push({x, y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy:GAME_CONFIG.powerCapsule.fallVy, type, isDebuff:false, isSpecial:(GAME_CONFIG.powers[type]?.type==='rare'), phase:Math.random()*Math.PI*2});
   }
 
   
@@ -1278,7 +1272,7 @@ px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; 
     soundsOn = (localStorage.getItem('sfx_on')||'0')==='1';
     soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
     bgmOn = (localStorage.getItem('bgm_on')||'0')==='1';
-    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.7'); bgmVol.value=String(v); ensureAudio(); if(bgmGain) bgmGain.gain.value=v;
+    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.85'); bgmVol.value=String(v); ensureAudio(); if(bgmGain) bgmGain.gain.value=v;
     bgmBtn.textContent = bgmOn?'開':'關';
     if(bgmOn) startBGM(); applyBGMThemeForLevel();
     startCountdown();
@@ -2045,7 +2039,7 @@ if(performance.now() >= nextForcedDropAt){
     resetGame(); updateHUD(); loop();
     // 自動讀取音效/BGM偏好
     soundsOn = (localStorage.getItem('sfx_on')||'0')==='1'; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
-    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.7'); bgmVol.value=String(v);
+    const v = parseFloat(localStorage.getItem('bgm_vol')||'0.85'); bgmVol.value=String(v);
     bgmOn = (localStorage.getItem('bgm_on')||'0')==='1'; bgmBtn.textContent = bgmOn?'開':'關';
     // 若有存檔給提示
     const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4');
