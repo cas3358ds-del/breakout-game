@@ -4,8 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>Rock打磚塊 Breakout（最終增強版）</title>
-<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=odO6_jZa-XCV2DcgQ8l2CciRh3HEegeKri72UFBmq-cEvHOMKe4YyjN63X6GjpeYeo_K9iJcWzZ5xeVzCOUjelNnQpF45TILV_jsbqAHZVJwIVqWmyjGuD00gl3HdlcsUuJ3zrTf04yIw2sIC8WAXo1_zIe-Zjlfe-vx0VgOrjy2ixK48p-KVLmgLslE22ZZZfTjG3ktN2_WsAhiuzDw1QpIiglA3R5sTGmzBX4U55iTaPHfS6M-D6XKPD7kMjDTDSTNNwCrLkV-suUXgvRCqqNn-_4xGtCl7yZlkjw4cuVxljV_nw794KVs8bVnHw-pa0Ru6RNUsVZfRuLkepKMt-s4BNZKh8hWu1jbPVrSY011w2ZwrIQ7vurBj-72CS-6" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9maWxlczA5Lm9haXVzZXJjb250ZW50LmNvbS9maWxlLU1pQzJRbkRUUGpqdXk4M0FwQUdCVXY_c2U9MjAyNS0wOC0xM1QxOCUzYTU2JTNhMjRaJnNwPXImc3Y9MjAyNC0wOC0wNCZzcj1iJnJzY2M9bWF4LWFnZSUzZDI5OSUyYyUyMGltbXV0YWJsZSUyYyUyMHByaXZhdGUmcnNjZD1hdHRhY2htZW50JTNiJTIwZmlsZW5hbWUlM2RpbmRleC5odG1sJnNpZz1KcW1kanVnZzVSUXVrS2ZjOVJ2Q2FvaGsyOW1hV00yM1c0OCUyYjN1JTJiRXhqWSUzZA"/><style>
+<title>Rock打磚塊 Breakout（最終增強版）</title><style>
     :root {
       --bg:#0b1022; --bg2:#0a0f1e; --fg:#e9ecf1; --accent:#66b2ff;
       --brick1:#ff6b6b; --brick2:#ffd166; --brick3:#06d6a0; --brick4:#4cc9f0;
@@ -301,7 +300,7 @@
   const IMG_PAIRS_FALLBACK = Array.from({length:10}, (_,i)=> i+1).map(i=>({bg:`images/bg${i}.jpg`, cg:`images/cg${i}.jpg`}));
 
   function makeImg(src, fallback){
-    const im = new Image(); im.decoding='async'; im.loading='eager'; im.src=src;
+    const im = new Image(); im.decoding='async'; im.loading='lazy'; im.src=src;
     if(fallback){
       im.onerror=()=>{ if(im.src!==fallback) im.src=fallback; };
     }
