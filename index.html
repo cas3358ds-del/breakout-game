@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <title>Rock打磚塊 Breakout（最終增強版）</title>
-<style>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=odO6_jZa-XCV2DcgQ8l2CciRh3HEegeKri72UFBmq-cEvHOMKe4YyjN63X6GjpeYeo_K9iJcWzZ5xeVzCOUjelNnQpF45TILV_jsbqAHZVJwIVqWmyjGuD00gl3HdlcsUuJ3zrTf04yIw2sIC8WAXo1_zIe-Zjlfe-vx0VgOrjy2ixK48p-KVLmgLslE22ZZZfTjG3ktN2_WsAhiuzDw1QpIiglA3R5sTGmzBX4U55iTaPHfS6M-D6XKPD7kMjDTDSTNNwCrLkV-suUXgvRCqqNn-_4xGtCl7yZlkjw4cuVxljV_nw794KVs8bVnHw-pa0Ru6RNUsVZfRuLkepKMt-s4BNZKh8hWu1jbPVrSY011w2ZwrIQ7vurBj-72CS-6" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9maWxlczA5Lm9haXVzZXJjb250ZW50LmNvbS9maWxlLU1pQzJRbkRUUGpqdXk4M0FwQUdCVXY_c2U9MjAyNS0wOC0xM1QxOCUzYTU2JTNhMjRaJnNwPXImc3Y9MjAyNC0wOC0wNCZzcj1iJnJzY2M9bWF4LWFnZSUzZDI5OSUyYyUyMGltbXV0YWJsZSUyYyUyMHByaXZhdGUmcnNjZD1hdHRhY2htZW50JTNiJTIwZmlsZW5hbWUlM2RpbmRleC5odG1sJnNpZz1KcW1kanVnZzVSUXVrS2ZjOVJ2Q2FvaGsyOW1hV00yM1c0OCUyYjN1JTJiRXhqWSUzZA"/><style>
     :root {
       --bg:#0b1022; --bg2:#0a0f1e; --fg:#e9ecf1; --accent:#66b2ff;
       --brick1:#ff6b6b; --brick2:#ffd166; --brick3:#06d6a0; --brick4:#4cc9f0;
@@ -116,6 +116,35 @@
     /* 鎖定框（統一 1s） */
     .lockbox { /* canvas-rendered; this is for reference */ }
 
+    /* 提示卡樣式 */
+    .prompts {
+      position:absolute; left: 16px; top: 160px;
+      display:flex; flex-direction:column; gap:8px; pointer-events:none;
+      z-index:7;
+    }
+    .prompt-card {
+      padding:8px 12px;
+      border-radius:10px;
+      max-width:180px;
+      font-size:12px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+      opacity:0.0;
+      transform:translateX(-20px);
+      transition:opacity .4s, transform .4s;
+    }
+    .prompt-card.show {
+      opacity:0.96;
+      transform:translateX(0);
+    }
+    .prompt-card.fade {
+      opacity:0;
+    }
+    .prompt-info  { background:rgba(30,40,80,0.85); border:1px solid rgba(255,255,255,0.15); color:#cce; }
+    .prompt-buff  { background:rgba(70,100,180,0.85); border:1px solid rgba(160,190,255,0.4); color:#fff; }
+    .prompt-debuff{ background:rgba(150,60,90,0.85); border:1px solid rgba(255,150,200,0.4); color:#fff; }
+    .prompt-special{background:rgba(210,180,80,0.85); border:1px solid rgba(255,220,160,0.5); color:#111;}
+    .prompt-boss { background:rgba(120,40,120,0.85); border:1px solid rgba(220,160,220,0.4); color:#fff; }
+
   </style>
 </head>
 <body>
@@ -133,15 +162,16 @@
 </select>
 </label>
 <button class="btn" id="pauseBtn">開始 / 暫停 (<kbd>Space</kbd>)</button>
-<label>燈條
+<label>Skin風格
         <select id="ledStyle">
 <option selected="" value="classic">經典風格</option>
-<option value="tech">科技感</option>
-<option value="arc">電弧</option>
-<option value="steel">鋼鐵</option>
-<option value="vivid">絢麗</option>
-<option value="reaper">死神</option>
-<option value="flame">烈焰</option>
+<option value="tech">科技風格</option>
+<option value="arc">電弧風格</option>
+<option value="ice">冰雪風格</option>
+<option value="vivid">絢麗風格</option>
+<option value="reaper">死神風格</option>
+<option value="flame">烈焰風格</option>
+<option value="demon">魔王風格</option>
 </select>
 </label>
 <button class="btn" id="resetBtn">重開 (<kbd>R</kbd>)</button>
@@ -186,6 +216,8 @@
 </div>
 </div>
 <canvas height="700" id="game" width="1100"></canvas>
+        <!-- 提示卡容器：顯示增益/減益/Boss/菁英提示 -->
+        <div id="prompts" class="prompts"></div>
 <div class="gameover" id="gameover">
 <div class="backdrop"></div>
 <div class="center">
@@ -237,14 +269,26 @@
       NINE:{label:'9命怪貓(生命變9)',type:'rare',rareFactor:0.08,instant:true,badge:'🐱'}
       ,TRACK:{label:'追蹤球(自動修正軌跡)',type:'buff',durationMs:10000,track:{},badge:'🧭'}
       ,MISSILE:{label:'飛彈球(擋板反彈時發射3枚)',type:'buff',durationMs:5000,missile:{speed:7,turn:0.08,lifeMs:4000},badge:'🚀'}
-      ,HELL:{label:'地獄球(黑洞吞鄰近格)',type:'buff',durationMs:5000,hell:{speedMul:1.2,haloMs:2000},badge:'🕳️'}
-      ,MEGA:{label:'特大球(半徑×3, 速度×0.8)',type:'buff',durationMs:5000,mega:{sizeMul:3,speedMul:0.8},badge:'🟢'}
+      ,HELL:{label:'地獄球',type:'none'}
+      ,MEGA:{label:'特大球',type:'none'}
       ,CHAIN:{label:'鎖鏈球(命中磚鎖10秒)',type:'debuff',durationMs:5000,chain:{lockMs:10000},badge:'⛓️'}
       ,NARROW:{label:'平台縮小(寬度減半)',type:'debuff',durationMs:5000,narrow:true,badge:'📉'}
       ,HOLE:{label:'平台空洞(中間1/3無效)',type:'debuff',durationMs:5000,hole:true,badge:'🕳'}
       ,FLIP:{label:'天地翻轉(改為左側擋板)',type:'special',durationMs:15000,specialWeight:0.1,badge:'🔄'}
       ,GODSPEED:{label:'神速流轉(不落地/忽略效果/滿速)',type:'special',durationMs:10000,specialWeight:0.1,badge:'☄️'}
       ,LASER:{label:'自動雷射(每2秒兩端發射)',type:'special',durationMs:10000,specialWeight:0.1,laser:{intervalMs:2000},badge:'🔫'}
+
+      /* 新增增益道具 */
+      ,FIREBALL:{label:'火焰球',type:'buff',durationMs:10000,badge:'🔥'}
+      ,POISON:{label:'劇毒球',type:'buff',durationMs:12000,badge:'☠️'}
+      ,TELEPORT:{label:'瞬移球',type:'buff',durationMs:10000,badge:'🌀'}
+      /* 新增特殊增益道具 */
+      ,SWORD:{label:'劍芒裂空',type:'special',durationMs:20000,specialWeight:0.1,minLevel:5,badge:'🗡️'}
+      ,LASERSTORM:{label:'雷射風暴',type:'special',durationMs:20000,specialWeight:0.1,minLevel:10,badge:'💥'}
+      ,BLACKHOLE:{label:'黑洞吞噬',type:'special',durationMs:20000,specialWeight:0.1,minLevel:15,badge:'🕳️'}
+      ,ANNIHILATION:{label:'萬物銷毀',type:'special',durationMs:0,specialWeight:0.1,minLevel:15,badge:'💣'}
+      /* 新增減益道具 */
+      ,ROTATE:{label:'平台翻轉',type:'debuff',durationMs:8000,badge:'🔁'}
 
     },
     powerCapsule:{width:24,height:16,fallVy:2.2},
@@ -287,6 +331,39 @@
   const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2');
   const retryBtn=document.getElementById('retryBtn');
 
+  // ==== 提示卡機制 ====
+  // 提示卡容器與記錄，用於在首次取得增益/特殊增益/減益、遇到菁英或Boss時顯示提示
+  const promptsEl = document.getElementById('prompts');
+  const promptSeen = {};
+  /**
+   * 顯示提示卡
+   * @param {string} key 用於去重的類型標識
+   * @param {string} text 要顯示的文字內容（可以包含 HTML）
+   * @param {string} category 分類: 'info' | 'buff' | 'debuff' | 'special' | 'boss'
+   */
+  function showPrompt(key, text, category='info'){
+    if(promptSeen[key]) return;
+    promptSeen[key] = true;
+    if(!promptsEl) return;
+    const div = document.createElement('div');
+    div.className = `prompt-card prompt-${category}`;
+    div.innerHTML = text;
+    promptsEl.prepend(div);
+    while(promptsEl.children.length > 3){
+      promptsEl.removeChild(promptsEl.lastElementChild);
+    }
+    requestAnimationFrame(()=> div.classList.add('show'));
+    setTimeout(()=>{
+      div.classList.add('fade');
+      setTimeout(()=>{ if(div.parentElement) div.parentElement.removeChild(div); }, 800);
+    }, 5000);
+  }
+
+  // 9命怪貓使用次數限制
+  let nineUsed = 0;
+  // 記錄最近消除磚塊的時間戳，用於掉落率抑制
+  const recentBrickClears = [];
+
 
   // 關閉視窗按鈕（關閉後立即倒數、繼續遊戲）
   const noteClose = document.getElementById('noteClose');
@@ -312,6 +389,8 @@
   let gameOver=false;
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0};
   let ledStyle = (localStorage.getItem('led_style')||'classic');
+  // 舊版 steel 對應為 ice
+  if(ledStyle === 'steel') ledStyle = 'ice';
   function renderStatsHtml(){
     const fd = (stats.fastestDeath===Infinity)? '-' : stats.fastestDeath.toFixed(2);
     const ld = (stats.longestLife===0)? '-' : stats.longestLife.toFixed(2);
@@ -582,7 +661,39 @@
   }
 
   // === Buff 狀態 ===
-  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0}};
+  const buffs={
+    WIDE:{active:false,until:0},
+    STICKY:{active:false,until:0},
+    MULTI:{active:false,until:0},
+    SLOW:{active:false,until:0},
+    PIERCE:{active:false,until:0},
+    SHIELD:{active:false,until:0},
+    RAMPAGE:{active:false,until:0},
+    FAST:{active:false,until:0},
+    WAVY:{active:false,until:0,start:0},
+    LONG:{active:false,until:0,stacks:[]},
+    PLASMA:{active:false,until:0},
+    FREEZE:{active:false,until:0},
+    HOLY:{active:false,until:0},
+    TRACK:{active:false,until:0},
+    MISSILE:{active:false,until:0},
+    HELL:{active:false,until:0},
+    MEGA:{active:false,until:0,applied:false},
+    CHAIN:{active:false,until:0},
+    NARROW:{active:false,until:0},
+    HOLE:{active:false,until:0},
+    FLIP:{active:false,until:0},
+    GODSPEED:{active:false,until:0},
+    LASER:{active:false,until:0,lastShot:0},
+    FIREBALL:{active:false,until:0,energy:0},
+    POISON:{active:false,until:0},
+    TELEPORT:{active:false,until:0,nextTeleport:0},
+    SWORD:{active:false,until:0,count:0,released:false},
+    LASERSTORM:{active:false,until:0,started:false,startAt:0,nextShot:0,targetCount:0},
+    BLACKHOLE:{active:false,until:0,deaths:0},
+    ANNIHILATION:{active:false,until:0,speeding:false,nextSmash:0},
+    ROTATE:{active:false,until:0}
+  };
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
@@ -867,6 +978,15 @@ function startBGMTheme(theme){
     }
     // 重置 Boss 計時
     nextBossAtkA = nextBossAtkB = cyclopsChargeUntil = 0;
+
+    // 首次遇到菁英或 Boss 提示
+    try{
+      if(bricks.some(b=>b.boss)){
+        showPrompt('boss', 'Boss出現！小心應戰！', 'boss');
+      } else if(bricks.some(b=>b.elite)){
+        showPrompt('elite', '菁英磚出現，打倒可獲高分！', 'info');
+      }
+    }catch(e){}
   }
 
   
@@ -1055,7 +1175,18 @@ function generateLevel(lv, L){
     if(!b || b.unbreakable) return;
     // Boss不會掉落一般增益（保持平衡）
     if(b.boss) return;
-    if(Math.random()<dropRateForLevel(level)) spawnPower(b.x + b.w/2 - 12, b.y + b.h/2);
+    // 掉落率抑制：短時間大量消磚降低掉落
+    const nowT = performance.now();
+    recentBrickClears.push(nowT);
+    while(recentBrickClears.length && nowT - recentBrickClears[0] > 500){ recentBrickClears.shift(); }
+    const count = recentBrickClears.length;
+    let chance = dropRateForLevel(level);
+    if(count >= 3){
+      const factors=[0.8,0.6,0.4,0.2];
+      const idx=Math.min(count - 3, factors.length - 1);
+      chance *= factors[idx];
+    }
+    if(Math.random() < chance) spawnPower(b.x + b.w/2 - 12, b.y + b.h/2);
   }
 
   function dropRateForLevel(lv){
@@ -1074,9 +1205,17 @@ function generateLevel(lv, L){
   
 function spawnPower(x,y){
   const defs = GAME_CONFIG.powers;
-  const normals = Object.keys(defs).filter(k=>defs[k].type==='buff');
-  const specials = Object.keys(defs).filter(k=>defs[k].type==='special' || defs[k].type==='rare');
-  const debuffs  = Object.keys(defs).filter(k=>defs[k].type==='debuff');
+  // 過濾掉不該掉落的類型：NONE、9命使用上限、未達等級的特殊增益
+  const allKeys = Object.keys(defs).filter(k => {
+    const d = defs[k];
+    if(d.type === 'none') return false;
+    if(k === 'NINE' && nineUsed >= 2) return false;
+    if(d.minLevel && level < d.minLevel) return false;
+    return true;
+  });
+  const normals = allKeys.filter(k=>defs[k].type==='buff');
+  const specials = allKeys.filter(k=>defs[k].type==='special' || defs[k].type==='rare');
+  const debuffs  = allKeys.filter(k=>defs[k].type==='debuff');
 
   // 構建權重：一般增益 = 1，特殊增益 = 0.1，減益 = 0.6（維持些許威脅）
   const weighted = [];
@@ -1115,6 +1254,101 @@ function spawnPower(x,y){
   });
 }
 
+  // === 自訂特效 ===
+  /**
+   * 釋放劍芒：於延遲後依序針對隨機磚塊造成 3 點傷害
+   * @param {number} count 飛劍數量
+   */
+  function releaseSwords(count){
+    for(let i=0;i<count;i++){
+      setTimeout(()=>{
+        // 選擇一個可破壞磚塊（隨機）
+        const targets = bricks.filter(b=>!b.unbreakable);
+        if(targets.length===0) return;
+        const t = targets[Math.floor(Math.random()*targets.length)];
+        // 鎖定並扣血3
+        const idx = bricks.indexOf(t);
+        if(idx>=0){
+          if(t.boss){ t.hp -= 3; if(t.hp<=0){ revealBrickArea(t); bricks.splice(idx,1); score+=50; } }
+          else {
+            t.hp = (t.hp||1) - 3;
+            if(t.hp<=0){ revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(idx,1); score+=10; }
+          }
+          spawnParticles(t.x + t.w/2, t.y + t.h/2, '#cfcfff', 16, 1.8, 2.4, 3);
+        }
+      }, i * 300);
+    }
+  }
+
+  /**
+   * 火焰球爆炸：根據累積能量決定爆炸半徑，對範圍內磚塊造成破壞
+   * @param {number} cx 中心 x 坐標
+   * @param {number} cy 中心 y 坐標
+   * @param {number} energy 累積能量點數
+   */
+  function fireballExplosionAt(cx, cy, energy){
+    // 能量點數對應半徑：<=5 =>60, <=10 =>100, <=20 =>150, >20 =>250
+    let rad = 60;
+    if(energy <= 5) rad = 60;
+    else if(energy <= 10) rad = 100;
+    else if(energy <= 20) rad = 150;
+    else rad = 250;
+    // 對於每個磚塊，若距離小於半徑則扣血/摧毀
+    for(let i=bricks.length-1;i>=0;i--){
+      const b = bricks[i];
+      const bx = b.x + b.w/2, by = b.y + b.h/2;
+      const d = Math.hypot(bx - cx, by - cy);
+      if(d <= rad){
+        if(b.unbreakable) continue;
+        if(b.boss){
+          b.hp -= 1;
+          if(b.hp <= 0){
+            revealBrickArea(b);
+            bricks.splice(i,1);
+            score += 50; stats.bossKills++;
+          }
+        } else {
+          // 一般磚
+          revealBrickArea(b);
+          maybeDropFromBrick(b);
+          bricks.splice(i,1);
+          score += 10;
+        }
+        spawnParticles(bx, by, '#ff9955', 14, 1.8, 2.6, 3.2);
+      }
+    }
+    spawnParticles(cx, cy, '#ffaa66', 28, 2.2, 3.4, 4.2);
+    updateHUD();
+    beep(220, 0.1, 0.08);
+  }
+
+  /**
+   * 黑洞爆炸：根據死亡次數決定傷害與範圍
+   */
+  function performBlackHoleExplosion(){
+    const deaths = buffs.BLACKHOLE.deaths || 0;
+    const frac = Math.min(1, deaths / 8);
+    const minR = 100, maxR = 500;
+    const rad = minR + (maxR - minR) * frac;
+    // 任意損失 HP 設定，min 1 max 40
+    const damage = Math.round(1 + (40 - 1) * frac);
+    const cx = paddle.x + paddle.w/2;
+    const cy = orientLeft ? paddle.y + paddle.h/2 : layout().top;
+    for(let i=bricks.length-1;i>=0;i--){
+      const b = bricks[i];
+      if(b.unbreakable) continue;
+      const dx=(b.x+b.w/2)-cx;
+      const dy=(b.y+b.h/2)-cy;
+      const d=Math.hypot(dx,dy);
+      if(d <= rad){
+        if(b.boss){ b.hp -= damage; if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; } }
+        else { b.hp = (b.hp||1) - damage; if(b.hp<=0){ revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; } }
+        spawnParticles(b.x+b.w/2,b.y+b.h/2,'#aa66ff',20,2.0,3.0,4.0);
+      }
+    }
+    spawnParticles(cx, cy, '#bb88ff', 32, 2.5, 3.5, 5);
+  }
+
   function applyPower(type){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type){ stats.buffs++; lastGainPickupAt = performance.now(); nextForcedDropAt = lastGainPickupAt + 10000; } }
 const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
@@ -1131,7 +1365,15 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
           } else keep.push(b);
         }
         bricks=keep; screenShake=6; beep(180,0.12,0.1);
-      } else if(type==='NINE'){ lives=9; updateHUD(); spawnParticles(550,350,'#ffd',40,2.2,3.5,4); beep(880,0.1,0.06); }
+      } else if(type==='NINE'){
+        if(nineUsed < 2){
+          lives = 9;
+          nineUsed++;
+          updateHUD();
+          spawnParticles(550,350,'#ffd',40,2.2,3.5,4);
+          beep(880,0.1,0.06);
+        }
+      }
       return;
     }
     // 定時類
@@ -1201,6 +1443,61 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
         }
     if(type==='GODSPEED'){ buffs.GODSPEED.active=true; buffs.GODSPEED.until=now+def.durationMs; }
     if(type==='LASER'){ buffs.LASER.active=true; buffs.LASER.until=now+def.durationMs; buffs.LASER.lastShot=0; }
+
+    // === 新增增益 / 特殊增益 / 減益道具 ===
+    if(type==='FIREBALL'){
+      buffs.FIREBALL.active = true;
+      buffs.FIREBALL.until = now + def.durationMs;
+      buffs.FIREBALL.energy = 0;
+      showPrompt('fireball','獲得增益：火焰球，累積能量爆炸！','buff');
+    }
+    if(type==='POISON'){
+      buffs.POISON.active = true;
+      buffs.POISON.until = now + def.durationMs;
+      showPrompt('poison','獲得增益：劇毒球，持續傷害磚塊。','buff');
+    }
+    if(type==='TELEPORT'){
+      buffs.TELEPORT.active = true;
+      buffs.TELEPORT.until = now + def.durationMs;
+      buffs.TELEPORT.nextTeleport = 0;
+      showPrompt('teleport','獲得增益：瞬移球，反彈後瞬移到頂部。','buff');
+    }
+    if(type==='SWORD'){
+      buffs.SWORD.active = true;
+      buffs.SWORD.until = now + def.durationMs;
+      buffs.SWORD.count = 0;
+      buffs.SWORD.released = false;
+      showPrompt('sword','特殊增益：劍芒裂空，蓄力飛劍。','special');
+    }
+    if(type==='LASERSTORM'){
+      buffs.LASERSTORM.active = true;
+      buffs.LASERSTORM.until = now + def.durationMs;
+      buffs.LASERSTORM.started = false;
+      buffs.LASERSTORM.startAt = now;
+      buffs.LASERSTORM.nextShot = 0;
+      buffs.LASERSTORM.targetCount = 0;
+      showPrompt('laserstorm','特殊增益：雷射風暴，猛烈射擊磚塊！','special');
+    }
+    if(type==='BLACKHOLE'){
+      buffs.BLACKHOLE.active = true;
+      buffs.BLACKHOLE.until = now + def.durationMs;
+      buffs.BLACKHOLE.deaths = 0;
+      showPrompt('blackhole','特殊增益：黑洞吞噬，死亡越多威力越大。','special');
+    }
+    if(type==='ANNIHILATION'){
+      buffs.ANNIHILATION.active = true;
+      buffs.ANNIHILATION.until = 0; // 無固定時間，持續到下一次死亡
+      buffs.ANNIHILATION.speeding = true;
+      buffs.ANNIHILATION.nextSmash = now + 1000;
+      buffs.ANNIHILATION.start = now;
+      showPrompt('annihilation','特殊增益：萬物銷毀，球速遽增且隨機粉碎磚塊！','special');
+    }
+    if(type==='ROTATE'){
+      buffs.ROTATE.active = true;
+      buffs.ROTATE.until = now + def.durationMs;
+      buffs.ROTATE.start = now;
+      showPrompt('rotate','減益：平台翻轉，請小心操作。','debuff');
+    }
 
     updateBuffBadges();
   }
@@ -1809,12 +2106,39 @@ if(performance.now() >= nextForcedDropAt){
 
   function update(){
     const now=performance.now();
-    // Buff 過期
+    // Buff 過期：偵測並執行各種結束效果
     for(const key of Object.keys(GAME_CONFIG.powers)){
-      if(key==='LONG') continue; 
-      const b=buffs[key];
-      if((b && b.active) && b.until && now>b.until){
-        b.active=false;
+      if(key==='LONG') continue;
+      const b = buffs[key];
+      if((b && b.active) && b.until && now > b.until){
+        // 到期前處理特定 buff 的終止事件
+        if(key === 'FIREBALL'){
+          const energy = b.energy || 0;
+          if(energy > 0){
+            for(const ball of balls){
+              fireballExplosionAt(ball.x, ball.y, energy);
+            }
+          }
+          b.energy = 0;
+        } else if(key === 'SWORD'){
+          if(!b.released){
+            releaseSwords(b.count || 0);
+            b.released = true;
+          }
+        } else if(key === 'LASERSTORM'){
+          b.started = false;
+          b.targetCount = 0;
+        } else if(key === 'BLACKHOLE'){
+          performBlackHoleExplosion();
+          b.deaths = 0;
+        } else if(key === 'ANNIHILATION'){
+          b.speeding = false;
+        } else if(key === 'ROTATE'){
+          // 可在此還原旋轉狀態（旋轉特效未實作）
+        }
+        // 清除 buff 激活狀態
+        b.active = false;
+        // 特定 buff 還原處理
         if(key==='PIERCE'){ for(const ball of balls) ball.piercing=false; }
         if(key==='STICKY'){ for(const ball of balls){ if(ball.stuck){ ball.stuck=false; ball.vy = -Math.abs(ball.vy||6); } } }
         if(key==='MEGA' && buffs.MEGA.applied){ for(const ball of balls){ ball.r/=GAME_CONFIG.powers.MEGA.mega.sizeMul; } buffs.MEGA.applied=false; }
@@ -1822,6 +2146,25 @@ if(performance.now() >= nextForcedDropAt){
       }
     }
     computePaddleWidth(); updateBuffBadges();
+
+    // 劇毒球：對帶毒磚塊每 3 秒扣 1 血，持續時限結束後移除狀態
+    for(let i=bricks.length-1;i>=0;i--){
+      const bk = bricks[i];
+      if(bk.poisonEnd){
+        if(now >= bk.poisonEnd){
+          delete bk.poisonEnd;
+          delete bk.nextPoison;
+        } else {
+          if(!bk.nextPoison) bk.nextPoison = now + 3000;
+          if(now >= bk.nextPoison){
+            // 對磚塊造成 1 點傷害
+            damageOrDestroy(i, 1);
+            bk.nextPoison = now + 3000;
+            spawnParticles(bk.x + bk.w/2, bk.y + bk.h/2, '#55ff55', 6, 1.6, 1.6, 2.4);
+          }
+        }
+      }
+    }
 
     
     // 菁英磚技能：每30秒發射，發射前聚氣2秒
@@ -1846,6 +2189,51 @@ if(performance.now() >= nextForcedDropAt){
             laserImpacts.push({x:tx, y:ty, t0:now, tEnd:now+320});
             spawnParticles(tx,ty,'rgba(160,255,200,0.9)',10,1.8,2.2,2.6);
             destroyBrick(targetIdx);
+          }
+        }
+      }
+    }
+
+    // 雷射風暴：在啟動後延遲3秒聚氣，然後依序射擊隨機磚塊
+    if(buffs.LASERSTORM && buffs.LASERSTORM.active){
+      // 尚未啟動：等待 3 秒聚氣，計算要射擊的數量（21扣掉玩家生命值，最少為0）
+      if(!buffs.LASERSTORM.started){
+        if(now - buffs.LASERSTORM.startAt >= 3000){
+          const life = Math.max(0, lives);
+          let tgt = 21 - life;
+          if(tgt < 0) tgt = 0;
+          buffs.LASERSTORM.targetCount = tgt;
+          buffs.LASERSTORM.started = true;
+          // 聚氣結束後再等1秒開始射擊
+          buffs.LASERSTORM.nextShot = now + 1000;
+        }
+      } else {
+        // 已啟動：定時射擊
+        if(buffs.LASERSTORM.targetCount > 0 && now >= buffs.LASERSTORM.nextShot){
+          // 選擇一個可破壞的磚塊
+          const targets=[];
+          for(let i=0;i<bricks.length;i++){
+            const bk=bricks[i];
+            if(canDestroyBrick(bk)) targets.push(i);
+          }
+          if(targets.length>0){
+            const idx=targets[Math.floor(Math.random()*targets.length)];
+            const t=bricks[idx];
+            const pr=paddleRect();
+            const s = !orientLeft ? {x:pr.x+pr.w/2, y:pr.y+pr.h/2} : {x:pr.x+pr.w/2, y:pr.y+pr.h/2};
+            const tx=t.x+t.w/2, ty=t.y+t.h/2;
+            laserBeams.push({x1:s.x,y1:s.y,x2:tx,y2:ty,until:now+200});
+            laserImpacts.push({x:tx, y:ty, t0:now, tEnd:now+320});
+            spawnParticles(tx,ty,'rgba(240,240,255,0.9)',12,1.8,2.2,2.6);
+            destroyBrick(idx);
+          }
+          buffs.LASERSTORM.targetCount--;
+          buffs.LASERSTORM.nextShot = now + 200;
+          // 射擊完成後結束效果
+          if(buffs.LASERSTORM.targetCount <= 0){
+            buffs.LASERSTORM.active = false;
+            buffs.LASERSTORM.started = false;
+            buffs.LASERSTORM.nextShot = 0;
           }
         }
       }
@@ -1887,6 +2275,18 @@ if(performance.now() >= nextForcedDropAt){
     }
 
     const mulGlobal=effectiveMul();
+
+    // 瞬移球：如到達預定時間，將所有球瞬移到頂部位置並重設瞬移計時
+    if(buffs.TELEPORT.active && buffs.TELEPORT.nextTeleport && now >= buffs.TELEPORT.nextTeleport){
+      for(const ball of balls){
+        const rad = ball.r || 6;
+        ball.y = rad + 1;
+        ball.vy = Math.abs(ball.vy || 4);
+      }
+      buffs.TELEPORT.nextTeleport = 0;
+      spawnParticles(550, 20, '#aaffff', 20, 2.0, 2.4, 3.0);
+      beep(440,0.06,0.06);
+    }
 
     // Boss 能力排程
     updateBossAbilities();
@@ -1938,7 +2338,20 @@ if(performance.now() >= nextForcedDropAt){
           // 底部：GODSPEED 不落地 / SHIELD 擋一次
           if(buffs.GODSPEED.active){ b.y=700-r; b.vy=-Math.abs(b.vy); }
           else if(buffs.SHIELD.active){ buffs.SHIELD.active=false; b.y=700-r-1; b.vy=-Math.abs(b.vy); }
-          else { const idx=balls.indexOf(b); if(idx>=0) balls.splice(idx,1); break; }
+          else {
+            const idx=balls.indexOf(b);
+            if(idx>=0) balls.splice(idx,1);
+            // 黑洞吞噬：記錄死亡次數
+            if(buffs.BLACKHOLE.active){
+              buffs.BLACKHOLE.deaths = (buffs.BLACKHOLE.deaths || 0) + 1;
+            }
+            // 萬物銷毀：落球即終止效果
+            if(buffs.ANNIHILATION.active){
+              buffs.ANNIHILATION.active = false;
+              buffs.ANNIHILATION.speeding = false;
+            }
+            break;
+          }
         }
       }else{
         // 左側模式：上下為牆，左側為落點；GODSPEED 無落地
@@ -1948,7 +2361,18 @@ if(performance.now() >= nextForcedDropAt){
         if(b.x-r<0){
           if(buffs.GODSPEED.active){ b.x=r; b.vx=Math.abs(b.vx); }
           else if(buffs.SHIELD.active){ buffs.SHIELD.active=false; b.x=r+1; b.vx=Math.abs(b.vx); }
-          else { const idx=balls.indexOf(b); if(idx>=0) balls.splice(idx,1); break; }
+          else {
+            const idx=balls.indexOf(b);
+            if(idx>=0) balls.splice(idx,1);
+            if(buffs.BLACKHOLE.active){
+              buffs.BLACKHOLE.deaths = (buffs.BLACKHOLE.deaths || 0) + 1;
+            }
+            if(buffs.ANNIHILATION.active){
+              buffs.ANNIHILATION.active = false;
+              buffs.ANNIHILATION.speeding = false;
+            }
+            break;
+          }
         }
       }
 
@@ -2010,12 +2434,31 @@ if(performance.now() >= nextForcedDropAt){
         
           if(best){ pushLockBox(best.t.x, best.t.y, best.t.w, best.t.h, 'target'); }
 }
+
+        // 新增：火焰球、瞬移球、劍芒裂空在擋板反彈時累積能量或排程
+        if(buffs.FIREBALL.active){
+          buffs.FIREBALL.energy = (buffs.FIREBALL.energy||0) + 1;
+        }
+        if(buffs.TELEPORT.active){
+          buffs.TELEPORT.nextTeleport = now + 1000;
+        }
+        if(buffs.SWORD.active){
+          buffs.SWORD.count = (buffs.SWORD.count||0) + 1;
+        }
       }
 
       // 碰磚
       let hit=-1; for(let i=0;i<bricks.length;i++){ const bk=bricks[i]; if(b.x+r>bk.x && b.x-r<bk.x+bk.w && b.y+r>bk.y && b.y-r<bk.y+bk.h){ hit=i; break; } }
       if(hit>=0){
         const bk=bricks[hit]; const inRampage=b.rampageUntil && now<b.rampageUntil;
+        // 新增：火焰球磚碰撞累積能量、劇毒球對磚塊施加毒素
+        if(buffs.FIREBALL.active){
+          buffs.FIREBALL.energy = (buffs.FIREBALL.energy||0) + 1;
+        }
+        if(buffs.POISON.active && !bk.unbreakable){
+          bk.poisonEnd = now + GAME_CONFIG.powers.POISON.durationMs;
+          bk.nextPoison = now + 3000;
+        }
         // 反彈
         const oL=(b.x+r)-bk.x, oR=(bk.x+bk.w)-(b.x-r), oT=(b.y+r)-bk.y, oB=(bk.y+bk.h)-(b.y-r); const m=Math.min(oL,oR,oT,oB);
         if(!inRampage && !b.piercing){
