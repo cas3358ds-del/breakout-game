@@ -4,8 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>Rock打磚塊 Breakout（最終增強版）</title>
-<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=odO6_jZa-XCV2DcgQ8l2CciRh3HEegeKri72UFBmq-cEvHOMKe4YyjN63X6GjpeYeo_K9iJcWzZ5xeVzCOUjelNnQpF45TILV_jsbqAHZVJwIVqWmyjGuD00gl3HdlcsUuJ3zrTf04yIw2sIC8WAXo1_zIe-Zjlfe-vx0VgOrjy2ixK48p-KVLmgLslE22ZZZfTjG3ktN2_WsAhiuzDw1QpIiglA3R5sTGmzBX4U55iTaPHfS6M-D6XKPD7kMjDTDSTNNwCrLkV-suUXgvRCqqNn-_4xGtCl7yZlkjw4cuVxljV_nw794KVs8bVnHw-pa0Ru6RNUsVZfRuLkepKMt-s4BNZKh8hWu1jbPVrSY011w2ZwrIQ7vurBj-72CS-6" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9maWxlczA5Lm9haXVzZXJjb250ZW50LmNvbS9maWxlLU1pQzJRbkRUUGpqdXk4M0FwQUdCVXY_c2U9MjAyNS0wOC0xM1QxOCUzYTU2JTNhMjRaJnNwPXImc3Y9MjAyNC0wOC0wNCZzcj1iJnJzY2M9bWF4LWFnZSUzZDI5OSUyYyUyMGltbXV0YWJsZSUyYyUyMHByaXZhdGUmcnNjZD1hdHRhY2htZW50JTNiJTIwZmlsZW5hbWUlM2RpbmRleC5odG1sJnNpZz1KcW1kanVnZzVSUXVrS2ZjOVJ2Q2FvaGsyOW1hV00yM1c0OCUyYjN1JTJiRXhqWSUzZA"/><style>
+<title>Rock打磚塊 Breakout（最終增強版）</title><style>
     :root {
       --bg:#0b1022; --bg2:#0a0f1e; --fg:#e9ecf1; --accent:#66b2ff;
       --brick1:#ff6b6b; --brick2:#ffd166; --brick3:#06d6a0; --brick4:#4cc9f0;
@@ -301,7 +300,7 @@
   const IMG_PAIRS_FALLBACK = Array.from({length:10}, (_,i)=> i+1).map(i=>({bg:`images/bg${i}.jpg`, cg:`images/cg${i}.jpg`}));
 
   function makeImg(src, fallback){
-    const im = new Image(); im.decoding='async'; im.loading='eager'; im.src=src;
+    const im = new Image(); im.decoding='async'; im.loading='lazy'; im.src=src;
     if(fallback){
       im.onerror=()=>{ if(im.src!==fallback) im.src=fallback; };
     }
@@ -371,19 +370,13 @@
     hideCenter();
     if(running){ startCountdown(); } else { startGameWithCountdown(); }
   }
-  /* one-time listener bindings */
-let __centerNoteBound=false;
-function __bindCenterNoteOnce(){
- if(__centerNoteBound) return; __centerNoteBound=true;
- centerNote.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
- noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); });
- document.addEventListener('click', ()=>{ if(!running && !gameOver){ startGameWithCountdown(); } });
-}
-noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); __bindCenterNoteOnce(); closeNoteAndResume(); });
+  noteClose.addEventListener('click', (e)=>{ e.stopPropagation();
+  // 允許點擊整個教學/說明覆蓋層即可開始或繼續（避免行動裝置誤觸無法啟動）
+  centerNote.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume();
   noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
   // 任何地方點擊（例如 HUD）也能觸發首次啟動，強化容錯
   document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } });
- closeNoteAndResume(); });
+ closeNoteAndResume();
 
 
   // === DPR 縮放 ===
@@ -1639,8 +1632,7 @@ function drawPower(p){
     else { startCountdown(); }
   }
 
-  __bindCenterNoteOnce();
-function startGameWithCountdown(){
+  function startGameWithCountdown(){
     running=true; paused=true; hideCenter();
     ensureAudio(); if(audioCtx && audioCtx.resume) audioCtx.resume();
     // 音效與BGM設定載入
@@ -1912,7 +1904,6 @@ function startGameWithCountdown(){
 
   function draw(){
 
-let __shakeNeedRestore=false;
 // 10s 未取得增益時的保底掉落
 if(performance.now() >= nextForcedDropAt){
   // 只投放「非減益」
@@ -1928,8 +1919,7 @@ if(performance.now() >= nextForcedDropAt){
   nextForcedDropAt = performance.now() + 10000;
 }
 
-    /* screen shake with guaranteed restore */
-(function(){ if(screenShake>0){ const s=screenShake*0.6; ctx.save(); ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); screenShake*=0.9; __shakeNeedRestore=true; }})();
+    if(screenShake>0){ const s=screenShake*0.6; ctx.save(); ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); screenShake*=0.9; }
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawBGDecor();
     drawRevealTiles();
@@ -2602,5 +2592,249 @@ if(performance.now() >= nextForcedDropAt){
   boot();
 })();
 </script>
+
+<!-- ===== 可隨時進入的畫廊面板（由補丁注入） ===== -->
+<div class="win" id="album" style="display:none;">
+  <div class="backdrop"></div>
+  <div class="center" style="max-width:min(92vw,1020px)">
+    <h2>畫廊</h2>
+    <div id="albumGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;max-height:min(60vh,560px);overflow:auto;margin:8px 0;"></div>
+    <div class="small">點縮圖可放大，再次點擊縮回</div>
+    <div class="again" style="margin-top:12px"><button class="btn" id="albumClose">回到遊戲</button></div>
+  </div>
+</div>
+
+
+<script>
+// ===== Breakout Mobile Stability & Feature Patch =====
+(()=>{
+  // 0) Guard: wait DOM
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPatch, {once:true});
+  } else {
+    initPatch();
+  }
+
+  function initPatch(){
+    try{
+      addAlbumButton();
+      hookPauseTimers();
+      hookFlipBehavior();
+      hookDrawWrap();
+      hookGetLevelImageSeen();
+      wireAlbumUI();
+    }catch(e){ console.error('[Patch init error]', e); }
+  }
+
+  // Add "畫廊" button next to effectsBtn
+  function addAlbumButton(){
+    const effectsBtn = document.getElementById('effectsBtn');
+    if (effectsBtn && !document.getElementById('albumBtn')){
+      const btn=document.createElement('button');
+      btn.id='albumBtn'; btn.className='btn'; btn.textContent='畫廊';
+      effectsBtn.insertAdjacentElement('afterend', btn);
+    }
+    // show album overlay element
+    const album = document.getElementById('album');
+    if (album) album.style.display=''; // let css/JS control
+  }
+
+  // === Soft cap arrays to avoid runaway memory ===
+  function capArray(arr, max){ if(arr && arr.length>max){ arr.splice(0, arr.length-max); } }
+
+  // === Pause timers freezing & resume shifting ===
+  let __pausedAt = 0;
+  function shiftAllTimers(dt){
+    try{ for(const k in window.buffs){ const v=window.buffs[k]; if(v && typeof v.until==='number') v.until+=dt; } }catch(e){}
+    try{ if(window.buffs?.LONG?.stacks) window.buffs.LONG.stacks = window.buffs.LONG.stacks.map(t=>t+dt); }catch(e){}
+    try{ if(typeof window.buffs?.LASER?.lastShot==='number') window.buffs.LASER.lastShot += dt; }catch(e){}
+    try{ if(window.nextSkyDropAt) window.nextSkyDropAt += dt; }catch(e){}
+    try{ if(window.nextForcedDropAt) window.nextForcedDropAt += dt; }catch(e){}
+    try{ if(window.lockBoxes) window.lockBoxes.forEach(o=> o.until && (o.until += dt)); }catch(e){}
+    try{ if(window.laserBeams) window.laserBeams.forEach(o=> o.until && (o.until += dt)); }catch(e){}
+    try{ if(window.laserImpacts) window.laserImpacts.forEach(o=> o.until && (o.until += dt)); }catch(e){}
+    try{ if(window.blackHoles) window.blackHoles.forEach(o=> o.until && (o.until += dt)); }catch(e){}
+    try{ if(window.hostileColumns) window.hostileColumns.forEach(o=> { if(o.tStart) o.tStart+=dt; if(o.tEnd) o.tEnd+=dt; }); }catch(e){}
+    try{ if(window.cyclopsChargeUntil) window.cyclopsChargeUntil += dt; }catch(e){}
+    try{ if(window.nextBossAtkA) window.nextBossAtkA += dt; }catch(e){}
+    try{ if(window.nextBossAtkB) window.nextBossAtkB += dt; }catch(e){}
+  }
+  function hookPauseTimers(){
+    const t = window.togglePause;
+    if (typeof t!=='function') return;
+    window.togglePause = function(){
+      if(!window.running){ window.startGameWithCountdown?.(); return; }
+      window.paused = !window.paused;
+      if(window.paused){
+        __pausedAt = performance.now();
+        window.showCenter?.('已暫停','按 Space / 點畫面繼續');
+      }else{
+        const dt = performance.now() - __pausedAt;
+        shiftAllTimers(dt);
+        window.startCountdown?.();
+      }
+    };
+  }
+
+  // === FLIP behavior: 2s pre cue + 2s end cue; homing; reversed drops ===
+  let flipPreUntil=0, flipActiveFrom=0, flipEndCueFrom=0, flipActiveUntil=0, flipEndAt=0;
+  let flipRetargetedStart=false, flipRetargetedEnd=false;
+  function hookFlipBehavior(){
+    const ap = window.applyPower;
+    if (typeof ap!=='function') return;
+    window.applyPower = function(type){
+      if (type==='FLIP'){
+        const D   = (window.GAME_CONFIG?.powers?.FLIP?.durationMs) || 15000;
+        const pre = 2000, endCue = 2000;
+        const now = performance.now();
+        flipPreUntil    = now + pre;
+        flipActiveFrom  = flipPreUntil;
+        flipActiveUntil = flipActiveFrom + D;
+        flipEndCueFrom  = flipActiveUntil - endCue;
+        flipEndAt       = flipActiveUntil;
+        if(window.buffs?.FLIP){ window.buffs.FLIP.active=true; window.buffs.FLIP.until=flipEndAt; }
+        flipRetargetedStart=false; flipRetargetedEnd=false;
+        return;
+      }
+      return ap(type);
+    };
+  }
+
+  // === Wrap draw(): caps + flip state shift + cues + reversed drop direction ===
+  function hookDrawWrap(){
+    if (typeof window.draw!=='function') return;
+    const orig = window.draw;
+    const canvas = document.getElementById('game');
+    const ctx = canvas?.getContext('2d');
+    window.draw = function(){
+      // soft caps
+      try{
+        capArray(window.particles,1200);
+        capArray(window.plasmas,240);
+        capArray(window.fireBursts,200);
+        capArray(window.missiles,60);
+        capArray(window.laserBeams,80);
+        capArray(window.laserImpacts,160);
+        capArray(window.hostileBeams,80);
+        capArray(window.hostileArcs,80);
+        capArray(window.hostileColumns,16);
+        capArray(window.hazardClouds,20);
+      }catch(e){}
+
+      // FLIP transitions + homing
+      (function(){
+        const now = performance.now();
+        if (flipActiveFrom && now>=flipActiveFrom && now<flipActiveUntil){
+          if(!window.orientLeft) window.orientLeft = true;
+          if(!flipRetargetedStart && window.paddle && window.balls){
+            const cx = window.paddle.x + window.paddle.w/2, cy = window.paddle.y;
+            for(const b of window.balls){
+              const dx=cx-b.x, dy=cy-b.y, m=Math.hypot(dx,dy)||1, sp=Math.hypot(b.vx,b.vy)||6;
+              b.vx=(dx/m)*sp; b.vy=(dy/m)*sp;
+            }
+            flipRetargetedStart=true;
+          }
+        }else if(flipActiveUntil && now>=flipActiveUntil){
+          if(window.orientLeft) window.orientLeft=false;
+          if(!flipRetargetedEnd && window.paddle && window.balls){
+            const cx = window.paddle.x + window.paddle.w/2, cy = window.paddle.y;
+            for(const b of window.balls){
+              const dx=cx-b.x, dy=cy-b.y, m=Math.hypot(dx,dy)||1, sp=Math.hypot(b.vx,b.vy)||6;
+              b.vx=(dx/m)*sp; b.vy=(dy/m)*sp;
+            }
+            flipRetargetedEnd=true;
+          }
+          flipPreUntil=flipActiveFrom=flipEndCueFrom=flipActiveUntil=flipEndAt=0;
+        }
+      })();
+
+      // run original draw
+      orig();
+
+      // cue symbol (non-blocking)
+      if (ctx && canvas){
+        const now=performance.now();
+        const showPre = (flipPreUntil && now<flipPreUntil);
+        const showEnd = (flipEndCueFrom && now>=flipEndCueFrom && now<=flipActiveUntil);
+        if(showPre || showEnd){
+          try { (window.balls||[]).forEach(b=>{ b.vx*=0.995; b.vy*=0.995; }); } catch(e){}
+          ctx.save(); ctx.globalAlpha=0.14; ctx.fillStyle='#9cf'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          const size = Math.round(0.16 * Math.min(canvas.width, canvas.height));
+          ctx.font = size + 'px system-ui';
+          ctx.fillText('↻', canvas.width/2, canvas.height/2);
+          ctx.restore();
+        }
+      }
+
+      // reverse powerup fall dir during flip
+      try{
+        if (Array.isArray(window.powerups)) {
+          const flipOn = !!window.orientLeft;
+          for(const p of window.powerups){ p.vy = flipOn? -Math.abs(p.vy) : Math.abs(p.vy); }
+        }
+      }catch(e){}
+    };
+  }
+
+  // === Album / Gallery ===
+  function wireAlbumUI(){
+    const album = document.getElementById('album');
+    const albumGrid = document.getElementById('albumGrid');
+    const albumBtn = document.getElementById('albumBtn');
+    const albumClose = document.getElementById('albumClose');
+    const gallery = document.getElementById('gallery');
+    const galleryImg = document.getElementById('galleryImg');
+    const seenStoreKey = 'breakout_gallery_seen_v1';
+    let seen = {}; try{ seen = JSON.parse(localStorage.getItem(seenStoreKey)||'{}'); }catch(e){ seen={}; }
+    function markSeen(idx, kind){ const key = kind+idx; if(!seen[key]){ seen[key]=true; localStorage.setItem(seenStoreKey, JSON.stringify(seen)); } }
+    window.__markSeen = markSeen; // export for getLevelImage hook
+
+    function openGalleryImage(key){
+      const m = key.match(/(bg|cg)(\d+)/); if(!m) return;
+      const kind=m[1], n=parseInt(m[2],10);
+      const src = (kind==='bg')? window.IMG_PAIRS?.[n-1]?.bg : window.IMG_PAIRS?.[n-1]?.cg;
+      if (!src || !gallery || !galleryImg) return;
+      galleryImg.src = src; gallery.classList.add('show');
+      setTimeout(()=> document.addEventListener('click', ()=>{ gallery.classList.remove('show'); galleryImg.src=''; }, {once:true}), 0);
+    }
+
+    function buildAlbum(){
+      if(!albumGrid || !Array.isArray(window.IMG_PAIRS)) return;
+      albumGrid.innerHTML='';
+      const items=[];
+      for(let i=1;i<=10;i++) items.push({key:'bg'+i, src: window.IMG_PAIRS[i-1].bg});
+      for(let i=1;i<=10;i++) items.push({key:'cg'+i, src: window.IMG_PAIRS[i-1].cg});
+      for(const it of items){
+        const wrap=document.createElement('div'); wrap.style.cssText='position:relative;border:1px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden;';
+        const img=document.createElement('img'); img.src=it.src; img.loading='lazy'; img.style.cssText='width:100%;height:72px;object-fit:cover;display:block;';
+        if(!seen[it.key]) img.style.filter='grayscale(100%) brightness(60%)';
+        wrap.appendChild(img);
+        wrap.addEventListener('click', ()=>openGalleryImage(it.key));
+        albumGrid.appendChild(wrap);
+      }
+    }
+    function openAlbum(){ if(!album) return; window.paused=true; __pausedAt=performance.now(); buildAlbum(); album.classList.add('show'); }
+    function closeAlbum(){ if(!album) return; album.classList.remove('show'); const dt=performance.now()-__pausedAt; shiftAllTimers(dt); window.startCountdown?.(); }
+    albumBtn?.addEventListener('click', openAlbum);
+    albumClose?.addEventListener('click', closeAlbum);
+  }
+
+  // mark seen when stage image chosen
+  function hookGetLevelImageSeen(){
+    const f = window.getLevelImage;
+    if (typeof f!=='function') return;
+    window.getLevelImage = function(levelNum){
+      const img = f(levelNum);
+      try{
+        const idx=((levelNum-1)%10)+1;
+        const chosenIsBG = (window.imageChoice?.[((levelNum-1)%10)]===0);
+        window.__markSeen?.(idx, (levelNum<=10 ? (chosenIsBG?'bg':'cg') : (chosenIsBG?'cg':'bg')));
+      }catch(e){}
+      return img;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
