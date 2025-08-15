@@ -147,7 +147,7 @@
   
 /* ===== Skin FX (燈條 + 背板 + 環境光 + UI色票) ===== */
 :root{ --bar-size:14px; --skin-ambient: rgba(102,178,255,.10); }
-#skinFX{ position:absolute; inset:0; pointer-events:none; z-index:3; }
+#skinFX{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:3; }
 #skinFX .bar{ position:absolute; border-radius:12px; filter:drop-shadow(0 0 8px var(--led)); opacity:.92; }
 #skinFX .bar.top{ left:0; right:0; height:var(--bar-size); top:0; background:linear-gradient(90deg, rgba(255,255,255,.35), var(--led), rgba(255,255,255,.35)); }
 #skinFX .bar.left{ top:0; bottom:0; width:var(--bar-size); left:0; background:linear-gradient(180deg, rgba(255,255,255,.35), var(--led), rgba(255,255,255,.35)); }
@@ -268,9 +268,10 @@
 <span class="item"><span class="box" style="background:var(--debuff)"></span>減益道具</span>
 </div>
 <div class="badges" id="activeBuffs"></div>
-<div class="overlay">
+<div class="overlay"><canvas id="game" width="1100" height="700"></canvas>
 
-<canvas id="game" width="1100" height="700"></canvas>
+
+
 <div id="skinFX" class="skin skin-classic" aria-hidden="true">
   <div class="bar top"></div>
   <div class="bar left"></div>
@@ -454,17 +455,20 @@
   // 關閉視窗按鈕（關閉後立即倒數、繼續遊戲）
   const noteClose = document.getElementById('noteClose');
   function closeNoteAndResume(){
-    hideCenter();
-    if(running){ startCountdown(); } else { startGameWithCountdown(); }
+  hideCenter();
+  if (running) {
+    startCountdown();
+  } else {
+    startGameWithCountdown();
   }
-  
-  noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
-  // 允許點擊整個教學/說明覆蓋層即可開始或繼續（避免行動裝置誤觸無法啟動）
-  centerNote.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
-  // 讓點擊 note 盒子本身不穿透
-  noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); });
-  // 行動裝置容錯：任何地方首點皆可啟動一次
-  document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } }, { once:true });
+}
+// 修正：提示視窗事件監聽，避免嵌套括號錯誤導致行動裝置無法開始遊戲
+noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+centerNote.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
+// 第一次任意點擊也能啟動（容錯強化；僅一次）
+document.addEventListener('click', ()=>{ if(!running && !gameOver){ startGameWithCountdown(); } }, { once:true });
+
 // === DPR 縮放 ===
   function resizeCanvasDPR(){ const dpr=Math.min(window.devicePixelRatio||1,2); const cssW=canvas.clientWidth; const cssH=Math.round(cssW*(700/1100)); canvas.style.height=cssH+'px'; canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr); scaleX=canvas.width/1100; scaleY=canvas.height/700; }
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
