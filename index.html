@@ -144,7 +144,78 @@
     .prompt-special{background:rgba(210,180,80,0.85); border:1px solid rgba(255,220,160,0.5); color:#111;}
     .prompt-boss { background:rgba(120,40,120,0.85); border:1px solid rgba(220,160,220,0.4); color:#fff; }
 
-  </style>
+  
+/* ===== Skin FX (燈條 + 背板 + 環境光 + UI色票) ===== */
+:root{ --bar-size:14px; --skin-ambient: rgba(102,178,255,.10); }
+#skinFX{ position:absolute; width:1100px; height:700px; pointer-events:none; z-index:3; left:50%; transform:translateX(-50%); top:unset; }
+#skinFX .bar{ position:absolute; border-radius:12px; filter:drop-shadow(0 0 8px var(--led)); opacity:.92; }
+#skinFX .bar.top{ left:0; right:0; height:var(--bar-size); top:0; background:linear-gradient(90deg, rgba(255,255,255,.35), var(--led), rgba(255,255,255,.35)); }
+#skinFX .bar.left{ top:0; bottom:0; width:var(--bar-size); left:0; background:linear-gradient(180deg, rgba(255,255,255,.35), var(--led), rgba(255,255,255,.35)); }
+#skinFX .bar.right{ top:0; bottom:0; width:var(--bar-size); right:0; background:linear-gradient(180deg, rgba(255,255,255,.35), var(--led), rgba(255,255,255,.35)); }
+#skinFX .ambient{ position:absolute; inset:0; background:var(--skin-ambient); mix-blend-mode:screen; opacity:.75; border-radius:10px; }
+
+/* 呼吸動畫（基礎） */
+@keyframes breath { 0%{filter:drop-shadow(0 0 4px var(--led));} 50%{filter:drop-shadow(0 0 14px var(--led));} 100%{filter:drop-shadow(0 0 4px var(--led));} }
+#skinFX .bar{ animation: breath 4s ease-in-out infinite; }
+
+/* — Skin 細節 — */
+/* 經典 */
+.skin-classic .ambient{ background: rgba(120,160,255,.08); }
+/* 科技 */
+.skin-tech .bar{ background:
+  linear-gradient(90deg, rgba(0,0,0,.0), rgba(255,255,255,.18) 20%, rgba(0,0,0,.0) 40%) ,
+  linear-gradient(90deg, #0ff2, var(--led), #0ff2); }
+.skin-tech .ambient{ background:
+  radial-gradient(60% 60% at 50% 0%, rgba(0,255,200,.10), transparent 70%),
+  repeating-linear-gradient(90deg, rgba(0,255,200,.12) 0 2px, rgba(0,0,0,0) 2px 8px); }
+
+/* 電弧 */
+@keyframes arc-spark { 0%,79%{opacity:.95;} 80%{opacity:.45;} 85%{opacity:.95;} 100%{opacity:.95;} }
+.skin-arc .bar{ background: linear-gradient(90deg, #66b3ff, #6cf, #66b3ff); animation-duration: 3s, 3s; animation-name: breath, arc-spark; }
+.skin-arc .ambient{ background: radial-gradient(55% 40% at 50% 0%, rgba(120,180,255,.12), transparent 70%); }
+
+/* 冰雪 */
+@keyframes snow-fall { from { background-position: 0 -40px, 0 -80px, 0 -120px; } to { background-position: 0 700px, 0 700px, 0 700px; } }
+.skin-ice .ambient{
+  background:
+    radial-gradient(2px 2px at 20% 10%, rgba(255,255,255,.35) 50%, transparent 51%) ,
+    radial-gradient(2px 2px at 70% 30%, rgba(255,255,255,.30) 50%, transparent 51%) ,
+    radial-gradient(2px 2px at 40% 60%, rgba(255,255,255,.25) 50%, transparent 51%);
+  animation: snow-fall 6s linear infinite;
+}
+
+/* 絢麗霓虹 */
+@keyframes neon-slide { 0%{background-position:0 0;} 100%{background-position:300% 0;} }
+.skin-vivid .bar{ background: linear-gradient(90deg, #ff3ef3, #66ccff, #ffeb3b, #ff3ef3); background-size: 300% 100%; animation: neon-slide 3s linear infinite, breath 3s ease-in-out infinite; }
+.skin-vivid .ambient{ background: radial-gradient(60% 50% at 50% 10%, rgba(255,140,240,.14), transparent 70%); }
+
+/* 死神 */
+.skin-reaper .bar{ background: linear-gradient(90deg, #cc4444, #990000, #cc4444); }
+.skin-reaper .ambient{ background:
+  radial-gradient(50% 35% at 50% 0%, rgba(255,60,60,.12), transparent 70%),
+  repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 6px, transparent 6px 12px); }
+
+/* 烈焰 */
+@keyframes flame-tongue { 0%{opacity:.55; transform:translateY(0);} 50%{opacity:.85; transform:translateY(-6px);} 100%{opacity:.55; transform:translateY(0);} }
+.skin-flame .bar.top::after{
+  content:""; position:absolute; left:0; right:0; height:22px; top:calc(var(--bar-size) - 2px);
+  background: radial-gradient(40% 100% at 30% 100%, rgba(255,160,64,.22), transparent 70%),
+              radial-gradient(40% 100% at 70% 100%, rgba(255,120,48,.22), transparent 70%);
+  animation: flame-tongue 1.2s ease-in-out infinite;
+}
+.skin-flame .ambient{ background: radial-gradient(65% 40% at 50% 0%, rgba(255,140,40,.10), transparent 70%); }
+
+/* 魔王 */
+@keyframes demon-drift { 0%{background-position: 0 0;} 100%{background-position: 100px 120px;} }
+.skin-demon .ambient{
+  background:
+    radial-gradient(60px 60px at 20% 30%, rgba(160,120,255,.12), transparent 60%),
+    radial-gradient(40px 40px at 70% 20%, rgba(120,80,200,.10), transparent 60%),
+    radial-gradient(80px 80px at 40% 70%, rgba(100,60,160,.10), transparent 60%);
+  animation: demon-drift 5s linear infinite;
+}
+
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -214,7 +285,15 @@
 <div class="again"><button class="btn" id="againBtn">再玩一次</button></div>
 </div>
 </div>
-<canvas height="700" id="game" width="1100"></canvas>
+\1
+
+<div id="skinFX" class="skin skin-classic" aria-hidden="true">
+  <div class="bar top"></div>
+  <div class="bar left"></div>
+  <div class="bar right"></div>
+  <div class="ambient"></div>
+</div>
+
         <!-- 提示卡容器：顯示增益/減益/Boss/菁英提示 -->
         <div id="prompts" class="prompts"></div>
 <div class="gameover" id="gameover">
@@ -465,25 +544,42 @@
     const speed=7.2;
     hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'#ff3355', hit:false, onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
   }
-  function spawnDemonClouds(){
+  function spawnDemonClouds(){ try{ if(typeof showPrompt==='function') showPrompt('curse','哈哈哈! 接受惡魔的詛咒吧!','boss'); }catch(e){} 
     const picks = Array.from({length:5}, ()=> 40 + Math.random()*(1100-80));
     const y = layout().top - 10;
     const tEnd = performance.now() + 1000;
     for(const x of picks){ hazardClouds.push({x,y,tEnd,spawned:false}); }
   }
-  let nextBossAtkA=0, nextBossAtkB=0, cyclopsChargeUntil=0;
+  let nextBossAtkA=0, nextBossAtkB=0, lionChargeUntil=0, knightChargeUntil=0, demonChargeUntil=0, cyclopsChargeUntil=0;
 
   function updateBossAbilities(){
     const bossLv = (level%5===0)? level : 0;
     if(!bossLv) return;
     const now=performance.now();
-    if(bossLv===5){ if(now>=nextBossAtkA){ spawnLionBeam(); nextBossAtkA = now + 10000; } }
-    else if(bossLv===10){ if(now>=nextBossAtkA){ spawnKnightArc(); nextBossAtkA = now + 15000; } }
+    if(bossLv===5){ if(now>=nextBossAtkA){ lionChargeUntil = performance.now()+2000; setTimeout(()=>{ spawnLionBeam(); lionChargeUntil=0; },2000); nextBossAtkA = now + 10000; } }
+    else if(bossLv===10){ if(now>=nextBossAtkA){ knightChargeUntil = performance.now()+2000; setTimeout(()=>{ spawnKnightArc(); knightChargeUntil=0; },2000); nextBossAtkA = now + 15000; } }
     else if(bossLv===15){ if(now>=nextBossAtkA){ spawnCyclopsColumn(); nextBossAtkA = now + 20000; } }
-    else if(bossLv===20){ if(now>=nextBossAtkA){ spawnDemonBeam(); nextBossAtkA = now + 10000; } if(now>=nextBossAtkB){ spawnDemonClouds(); nextBossAtkB = now + 30000; } }
+    else if(bossLv===20){ if(now>=nextBossAtkA){ demonChargeUntil = performance.now()+2000; setTimeout(()=>{ spawnDemonBeam(); nextBossAtkA = now + 10000; } if(now>=nextBossAtkB){ spawnDemonClouds(); nextBossAtkB = now + 30000; } }
   }
 
   function drawAndStepBossProjectiles(){
+    
+      /* boss charge cues */
+      try{
+        const now = performance.now();
+        const bc = bossCenter && bossCenter();
+        if(bc){
+          function ring(x,y,color, r){
+            ctx.save(); ctx.globalCompositeOperation='lighter';
+            ctx.strokeStyle=color; ctx.lineWidth=3;
+            ctx.beginPath(); ctx.arc(x*scaleX, y*scaleY, r*((scaleX+scaleY)/2), 0, Math.PI*2); ctx.stroke(); ctx.restore();
+          }
+          if(lionChargeUntil && now<lionChargeUntil){ ring(bc.x, bc.y, 'rgba(255,220,120,0.85)', 26); }
+          if(knightChargeUntil && now<knightChargeUntil){ ring(bc.x, bc.y, 'rgba(220,220,255,0.85)', 24); }
+          if(demonChargeUntil && now<demonChargeUntil){ ring(bc.x, bc.y, 'rgba(255,60,100,0.85)', 28); }
+        }
+      }catch(e){}
+
     const pr=paddleRect();
     // 金/紅雷射
     for(let i=hostileBeams.length-1;i>=0;i--){
@@ -1686,9 +1782,46 @@ function drawPower(p){
       }
       html += '</div><div><strong>特殊磚</strong><br>不可破壞磚：只反彈不會壞；<br>移動磚：水平移動；<br>強反彈磚：反彈時加速更強；<br>Boss磚：大尺寸、只扣血，爆炸/神聖/鳳凰也不會被秒殺。</div>';
       html += '</div>';
-      showCenter('效果說明（按鈕再按一次關閉）', html);
+      
+      // 效果說明（分類）
+      let html2 = '<div class="cols">';
+      // 增益（含稀有）
+      html2 += '<div><strong>增益（含稀有）</strong><br>';
+      for(const k of Object.keys(GAME_CONFIG.powers)){
+        const p=GAME_CONFIG.powers[k]; if(!(p.type==='buff'||p.type==='rare')) continue;
+        const rare = p.type==='rare' ? ' <span style="opacity:.75">（稀有）</span>' : '';
+        html2 += `${badgeIcon(k)} <em>${k}</em>：${p.label}${rare}<br>`;
+      }
+      html2 += '</div>';
+      // 特殊增益（掉落倍率*0.1）
+      html2 += '<div><strong>特殊增益</strong><br>';
+      for(const k of Object.keys(GAME_CONFIG.powers)){
+        const p=GAME_CONFIG.powers[k]; if(p.type!=='special') continue;
+        html2 += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
+      }
+      html2 += '</div>';
+      // 減益
+      html2 += '<div><strong>減益</strong><br>';
+      for(const k of Object.keys(GAME_CONFIG.powers)){
+        const p=GAME_CONFIG.powers[k]; if(p.type!=='debuff') continue;
+        html2 += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
+      }
+      html2 += '</div>';
+      // 特殊磚（圖例）
+      html2 += '<div><strong>特殊磚</strong><br>';
+      html2 += '<span class="item"><span class="box" style="background:var(--expl)"></span>爆炸磚</span><br>';
+      html2 += '<span class="item"><span class="box" style="background:#888"></span>不可破壞磚</span><br>';
+      html2 += '<span class="item"><span class="box" style="background:#bb7aff"></span>強反彈磚</span><br>';
+      html2 += '<span class="item"><span class="box" style="background:#8f5bff"></span>荊棘磚</span><br>';
+      html2 += '<span class="item"><span class="box" style="background:#7fd8ff"></span>加分磚</span><br>';
+      html2 += '<span class="item"><span class="box" style="background:#55cc77"></span>回復磚</span><br>';
+      html2 += '<span class="item"><span class="box" style="background:#666"></span>迷霧磚</span><br>';
+      html2 += '<span class="item"><span class="box" style="background:linear-gradient(90deg,#f7b,#f93)"></span>菁英磚</span><br>';
+      html2 += '<span class="item"><span class="box" style="background:linear-gradient(45deg,#e33,#a0f)"></span>Boss磚</span><br>';
+      html2 += '</div>';
+      html2 += '</div>';
+      showCenter('效果說明（按按鈕再按一次關閉）', html2);
     }
-  }
 
   // === 全螢幕 ===
   async function toggleFullscreen(){
@@ -2591,6 +2724,65 @@ if(performance.now() >= nextForcedDropAt){
   }
   boot();
 })();
+
+  // === Skin FX overlay positioning + Skin switching ===
+  function positionSkinFX(){
+    try{
+      const fx = document.getElementById('skinFX');
+      const cvs = document.getElementById('game');
+      if(!fx || !cvs) return;
+      const rect = cvs.getBoundingClientRect();
+      fx.style.left = `${rect.left + window.scrollX}px`;
+      fx.style.top  = `${rect.top + window.scrollY}px`;
+      fx.style.width = rect.width + 'px';
+      fx.style.height = rect.height + 'px';
+    }catch(e){}
+  }
+  window.addEventListener('resize', positionSkinFX);
+  window.addEventListener('scroll', positionSkinFX, {passive:true});
+
+  function applyUiSkin(style){
+    const fx = document.getElementById('skinFX');
+    if(!fx) return;
+    fx.className = 'skin skin-' + (style||'classic');
+    // also tint UI via CSS variables
+    const root=document.documentElement;
+    const map = {
+      classic:{accent:'#66b2ff', led:'#8fb3ff'},
+      tech:{accent:'#00e6a8', led:'#49f2be'},
+      arc:{accent:'#66ccff', led:'#79d6ff'},
+      ice:{accent:'#9fd0ff', led:'#bfe1ff'},
+      vivid:{accent:'#ff3ef3', led:'#ff75ff'},
+      reaper:{accent:'#ff3b3b', led:'#ff6060'},
+      flame:{accent:'#ff7a00', led:'#ffb14d'},
+      demon:{accent:'#a56bff', led:'#b48cff'}
+    };
+    const c = map[style] || map.classic;
+    root.style.setProperty('--accent', c.accent);
+    root.style.setProperty('--led', c.led);
+  }
+
+window.addEventListener('load', positionSkinFX);
+
+  // === LED color reacts to buff/special/debuff ===
+  function wrapApplyPowerForLED(){
+    const ap = window.applyPower;
+    if(typeof ap!=='function') return;
+    window.applyPower = function(type){
+      const res = ap(type);
+      try{
+        const def = (window.GAME_CONFIG?.powers?.[type]);
+        if(def){
+          const root=document.documentElement;
+          if(def.type==='debuff') root.style.setProperty('--led','#ff5d7a');
+          else if(def.type==='special' || def.type==='rare') root.style.setProperty('--led','#ffd76a');
+          else root.style.setProperty('--led','#8fb3ff');
+        }
+      }catch(e){}
+      return res;
+    };
+  }
+
 </script>
 
 <!-- ===== 可隨時進入的畫廊面板（由補丁注入） ===== -->
@@ -2622,7 +2814,10 @@ if(performance.now() >= nextForcedDropAt){
       hookFlipBehavior();
       hookDrawWrap();
       hookGetLevelImageSeen();
+      wrapApplyPowerForLED();
+      positionSkinFX();
       wireAlbumUI();
+      positionSkinFX();
     }catch(e){ console.error('[Patch init error]', e); }
   }
 
