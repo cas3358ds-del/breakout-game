@@ -33,7 +33,7 @@
     select,input[type="range"]{background:linear-gradient(180deg, var(--btn), #111a34); color:var(--fg); border:1px solid var(--btn-stroke); border-radius:8px; padding:6px 10px}
     .range{display:flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid var(--glass-stroke); border-radius:999px; background:var(--pill); font-size:12px}
     canvas{background:linear-gradient(180deg, #0d1126, #0b1022 55%, #091022);
-      border:1px solid #1a2348; border-radius:16px; max-width:min(1120px, 98vw); width: min(1120px, 98vw); height: auto; display:block;
+      border:1px solid #1a2348; border-radius:16px; max-width:min(1120px, 96vw); width: min(1120px, 96vw); height: auto; display:block;
       box-shadow: 0 30px 80px rgba(0,0,0,.35), inset 0 0 120px rgba(255,255,255,.02); touch-action:none;}
     .overlay{position:relative; display:inline-block; vertical-align:top;}
     .center-note{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:auto; z-index:9999}
@@ -144,7 +144,9 @@
     .prompt-special{background:rgba(210,180,80,0.85); border:1px solid rgba(255,220,160,0.5); color:#111;}
     .prompt-boss { background:rgba(120,40,120,0.85); border:1px solid rgba(220,160,220,0.4); color:#fff; }
 
-  </style>
+  
+    .note-box{max-height:60vh; overflow:auto;}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -239,6 +241,45 @@
 </div>
 <script>
 (() => {
+  /* __MOBILE_BOOT_FIX__ */
+  function __ready(fn){ if(document.readyState!=='loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  __ready(() => {
+    const canvas = document.getElementById('game');
+    const skinFX = document.getElementById('skinFX');
+    const centerNote = document.getElementById('centerNote');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const noteClose = document.getElementById('noteClose');
+
+    // Keep skinFX overlay exactly matching canvas size
+    const sync = () => {
+      if(!canvas || !skinFX) return;
+      const rect = canvas.getBoundingClientRect();
+      skinFX.style.width = rect.width + 'px';
+      skinFX.style.height = rect.height + 'px';
+    };
+    new ResizeObserver(sync).observe(document.body);
+    window.addEventListener('orientationchange', () => setTimeout(sync, 200));
+    window.addEventListener('resize', () => setTimeout(sync, 50));
+    setTimeout(sync, 0);
+
+    // One-tap start
+    let booted = false;
+    function bootStart(){
+      if(booted) return; booted = true;
+      if(centerNote) centerNote.style.display = 'none';
+      try {
+        if (window.resetGame) window.resetGame();
+        if (window.startGameWithCountdown) window.startGameWithCountdown();
+        if (window.Howler && Howler.ctx && Howler.ctx.state==='suspended') Howler.ctx.resume().catch(()=>{});
+      } catch(e){ console && console.warn('[bootStart]', e); }
+    }
+    document.addEventListener('click', bootStart, {passive:true});
+    document.addEventListener('touchend', bootStart, {passive:true});
+    document.addEventListener('keydown', (e)=>{ if(e.code==='Space'||e.key===' '){ e.preventDefault(); bootStart(); }});
+    if (pauseBtn) pauseBtn.addEventListener('click', bootStart);
+    if (noteClose) noteClose.addEventListener('click', bootStart);
+    if (centerNote) centerNote.addEventListener('click', (e)=>{ if(e.target===centerNote) bootStart(); });
+  });
   // === 設定 ===
   const GAME_CONFIG = {
     totalLevels: 20,
@@ -2591,6 +2632,17 @@ if(performance.now() >= nextForcedDropAt){
   }
   boot();
 })();
+// /* __CENTERNOTE_HIDE_FIX__ */
+(function(){
+  const centerNote = document.getElementById('centerNote');
+  if(!centerNote) return;
+  const refresh = () => {
+    const style = window.getComputedStyle(centerNote);
+    centerNote.style.pointerEvents = (style.display==='none' || style.visibility==='hidden' || centerNote.hidden) ? 'none' : 'auto'
+  };
+  new MutationObserver(refresh).observe(centerNote, { attributes:true, attributeFilter:['style','hidden','class']});
+  refresh();
+})();
 </script>
 
 <!-- ===== 可隨時進入的畫廊面板（由補丁注入） ===== -->
@@ -2833,6 +2885,17 @@ if(performance.now() >= nextForcedDropAt){
       return img;
     };
   }
+})();
+// /* __CENTERNOTE_HIDE_FIX__ */
+(function(){
+  const centerNote = document.getElementById('centerNote');
+  if(!centerNote) return;
+  const refresh = () => {
+    const style = window.getComputedStyle(centerNote);
+    centerNote.style.pointerEvents = (style.display==='none' || style.visibility==='hidden' || centerNote.hidden) ? 'none' : 'auto'
+  };
+  new MutationObserver(refresh).observe(centerNote, { attributes:true, attributeFilter:['style','hidden','class']});
+  refresh();
 })();
 </script>
 
