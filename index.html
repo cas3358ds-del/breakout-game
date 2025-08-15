@@ -257,7 +257,7 @@
       skinFX.style.width = rect.width + 'px';
       skinFX.style.height = rect.height + 'px';
     };
-    new ResizeObserver(sync).observe(document.body);
+    if (window.ResizeObserver) { new ResizeObserver(sync).observe(document.body); }
     window.addEventListener('orientationchange', () => setTimeout(sync, 200));
     window.addEventListener('resize', () => setTimeout(sync, 50));
     setTimeout(sync, 0);
@@ -273,11 +273,11 @@
         if (window.Howler && Howler.ctx && Howler.ctx.state==='suspended') Howler.ctx.resume().catch(()=>{});
       } catch(e){ console && console.warn('[bootStart]', e); }
     }
-    document.addEventListener('click', bootStart, {passive:true, once:true});
-    document.addEventListener('touchend', bootStart, {passive:true, once:true});
+    document.addEventListener('click', bootStart, {passive:true});
+    document.addEventListener('touchend', bootStart, {passive:true});
     document.addEventListener('keydown', (e)=>{ if(e.code==='Space'||e.key===' '){ e.preventDefault(); bootStart(); }});
     if (pauseBtn) pauseBtn.addEventListener('click', bootStart);
-    if (noteClose) noteClose.addEventListener('click', bootStart, {once:true});
+    if (noteClose) noteClose.addEventListener('click', bootStart);
     if (centerNote) centerNote.addEventListener('click', (e)=>{ if(e.target===centerNote) bootStart(); });
   });
   // === 設定 ===
@@ -309,8 +309,8 @@
       NINE:{label:'9命怪貓(生命變9)',type:'rare',rareFactor:0.08,instant:true,badge:'🐱'}
       ,TRACK:{label:'追蹤球(自動修正軌跡)',type:'buff',durationMs:10000,track:{},badge:'🧭'}
       ,MISSILE:{label:'飛彈球(擋板反彈時發射3枚)',type:'buff',durationMs:5000,missile:{speed:7,turn:0.08,lifeMs:4000},badge:'🚀'}
-      ,HELL:{label:'地獄球',type:'none'}
-      ,MEGA:{label:'特大球',type:'none'}
+      ,HELL:{label:'地獄球',type:'debuff',durationMs:8000,hell:{speedMul:1.35,haloMs:2000},badge:'🕳️'}
+      ,MEGA:{label:'特大球',type:'buff',durationMs:10000,mega:{sizeMul:1.6,speedMul:0.85},badge:'🟠'}
       ,CHAIN:{label:'鎖鏈球(命中磚鎖10秒)',type:'debuff',durationMs:5000,chain:{lockMs:10000},badge:'⛓️'}
       ,NARROW:{label:'平台縮小(寬度減半)',type:'debuff',durationMs:5000,narrow:true,badge:'📉'}
       ,HOLE:{label:'平台空洞(中間1/3無效)',type:'debuff',durationMs:5000,hole:true,badge:'🕳'}
@@ -411,16 +411,13 @@
     hideCenter();
     if(running){ startCountdown(); } else { startGameWithCountdown(); }
   }
-  noteClose.addEventListener('click', (e)=>{ e.stopPropagation();
+  if (noteClose) noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
   // 允許點擊整個教學/說明覆蓋層即可開始或繼續（避免行動裝置誤觸無法啟動）
-  centerNote.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume();
-  noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
+  if (centerNote) centerNote.addEventListener('click', (e)=>{ if (e.target===centerNote) { e.stopPropagation(); closeNoteAndResume(); }});
+  if (noteBox) noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
   // 任何地方點擊（例如 HUD）也能觸發首次啟動，強化容錯
-  document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } });
- closeNoteAndResume();
-
-
-  // === DPR 縮放 ===
+  document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } }, { once:true });
+// === DPR 縮放 ===
   function resizeCanvasDPR(){ const dpr=Math.min(window.devicePixelRatio||1,2); const cssW=canvas.clientWidth; const cssH=Math.round(cssW*(700/1100)); canvas.style.height=cssH+'px'; canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr); scaleX=canvas.width/1100; scaleY=canvas.height/700; }
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
 
@@ -2619,7 +2616,7 @@ if(performance.now() >= nextForcedDropAt){
   }
 
 
-  function loop(){ if(!paused && running) update(); draw(); requestAnimationFrame(loop); }
+  function loop(){ try{ if(!paused && running) update(); draw(); }catch(e){ console.error('[loop]',e); window.__lastError=e; } finally { requestAnimationFrame(loop); } }
   function boot(){
     resetGame(); updateHUD(); loop();
     // 自動讀取音效/BGM偏好
