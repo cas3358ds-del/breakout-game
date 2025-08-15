@@ -309,8 +309,8 @@
       NINE:{label:'9命怪貓(生命變9)',type:'rare',rareFactor:0.08,instant:true,badge:'🐱'}
       ,TRACK:{label:'追蹤球(自動修正軌跡)',type:'buff',durationMs:10000,track:{},badge:'🧭'}
       ,MISSILE:{label:'飛彈球(擋板反彈時發射3枚)',type:'buff',durationMs:5000,missile:{speed:7,turn:0.08,lifeMs:4000},badge:'🚀'}
-      ,HELL:{label:'地獄球',type:'none'}
-      ,MEGA:{label:'特大球',type:'none'}
+      ,HELL:{label:'地獄球',type:'debuff',durationMs:8000,hell:{speedMul:1.35,haloMs:2000},badge:'🕳️'}
+      ,MEGA:{label:'特大球',type:'buff',durationMs:10000,mega:{sizeMul:1.6,speedMul:0.85},badge:'🟠'}
       ,CHAIN:{label:'鎖鏈球(命中磚鎖10秒)',type:'debuff',durationMs:5000,chain:{lockMs:10000},badge:'⛓️'}
       ,NARROW:{label:'平台縮小(寬度減半)',type:'debuff',durationMs:5000,narrow:true,badge:'📉'}
       ,HOLE:{label:'平台空洞(中間1/3無效)',type:'debuff',durationMs:5000,hole:true,badge:'🕳'}
@@ -409,14 +409,17 @@
   const noteClose = document.getElementById('noteClose');
   function closeNoteAndResume(){
     hideCenter();
-    if (running) { startCountdown(); } else { startGameWithCountdown(); }
+    if(running){ startCountdown(); } else { startGameWithCountdown(); }
   }
-  if (noteClose) noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+  noteClose.addEventListener('click', (e)=>{ e.stopPropagation();
   // 允許點擊整個教學/說明覆蓋層即可開始或繼續（避免行動裝置誤觸無法啟動）
-  if (centerNote) centerNote.addEventListener('click', (e)=>{ if (e.target === centerNote) { e.stopPropagation(); closeNoteAndResume(); } });
-  if (noteBox) noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
-  // 任何地方點擊（例如 HUD）也能觸發首次啟動，強化容錯（僅一次）
+  centerNote.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume();
+  noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
+  // 任何地方點擊（例如 HUD）也能觸發首次啟動，強化容錯
   document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } }, { once: true });
+ closeNoteAndResume();
+
+
   // === DPR 縮放 ===
   function resizeCanvasDPR(){ const dpr=Math.min(window.devicePixelRatio||1,2); const cssW=canvas.clientWidth; const cssH=Math.round(cssW*(700/1100)); canvas.style.height=cssH+'px'; canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr); scaleX=canvas.width/1100; scaleY=canvas.height/700; }
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
@@ -1459,7 +1462,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     if(type==='TRACK'){ buffs.TRACK.active=true; buffs.TRACK.until=now+def.durationMs; }
     if(type==='MISSILE'){ buffs.MISSILE.active=true; buffs.MISSILE.until=now+def.durationMs; }
     if(type==='HELL'){ buffs.HELL.active=true; buffs.HELL.until=now+def.durationMs; }
-    if(type==='MEGA'){ if(!buffs.MEGA.active){ const sizeMul = (GAME_CONFIG.powers.MEGA && GAME_CONFIG.powers.MEGA.mega && GAME_CONFIG.powers.MEGA.mega.sizeMul) || 1.5; for(const ball of balls){ ball.r*= sizeMul; } buffs.MEGA.applied=true; } buffs.MEGA.active=true; buffs.MEGA.until=now+def.durationMs; }
+    if(type==='MEGA'){ if(!buffs.MEGA.active){ for(const ball of balls){ ball.r*=GAME_CONFIG.powers.MEGA.mega.sizeMul; } buffs.MEGA.applied=true; } buffs.MEGA.active=true; buffs.MEGA.until=now+def.durationMs; }
     if(type==='CHAIN'){ buffs.CHAIN.active=true; buffs.CHAIN.until=now+def.durationMs; }
     if(type==='NARROW'){ buffs.NARROW.active=true; buffs.NARROW.until=now+def.durationMs; }
     if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+def.durationMs; }
