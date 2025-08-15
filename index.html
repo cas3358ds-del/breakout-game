@@ -14,7 +14,7 @@
       --led:#8fb3ff;
     }
     html,body{height:100%; margin:0; background:radial-gradient(1200px 800px at 50% -10%, #152040, #0a0f1e 60%); color:var(--fg);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;}
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; overflow-x:hidden; }
     body{min-height:100svh; display:flex; align-items:flex-start; justify-content:center;}
     .wrap{display:flex; gap:12px; align-items:center; justify-content:center; flex-direction:column; padding:12px; width:100%; max-width:1200px}
     h1{margin:4px 0 2px 0; font-weight:800; letter-spacing:.3px; text-shadow:0 2px 20px #0008;
@@ -147,7 +147,7 @@
   
 /* ===== Skin FX (燈條 + 背板 + 環境光 + UI色票) ===== */
 :root{ --bar-size:14px; --skin-ambient: rgba(102,178,255,.10); }
-#skinFX{ position:absolute; width:1100px; height:700px; pointer-events:none; z-index:3; left:50%; transform:translateX(-50%); top:unset; }
+#skinFX{ position:absolute; inset:0; pointer-events:none; z-index:3; }
 #skinFX .bar{ position:absolute; border-radius:12px; filter:drop-shadow(0 0 8px var(--led)); opacity:.92; }
 #skinFX .bar.top{ left:0; right:0; height:var(--bar-size); top:0; background:linear-gradient(90deg, rgba(255,255,255,.35), var(--led), rgba(255,255,255,.35)); }
 #skinFX .bar.left{ top:0; bottom:0; width:var(--bar-size); left:0; background:linear-gradient(180deg, rgba(255,255,255,.35), var(--led), rgba(255,255,255,.35)); }
@@ -215,12 +215,6 @@
   animation: demon-drift 5s linear infinite;
 }
 
-
-    .note-box{max-height: 70vh; overflow:auto;}
-    @media (max-width: 420px){
-      .note-box{font-size:13px; padding:12px 14px;}
-      .note-box h2{font-size:16px;}
-    }
 </style>
 </head>
 <body>
@@ -275,6 +269,14 @@
 </div>
 <div class="badges" id="activeBuffs"></div>
 <div class="overlay">
+
+<canvas id="game" width="1100" height="700"></canvas>
+<div id="skinFX" class="skin skin-classic" aria-hidden="true">
+  <div class="bar top"></div>
+  <div class="bar left"></div>
+  <div class="bar right"></div>
+  <div class="ambient"></div>
+</div>
 <div class="gallery" id="gallery">
 <div class="backdrop"></div>
 <img alt="關卡大圖" id="galleryImg" src=""/>
@@ -291,7 +293,7 @@
 <div class="again"><button class="btn" id="againBtn">再玩一次</button></div>
 </div>
 </div>
-\1
+
 
 <div id="skinFX" class="skin skin-classic" aria-hidden="true">
   <div class="bar top"></div>
@@ -301,7 +303,6 @@
 </div>
 
         <!-- 提示卡容器：顯示增益/減益/Boss/菁英提示 -->
-        <canvas id="game" width="1100" height="700"></canvas>
         <div id="prompts" class="prompts"></div>
 <div class="gameover" id="gameover">
 <div class="backdrop"></div>
@@ -315,7 +316,10 @@
 <div class="center-note" id="centerNote">
 <div class="note-box" id="noteBox"><button aria-label="關閉" class="note-close" id="noteClose">×</button>
 <h2 id="noteTitle">按 <kbd>Space</kbd> 或點畫面開始</h2>
-<p id="noteText">操作：<kbd>←</kbd>/<kbd>→</kbd> 或 <kbd>A</kbd>/<kbd>D</kbd>；輕觸拖曳可移動平台。<br/>內容：背景逐步揭示、清關畫廊、增益/減益與特殊增益、Boss/菁英磚、BGM/音效/存讀檔、教學與效果說明。</p>
+<p id="noteText">
+            操作：<kbd>←</kbd>/<kbd>→</kbd> 或 <kbd>A</kbd>/<kbd>D</kbd>；手指拖曳畫面也可移動平台。<br/>
+            已整合：背景逐步揭示 + 清關畫廊、增益/減益（含電漿球/凍結球/神聖球/鳳凰審判/9命怪貓）、爆炸磚、音效、難度、存讀檔、BGM、教學/效果說明、Boss與進階磚。
+          </p>
 </div>
 </div>
 </div>
@@ -448,25 +452,20 @@
 
 
   // 關閉視窗按鈕（關閉後立即倒數、繼續遊戲）
-  
-  // 關閉視窗按鈕（關閉後立即倒數、繼續遊戲）
   const noteClose = document.getElementById('noteClose');
   function closeNoteAndResume(){
     hideCenter();
-    if (running) {
-      startCountdown();
-    } else {
-      startGameWithCountdown();
-    }
+    if(running){ startCountdown(); } else { startGameWithCountdown(); }
   }
-  // 修正：提示視窗事件監聽錯誤，導致無法啟動或視窗卡住（行動裝置尤甚）
+  
   noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+  // 允許點擊整個教學/說明覆蓋層即可開始或繼續（避免行動裝置誤觸無法啟動）
   centerNote.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
-  noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
-  // 任何地方（例如 HUD）第一次點擊也能觸發首次啟動，強化容錯；只需一次
-  document.addEventListener('click', ()=>{ if(!running && !gameOver){ startGameWithCountdown(); } }, { once:true });
-
-  // === DPR 縮放 ===
+  // 讓點擊 note 盒子本身不穿透
+  noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); });
+  // 行動裝置容錯：任何地方首點皆可啟動一次
+  document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } }, { once:true });
+// === DPR 縮放 ===
   function resizeCanvasDPR(){ const dpr=Math.min(window.devicePixelRatio||1,2); const cssW=canvas.clientWidth; const cssH=Math.round(cssW*(700/1100)); canvas.style.height=cssH+'px'; canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr); scaleX=canvas.width/1100; scaleY=canvas.height/700; }
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
 
