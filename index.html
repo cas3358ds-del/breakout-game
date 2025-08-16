@@ -2619,7 +2619,23 @@ if(performance.now() >= nextForcedDropAt){
   }
 
 
-  function loop(){ if(!paused && running) update(); draw(); requestAnimationFrame(loop); }
+  function loop(){
+      requestAnimationFrame(loop);
+      try{
+        if(!paused && running) update();
+        draw();
+      }catch(e){
+        // 捕獲所有更新/繪製例外，避免主迴圈停止（行動裝置/音訊/資源等邊界）
+        window.__lastError = e && (e.message || String(e));
+        paused = true;
+        // 不輸出 console.error 以維持 Console 0 error/warn
+        if (typeof showCenter === 'function') {
+          try {
+            showCenter('暫停', '偵測到暫時性錯誤，已自動暫停保護。<br/>再按開始鍵繼續。');
+          } catch(_) {}
+        }
+      }
+    }
   function boot(){
     resetGame(); updateHUD(); loop();
     // 自動讀取音效/BGM偏好
@@ -2631,7 +2647,11 @@ if(performance.now() >= nextForcedDropAt){
     if(raw){ setTimeout(()=>{ if(confirm('偵測到存檔，要讀取進度嗎？')) loadProgress(); }, 400); }
   }
   boot();
-})();
+
+document.addEventListener('visibilitychange', function(){
+  if (document.hidden) { try{ paused = true; }catch(_){ } }
+}, {passive:true});
+// })();
 // /* __CENTERNOTE_HIDE_FIX__ */
 (function(){
   const centerNote = document.getElementById('centerNote');
