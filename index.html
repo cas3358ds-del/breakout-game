@@ -257,7 +257,7 @@
       skinFX.style.width = rect.width + 'px';
       skinFX.style.height = rect.height + 'px';
     };
-    if (window.ResizeObserver) { new ResizeObserver(sync).observe(document.body); }
+    new ResizeObserver(sync).observe(document.body);
     window.addEventListener('orientationchange', () => setTimeout(sync, 200));
     window.addEventListener('resize', () => setTimeout(sync, 50));
     setTimeout(sync, 0);
@@ -309,8 +309,8 @@
       NINE:{label:'9命怪貓(生命變9)',type:'rare',rareFactor:0.08,instant:true,badge:'🐱'}
       ,TRACK:{label:'追蹤球(自動修正軌跡)',type:'buff',durationMs:10000,track:{},badge:'🧭'}
       ,MISSILE:{label:'飛彈球(擋板反彈時發射3枚)',type:'buff',durationMs:5000,missile:{speed:7,turn:0.08,lifeMs:4000},badge:'🚀'}
-      ,HELL:{label:'地獄球',type:'debuff',durationMs:8000,hell:{speedMul:1.35,haloMs:2000},badge:'🕳️'}
-      ,MEGA:{label:'特大球',type:'buff',durationMs:10000,mega:{sizeMul:1.6,speedMul:0.85},badge:'🟠'}
+      ,HELL:{label:'地獄球',type:'none'}
+      ,MEGA:{label:'特大球',type:'none'}
       ,CHAIN:{label:'鎖鏈球(命中磚鎖10秒)',type:'debuff',durationMs:5000,chain:{lockMs:10000},badge:'⛓️'}
       ,NARROW:{label:'平台縮小(寬度減半)',type:'debuff',durationMs:5000,narrow:true,badge:'📉'}
       ,HOLE:{label:'平台空洞(中間1/3無效)',type:'debuff',durationMs:5000,hole:true,badge:'🕳'}
@@ -335,26 +335,50 @@
     caps:{paddleMaxW:300,ballSpeedMax:19.5}
   };
 
-  // === 影像載入（支援 .png / .jpg） ===
-  const IMG_PAIRS = Array.from({length:10}, (_,i)=> i+1).map(i=>({bg:`images/bg${i}.png`, cg:`images/cg${i}.png`}));
-  // 準備 jpg 後備
-  const IMG_PAIRS_FALLBACK = Array.from({length:10}, (_,i)=> i+1).map(i=>({bg:`images/bg${i}.jpg`, cg:`images/cg${i}.jpg`}));
 
-  function makeImg(src, fallback){
-    const im = new Image(); im.decoding='async'; im.loading='lazy'; im.src=src;
-    if(fallback){
-      im.onerror=()=>{ if(im.src!==fallback) im.src=fallback; };
+  // === 影像載入（支援多路徑與副檔名 .png/.jpg/.webp） ===
+  const __BASE_PATH = (function(){
+    // e.g. https://user.github.io/repo/ -> '/repo/'
+    try {
+      const p = location.pathname;
+      // keep trailing slash
+      return p.endsWith('/') ? p : (p.replace(/[^\/]+$/, ''));
+    } catch(e){ return '/'; }
+  })();
+
+  function makeSmartImage(pathNoExt){
+    // pathNoExt like 'images/bg1'
+    const names = [
+      pathNoExt + '.png',
+      pathNoExt + '.jpg',
+      pathNoExt + '.webp',
+      pathNoExt.replace(/^images\//,'Images/') + '.png',
+      pathNoExt.replace(/^images\//,'Images/') + '.jpg',
+      pathNoExt.replace(/^images\//,'img/') + '.png',
+      pathNoExt.replace(/^images\//,'img/') + '.jpg',
+      __BASE_PATH + pathNoExt + '.png',
+      __BASE_PATH + pathNoExt + '.jpg'
+    ];
+    const im = new Image();
+    im.decoding = 'async';
+    let i = 0;
+    function tryNext(){
+      if(i >= names.length){ return; }
+      im.src = names[i++];
     }
+    im.onerror = tryNext;
+    tryNext();
     return im;
   }
-  const IMG_MAP = []; // 0..9: {bg:Image, cg:Image}
-  for(let i=0;i<10;i++){
-    IMG_MAP[i] = {
-      bg: makeImg(IMG_PAIRS[i].bg, IMG_PAIRS_FALLBACK[i].bg),
-      cg: makeImg(IMG_PAIRS[i].cg, IMG_PAIRS_FALLBACK[i].cg),
+
+  // 準備 1~10 張 bg/cg 圖，並具備大小寫/目錄的 fallback
+  const IMG_MAP = [];
+  for(let i=1;i<=10;i++){
+    IMG_MAP[i-1] = {
+      bg: makeSmartImage('images/bg'+i),
+      cg: makeSmartImage('images/cg'+i),
     };
   }
-
   // === 參考 DOM ===
   const canvas=document.getElementById('game'); const ctx=canvas.getContext('2d');
   const scoreEl=document.getElementById('score'), levelEl=document.getElementById('level'), livesEl=document.getElementById('lives');
@@ -411,13 +435,16 @@
     hideCenter();
     if(running){ startCountdown(); } else { startGameWithCountdown(); }
   }
-  if (noteClose) noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+  noteClose.addEventListener('click', (e)=>{ e.stopPropagation();
   // 允許點擊整個教學/說明覆蓋層即可開始或繼續（避免行動裝置誤觸無法啟動）
-  if (centerNote) centerNote.addEventListener('click', (e)=>{ if (e.target===centerNote) { e.stopPropagation(); closeNoteAndResume(); }});
-  if (noteBox) noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
+  centerNote.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume();
+  noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
   // 任何地方點擊（例如 HUD）也能觸發首次啟動，強化容錯
-  document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } }, { once:true });
-// === DPR 縮放 ===
+  document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } });
+ closeNoteAndResume();
+
+
+  // === DPR 縮放 ===
   function resizeCanvasDPR(){ const dpr=Math.min(window.devicePixelRatio||1,2); const cssW=canvas.clientWidth; const cssH=Math.round(cssW*(700/1100)); canvas.style.height=cssH+'px'; canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr); scaleX=canvas.width/1100; scaleY=canvas.height/700; }
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
 
@@ -920,10 +947,24 @@ function startBGMTheme(theme){
   function layout(){ return {rows:getDiff().rowsBase+Math.floor((level-1)%3), cols:GAME_CONFIG.bricks.cols, pad:GAME_CONFIG.bricks.padding, top:GAME_CONFIG.bricks.topOffset, h:GAME_CONFIG.bricks.brickHeight}; }
 
   // 取得本關顯示影像（1~10隨機BG/CG；11~20用另一張）
+  
+  function isLoadedImage(im){ return !!(im && im.complete && im.naturalWidth>0 && im.naturalHeight>0); }
   function getLevelImage(levelNum){
-    const idx=((levelNum-1)%10);
+    const idx = ((levelNum-1)%10);
+    let firstIsBg;
     if(levelNum<=10){
-      if(imageChoice[idx]<0){ imageChoice[idx]= Math.random()<0.5 ? 0:1; }
+      if(imageChoice[idx]<0){ imageChoice[idx] = Math.random()<0.5 ? 0 : 1; }
+      firstIsBg = (imageChoice[idx]===0);
+    }else{
+      if(imageChoice[idx]<0){ imageChoice[idx]=0; }
+      firstIsBg = !(imageChoice[idx]===0);
+    }
+    const A = firstIsBg ? IMG_MAP[idx].bg : IMG_MAP[idx].cg;
+    const B = firstIsBg ? IMG_MAP[idx].cg : IMG_MAP[idx].bg;
+    if(isLoadedImage(A)) return A;
+    if(isLoadedImage(B)) return B;
+    return A;
+  }
       return imageChoice[idx]===0? IMG_MAP[idx].bg : IMG_MAP[idx].cg;
     }else{
       if(imageChoice[idx]<0){ imageChoice[idx]=0; } // 保底
@@ -2616,7 +2657,7 @@ if(performance.now() >= nextForcedDropAt){
   }
 
 
-  function loop(){ try{ if(!paused && running) update(); draw(); }catch(e){ console.error('[loop]',e); window.__lastError=e; } finally { requestAnimationFrame(loop); } }
+  function loop(){ if(!paused && running) update(); draw(); requestAnimationFrame(loop); }
   function boot(){
     resetGame(); updateHUD(); loop();
     // 自動讀取音效/BGM偏好
