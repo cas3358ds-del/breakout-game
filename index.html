@@ -393,6 +393,9 @@ function startBGMTheme(theme){
 
     let step=0; // 用於 8 小節變奏
     function scheduleLoop(){
+      const f = speedFactor();
+      const tempoBaseMap = {beast:150, lion:132, castle:104, knight_duel:126, giant_valley:114, giant_final:92, demon_castle:140, final_boss:148};
+      const tempo = ((tempoBaseMap[theme]||120)/60) * f;
       if(!bgmOn || !bgmStarted) return;
 // DUP-REMOVED       const f = speedFactor();
 
@@ -504,8 +507,11 @@ function startBGMTheme(theme){
   const idx=((levelNum-1)%10);
   let img;
   if(levelNum<=10){
-    if(imageChoice[idx]<0){ imageChoice[idx]= Math.random()<0.5 ? 0:1; }
-    img = imageChoice[idx]===0? IMG_MAP[idx].bg : IMG_MAP[idx].cg;
+    if(imageChoice[idx]<0){ imageChoice[idx]= Math.random()<0.5 ? 0:1; 
+  if(typeof img==='undefined') return null;
+  return img;
+}
+img = imageChoice[idx]===0? IMG_MAP[idx].bg : IMG_MAP[idx].cg;
   }else{
     if(imageChoice[idx]<0){ imageChoice[idx]=0; } // 保底
     img = imageChoice[idx]===0? IMG_MAP[idx].cg : IMG_MAP[idx].bg;
@@ -941,7 +947,7 @@ function drawPower(p){
       }
       html += '</div><div><strong>減益</strong><br>';
       for(const k of Object.keys(GAME_CONFIG.powers)){
-// DUP-REMOVED         const p=GAME_CONFIG.powers[k]; if(p.type!=='debuff') continue;
+        const p=GAME_CONFIG.powers[k]; if(p.type!=='debuff') continue;
         html += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
       }
       html += '</div><div><strong>特殊磚</strong><br>不可破壞磚：只反彈不會壞；<br>移動磚：水平移動；<br>強反彈磚：反彈時加速更強；<br>Boss磚：大尺寸、只扣血，爆炸/神聖/鳳凰也不會被秒殺。</div>';
