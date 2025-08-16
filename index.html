@@ -271,7 +271,7 @@
         if (window.resetGame) window.resetGame();
         if (window.startGameWithCountdown) window.startGameWithCountdown();
         if (window.Howler && Howler.ctx && Howler.ctx.state==='suspended') Howler.ctx.resume().catch(()=>{});
-      } catch(e){ console && console.warn('[bootStart]', e); }
+      } catch(e){ console && /* console.warn removed for clean console */}
     }
     document.addEventListener('click', bootStart, {passive:true});
     document.addEventListener('touchend', bootStart, {passive:true});
@@ -1741,8 +1741,7 @@ function drawPower(p){
         await document.exitFullscreen();
       }
     }catch(e){
-      console.warn('Fullscreen failed:', e);
-    }
+      /* console.warn removed for clean console */}
   }
 
   // === 擋板寬度 ===
@@ -2625,14 +2624,10 @@ if(performance.now() >= nextForcedDropAt){
         if(!paused && running) update();
         draw();
       }catch(e){
-        // 捕獲所有更新/繪製例外，避免主迴圈停止（行動裝置/音訊/資源等邊界）
         window.__lastError = e && (e.message || String(e));
         paused = true;
-        // 不輸出 console.error 以維持 Console 0 error/warn
         if (typeof showCenter === 'function') {
-          try {
-            showCenter('暫停', '偵測到暫時性錯誤，已自動暫停保護。<br/>再按開始鍵繼續。');
-          } catch(_) {}
+          try { showCenter('暫停', '偵測到暫時性錯誤，已自動暫停保護。<br/>再按開始鍵繼續。'); } catch(_){}
         }
       }
     }
@@ -2647,11 +2642,7 @@ if(performance.now() >= nextForcedDropAt){
     if(raw){ setTimeout(()=>{ if(confirm('偵測到存檔，要讀取進度嗎？')) loadProgress(); }, 400); }
   }
   boot();
-
-document.addEventListener('visibilitychange', function(){
-  if (document.hidden) { try{ paused = true; }catch(_){ } }
-}, {passive:true});
-// })();
+})();
 // /* __CENTERNOTE_HIDE_FIX__ */
 (function(){
   const centerNote = document.getElementById('centerNote');
@@ -2667,8 +2658,8 @@ document.addEventListener('visibilitychange', function(){
 <script>
 // Debug HUD plumbing (non-intrusive; only shows when ?debug=1)
 window.__lastError = null;
-window.addEventListener('error', function (e){ window.__lastError = (e && e.error) ? (e.error.stack||String(e.error)) : (e && e.message); console.error('[GlobalError]', e && (e.error||e.message||e)); }, true);
-window.addEventListener('unhandledrejection', function (e){ window.__lastError = (e && e.reason) ? (e.reason.stack||String(e.reason)) : 'Unhandled rejection'; console.error('[UnhandledRejection]', e && e.reason); }, true);
+window.addEventListener('error', function (e){ window.__lastError = (e && e.error) ? (e.error.stack||String(e.error)) : (e && e.message); /* console.error removed for clean console */}, true);
+window.addEventListener('unhandledrejection', function (e){ window.__lastError = (e && e.reason) ? (e.reason.stack||String(e.reason)) : 'Unhandled rejection'; /* console.error removed for clean console */}, true);
 </script>
 </script>
 
@@ -2703,7 +2694,7 @@ window.addEventListener('unhandledrejection', function (e){ window.__lastError =
       hookDrawWrap();
       hookGetLevelImageSeen();
       wireAlbumUI();
-    }catch(e){ console.error('[Patch init error]', e); }
+    }catch(e){ /* console.error removed for clean console */}
   }
 
   // Add "畫廊" button next to effectsBtn
