@@ -273,13 +273,16 @@
         if (window.Howler && Howler.ctx && Howler.ctx.state==='suspended') Howler.ctx.resume().catch(()=>{});
       } catch(e){ /* ignore */ }
     }
-    document.addEventListener('click', bootStart, {passive:true});
-    document.addEventListener('touchend', bootStart, {passive:true});
+    document.addEventListener('click', bootStart, {passive:true, once:true});
+    document.addEventListener('touchend', bootStart, {passive:true, once:true});
     document.addEventListener('keydown', (e)=>{ if(e.code==='Space'||e.key===' '){ e.preventDefault(); bootStart(); }});
     if (pauseBtn) pauseBtn.addEventListener('click', bootStart);
     if (noteClose) noteClose.addEventListener('click', bootStart);
     if (centerNote) centerNote.addEventListener('click', (e)=>{ if(e.target===centerNote) bootStart(); });
-  });
+      document.addEventListener('pointerdown', bootStart, {passive:true, once:true});
+    document.addEventListener('mousedown', bootStart, {passive:true, once:true});
+    document.addEventListener('touchstart', bootStart, {passive:true, once:true});
+});
   // === 設定 ===
   const GAME_CONFIG = {
     totalLevels: 20,
