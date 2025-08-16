@@ -543,35 +543,77 @@
   function bossCenter(){ for(const b of bricks){ if(b.boss) return {b, x:b.x+b.w/2, y:b.y+b.h/2}; } return null; }
 
   function spawnLionBeamFrom(x,y){ const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2; const ang=Math.atan2(ty-y, tx-x); const speed=6.0; hostileBeams.push({x:x, y:y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); }}); }
-  function spawnLionBeam(){
+// 獅子射線：啟動 2 秒聚氣，聚氣完成後才真正發射
+function spawnLionBeam(){
+    const bc=bossCenter(); if(!bc) return;
+    // 設置聚氣結束時間並播放預告音效
+    lionChargeUntil = performance.now() + 2000;
+    beep(350,0.2);
+    // 在 2 秒後實際發射射線
+    setTimeout(()=>{
+      spawnLionBeamNow();
+    },2000);
+}
+
+// 實際獅子射線生成
+function spawnLionBeamNow(){
     const bc=bossCenter(); if(!bc) return;
     const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
     const ang=Math.atan2(ty-bc.y, tx-bc.x);
     const speed=6.0;
     hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); }});
-  }
-  function spawnKnightArc(){
+    beep(620,0.1);
+}
+// 騎士弧形劍氣：啟動 2 秒聚氣，然後才產生劍氣
+function spawnKnightArc(){
+    const bc=bossCenter(); if(!bc) return;
+    knightChargeUntil = performance.now() + 2000;
+    beep(380,0.2);
+    setTimeout(()=>{
+      spawnKnightArcNow();
+    },2000);
+}
+
+function spawnKnightArcNow(){
     const bc=bossCenter(); if(!bc) return;
     const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
     const ang=Math.atan2(ty-bc.y, tx-bc.x);
     const speed=3.8;
     hostileArcs.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, phase:0, amp:32, color:'silver', onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
-  }
+    beep(580,0.1);
+}
   function spawnCyclopsColumn(){
     const bc=bossCenter(); if(!bc) return;
     // 風up：在 boss 上方發光 2 秒
     cyclopsChargeUntil = performance.now() + 2000;
+    // 給予預兆音效
+    beep(260,0.2);
     setTimeout(()=>{
+      // 墜落石化光束並觸發螢幕震動
       hostileColumns.push({x:bc.x, w:150, tStart:performance.now(), tEnd:performance.now()+1000, color:'#eedc9a', applied:false});
+      screenShake = Math.max(screenShake, 8);
+      beep(500,0.1);
     },2000);
   }
-  function spawnDemonBeam(){
+// 魔王死亡光束：有 2 秒聚氣與提示
+function spawnDemonBeam(){
+    const bc=bossCenter(); if(!bc) return;
+    demonChargeUntil = performance.now() + 2000;
+    beep(300,0.2);
+    setTimeout(()=>{
+      spawnDemonBeamNow();
+    },2000);
+}
+
+function spawnDemonBeamNow(){
     const bc=bossCenter(); if(!bc) return;
     const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
     const ang=Math.atan2(ty-bc.y, tx-bc.x);
     const speed=7.2;
     hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'#ff3355', hit:false, onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
-  }
+    // 播放發射聲效
+    beep(700,0.12);
+}
   function spawnDemonClouds(){
     const picks = Array.from({length:5}, ()=> 40 + Math.random()*(1100-80));
     const y = layout().top - 10;
@@ -579,6 +621,8 @@
     for(const x of picks){ hazardClouds.push({x,y,tEnd,spawned:false}); }
   }
   let nextBossAtkA=0, nextBossAtkB=0, cyclopsChargeUntil=0;
+// 新增 Boss 蓄力計時，對應獅子、騎士、魔王技能的 2 秒聚氣期
+let lionChargeUntil=0, knightChargeUntil=0, demonChargeUntil=0;
 
   function updateBossAbilities(){
     const bossLv = (level%5===0)? level : 0;
@@ -1218,6 +1262,9 @@ function generateLevel(lv, L){
         }
       }
     }
+
+    // 重新置中磚塊：優先中間密集，避免背景空缺太多
+    centerBricks(L);
   }
 
 
@@ -1358,6 +1405,36 @@ function spawnPower(x,y){
     isSpecial: def.type === 'special' || def.type === 'rare',
     phase: Math.random() * Math.PI * 2,
   });
+}
+
+// 重新排列磚塊至中間位置：確保空缺優先位於外側
+function centerBricks(L){
+  const rows = L.rows;
+  const cols = L.cols;
+  // 計算欄位位置函式
+  const xAtLocal = c => L.pad + c * (brickW + L.pad);
+  // 分組每一列的磚塊
+  const rowBricks = {};
+  for(const b of bricks){
+    // 略過 Boss 磚
+    if(b.boss) continue;
+    // 計算該磚所在列
+    const row = Math.round((b.y - L.top) / (brickH + L.pad));
+    if(row < 0 || row >= rows) continue;
+    if(!rowBricks[row]) rowBricks[row] = [];
+    rowBricks[row].push(b);
+  }
+  // 依行數對齊至中心
+  for(const rowKey in rowBricks){
+    const arr = rowBricks[rowKey].sort((a,b) => a.x - b.x);
+    const count = arr.length;
+    if(count === 0 || count >= cols) continue;
+    const startCol = Math.floor((cols - count) / 2);
+    for(let i=0; i < count; i++){
+      const b = arr[i];
+      b.x = xAtLocal(startCol + i);
+    }
+  }
 }
 
   // === 自訂特效 ===
@@ -2103,22 +2180,108 @@ if(performance.now() >= nextForcedDropAt){
     drawPlasmas(); drawHoly(); drawPhoenix();
 
     // Cyclops wind-up glow
-    if(cyclopsChargeUntil && performance.now()<cyclopsChargeUntil){ for(const b of bricks){ if(b.boss && b.face==='目'){ const a = 0.5 + 0.5*Math.sin(performance.now()/80); ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba(255,235,150,'+(0.6*a)+')'; ctx.lineWidth=4; drawRoundedRect(b.x,b.y,b.w,b.h,10); ctx.stroke(); ctx.restore(); } } }
+    if(cyclopsChargeUntil && performance.now()<cyclopsChargeUntil){
+      for(const b of bricks){
+        if(b.boss && b.face==='目'){
+          const a = 0.5 + 0.5*Math.sin(performance.now()/80);
+          ctx.save(); ctx.globalCompositeOperation='lighter';
+          ctx.strokeStyle='rgba(255,235,150,' + (0.6*a) + ')'; ctx.lineWidth=4;
+          drawRoundedRect(b.x,b.y,b.w,b.h,10);
+          ctx.stroke(); ctx.restore();
+        }
+      }
+    }
+    // Lion wind-up glow
+    if(lionChargeUntil && performance.now()<lionChargeUntil){
+      for(const b of bricks){
+        if(b.boss && b.face==='獅'){
+          const a = 0.5 + 0.5*Math.sin(performance.now()/80);
+          ctx.save(); ctx.globalCompositeOperation='lighter';
+          ctx.strokeStyle='rgba(255,215,0,' + (0.6*a) + ')'; ctx.lineWidth=4;
+          drawRoundedRect(b.x,b.y,b.w,b.h,10);
+          ctx.stroke(); ctx.restore();
+        }
+      }
+    }
+    // Knight wind-up glow
+    if(knightChargeUntil && performance.now()<knightChargeUntil){
+      for(const b of bricks){
+        if(b.boss && b.face==='騎'){
+          const a = 0.5 + 0.5*Math.sin(performance.now()/80);
+          ctx.save(); ctx.globalCompositeOperation='lighter';
+          ctx.strokeStyle='rgba(180,200,255,' + (0.6*a) + ')'; ctx.lineWidth=4;
+          drawRoundedRect(b.x,b.y,b.w,b.h,10);
+          ctx.stroke(); ctx.restore();
+        }
+      }
+    }
+    // Demon wind-up glow
+    if(demonChargeUntil && performance.now()<demonChargeUntil){
+      for(const b of bricks){
+        if(b.boss && b.face==='魔'){
+          const a = 0.5 + 0.5*Math.sin(performance.now()/80);
+          ctx.save(); ctx.globalCompositeOperation='lighter';
+          ctx.strokeStyle='rgba(255,80,120,' + (0.6*a) + ')'; ctx.lineWidth=4;
+          drawRoundedRect(b.x,b.y,b.w,b.h,10);
+          ctx.stroke(); ctx.restore();
+        }
+      }
+    }
 
 
     // 擋板
     const pr=paddleRect();
-    const padGlow=buffs.STICKY.active?'rgba(120,230,220,.6)':((buffs.WIDE.active||buffs.LONG.stacks.length)?'rgba(120,170,255,.6)':'rgba(200,210,255,.4)'); ctx.shadowColor=padGlow; ctx.shadowBlur=20;
+    const padGlow=buffs.STICKY.active?'rgba(120,230,220,.6)':((buffs.WIDE.active||buffs.LONG.stacks.length)?'rgba(120,170,255,.6)':'rgba(200,210,255,.4)');
+    ctx.shadowColor=padGlow; ctx.shadowBlur=20;
     ctx.fillStyle='#9aaeff';
     if(!orientLeft){
-      // 水平
-      drawRoundedRect(pr.x,pr.y,pr.w,pr.h,8); ctx.fill();
-      // 空洞
-      if(buffs.HOLE.active){ const gapW=pr.w/3; ctx.clearRect((pr.x+pr.w/3)*scaleX, pr.y*scaleY, gapW*scaleX, pr.h*scaleY); }
+      // 水平模式
+      if(buffs.ROTATE && buffs.ROTATE.active){
+        // 旋轉擋板：依據啟動時間以 4 秒一圈旋轉
+        const nowT = performance.now();
+        const startT = buffs.ROTATE.start || nowT;
+        const phi = (((nowT - startT) % 4000) / 4000) * Math.PI * 2;
+        // 優雅旋轉：移動到擋板中心後旋轉，以邏輯單位轉為畫布像素
+        const cx=pr.x + pr.w/2;
+        const cy=pr.y + pr.h/2;
+        ctx.save();
+        ctx.translate(cx*scaleX, cy*scaleY);
+        ctx.rotate(phi);
+        // 繪製圓角矩形（以畫布像素為單位）
+        const pw = pr.w * scaleX;
+        const ph = pr.h * scaleY;
+        const rad = 8 * Math.min(scaleX, scaleY);
+        const halfW = pw / 2;
+        const halfH = ph / 2;
+        ctx.beginPath();
+        ctx.moveTo(-halfW + rad, -halfH);
+        ctx.lineTo(halfW - rad, -halfH);
+        ctx.quadraticCurveTo(halfW, -halfH, halfW, -halfH + rad);
+        ctx.lineTo(halfW, halfH - rad);
+        ctx.quadraticCurveTo(halfW, halfH, halfW - rad, halfH);
+        ctx.lineTo(-halfW + rad, halfH);
+        ctx.quadraticCurveTo(-halfW, halfH, -halfW, halfH - rad);
+        ctx.lineTo(-halfW, -halfH + rad);
+        ctx.quadraticCurveTo(-halfW, -halfH, -halfW + rad, -halfH);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      } else {
+        // 一般水平模式
+        drawRoundedRect(pr.x,pr.y,pr.w,pr.h,8); ctx.fill();
+        // 有空洞時拆分
+        if(buffs.HOLE.active){
+          const gapW=pr.w/3;
+          ctx.clearRect((pr.x+pr.w/3)*scaleX, pr.y*scaleY, gapW*scaleX, pr.h*scaleY);
+        }
+      }
     }else{
-      // 左側垂直
+      // 左側垂直模式
       drawRoundedRect(pr.x,pr.y,pr.w,pr.h,8); ctx.fill();
-      if(buffs.HOLE.active){ const gapH=pr.h/3; ctx.clearRect(pr.x*scaleX, (pr.y+pr.h/3)*scaleY, pr.w*scaleX, gapH*scaleY); }
+      if(buffs.HOLE.active){
+        const gapH=pr.h/3;
+        ctx.clearRect(pr.x*scaleX, (pr.y+pr.h/3)*scaleY, pr.w*scaleX, gapH*scaleY);
+      }
     }
     ctx.shadowBlur=0;
     if(buffs.SHIELD.active && !orientLeft){ const g=ctx.createLinearGradient(0,(700-10)*scaleY,0,700*scaleY); g.addColorStop(0,'rgba(120,220,255,0.35)'); g.addColorStop(1,'rgba(120,220,255,0.05)'); ctx.fillStyle=g; ctx.fillRect(0,(700-10)*scaleY,canvas.width,10*scaleY); }
@@ -2540,11 +2703,35 @@ if(performance.now() >= nextForcedDropAt){
       }
       if(hitPaddle){ stats.catches++;
         if(!orientLeft){
-          const hitPos=(b.x-(pr.x+pr.w/2))/(pr.w/2); const sp=Math.min(Math.hypot(b.vx,b.vy)*1.02, b.speedCap); const angle=hitPos*(Math.PI/3);
-          b.vx=Math.sin(angle)*sp; b.vy=-Math.cos(angle)*sp; b.y=pr.y-b.r-0.1;
+          // 水平擋板碰撞：計算擊中位置轉換為反彈角
+          const hitPos=(b.x-(pr.x+pr.w/2))/(pr.w/2);
+          const sp=Math.min(Math.hypot(b.vx,b.vy)*1.02, b.speedCap);
+          const angle=hitPos*(Math.PI/3);
+          let vx=Math.sin(angle)*sp;
+          let vy=-Math.cos(angle)*sp;
+          // 若平台正在旋轉，將反彈向量旋轉相同角度
+          if(buffs.ROTATE && buffs.ROTATE.active){
+            const nowT = performance.now();
+            const startT = buffs.ROTATE.start || nowT;
+            const phi = (((nowT - startT) % 4000) / 4000) * Math.PI * 2;
+            const cosPhi=Math.cos(phi);
+            const sinPhi=Math.sin(phi);
+            const nvx = vx * cosPhi - vy * sinPhi;
+            const nvy = vx * sinPhi + vy * cosPhi;
+            vx = nvx;
+            vy = nvy;
+          }
+          b.vx=vx; b.vy=vy;
+          b.y=pr.y-b.r-0.1;
         }else{
-          const hitPos=(b.y-(pr.y+pr.h/2))/(pr.h/2); const sp=Math.min(Math.hypot(b.vx,b.vy)*1.02, b.speedCap); const angle=hitPos*(Math.PI/3);
-          b.vx=Math.cos(angle)*sp; b.vy=Math.sin(angle)*sp; b.x=pr.x+pr.w+b.r+0.1;
+          // 垂直擋板碰撞
+          const hitPos=(b.y-(pr.y+pr.h/2))/(pr.h/2);
+          const sp=Math.min(Math.hypot(b.vx,b.vy)*1.02, b.speedCap);
+          const angle=hitPos*(Math.PI/3);
+          let vx=Math.cos(angle)*sp;
+          let vy=Math.sin(angle)*sp;
+          b.vx=vx; b.vy=vy;
+          b.x=pr.x+pr.w+b.r+0.1;
         }
         beep(880,0.03); spawnParticles(b.x,b.y,'#caddff',8,1.3,1.5,2.5);
         if(buffs.STICKY.active){ b.stuck=true; b.offsetX= (!orientLeft) ? (b.x-(paddle.x+paddle.w/2)) : 0; }
