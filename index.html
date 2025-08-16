@@ -341,18 +341,9 @@
   const IMG_PAIRS_FALLBACK = Array.from({length:10}, (_,i)=> i+1).map(i=>({bg:`images/bg${i}.jpg`, cg:`images/cg${i}.jpg`}));
 
   function makeImg(src, fallback){
-    const im = new Image();
-    // 不用 lazy，避免行動瀏覽器延遲載入導致 reveal 圖塊為空
-    im.decoding = 'async';
-    im.src = src;
-    // 失敗改用後備
-    if (fallback){
-      im.onerror = () => { if (im.src !== fallback) im.src = fallback; };
-    }
-    // 預先 decode，提升首次繪製成功率
-    if (im.decode) { im.decode().catch(()=>{}); }
-    return im;
-  };
+    const im = new Image(); im.decoding='async'; im.loading='lazy'; im.src=src;
+    if(fallback){
+      im.onerror=()=>{ if(im.src!==fallback) im.src=fallback; };
     }
     return im;
   }
@@ -418,18 +409,15 @@
   const noteClose = document.getElementById('noteClose');
   function closeNoteAndResume(){
     hideCenter();
-    if (running){ startCountdown(); } else { startGameWithCountdown(); }
+    if(running){ startCountdown(); } else { startGameWithCountdown(); }
   }
   if (noteClose) noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
   // 允許點擊整個教學/說明覆蓋層即可開始或繼續（避免行動裝置誤觸無法啟動）
-  if (centerNote) centerNote.addEventListener('click', (e)=>{
-    if (e.target === centerNote) { e.stopPropagation(); closeNoteAndResume(); }
-  });
+  if (centerNote) centerNote.addEventListener('click', (e)=>{ if (e.target===centerNote) { e.stopPropagation(); closeNoteAndResume(); }});
   if (noteBox) noteBox.addEventListener('click', (e)=>{ e.stopPropagation(); /* 讓點擊區塊不穿透 */ });
-  // 任何地方點擊（例如 HUD）也能觸發首次啟動，強化容錯（只綁一次）
+  // 任何地方點擊（例如 HUD）也能觸發首次啟動，強化容錯
   document.addEventListener('click', ()=>{ if(!running && !gameOver) { startGameWithCountdown(); } }, { once:true });
 // === DPR 縮放 ===
-
   function resizeCanvasDPR(){ const dpr=Math.min(window.devicePixelRatio||1,2); const cssW=canvas.clientWidth; const cssH=Math.round(cssW*(700/1100)); canvas.style.height=cssH+'px'; canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr); scaleX=canvas.width/1100; scaleY=canvas.height/700; }
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
 
@@ -726,8 +714,8 @@
     HOLY:{active:false,until:0},
     TRACK:{active:false,until:0},
     MISSILE:{active:false,until:0},
-    HELL:{label:'地獄球',type:'debuff',durationMs:8000,hell:{speedMul:1.35,haloMs:2000},badge:'🕳️'},
-    MEGA:{label:'特大球',type:'buff',durationMs:10000,mega:{sizeMul:1.6,speedMul:0.85},badge:'🟠'},
+    HELL:{active:false,until:0},
+    MEGA:{active:false,until:0,applied:false},
     CHAIN:{active:false,until:0},
     NARROW:{active:false,until:0},
     HOLE:{active:false,until:0},
@@ -1019,9 +1007,6 @@ function startBGMTheme(theme){
     // 依關卡設計關卡布局
     generateLevel(level, L);
     postAdjustAndDensify(L);
-    /* SAFETY: ensure revealRects cleared */
-    revealRects = Array.isArray(revealRects) ? revealRects : [];
-
     // 放置菁英磚（第6關以後，最多2個）
     if(level>=6){ let placed=0; const candidates=bricks.filter(b=>!b.unbreakable && !b.boss);
       const cx=1100/2, cy=(layout().top + (layout().rows* (brickH+layout().pad) - layout().pad))/2;
@@ -1913,52 +1898,21 @@ function drawPower(p){
     ctx.restore();}
 
   // 只在磚塊區域揭示圖片切片（依本關影像）
-  
-function drawRevealTiles(){
-  const img = getLevelImage(level);
-  if (!img || !(img.naturalWidth > 0 && img.naturalHeight > 0)) return;
-
-  const L = layout();
-  // 磚區域的目標矩形（含左右 pad，含行間 pad，但不含最後一列下方 pad）
-  const area = {
-    x: L.pad,
-    y: L.top,
-    w: 1100 - L.pad * 2,
-    h: L.rows * brickH + (L.rows - 1) * L.pad
-  };
-
-  // 依等比鋪滿 area（contain），求出影像在 area 內的放置框
-  const rImg = img.naturalWidth / img.naturalHeight;
-  const rArea = area.w / area.h;
-  let dw, dh;
-  if (rImg > rArea) { // 比較寬 → 以高貼齊
-    dh = area.h;
-    dw = dh * rImg;
-  } else {
-    dw = area.w;
-    dh = dw / rImg;
-  }
-  const dx = area.x + (area.w - dw) / 2;
-  const dy = area.y + (area.h - dh) / 2;
-
-  // 把每個 reveal rect 映射到來源影像座標後繪製
-  for (const r of revealRects){
-    let sx = (r.x - dx) / dw * img.naturalWidth;
-    let sy = (r.y - dy) / dh * img.naturalHeight;
-    let sw = r.w / dw * img.naturalWidth;
-    let sh = r.h / dh * img.naturalHeight;
-
-    // 裁切到影像邊界內（避免 NaN 或負值造成不顯示）
-    const sx0 = Math.max(0, Math.min(img.naturalWidth, sx));
-    const sy0 = Math.max(0, Math.min(img.naturalHeight, sy));
-    const sw0 = Math.max(0, Math.min(img.naturalWidth - sx0, sw));
-    const sh0 = Math.max(0, Math.min(img.naturalHeight - sy0, sh));
-    if (sw0 > 0 && sh0 > 0){
-      ctx.drawImage(img, sx0, sy0, sw0, sh0, r.x * scaleX, r.y * scaleY, r.w * scaleX, r.h * scaleY);
-    }
-  }
-}
-
+  function drawRevealTiles(){ const img=getLevelImage(level); if(!img || !(img.naturalWidth>0 && img.naturalHeight>0)) return; const L=layout();
+    const area={x:L.pad,y:L.top,w:1100-L.pad*2,h:L.rows*(brickH+L.pad)-L.pad}; const rImg=img.naturalWidth/img.naturalHeight; const rArea=area.w/area.h; let dw,dh;
+    if(rImg>rArea){ dh=area.h; dw=dh*rImg; } else { dw=area.w; dh=dw/rImg; } const dx=area.x+(area.w-dw)/2; const dy=area.y+(area.h-dh)/2;
+    for(const r of revealRects){
+      let sx=(r.x-dx)/dw*img.naturalWidth;
+      let sy=(r.y-dy)/dh*img.naturalHeight;
+      let sw=r.w/dw*img.naturalWidth;
+      let sh=r.h/dh*img.naturalHeight;
+      const sx0=Math.max(0, Math.min(img.naturalWidth, sx));
+      const sy0=Math.max(0, Math.min(img.naturalHeight, sy));
+      const sw0=Math.max(0, Math.min(img.naturalWidth - sx0, sw));
+      const sh0=Math.max(0, Math.min(img.naturalHeight - sy0, sh));
+      if(sw0>0 && sh0>0){
+        ctx.drawImage(img, sx0,sy0,sw0,sh0, r.x*scaleX, r.y*scaleY, r.w*scaleX, r.h*scaleY);
+      }
     } }
 
   function drawPlasmas(){ const now=performance.now(); ctx.save(); for(let i=plasmas.length-1;i>=0;i--){ const P=plasmas[i]; P.x+=P.vx; P.y+=P.vy; P.vx*=0.995; P.vy*=0.995; if(now>P.until){ plasmas.splice(i,1); continue; }
@@ -2662,7 +2616,7 @@ if(performance.now() >= nextForcedDropAt){
   }
 
 
-  function loop(){ if(!paused && running) update(); draw(); requestAnimationFrame(loop); }
+  function loop(){ try{ if(!paused && running) update(); draw(); }catch(e){ console.error('[loop]',e); window.__lastError=e; } finally { requestAnimationFrame(loop); } }
   function boot(){
     resetGame(); updateHUD(); loop();
     // 自動讀取音效/BGM偏好
@@ -2686,15 +2640,7 @@ if(performance.now() >= nextForcedDropAt){
   new MutationObserver(refresh).observe(centerNote, { attributes:true, attributeFilter:['style','hidden','class']});
   refresh();
 })();
-
-<script>
-// Debug HUD plumbing (non-intrusive; only shows when ?debug=1)
-window.__lastError = null;
-window.addEventListener('error', function (e){ window.__lastError = (e && e.error) ? (e.error.stack||String(e.error)) : (e && e.message); console.error('[GlobalError]', e && (e.error||e.message||e)); }, true);
-window.addEventListener('unhandledrejection', function (e){ window.__lastError = (e && e.reason) ? (e.reason.stack||String(e.reason)) : 'Unhandled rejection'; console.error('[UnhandledRejection]', e && e.reason); }, true);
 </script>
-</script>
-
 
 <!-- ===== 可隨時進入的畫廊面板（由補丁注入） ===== -->
 <div class="win" id="album" style="display:none;">
