@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>Rock打磚塊 Breakout（最終增強版）</title><script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=wo5yaN_JFpi4JjU_0pPz2PTXxFD176V_SSNnp16XohYWiKX87-lOsAh6wTQ07PQ1uHzMZRdbgC6iELm6KzsqUnMBN9lI81BLjflYST2edoH3r2sPdXuazS5RqRrRXFlBUMMKtzaa07q4jdEmpOQU1PkcfneRlpnG9GpIt9SekuFBVPFTqdZe2KSSNIdH3g0DUy8XL4PXlL1C9l-cKh_ITxZ9bepVOHfMjasvCxNAZfVzceTcfxokARnHDlpJXP7vHaFp5ospwT6p5p6zJyXwmty_TI75yD7sCgBGm-3HA70tXrdVN4hjq-TPQgYfYq7MnsGd1IhYUZf2yVrAaS3fm9vRn6-geNx9S-HtXcViqd_G4QfiRsIYZaL4VwIZuaneP6BWxd8ytDyfeO8Jc4eZjep-CjvCXcJlav3ttdQYhQdpbvdM8XXNpeOyuvkBUmwB9StVs63bK4CY0vGXaayAsxZi9bJyBNbB33yFpXYfqS-kZMDcLIJmhogsExdLjAFjBRhnoQmQ80me9Fm5CX8zfinUN_8bNV8rGB9jcjQ6oMp9nunlECVZpbeTIFCFMzoYKr8snWqPtZ9y1v8M2QoqcA" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9maWxlczA4Lm9haXVzZXJjb250ZW50LmNvbS9maWxlLU45UUJqTlVmallYM3V1TUZBZ0JqdE0_c2U9MjAyNS0wOC0xNlQxOCUzYTUyJTNhMjJaJnNwPXImc3Y9MjAyNC0wOC0wNCZzcj1iJnJzY2M9bWF4LWFnZSUzZDI5OSUyYyUyMGltbXV0YWJsZSUyYyUyMHByaXZhdGUmcnNjZD1hdHRhY2htZW50JTNiJTIwZmlsZW5hbWUlM2RpbmRleC5odG1sJnNrb2lkPWZhNzk2NmU3LWY4ZWEtNDgzYy05MTlhLTEzYWNmZDYxZDY5NiZza3RpZD1hNDhjY2E1Ni1lNmRhLTQ4NGUtYTgxNC05Yzg0OTY1MmJjYjMmc2t0PTIwMjUtMDgtMTVUMjMlM2E1OCUzYTQ5WiZza2U9MjAyNS0wOC0xNlQyMyUzYTU4JTNhNDlaJnNrcz1iJnNrdj0yMDI0LTA4LTA0JnNpZz0yRkVKdDBLNnN1ZUJMeDVuRlVRTjBJTGxaVG1KZTRpRjJ5T2lwbUg1WThvJTNk"/><style>
+<title>Rock打磚塊 Breakout（最終增強版）</title><style>
     :root {
       --bg:#0b1022; --bg2:#0a0f1e; --fg:#e9ecf1; --accent:#66b2ff;
       --brick1:#ff6b6b; --brick2:#ffd166; --brick3:#06d6a0; --brick4:#4cc9f0;
@@ -51,6 +51,17 @@
     .legend{display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:center; font-size:12px}
     .legend .box{width:14px; height:14px; display:inline-block; border-radius:3px; margin-right:4px; vertical-align:middle}
     .legend .item{padding:4px 8px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--glass-stroke)}
+    /* 首頁覆蓋層（預設可見；用 .hidden 隱藏） */
+    .home-page {
+      position:fixed; inset:0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background:radial-gradient(1200px 800px at 50% -10%, #152040, #0a0f1e 60%);
+      z-index:10000;
+    }
+    .home-page.hidden { display:none; }
+    .home-page h2 { margin:0 0 20px 0; font-size:clamp(20px,4vw,32px); font-weight:800; color:var(--fg); text-shadow:0 4px 20px rgba(0,0,0,.4); }
+    .home-page .btn { font-size:18px; padding:10px 20px; margin:8px 0; min-width:160px; }
+
 
     /* 清關畫廊 overlay */ 
     .gallery{position:absolute; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column; z-index:4;}
@@ -428,75 +439,6 @@
   let ledStyle = (localStorage.getItem('led_style')||'classic');
   // 舊版 steel 對應為 ice
   if(ledStyle === 'steel') ledStyle = 'ice';
-
-  // === Skin 設定 ===
-  // 定義各種 Skin 的根變數與背景漸層。這些變數將應用於 :root 上，以自訂按鈕、文字與背景色彩等。
-  const skinConfigs = {
-    classic: {
-      rootVars: {}, // 維持預設樣式
-      bg: 'linear-gradient(180deg, #0d1126, #0b1022 55%, #091022)'
-    },
-    tech: {
-      rootVars: {
-        '--bg': '#031b21', '--bg2': '#021318', '--fg': '#d2f4e0', '--btn': '#073c44', '--btn-stroke': '#0b6a62', '--pill': '#052933', '--led': '#33ff99'
-      },
-      bg: 'linear-gradient(180deg, #021b25, #003f4b 55%, #00252c)'
-    },
-    arc: {
-      rootVars: {
-        '--bg': '#041b33', '--bg2': '#072d54', '--fg': '#d4e8ff', '--btn': '#073661', '--btn-stroke': '#0a4d8b', '--pill': '#072b56', '--led': '#66baff'
-      },
-      bg: 'linear-gradient(180deg, #041c34, #082659 55%, #04254e)'
-    },
-    ice: {
-      rootVars: {
-        '--bg': '#0e233b', '--bg2': '#132e58', '--fg': '#d0e8ff', '--btn': '#102d54', '--btn-stroke': '#1a4680', '--pill': '#0d2b4b', '--led': '#83c9ff'
-      },
-      bg: 'linear-gradient(180deg, #0e223d, #17305e 55%, #0f2c50)'
-    },
-    vivid: {
-      rootVars: {
-        '--bg': '#0f0a1e', '--bg2': '#1a1459', '--fg': '#ffd3e9', '--btn': '#34114e', '--btn-stroke': '#4f2073', '--pill': '#221a48', '--led': '#ff66cc'
-      },
-      bg: 'linear-gradient(180deg, #1c0329, #361254 55%, #1a093a)'
-    },
-    reaper: {
-      rootVars: {
-        '--bg': '#1c1c2a', '--bg2': '#2c2b39', '--fg': '#eae6f0', '--btn': '#3d2c3b', '--btn-stroke': '#5c415a', '--pill': '#2d2431', '--led': '#cc3355'
-      },
-      bg: 'linear-gradient(180deg, #2b182b, #452d49 55%, #2a173a)'
-    },
-    flame: {
-      rootVars: {
-        '--bg': '#331410', '--bg2': '#521c12', '--fg': '#ffd7c4', '--btn': '#632c19', '--btn-stroke': '#8a3d23', '--pill': '#421e13', '--led': '#ff6644'
-      },
-      bg: 'linear-gradient(180deg, #2f0f0a, #5c1e13 55%, #43140f)'
-    },
-    demon: {
-      rootVars: {
-        '--bg': '#1a1229', '--bg2': '#2a193d', '--fg': '#e0d0ff', '--btn': '#421653', '--btn-stroke': '#643a7c', '--pill': '#351b48', '--led': '#9a4bbb'
-      },
-      bg: 'linear-gradient(180deg, #220f2e, #411d58 55%, #2e123f)'
-    }
-  };
-
-  // 根據目前的 ledStyle 應用相對應的 Skin 設定
-  function applySkin(){
-    const cfg = skinConfigs[ledStyle] || skinConfigs['classic'];
-    // 設定 root 變數
-    if(cfg.rootVars){
-      for(const key in cfg.rootVars){ document.documentElement.style.setProperty(key, cfg.rootVars[key]); }
-    }
-    // 更新 canvas 背景漸層
-    const cv = document.getElementById('game');
-    if(cv && cfg.bg){ cv.style.background = cfg.bg; }
-    // 更新 body 背景（用 radial 漸層營造環境光）
-    const bg1 = (cfg.rootVars && cfg.rootVars['--bg']) || getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0b1022';
-    const bg2 = (cfg.rootVars && cfg.rootVars['--bg2']) || getComputedStyle(document.documentElement).getPropertyValue('--bg2').trim() || '#0a0f1e';
-    document.body.style.background = `radial-gradient(1200px 800px at 50% -10%, ${bg1}, ${bg2} 60%)`;
-  }
-  // 初始套用
-  applySkin();
   function renderStatsHtml(){
     const fd = (stats.fastestDeath===Infinity)? '-' : stats.fastestDeath.toFixed(2);
     const ld = (stats.longestLife===0)? '-' : stats.longestLife.toFixed(2);
@@ -1717,15 +1659,7 @@ function drawPower(p){
   pauseBtn.addEventListener('click',()=>togglePause()); resetBtn.addEventListener('click',()=>resetGame()); fsBtn.addEventListener('click',()=>toggleFullscreen());
   soundBtn.addEventListener('click',()=>{ soundsOn=!soundsOn; localStorage.setItem('sfx_on', soundsOn?'1':'0'); soundBtn.textContent=`音效：${soundsOn?'開':'關'}`; ensureAudio(); if(audioCtx && audioCtx.resume) audioCtx.resume(); beep(880,0.06,0.05); });
   difficultySel.addEventListener('change',()=>{ resetGame(); });
-  if(ledStyleSel){
-    ledStyleSel.value = ledStyle;
-    ledStyleSel.addEventListener('change', ()=>{
-      ledStyle = ledStyleSel.value;
-      localStorage.setItem('led_style', ledStyle);
-      // 每次更換 Skin 時套用新的樣式
-      applySkin();
-    });
-  }
+  if(ledStyleSel){ ledStyleSel.value = ledStyle; ledStyleSel.addEventListener('change', ()=>{ ledStyle = ledStyleSel.value; localStorage.setItem('led_style', ledStyle); }); }
   saveBtn.addEventListener('click',saveProgress); loadBtn.addEventListener('click',loadProgress); clearSaveBtn.addEventListener('click',clearSave);
   tutorBtn.addEventListener('click', ()=> toggleHelp('tutor'));
   effectsBtn.addEventListener('click', ()=> toggleHelp('effects'));
@@ -1964,35 +1898,6 @@ function drawPower(p){
         for(let i=0;i<h;i+=50){ drawFlame(8, i+8); drawFlame(w-8, i+8); }
         // 外框淡光
         ctx.strokeStyle=c; ctx.lineWidth=2.2; pathThreeSides(); ctx.stroke();
-        break;
-      }
-      case 'ice': {
-        // 冰雪風格：清冷漸層與光暈
-        ctx.globalAlpha = 0.6 + 0.3*breath5;
-        const grad = ctx.createLinearGradient(0, 0, w, 0);
-        grad.addColorStop(0, 'rgba(200,220,255,0.85)');
-        grad.addColorStop(1, 'rgba(120,160,255,0.85)');
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 7;
-        ctx.shadowColor = 'rgba(100,150,255,0.6)';
-        ctx.shadowBlur = 14 + 6*breath5;
-        pathThreeSides(); ctx.stroke();
-        break;
-      }
-      case 'demon': {
-        // 魔王風格：深紫暗黑邊框與光暈
-        ctx.globalAlpha = 0.6 + 0.3*breath5;
-        ctx.strokeStyle = 'rgba(155,70,190,0.9)';
-        ctx.lineWidth = 7;
-        ctx.shadowColor = 'rgba(120,40,140,0.6)';
-        ctx.shadowBlur = 18 + 6*breath5;
-        pathThreeSides(); ctx.stroke();
-        // 額外淡淡暗暈線條
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 0.3 + 0.2*breath8;
-        ctx.strokeStyle = 'rgba(90,40,110,0.6)';
-        ctx.lineWidth = 2.5;
-        pathThreeSides(); ctx.stroke();
         break;
       }
       default: {
@@ -3000,7 +2905,97 @@ if(performance.now() >= nextForcedDropAt){
   new MutationObserver(refresh).observe(centerNote, { attributes:true, attributeFilter:['style','hidden','class']});
   refresh();
 })();
+
+// === 首頁與返回邏輯（預設顯示首頁；出錯也不會消失） ===
+(() => {
+  const homePage = document.getElementById('homePage');
+  const startBtn = document.getElementById('startBtn');
+  const homeGalleryBtn = document.getElementById('homeGalleryBtn');
+  const homeTutorBtn = document.getElementById('homeTutorBtn');
+  const albumBtn = document.getElementById('albumBtn');
+  const albumClose = document.getElementById('albumClose');
+  const noteClose = document.getElementById('noteClose');
+  const tutorBtnDom = document.getElementById('tutorBtn');
+  const effectsBtnDom = document.getElementById('effectsBtn');
+  const returnBtn = document.getElementById('returnBtn');
+
+  function hideHome(){ if(homePage){ homePage.classList.add('hidden'); document.body.style.overflow=''; } }
+  function showHome(){ if(homePage){ homePage.classList.remove('hidden'); document.body.style.overflow='hidden'; } }
+
+  // 預設顯示首頁
+  showHome();
+
+  // 防止首頁層把全域 click/space 事件傳下去
+  homePage?.addEventListener('click', (e)=>e.stopPropagation());
+  homePage?.addEventListener('touchend', (e)=>e.stopPropagation());
+  document.addEventListener('keydown', (ev) => {
+    if(homePage && !homePage.classList.contains('hidden') && (ev.code === 'Space' || ev.key === ' ')){
+      ev.preventDefault(); ev.stopPropagation();
+    }
+  }, {capture:true});
+
+  // 開始遊戲
+  startBtn?.addEventListener('click', () => {
+    hideHome();
+    let load = false;
+    try { load = confirm('是否讀取上一個存檔後開始遊戲？'); } catch(e){}
+    try {
+      if(load){ window.loadProgress?.(); } else { window.resetGame?.(); }
+      window.startGameWithCountdown?.();
+    } catch(e){ console && console.warn('[start game]', e); }
+  });
+
+  // 畫廊
+  homeGalleryBtn?.addEventListener('click', () => {
+    hideHome();
+    try { albumBtn?.click(); } catch(e){}
+    if(albumClose){
+      const onClose = () => { showHome(); albumClose.removeEventListener('click', onClose); };
+      albumClose.addEventListener('click', onClose);
+    }
+  });
+
+  // 教學/效果說明
+  homeTutorBtn?.addEventListener('click', () => {
+    hideHome();
+    try { tutorBtnDom?.click(); } catch(e){}
+    if(noteClose){
+      const onClose = () => { showHome(); noteClose.removeEventListener('click', onClose); };
+      noteClose.addEventListener('click', onClose);
+    }
+  });
+
+  // 遊戲內返回首頁（若有）
+  returnBtn?.addEventListener('click', () => {
+    let save = false;
+    try{ save = confirm('是否在返回首頁前存檔？'); }catch(e){}
+    if(save){ try{ window.saveProgress?.(); }catch(e){} }
+    try{ window.paused = true; }catch(e){}
+    showHome();
+  });
+
+  // 保險：頁面 onload 再次強制顯示首頁
+  window.addEventListener('load', () => { try { showHome(); } catch(e){} });
+})();
+
+// === Skin 切換安全呼叫 ===
+(() => {
+  const ledStyleSel = document.getElementById('ledStyle');
+  if(ledStyleSel){
+    ledStyleSel.addEventListener('change', () => {
+      try { window.applySkin && window.applySkin(); } catch(e){ console.warn('applySkin failed', e); }
+    }, {once:false});
+  }
+})();
 </script>
 
+
+<!-- 首頁覆蓋層 -->
+<div id="homePage" class="home-page">
+  <h2>Rock打磚塊 Breakout</h2>
+  <button id="startBtn" class="btn">開始遊戲</button>
+  <button id="homeGalleryBtn" class="btn">畫廊</button>
+  <button id="homeTutorBtn" class="btn">教學/效果說明</button>
+</div>
 </body>
 </html>
