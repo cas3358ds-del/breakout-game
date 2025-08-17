@@ -289,24 +289,94 @@ body{ padding-top: var(--safe-top); }
 /* === Layout spacing to avoid HUD overlapping title === */
 .wrap > h1{ margin-top: calc(8px + var(--safe-top)); margin-bottom: 8px; }
 canvas{ margin-top: 6px; }
+
+/* === Cold Blue Glass HUD (scoped) === */
+:root{
+  --glass-1: var(--glass-1, rgba(255,255,255,.08));
+  --glass-2: var(--glass-2, rgba(255,255,255,.03));
+  --stroke: var(--stroke, rgba(140,199,255,.22));
+  --blur: var(--blur, 12px);
+  --safe-top: env(safe-area-inset-top);
+}
+.topbar{
+  position:sticky; top: calc(8px + var(--safe-top)); z-index:30;
+  display:grid; grid-template-columns: 1fr auto; align-items:center; gap:10px;
+  width:calc(100% - 24px); max-width:860px; margin:10px auto 0; padding:10px 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  border:1px solid var(--stroke); border-radius:16px;
+  backdrop-filter: blur(var(--blur)); box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+.stats{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}
+.pill{
+  display:flex;align-items:center;gap:8px;min-height:34px;
+  padding:6px 12px;border-radius:999px;background:rgba(0,0,0,.28);
+  border:1px solid var(--stroke); color:var(--muted, #a8b6d6); font-size:14px;
+}
+.pill strong{color:var(--on, #e9ecf1);font-weight:800}
+.actions{display:flex;gap:10px;align-items:center;position:relative}
+.ring{
+  --size: 46px;
+  width: var(--size); height: var(--size);
+  border-radius: 50%; position:relative; overflow:hidden; cursor:pointer;
+  background: radial-gradient(circle at 50% 0%, rgba(255,255,255,.18), rgba(255,255,255,0) 60%), rgba(255,255,255,.06);
+  border:1px solid var(--stroke); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+  transition: box-shadow .18s ease, transform .18s ease, background .18s ease;
+}
+.ring:before, .ring:after{
+  content:""; position:absolute; inset:4px; border-radius:50%; border:2px solid rgba(124,197,255,.65);
+  -webkit-mask: conic-gradient(#000 0 75%, transparent 0); mask: conic-gradient(#000 0 75%, transparent 0);
+  opacity:.95; filter: drop-shadow(0 0 6px rgba(124,197,255,.35));
+  transition: inset .18s ease, opacity .18s ease, filter .18s ease;
+}
+.ring .icon{ position:absolute; inset:0; display:grid; place-items:center; font-size:18px }
+.ring .bars{ width:14px; height:16px; display:grid; grid-template-columns: 1fr 1fr; gap:4px }
+.ring .bars span{ background:#e9ecf1; border-radius:2px; transition: transform .18s ease, opacity .18s ease }
+.ring.open{ box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 10px 30px rgba(124,197,255,.18); background: radial-gradient(circle at 50% 0%, rgba(255,255,255,.22), rgba(255,255,255,0) 60%), rgba(255,255,255,.08); transform: translateY(-1px); }
+.ring.playing .bars span:first-child{ transform-origin:center; transform: translateX(3px) skewX(-12deg) }
+.ring.playing .bars span:last-child{ transform-origin:center; transform: translateX(-3px) skewX(12deg); opacity:0 }
+.ring:active{ transform: translateY(1px) }
+.label{
+  position:absolute; right:56px; top:50%; transform: translateY(-50%);
+  padding:6px 10px; border-radius:999px; background: rgba(0,0,0,.38); border:1px solid var(--stroke);
+  color:var(--on, #e9ecf1); font-size:13px; letter-spacing:.2px; opacity:0; pointer-events:none; transition: .16s ease;
+}
+.label.show{ opacity:1 }
+.pop{ position:absolute; top:56px; background: rgba(10,16,28,.96); border:1px solid var(--stroke); border-radius:14px;
+  padding:10px; box-shadow: 0 24px 64px rgba(0,0,0,.5); backdrop-filter: blur(8px);
+  transform-origin: top; transform: scale(.96); opacity:0; pointer-events:none; transition: .16s ease; z-index:40; right:0;
+}
+.pop.show{ transform: scale(1); opacity:1; pointer-events:auto }
+.row{ display:flex; gap:8px; margin-bottom:10px }
+.big{ flex:1; display:flex; align-items:center; justify-content:center; gap:8px; height:44px; border-radius:12px; border:1px solid var(--stroke); background: rgba(255,255,255,.07); color:#fff; font-weight:700; }
+.list{ display:flex; flex-direction:column; gap:8px }
+.item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; border:1px solid var(--stroke); background: rgba(255,255,255,.04) }
+.item .ic{ width:20px; text-align:center; opacity:.9 }
+
 </style>
 
 </head>
 <body>
 <div class="wrap">
 <h1>Rock打磚塊 Breakout（最終增強版）</h1>
-<div class="hud hud--compact" role="region" aria-label="遊戲狀態與控制">
-  <div class="hud-left">
-    <div class="pill">分數 <span id="score">0</span></div>
-    <div class="pill">關卡 <span id="level">1</span>/20</div>
-    <div class="pill life">生命 <span id="lives">3</span></div>
+
+<div class="topbar" role="region" aria-label="遊戲狀態與控制">
+  <div class="stats">
+    <div class="pill">分數 <strong id="score">0</strong></div>
+    <div class="pill">關卡 <strong><span id="level">1</span></strong>/20</div>
+    <div class="pill life">生命 <strong id="lives">3</strong></div>
   </div>
-  <div class="hud-right">
-    <button class="icon-btn" id="pauseBtn" aria-label="開始或暫停" title="開始/暫停 (Space)">⏯</button>
-    <button class="icon-btn" id="resetBtn" aria-label="重新開始" title="重開 (R)">🔄</button>
-    <button class="icon-btn" id="fsBtn" aria-label="全螢幕" title="全螢幕 (F)">⛶</button>
+  <div class="actions">
+    <!-- 冷藍玻璃暫停鈕（沿用 pauseBtn ID 以符合程式） -->
+    <button class="ring" id="pauseBtn" aria-pressed="false" aria-expanded="false" aria-controls="pauseMenu" title="暫停 / 繼續">
+      <span class="icon"><span class="bars"><span></span><span></span></span></span>
+    </button>
+    <div class="label" id="pauseLabel">暫停</div>
+
+    <button class="icon-btn" id="resetBtn" aria-label="重新開始" title="重開">🔄</button>
+    <button class="icon-btn" id="fsBtn" aria-label="全螢幕" title="全螢幕">⛶</button>
     <button class="icon-btn" id="soundBtn" aria-label="音效切換" title="音效">🔈</button>
     <button class="icon-btn" id="bgmBtn" aria-label="背景音樂切換" title="BGM">🎵</button>
+
     <label class="skin-select" aria-label="更換Skin">
       <span class="icon" aria-hidden="true">🎨</span>
       <select id="ledStyle" title="Skin風格">
@@ -320,18 +390,74 @@ canvas{ margin-top: 6px; }
         <option value="demon">魔王風格</option>
       </select>
     </label>
-    <button class="icon-btn" id="moreBtn" aria-haspopup="true" aria-expanded="false" aria-controls="moreMenu" title="更多">⋯</button>
-  </div>
 
-  <div id="moreMenu" class="more-menu" hidden>
-    <button class="menu-item" id="albumBtn">畫廊</button>
-    <button class="menu-item" id="tutorBtn">教學</button>
-    <button class="menu-item" id="effectsBtn">效果說明</button>
-    <button class="menu-item" id="saveBtn">存檔</button>
-    <button class="menu-item" id="loadBtn">讀檔</button>
-    <button class="menu-item subtle" id="closeMenuBtn">關閉</button>
+    <button class="icon-btn" id="moreBtn" aria-haspopup="true" aria-expanded="false" aria-controls="moreMenu" title="更多">⋯</button>
+
+    <!-- 以冷藍玻璃風格改造的更多選單（沿用 moreMenu ID） -->
+    <div class="pop right" id="moreMenu">
+      <div class="row">
+        <button class="big" id="tutorBtn"><span class="ic">❓</span>教學</button>
+        <button class="big" id="effectsBtn"><span class="ic">✨</span>效果說明</button>
+      </div>
+      <div class="list">
+        <div class="item"><span class="ic">🎚</span><div style="display:flex;align-items:center;gap:10px">BGM 音量 <input type="range" id="bgmVol" min="0" max="1" step="0.01" value="0.5" style="width:160px"></div></div>
+        <div class="item"><span class="ic">🎮</span><div>難度
+          <select id="difficulty" title="難度">
+            <option value="easy">簡單</option>
+            <option value="normal" selected>一般</option>
+            <option value="hard">困難</option>
+          </select></div>
+        </div>
+        <div class="item"><span class="ic">💾</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" id="saveBtn">存檔</button>
+            <button class="btn" id="loadBtn">讀檔</button>
+            <button class="btn subtle" id="clearSaveBtn">清除存檔</button>
+            <button class="btn" id="albumBtn">畫廊</button>
+          </div>
+        </div>
+        <div class="item"><span class="ic">✖</span><button class="btn" id="closeMenuBtn">關閉</button></div>
+      </div>
+    </div>
   </div>
 </div>
+
+
+<!-- === 必要的遊戲 DOM（補齊缺失避免載入失敗） === -->
+<canvas id="game"></canvas>
+<div id="skinFX" aria-hidden="true"></div>
+<div id="activeBuffs"></div>
+<div id="prompts" class="prompts"></div>
+
+<!-- 勝利面板 -->
+<div class="win" id="win">
+  <div class="backdrop"></div>
+  <div class="center">
+    <h2>關卡通過</h2>
+    <div class="score">分數 <span id="finalScore">0</span></div>
+    <button class="btn" id="againBtn">下一關</button>
+  </div>
+</div>
+
+<!-- 失敗面板 -->
+<div class="gameover" id="gameover">
+  <div class="backdrop"></div>
+  <div class="center">
+    <h2>Game Over</h2>
+    <div class="score">分數 <span id="finalScore2">0</span></div>
+    <button class="btn" id="retryBtn">再試一次</button>
+  </div>
+</div>
+
+<!-- 中央提示（教學/效果說明通用） -->
+<div class="center-note" id="centerNote" hidden>
+  <div class="note" id="noteBox">
+    <h3 id="noteTitle">提示</h3>
+    <div id="noteText"></div>
+    <button class="btn" id="noteClose">關閉</button>
+  </div>
+</div>
+
 <script>
 (() => {
   /* __MOBILE_BOOT_FIX__ */
@@ -3565,5 +3691,31 @@ if(performance.now() >= nextForcedDropAt){
 </script>
 <!-- === End Autostart Guard === -->
 
+<script>
+;(()=>{
+  const moreBtn = document.getElementById('moreBtn');
+  const moreMenu = document.getElementById('moreMenu');
+  if(moreBtn && moreMenu){
+    document.addEventListener('click', (e)=>{
+      if(!moreMenu.contains(e.target) && e.target!==moreBtn){
+        moreMenu.classList.remove('show');
+        moreBtn.setAttribute('aria-expanded','false');
+      }
+    });
+    moreBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const show = !moreMenu.classList.contains('show');
+      moreMenu.classList.toggle('show', show);
+      moreBtn.setAttribute('aria-expanded', String(show));
+    });
+    const closeMenuBtn = document.getElementById('closeMenuBtn');
+    if(closeMenuBtn){
+      closeMenuBtn.addEventListener('click', ()=>{
+        moreMenu.classList.remove('show');
+        moreBtn.setAttribute('aria-expanded','false');
+      });
+    }
+  }
+})();</script>
 </body>
 </html>
