@@ -5,6 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 
+
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; img-src 'self' data: blob: https:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' data: blob:; frame-ancestors 'self';">
 <title>Rock打磚塊 Breakout（最終增強版）</title>
 
@@ -268,6 +269,22 @@
 @media (max-width: 480px){
   .gallery-grid{ grid-template-columns: repeat(auto-fill, minmax(96px,1fr)); gap:10px; }
 }
+
+/* ===== Sprint 3.5: iOS Safe Area + HUD Wrap ===== */
+:root{
+  --safe-top: env(safe-area-inset-top);
+  --safe-left: env(safe-area-inset-left);
+  --safe-right: env(safe-area-inset-right);
+}
+body{ padding-top: var(--safe-top); }
+.hud.hud--compact{
+  top: calc(8px + var(--safe-top));
+  left: calc(12px + var(--safe-left));
+  right: calc(12px + var(--safe-right));
+}
+.hud-right{ flex-wrap: wrap; }
+.skin-select select{ max-width: 36vw; }
+
 </style>
 </head>
 <body>
@@ -3246,21 +3263,22 @@ if(performance.now() >= nextForcedDropAt){
 
   // 嘗試載入某項目的第一個可用圖片 URL
   async function resolveSrc(srcs){
-    for(const s of srcs){
-      try{
-        // Use Image() to probe actual GET load (more reliable on iOS than HEAD)
-        const url = s;
-        const ok = await new Promise((res, rej)=>{
-          const img = new Image();
-          const timer = setTimeout(()=>{ img.src=''; rej(new Error('timeout')); }, 8000);
-          img.onload = ()=>{ clearTimeout(timer); res(true); };
-          img.onerror = ()=>{ clearTimeout(timer); rej(new Error('error')); };
-          img.decoding = 'async';
-          img.referrerPolicy = 'no-referrer';
-          img.src = url;
-        });
-        if(ok) return s;
-      }catch(e){ /* try next */ }
+  for(const s of srcs){
+    try{
+      const ok = await new Promise((res, rej)=>{
+        const img = new Image();
+        const timer = setTimeout(()=>{ img.src=''; rej(new Error('timeout')); }, 8000);
+        img.onload = ()=>{ clearTimeout(timer); res(true); };
+        img.onerror = ()=>{ clearTimeout(timer); rej(new Error('error')); };
+        img.decoding = 'async';
+        img.referrerPolicy = 'no-referrer';
+        img.src = s;
+      });
+      if(ok) return s;
+    }catch(e){}
+  }
+  return null;
+}
     }
     return null;
 }    }
@@ -3488,5 +3506,29 @@ if(performance.now() >= nextForcedDropAt){
 })();
 </script>
 <!-- ===== End Hotfix ===== -->
+
+<!-- ===== Sprint 3.5: Autostart Guard ===== -->
+<script>
+(function(){
+  function closeOverlays(){
+    const menu = document.getElementById('moreMenu'); if(menu){ menu.hidden = true; menu.style.display='none'; }
+    const note = document.getElementById('centerNote'); if(note){ note.style.display='none'; note.style.pointerEvents='none'; }
+    const home = document.getElementById('homeScreen'); if(home){ home.style.display='none'; home.setAttribute('aria-hidden','true'); }
+  }
+  function kick(){
+    closeOverlays();
+    try{
+      if(typeof window.startGameWithCountdown==='function'){ window.startGameWithCountdown(); }
+      else if(typeof window.startCountdown==='function'){ window.startCountdown(); }
+      else if(typeof window.resumeGame==='function'){ window.resumeGame(); }
+    }catch(e){}
+  }
+  window.addEventListener('pointerdown', kick, { once:true, passive:true, capture:true });
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ kick(); } }, { once:true, capture:true });
+  window.addEventListener('load', ()=>{ setTimeout(kick, 900); }, { once:true });
+})();
+</script>
+<!-- ===== End Autostart Guard ===== -->
+
 </body>
 </html>
