@@ -219,6 +219,51 @@
   .menu-item{ min-width: 140px; }
   .hud-left .pill{ font-size:12px; }
 }
+
+/* === Sprint 3: Gallery === */
+.gallery-overlay{
+  position:fixed; inset:0; z-index:20;
+  background: radial-gradient(1400px 900px at 50% -10%, rgba(6,8,16,.98), rgba(3,5,10,.98) 60%);
+  display:flex; flex-direction:column; gap:12px; padding:16px;
+}
+.gallery-overlay[hidden]{ display:none; }
+.gallery-chrome{ display:flex; align-items:center; gap:8px; }
+.g-title{ font-weight:700; letter-spacing:.6px; font-size:18px; }
+.g-spacer{ flex:1; }
+.g-btn{
+  min-width:40px; min-height:40px; padding:8px 12px; border-radius:10px;
+  background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+  color:#fff; font-size:18px; cursor:pointer;
+}
+.g-close{ font-size:16px; }
+.gallery-grid{
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr));
+  gap:12px; overflow:auto; padding:4px; flex:1;
+}
+.g-thumb{
+  position:relative; aspect-ratio: 1 / 1; border-radius:12px; overflow:hidden;
+  background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.14);
+  cursor:pointer;
+}
+.g-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.g-thumb .lock{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background: rgba(10,10,10,.65); color:#ddd; font-weight:700; letter-spacing:.4px;
+}
+.gallery-view{ position:relative; flex:1; display:flex; align-items:center; justify-content:center; }
+.gallery-view[hidden]{ display:none; }
+#gImage{
+  max-width: min(92vw, 1600px); max-height: min(84vh, 1200px);
+  border-radius:18px; box-shadow: 0 30px 120px rgba(0,0,0,.6);
+  background: #0a0d15;
+}
+.g-hint{
+  position:absolute; bottom:12px; left:0; right:0; text-align:center;
+  opacity:.85; font-size:12px; text-shadow:0 1px 2px rgba(0,0,0,.6);
+}
+@media (max-width: 480px){
+  .gallery-grid{ grid-template-columns: repeat(auto-fill, minmax(96px,1fr)); gap:10px; }
+}
 </style>
 </head>
 <body>
@@ -3129,6 +3174,245 @@ if(performance.now() >= nextForcedDropAt){
     }, {passive:true});
     document.getElementById('closeMenuBtn')?.addEventListener('click', closeMenu, {passive:true});
   }
+})();
+</script>
+
+
+<!-- === Sprint 3: Gallery Overlay === -->
+<div id="galleryOverlay" class="gallery-overlay" hidden aria-hidden="true" role="dialog" aria-label="畫廊">
+  <div class="gallery-chrome">
+    <button class="g-btn g-close" id="gCloseBtn" aria-label="關閉畫廊">✕</button>
+    <div class="g-title">畫廊</div>
+    <div class="g-spacer"></div>
+    <button class="g-btn" id="gPrevBtn" aria-label="上一張">⟨</button>
+    <button class="g-btn" id="gNextBtn" aria-label="下一張">⟩</button>
+  </div>
+
+  <div class="gallery-grid" id="gGrid" aria-live="polite"></div>
+
+  <div class="gallery-view" id="gView" hidden>
+    <img id="gImage" alt="畫廊圖片" />
+    <div class="g-hint" id="gHint">點擊或按 ESC 返回</div>
+  </div>
+</div>
+
+
+<script>
+// === Sprint 3: Gallery logic (canvas thumbnails + cache + lock) ===
+(function(){
+  const gallery = document.getElementById('galleryOverlay');
+  const grid = document.getElementById('gGrid');
+  const gView = document.getElementById('gView');
+  const gImg = document.getElementById('gImage');
+  const btnClose = document.getElementById('gCloseBtn');
+  const btnPrev = document.getElementById('gPrevBtn');
+  const btnNext = document.getElementById('gNextBtn');
+  const moreBtn = document.getElementById('albumBtn'); // HUD 更多選單中的「畫廊」
+  if(!gallery || !grid) return;
+
+  // 來源清單：允許外部覆寫 window.GALLERY_ITEMS；否則使用預設
+  const DEFAULT_ITEMS = [
+    // 你可以把路徑改成實際檔案；我們用幾種常見命名，程式會逐一嘗試載入第一個能成功的
+    {id:'cg1',  srcs:['images/cg1.jpg','images/bg1.jpg','assets/cg1.jpg']},
+    {id:'cg2',  srcs:['images/cg2.jpg','images/bg2.jpg','assets/cg2.jpg']},
+    {id:'cg3',  srcs:['images/cg3.jpg','images/bg3.jpg','assets/cg3.jpg']},
+    {id:'cg4',  srcs:['images/cg4.jpg','images/bg4.jpg','assets/cg4.jpg']},
+    {id:'cg5',  srcs:['images/cg5.jpg','images/bg5.jpg','assets/cg5.jpg']},
+    {id:'cg6',  srcs:['images/cg6.jpg','images/bg6.jpg','assets/cg6.jpg']},
+    {id:'cg7',  srcs:['images/cg7.jpg','images/bg7.jpg','assets/cg7.jpg']},
+    {id:'cg8',  srcs:['images/cg8.jpg','images/bg8.jpg','assets/cg8.jpg']},
+    {id:'cg9',  srcs:['images/cg9.jpg','images/bg9.jpg','assets/cg9.jpg']},
+    {id:'cg10', srcs:['images/cg10.jpg','images/bg10.jpg','assets/cg10.jpg']},
+  ];
+  const ITEMS = (window.GALLERY_ITEMS && Array.isArray(window.GALLERY_ITEMS) ? window.GALLERY_ITEMS : DEFAULT_ITEMS);
+
+  // 解鎖狀態：支援外部呼叫 window.galleryMarkSeen(id)；預設從 localStorage 還原
+  let seen = {};
+  try{ seen = JSON.parse(localStorage.getItem('gallerySeen')||'{}')||{}; }catch(e){ seen = {}; }
+  window.galleryMarkSeen = function(id, flag=true){
+    seen[id] = !!flag;
+    try{ localStorage.setItem('gallerySeen', JSON.stringify(seen)); }catch(e){}
+    // 立即刷新縮圖鎖狀態
+    const el = grid.querySelector(`[data-id="${id}"]`);
+    if(el){
+      const lock = el.querySelector('.lock');
+      if(lock) lock.hidden = !!seen[id];
+    }
+  };
+
+  // 嘗試載入某項目的第一個可用圖片 URL
+  async function resolveSrc(srcs){
+    for(const s of srcs){
+      try{
+        const ok = await fetch(s, {method:'HEAD'});
+        if(ok.status>=200 && ok.status<400) return s;
+      }catch(e){}
+    }
+    return null;
+  }
+
+  // 使用 Canvas 產縮圖並快取到 localStorage
+  async function getThumb(url, size=256){
+    const key = 'thumb:'+url;
+    try{
+      const cached = localStorage.getItem(key);
+      if(cached) return cached;
+    }catch(e){}
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.decoding = 'async';
+    img.loading = 'eager';
+    const okSrc = url;
+    if(!okSrc) return null;
+    const p = new Promise((res,rej)=>{
+      img.onload = ()=>res(); img.onerror=rej; img.src = okSrc;
+    });
+    try{ await p; }catch(e){ return null; }
+    const canvas = document.createElement('canvas');
+    const r = img.width / img.height;
+    if(r >= 1){ canvas.width = size; canvas.height = size / r; }
+    else { canvas.height = size; canvas.width = size * r; }
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const data = canvas.toDataURL('image/jpeg', 0.86);
+    try{ localStorage.setItem(key, data); }catch(e){}
+    return data;
+  }
+
+  // 渲染縮圖格
+  async function renderGrid(){
+    grid.innerHTML = '';
+    let index = 0;
+    for(const it of ITEMS){
+      const url = await resolveSrc(it.srcs);
+      const cell = document.createElement('div');
+      cell.className = 'g-thumb'; cell.dataset.id = it.id; cell.dataset.index = String(index);
+      const img = document.createElement('img');
+      img.alt = it.id;
+      // 先放縮圖（若無則 fallback 為純色）
+      if(url){
+        getThumb(url, 320).then(data=>{ if(data) img.src = data; else img.src = url; });
+      }
+      else{
+        img.style.background = 'linear-gradient(135deg,#182236,#0e1629)';
+      }
+      const lock = document.createElement('div');
+      lock.className = 'lock'; lock.textContent = '未解鎖';
+      lock.hidden = !!seen[it.id];
+      cell.appendChild(img); cell.appendChild(lock);
+      cell.addEventListener('click', async ()=>{
+        if(!seen[it.id]){
+          // 未解鎖：提示卡
+          if(typeof showPrompt === 'function') showPrompt('gallery-locked','未解鎖，通關後可獲得','info');
+          return;
+        }
+        current = index;
+        await openViewer(index);
+      }, {passive:true});
+      grid.appendChild(cell);
+      index++;
+    }
+  }
+
+  // Viewer（大圖顯示）
+  let current = -1;
+  async function openViewer(idx){
+    const it = ITEMS[idx];
+    const url = await resolveSrc(it.srcs);
+    if(!url) return;
+    gView.hidden = false;
+    gallery.classList.add('viewing');
+    gImg.src = ''; // 先清空避免殘影
+    gImg.src = url;
+    // 預載前後一張
+    [idx-1, idx+1].forEach(async i=>{
+      const j = (i+ITEMS.length)%ITEMS.length;
+      const r = await resolveSrc(ITEMS[j].srcs);
+      if(r){ const im = new Image(); im.src = r; }
+    });
+  }
+
+  function closeViewer(){
+    gView.hidden = true;
+    gallery.classList.remove('viewing');
+    gImg.src = '';
+    current = -1;
+  }
+
+  // Overlay 開關
+  function openGallery(){
+    gallery.hidden = false;
+    gallery.setAttribute('aria-hidden','false');
+    renderGrid();
+  }
+  function closeGallery(){
+    closeViewer();
+    gallery.hidden = true;
+    gallery.setAttribute('aria-hidden','true');
+  }
+
+  // 綁定更多選單的「畫廊」
+  moreBtn?.addEventListener('click', (e)=>{
+    // 由 HUD 內打開（moreMenu 已存在），點擊「畫廊」觸發
+  }, {passive:true});
+  document.getElementById('albumBtn')?.addEventListener('click', (e)=>{
+    const menu = document.getElementById('moreMenu');
+    if(menu && !menu.hidden){ menu.hidden = true; }
+    openGallery();
+  }, {passive:true});
+
+  // 內部控制
+  btnClose?.addEventListener('click', ()=>{
+    if(!gView.hidden) closeViewer();
+    else closeGallery();
+  }, {passive:true});
+  btnPrev?.addEventListener('click', ()=>{
+    if(current<0) return;
+    current = (current - 1 + ITEMS.length) % ITEMS.length;
+    openViewer(current);
+  }, {passive:true});
+  btnNext?.addEventListener('click', ()=>{
+    if(current<0) return;
+    current = (current + 1) % ITEMS.length;
+    openViewer(current);
+  }, {passive:true});
+  gImg?.addEventListener('click', closeViewer, {passive:true});
+
+  // 手勢（簡易左右滑）
+  let sx=0, sy=0, started=false;
+  gView.addEventListener('touchstart', (e)=>{
+    started=true; sx=e.touches[0].clientX; sy=e.touches[0].clientY;
+  }, {passive:true});
+  gView.addEventListener('touchend', (e)=>{
+    if(!started) return;
+    const dx = (e.changedTouches[0].clientX - sx);
+    const dy = (e.changedTouches[0].clientY - sy);
+    started=false;
+    if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40){
+      if(dx>0) btnPrev.click(); else btnNext.click();
+    }else{
+      closeViewer();
+    }
+  }, {passive:true});
+
+  // 鍵盤
+  document.addEventListener('keydown', (e)=>{
+    if(gallery.hidden) return;
+    if(e.key === 'Escape'){
+      if(!gView.hidden) closeViewer();
+      else closeGallery();
+    }else if(e.key === 'ArrowLeft' && !gView.hidden){
+      btnPrev.click();
+    }else if(e.key === 'ArrowRight' && !gView.hidden){
+      btnNext.click();
+    }
+  });
+
+  // 對外 API：開啟畫廊 + 標記解鎖
+  window.openGallery = openGallery;
+  window.closeGallery = closeGallery;
+
+  // 若需要：首次通關或特定事件請呼叫 galleryMarkSeen('cgX', true);
 })();
 </script>
 
