@@ -290,97 +290,22 @@ body{ padding-top: var(--safe-top); }
 .wrap > h1{ margin-top: calc(8px + var(--safe-top)); margin-bottom: 8px; }
 canvas{ margin-top: 6px; }
 
-/* === Cold Blue Glass HUD override === */
-.hud.glass-topbar{
-  position:sticky; top: calc(8px + env(safe-area-inset-top)); z-index: 30;
-  display:grid; grid-template-columns: 1fr auto; align-items:center; gap:10px;
-  width: calc(100% - 24px); max-width:860px; margin:10px auto 0; padding:10px 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-  border:1px solid rgba(140,199,255,.22); border-radius:16px;
-  backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,.35);
-}
-.hud.glass-topbar .stats{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}
-.hud.glass-topbar .pill{display:flex;align-items:center;gap:8px;min-height:34px;padding:6px 12px;border-radius:999px;background:rgba(0,0,0,.28);border:1px solid rgba(140,199,255,.22); color:#a8b6d6; font-size:14px}
-.hud.glass-topbar .pill strong{color:#e9ecf1;font-weight:800}
-.hud.glass-topbar .actions{display:flex;gap:10px;align-items:center;position:relative}
-.hud.glass-topbar .ring{--size: 46px;width: var(--size); height: var(--size); border-radius:50%; position:relative; overflow:hidden; cursor:pointer; background: radial-gradient(circle at 50% 0%, rgba(255,255,255,.18), rgba(255,255,255,0) 60%), rgba(255,255,255,.06); border:1px solid rgba(140,199,255,.22); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); transition: box-shadow .18s ease, transform .18s ease, background .18s ease; }
-.hud.glass-topbar .ring .icon{ position:absolute; inset:0; display:grid; place-items:center; font-size:18px }
-.hud.glass-topbar .ring .bars{ width:14px; height:16px; display:grid; grid-template-columns: 1fr 1fr; gap:4px }
-.hud.glass-topbar .ring .bars span{ background:#e9ecf1; border-radius:2px; transition: transform .18s ease, opacity .18s ease }
-.hud.glass-topbar .ring.playing .bars span:first-child{ transform-origin:center; transform: translateX(3px) skewX(-12deg) }
-.hud.glass-topbar .ring.playing .bars span:last-child{ transform-origin:center; transform: translateX(-3px) skewX(12deg); opacity:0 }
-.hud.glass-topbar .icon-btn{min-width:40px; min-height:40px; display:grid; place-items:center; border-radius:12px; border:1px solid rgba(140,199,255,.22); background: rgba(255,255,255,.06); color:#e9ecf1; box-shadow: 0 8px 18px rgba(0,0,0,.25); }
-.hud.glass-topbar .skin-select{display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:12px; border:1px solid rgba(140,199,255,.22); background: rgba(255,255,255,.06)}
-.hud.glass-topbar .pop{ position:absolute; top:56px; background: rgba(10,16,28,.96); border:1px solid rgba(140,199,255,.22); border-radius:14px; padding:10px; box-shadow: 0 24px 64px rgba(0,0,0,.5); backdrop-filter: blur(8px); transform-origin: top; transform: scale(.96); opacity:0; pointer-events:none; transition: .16s ease; z-index:40; right:0; }
-.hud.glass-topbar .pop.show{ transform: scale(1); opacity:1; pointer-events:auto }
-.hud.glass-topbar .row{ display:flex; gap:8px; margin-bottom:10px }
-.hud.glass-topbar .big{ flex:1; display:flex; align-items:center; justify-content:center; gap:8px; height:44px; border-radius:12px; border:1px solid rgba(140,199,255,.22); background: rgba(255,255,255,.07); color:#fff; font-weight:700; }
-.hud.glass-topbar .list{ display:flex; flex-direction:column; gap:8px }
-.hud.glass-topbar .item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; border:1px solid rgba(140,199,255,.22); background: rgba(255,255,255,.04) }
-.hud.glass-topbar .item .ic{ width:20px; text-align:center; opacity:.9 }
+/* --- FIX: mobile safe area + layout anchors --- */
+:root{ --hudTop: 110px; --safe-top: env(safe-area-inset-top); }
+#overlayRoot{ position:relative; display:block; width:100%; max-width:min(1120px, 96vw); margin: 8px auto 24px; }
+#skinFX{ position:absolute; left:0; top:0; pointer-events:none; }
+#gallery{ z-index:6; }
+#win{ z-index:7; }
+#gameover{ z-index:8; }
 
-/* Buff/提示容器：固定在 HUD 下方，避免重疊（手機優化） */
-#activeBuffs{ position:fixed !important; left:12px; top:calc(var(--hudTop, 84px) + 4px); z-index: 12; display:flex; gap:8px; align-items:center; max-width: calc(100vw - 64px); overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
-#activeBuffs::-webkit-scrollbar{ display:none; }
-.prompts{ position:fixed !important; left:12px; top:calc(var(--hudTop, 84px) + 48px); z-index: 11; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+/* Buff/Prompts sit below HUD; never overlap buttons */
+#activeBuffs{ position:fixed !important; top: calc(var(--hudTop) + 6px) !important; left: 12px; z-index: 12; }
+.prompts{ position:fixed !important; top: calc(var(--hudTop) + 50px) !important; left: 12px; z-index: 11; }
 
-/* 畫廊 */
-.gallery{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:50; }
-.gallery.show, .gallery[style*="display:flex"]{ display:flex; }
-.gallery .glass{ padding:12px; border-radius:16px; border:1px solid rgba(140,199,255,.22); backdrop-filter: blur(10px); background: rgba(10,16,28,.85); box-shadow: 0 24px 64px rgba(0,0,0,.5); }
-.gallery img{ max-width: 88vw; max-height: 70vh; border-radius: 12px; display:block }
-.gallery .hint{ margin-top:8px; text-align:center; color:#a8b6d6; font-size:14px }
-
-
-/* ===== Sapphire Glass HUD ===== */
-.hud.sapphire-bar{
-  position: sticky; top: calc(8px + env(safe-area-inset-top)); z-index: 30;
-  max-width: 860px; width: calc(100% - 24px); margin: 12px auto 0; padding: 12px;
-  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px;
-  background: linear-gradient(180deg, rgba(16,28,56,.55), rgba(14,22,46,.38));
-  border: 1px solid rgba(124,197,255,.28);
-  border-radius: 18px;
-  backdrop-filter: blur(14px) saturate(1.1);
-  box-shadow: 0 16px 40px rgba(0,0,0,.35), inset 0 0 80px rgba(124,197,255,.06);
-}
-.hud.sapphire-bar .left{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
-.hud.sapphire-bar .pill{ display:flex; align-items:center; gap:8px; min-height:36px; padding:6px 12px;
-  border-radius:999px; background: rgba(255,255,255,.06); border: 1px solid rgba(124,197,255,.30); color:#cfe0ff; }
-.hud.sapphire-bar .pill strong{ color:#fff; font-weight:800 }
-.hud.sapphire-bar .pill.life .hearts{ margin-left:6px; letter-spacing:2px }
-.hud.sapphire-bar .right{ display:flex; gap:10px; align-items:center; position:relative }
-.hud.sapphire-bar .ring{ width:48px; height:48px; border-radius:50%; display:grid; place-items:center;
-  background: radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.16), rgba(255,255,255,0) 60%), rgba(255,255,255,.06);
-  border:1px solid rgba(124,197,255,.30); color:#eaf3ff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.05) }
-.hud.sapphire-bar .ring.ghost{ font-size:22px; }
-.hud.sapphire-bar .crescent:before,.hud.sapphire-bar .crescent:after{
-  content:""; position:absolute; inset:7px; border-radius:50%; border:2px solid rgba(124,197,255,.70);
-  -webkit-mask: conic-gradient(#000 0 65%, transparent 0); mask: conic-gradient(#000 0 65%, transparent 0);
-  filter: drop-shadow(0 0 6px rgba(124,197,255,.35));
-}
-.hud.sapphire-bar .bars{ width:16px; height:18px; display:grid; grid-template-columns:1fr 1fr; gap:4px }
-.hud.sapphire-bar .bars span{ background:#fff; border-radius:2px }
-.hud.sapphire-bar .pop{ position:absolute; top:56px; right:0; min-width: 260px;
-  background: rgba(12,18,36,.96); border:1px solid rgba(124,197,255,.28); border-radius:14px;
-  padding:10px; transform: scale(.96); opacity:0; pointer-events:none; transition: .16s ease; z-index:40; backdrop-filter: blur(8px);
-}
-.hud.sapphire-bar .pop.show{ transform:scale(1); opacity:1; pointer-events:auto }
-.hud.sapphire-bar .row{ display:flex; gap:8px; margin-bottom:10px }
-.hud.sapphire-bar .big{ flex:1; display:flex; align-items:center; justify-content:center; gap:8px; height:44px; border-radius:12px; border:1px solid rgba(124,197,255,.30); background: rgba(255,255,255,.07); color:#fff; font-weight:700; }
-.hud.sapphire-bar .list{ display:flex; flex-direction:column; gap:8px }
-.hud.sapphire-bar .item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; border:1px solid rgba(124,197,255,.28); background: rgba(255,255,255,.04) }
-.hud.sapphire-bar .item .ic{ width:20px; text-align:center; opacity:.9 }
-
-/* Buff/提示容器固定在 HUD 下，避免重疊（手機） */
-#activeBuffs{ position:fixed !important; left:12px; top:calc(var(--hudTop, 84px) + 6px); z-index:12; display:flex; gap:8px; align-items:center; max-width: calc(100vw - 64px); overflow-x:auto; padding-bottom:2px; scrollbar-width:none }
-#activeBuffs::-webkit-scrollbar{ display:none }
-.prompts{ position:fixed !important; left:12px; top:calc(var(--hudTop, 84px) + 50px); z-index:11; display:flex; flex-direction:column; gap:8px; pointer-events:none }
-
-/* 更穩定的 canvas 外觀（不改你燈條） */
-canvas{ background:linear-gradient(180deg, #0d1126, #0b1022 55%, #091022);
-  border:1px solid #1a2348; border-radius:16px; max-width:min(1120px, 96vw); width: min(1120px, 96vw); height: auto; display:block;
-  box-shadow: 0 30px 80px rgba(0,0,0,.35), inset 0 0 120px rgba(255,255,255,.02); touch-action:none;
-}
+/* High-polish Sapphire Glass tone adjustments */
+.hud.sapphire-bar{ background: linear-gradient(180deg, rgba(18,28,52,.60), rgba(12,22,44,.40)); border-color: rgba(120,190,255,.30); }
+.hud.sapphire-bar .pill{ background: rgba(255,255,255,.08); border-color: rgba(120,190,255,.28); }
+.hud.sapphire-bar .ring{ box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 10px 26px rgba(0,0,0,.3); }
 
 </style>
 
@@ -388,55 +313,83 @@ canvas{ background:linear-gradient(180deg, #0d1126, #0b1022 55%, #091022);
 <body>
 <div class="wrap">
 <h1>Rock打磚塊 Breakout（最終增強版）</h1>
-<div class="hud sapphire-bar" role="region" aria-label="遊戲狀態與控制">
-  <div class="left">
-    <div class="pill score">分數 <strong id="score">0</strong></div>
-    <div class="pill level">關卡 <strong><span id="level">1</span></strong>/20</div>
-    <div class="pill life">生命 <strong id="lives">3</strong><span id="livesHearts" aria-hidden="true" class="hearts">❤️❤️❤️</span></div>
-  </div>
-  <div class="right">
-    <button class="crescent ring" id="pauseBtn" aria-pressed="false" aria-expanded="false" aria-controls="pauseMenu" title="暫停 / 繼續">
-      <span class="bars" aria-hidden="true"><span></span><span></span></span>
-    </button>
-    <button class="ring ghost" id="moreBtn" aria-haspopup="true" aria-expanded="false" aria-controls="moreMenu" title="更多">⋯</button>
-    <div class="pop" id="moreMenu">
-      <div class="row">
-        <button class="big" id="tutorBtn"><span class="ic">❓</span>教學</button>
-        <button class="big" id="effectsBtn"><span class="ic">✨</span>效果說明</button>
-      </div>
-      <div class="list">
-        <div class="item"><span class="ic">🎚</span><div style="display:flex;align-items:center;gap:10px">BGM 音量 <input type="range" id="bgmVol" min="0" max="1" step="0.01" value="0.85" style="width:160px"></div></div>
-        <div class="item"><span class="ic">🎮</span><div>難度
-          <select id="difficulty" title="難度">
-            <option value="easy">簡單</option>
-            <option value="normal" selected>一般</option>
-            <option value="hard">困難</option>
-          </select></div>
-        </div>
-        <div class="item"><span class="ic">💾</span>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn" id="saveBtn">存檔</button>
-            <button class="btn" id="loadBtn">讀檔</button>
-            <button class="btn subtle" id="clearSaveBtn">清除存檔</button>
-            <button class="btn" id="albumBtn">畫廊</button>
-          </div>
-        </div>
-        <div class="item"><span class="ic">✖</span><button class="btn" id="closeMenuBtn">關閉</button></div>
+<div class="overlay" id="overlayRoot">
+  <canvas id="game"></canvas>
+  <div id="skinFX" aria-hidden="true"></div>
+
+  <!-- 中央提示 -->
+  <div class="center-note" id="centerNote" style="display:none">
+    <div class="note-box" id="noteBox">
+      <button class="note-close" id="noteClose" aria-label="關閉">×</button>
+      <h2 id="noteTitle">教學</h2>
+      <div id="noteText">
+        <p>拖曳平台接球，敲磚過關。點擊任意處開始或繼續。</p>
       </div>
     </div>
   </div>
-</div>
-<div id="activeBuffs" aria-live="polite"></div>
-<div id="prompts" class="prompts" aria-live="polite" aria-atomic="true"></div>
 
-<!-- 關卡畫廊（點任意處進入下一關） -->
-<div id="gallery" class="gallery" style="display:none">
-  <div class="glass">
-    <img id="galleryImg" alt="關卡預覽" />
+  <!-- 清關畫廊 -->
+  <div class="gallery" id="gallery" style="display:none">
+    <div class="backdrop"></div>
+    <img id="galleryImg" alt="關卡預覽"/>
     <div class="hint">點擊畫面繼續</div>
+  </div>
+
+  <!-- 勝利/失敗 -->
+  <div class="win" id="win">
+    <div class="backdrop"></div>
+    <div class="center">
+      <h2>關卡通過</h2>
+      <div class="small">點擊任意處進入下一關</div>
+      <div class="again"><button class="btn" id="againBtn">下一關</button></div>
+    </div>
+  </div>
+  <div class="gameover" id="gameover">
+    <div class="backdrop"></div>
+    <div class="center">
+      <h2>Game Over</h2>
+      <div class="again"><button class="btn" id="retryBtn">再試一次</button></div>
+    </div>
   </div>
 </div>
 
+<div class="hud hud--compact" role="region" aria-label="遊戲狀態與控制">
+  <div class="hud-left">
+    <div class="pill">分數 <span id="score">0</span></div>
+    <div class="pill">關卡 <span id="level">1</span>/20</div>
+    <div class="pill life">生命 <span id="lives">3</span></div>
+  </div>
+  <div class="hud-right">
+    <button class="icon-btn" id="pauseBtn" aria-label="開始或暫停" title="開始/暫停 (Space)">⏯</button>
+    <button class="icon-btn" id="resetBtn" aria-label="重新開始" title="重開 (R)">🔄</button>
+    <button class="icon-btn" id="fsBtn" aria-label="全螢幕" title="全螢幕 (F)">⛶</button>
+    <button class="icon-btn" id="soundBtn" aria-label="音效切換" title="音效">🔈</button>
+    <button class="icon-btn" id="bgmBtn" aria-label="背景音樂切換" title="BGM">🎵</button>
+    <label class="skin-select" aria-label="更換Skin">
+      <span class="icon" aria-hidden="true">🎨</span>
+      <select id="ledStyle" title="Skin風格">
+        <option value="classic">經典風格</option>
+        <option value="tech">科技風格</option>
+        <option value="arc">電弧風格</option>
+        <option value="ice">冰雪風格</option>
+        <option value="vivid">絢麗風格</option>
+        <option value="reaper">死神風格</option>
+        <option value="flame">烈焰風格</option>
+        <option value="demon">魔王風格</option>
+      </select>
+    </label>
+    <button class="icon-btn" id="moreBtn" aria-haspopup="true" aria-expanded="false" aria-controls="moreMenu" title="更多">⋯</button>
+  </div>
+
+  <div id="moreMenu" class="more-menu" hidden>
+    <button class="menu-item" id="albumBtn">畫廊</button>
+    <button class="menu-item" id="tutorBtn">教學</button>
+    <button class="menu-item" id="effectsBtn">效果說明</button>
+    <button class="menu-item" id="saveBtn">存檔</button>
+    <button class="menu-item" id="loadBtn">讀檔</button>
+    <button class="menu-item subtle" id="closeMenuBtn">關閉</button>
+  </div>
+</div>
 <script>
 (() => {
   /* __MOBILE_BOOT_FIX__ */
@@ -3670,91 +3623,55 @@ if(performance.now() >= nextForcedDropAt){
 </script>
 <!-- === End Autostart Guard === -->
 
-<script>
-;(()=>{
-  // Place buffs/prompts below HUD
-  const hud = document.querySelector('.hud.glass-topbar') || document.querySelector('.hud');
-  function placeHudTop(){
-    const rect = hud ? hud.getBoundingClientRect() : {height:72};
-    document.documentElement.style.setProperty('--hudTop', (rect.height + 12 + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-top'))||0)) + 'px');
-  }
-  window.addEventListener('resize', placeHudTop, {passive:true});
-  setTimeout(placeHudTop, 0);
 
-  // more menu toggle (id kept)
-  const moreBtn = document.getElementById('moreBtn');
-  const moreMenu = document.getElementById('moreMenu');
-  if(moreBtn && moreMenu){
-    moreBtn.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const show = !moreMenu.classList.contains('show');
-      moreMenu.classList.toggle('show', show);
-      moreBtn.setAttribute('aria-expanded', String(show));
-    }, {once:false}); // 防重入避免多次掛
-    document.addEventListener('click', (e)=>{
-      if(!moreMenu.contains(e.target) && e.target!==moreBtn){
-        moreMenu.classList.remove('show');
-        moreBtn.setAttribute('aria-expanded','false');
-      }
-    }, {passive:true});
-    const closeMenuBtn = document.getElementById('closeMenuBtn');
-    if(closeMenuBtn){
-      closeMenuBtn.addEventListener('click', ()=>{
-        moreMenu.classList.remove('show');
-        moreBtn.setAttribute('aria-expanded','false');
-      }, {once:false});
-    }
-  }
-
-  // 若主程式未建立畫廊節點監聽，保底：點擊關卡圖繼續
-  const gallery = document.getElementById('gallery');
-  if(gallery && !gallery.__wired){
-    gallery.__wired = true;
-    gallery.addEventListener('click', ()=>{
-      gallery.style.display='none';
-    }, {once:false});
-  }
-})();</script>
 <script>
-;(()=>{
-  // 量測 HUD 高度，動態設定 --hudTop，避免手機重疊
+(function(){
   const hud = document.querySelector('.hud.sapphire-bar') || document.querySelector('.hud');
-  const setHudTop = () => {
+  function setHudTop(){
     if(!hud) return;
     const r = hud.getBoundingClientRect();
-    document.documentElement.style.setProperty('--hudTop', (r.height + 12) + 'px');
-  };
-  window.addEventListener('resize', setHudTop, {passive:true});
-  setTimeout(setHudTop, 0);
+    document.documentElement.style.setProperty('--hudTop', (r.height + 12 + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-top'))||0)) + 'px');
+  }
+  window.addEventListener('resize', setHudTop, {passive:true}); setTimeout(setHudTop, 0);
 
-  // 更多選單開合
+  // more menu
   const moreBtn = document.getElementById('moreBtn');
   const moreMenu = document.getElementById('moreMenu');
   if(moreBtn && moreMenu){
     const close = ()=>{ moreMenu.classList.remove('show'); moreBtn.setAttribute('aria-expanded','false'); };
-    moreBtn.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const show = !moreMenu.classList.contains('show');
-      moreMenu.classList.toggle('show', show);
-      moreBtn.setAttribute('aria-expanded', String(show));
-    });
+    moreBtn.addEventListener('click', (e)=>{ e.stopPropagation(); const show=!moreMenu.classList.contains('show'); moreMenu.classList.toggle('show', show); moreBtn.setAttribute('aria-expanded', String(show)); });
     document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn) close(); }, {passive:true});
     const c = document.getElementById('closeMenuBtn'); if(c) c.addEventListener('click', close);
   }
 
-  // 生命數字 → 愛心視覺同步（不改動你的遊戲邏輯）
+  // hearts sync
   const livesEl = document.getElementById('lives');
   const heartsEl = document.getElementById('livesHearts');
-  const syncHearts = ()=>{
+  function syncHearts(){
     if(!livesEl || !heartsEl) return;
     const n = Math.max(0, parseInt(livesEl.textContent.trim(), 10) || 0);
     heartsEl.textContent = '❤️'.repeat(Math.min(5, n)) + (n>5? '×'+n : '');
-  };
+  }
   if(livesEl){ new MutationObserver(syncHearts).observe(livesEl, {characterData:true, childList:true, subtree:true}); syncHearts(); }
 
-  // 防止缺節點造成啟動錯誤（保底）
-  ['activeBuffs','prompts','gallery','galleryImg','centerNote','noteTitle','noteText','noteClose','win','gameover']
-    .forEach(id=>{ if(!document.getElementById(id)){ const d=document.createElement('div'); d.id=id; if(id==='galleryImg'){ const img=document.createElement('img'); img.id='galleryImg'; d.appendChild(img)} document.body.appendChild(d);} });
-})();</script>
+  // gallery click-through
+  const gallery = document.getElementById('gallery');
+  if(gallery && !gallery.__wired){
+    gallery.__wired = true;
+    gallery.addEventListener('click', ()=>{ gallery.style.display='none'; }, {passive:true});
+  }
+
+  // keep skinFX same size as canvas
+  const canvas = document.getElementById('game');
+  const skinFX = document.getElementById('skinFX');
+  function syncFX(){
+    if(!(canvas && skinFX)) return;
+    const r = canvas.getBoundingClientRect();
+    skinFX.style.width = r.width+'px'; skinFX.style.height = r.height+'px';
+  }
+  if(window.ResizeObserver){ new ResizeObserver(syncFX).observe(document.body); }
+  window.addEventListener('resize', ()=> setTimeout(syncFX, 50), {passive:true}); setTimeout(syncFX, 0);
+})();
+</script>
 </body>
 </html>
