@@ -2,10 +2,9 @@
 
 <html lang="zh-Hant">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self';">
-
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>Rock打磚塊 Breakout（最終增強版）</title><script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=cN6_m-Vmra0SMBCI30L9VY02q5_R9hnkKDPw2c2m3X6tHj-UJn4EQXcAUwGrmyN1jN0f8bFs0REqpY0O03zULt5prqIpngHUjbTah_cCEgHKcCDK4XWqiE7TZ6rD65IhP8HZqorNFtegcEGCptx1_JCD1JcKOobZzC24IuE6AndatQMnMIs85VCIFPr1b_mTqveuFRLxV5qDH7Th13QmjI8zzcXRqfJitNmjmb9MtR4aBVWj1LqNDgsPLOU_NGXfuwCQldiPF0Eztob0ELWT2QLLixx5kQBv35Yk8Q4Jv4MO82gbyIxe25dqwlWdrAoBwsgKvPOB0B4QMRbfwGusyVS2jGE0WQSE-lIWnIXHldLgSPUlDesFYyyig1X9erxYE54Y6TRyCuFmTTVDUfpiWR6O0kdeSmdo69dPXIMEwRxMwOqyT8VCFX1tNSFqd3Z69O8xBbxzsUg8UmJGt9iFftDBgyxILzMpkW4TwF2AdIfcth913OkmB5eH_V2drE5j_cA9D8kitsGopAzLD_JtRt1lIAvvHMTwJWff0UjTr_Welx5hL0XxeADGtnh0RpVDSvrfz8CWrOz_BQAnRWlOjzwMFHrU_sNjK_pIfsPcmMM" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9wcm9kZnN1cGxvYWRzMDcuYmxvYi5jb3JlLndpbmRvd3MubmV0L2ZpbGVzL2ZpbGUtN3pQN1JKOW5DNGpGTGNRNXA5alZpVz9zZT0yMDI1LTA4LTE3VDAyJTNhMDElM2ExOVomc3A9ciZzdj0yMDI0LTA4LTA0JnNyPWImcnNjYz1tYXgtYWdlJTNkMjk5JTJjJTIwaW1tdXRhYmxlJTJjJTIwcHJpdmF0ZSZyc2NkPWF0dGFjaG1lbnQlM2IlMjBmaWxlbmFtZSUzZGluZGV4Lmh0bWwmc2tvaWQ9Y2JiYWE3MjYtNGEyZS00MTQ3LTkzMmMtNTZlNmU1NTNmMDczJnNrdGlkPWE0OGNjYTU2LWU2ZGEtNDg0ZS1hODE0LTljODQ5NjUyYmNiMyZza3Q9MjAyNS0wOC0xNlQyMiUzYTU4JTNhMTZaJnNrZT0yMDI1LTA4LTE3VDIyJTNhNTglM2ExNlomc2tzPWImc2t2PTIwMjQtMDgtMDQmc2lnPVgxRlpsZ3M5ZDFtTDVoSlJCcFJYZU9Kazd2akoyNjJWeG1EWHBSQkZGZlklM2Q"/><script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=wo5yaN_JFpi4JjU_0pPz2PTXxFD176V_SSNnp16XohYWiKX87-lOsAh6wTQ07PQ1uHzMZRdbgC6iELm6KzsqUnMBN9lI81BLjflYST2edoH3r2sPdXuazS5RqRrRXFlBUMMKtzaa07q4jdEmpOQU1PkcfneRlpnG9GpIt9SekuFBVPFTqdZe2KSSNIdH3g0DUy8XL4PXlL1C9l-cKh_ITxZ9bepVOHfMjasvCxNAZfVzceTcfxokARnHDlpJXP7vHaFp5ospwT6p5p6zJyXwmty_TI75yD7sCgBGm-3HA70tXrdVN4hjq-TPQgYfYq7MnsGd1IhYUZf2yVrAaS3fm9vRn6-geNx9S-HtXcViqd_G4QfiRsIYZaL4VwIZuaneP6BWxd8ytDyfeO8Jc4eZjep-CjvCXcJlav3ttdQYhQdpbvdM8XXNpeOyuvkBUmwB9StVs63bK4CY0vGXaayAsxZi9bJyBNbB33yFpXYfqS-kZMDcLIJmhogsExdLjAFjBRhnoQmQ80me9Fm5CX8zfinUN_8bNV8rGB9jcjQ6oMp9nunlECVZpbeTIFCFMzoYKr8snWqPtZ9y1v8M2QoqcA" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9maWxlczA4Lm9haXVzZXJjb250ZW50LmNvbS9maWxlLU45UUJqTlVmallYM3V1TUZBZ0JqdE0_c2U9MjAyNS0wOC0xNlQxOCUzYTUyJTNhMjJaJnNwPXImc3Y9MjAyNC0wOC0wNCZzcj1iJnJzY2M9bWF4LWFnZSUzZDI5OSUyYyUyMGltbXV0YWJsZSUyYyUyMHByaXZhdGUmcnNjZD1hdHRhY2htZW50JTNiJTIwZmlsZW5hbWUlM2RpbmRleC5odG1sJnNrb2lkPWZhNzk2NmU3LWY4ZWEtNDgzYy05MTlhLTEzYWNmZDYxZDY5NiZza3RpZD1hNDhjY2E1Ni1lNmRhLTQ4NGUtYTgxNC05Yzg0OTY1MmJjYjMmc2t0PTIwMjUtMDgtMTVUMjMlM2E1OCUzYTQ5WiZza2U9MjAyNS0wOC0xNlQyMyUzYTU4JTNhNDlaJnNrcz1iJnNrdj0yMDI0LTA4LTA0JnNpZz0yRkVKdDBLNnN1ZUJMeDVuRlVRTjBJTGxaVG1KZTRpRjJ5T2lwbUg1WThvJTNk"/><style>
     :root {
       --bg:#0b1022; --bg2:#0a0f1e; --fg:#e9ecf1; --accent:#66b2ff;
       --brick1:#ff6b6b; --brick2:#ffd166; --brick3:#06d6a0; --brick4:#4cc9f0;
@@ -147,43 +146,6 @@
 
   
     .note-box{max-height:60vh; overflow:auto;}
-
-    /* === 首頁覆蓋面板 === */
-    .home-screen {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      z-index: 100;
-      background: radial-gradient(1200px 800px at 50% -10%, #0b1022, #0a0f1e 60%);
-    }
-    .home-screen.show {
-      display: flex;
-    }
-    .home-screen .home-center {
-      background: linear-gradient(180deg, rgba(10,14,30,.85), rgba(10,14,30,.75));
-      border: 1px solid var(--glass-stroke);
-      border-radius: 18px;
-      padding: 24px 32px;
-      box-shadow: 0 20px 90px rgba(0,0,0,.5);
-      text-align: center;
-      max-width: 320px;
-    }
-    .home-screen .home-center h2 {
-      margin: 0 0 16px;
-      font-size: 28px;
-      letter-spacing: 1px;
-      font-weight: 800;
-      color: var(--fg);
-    }
-    .home-screen .big-btn {
-      width: 100%;
-      margin-top: 12px;
-      font-size: 18px;
-      padding: 10px 20px;
-    }
 </style>
 </head>
 <body>
@@ -379,13 +341,9 @@
   const IMG_PAIRS_FALLBACK = Array.from({length:10}, (_,i)=> i+1).map(i=>({bg:`images/bg${i}.jpg`, cg:`images/cg${i}.jpg`}));
 
   function makeImg(src, fallback){
-    const im = new Image();
-    // 為避免行動裝置延遲載入圖片，設定 eager loading
-    im.decoding = 'async';
-    im.loading = 'eager';
-    im.src = src;
+    const im = new Image(); im.decoding='async'; im.loading='lazy'; im.src=src;
     if(fallback){
-      im.onerror = () => { if(im.src !== fallback) im.src = fallback; };
+      im.onerror=()=>{ if(im.src!==fallback) im.src=fallback; };
     }
     return im;
   }
@@ -479,53 +437,46 @@
       bg: 'linear-gradient(180deg, #0d1126, #0b1022 55%, #091022)'
     },
     tech: {
-      // 科技風格：採用低對比深藍與青綠，LED 為螢光綠
       rootVars: {
-        '--bg': '#001a20', '--bg2': '#001218', '--fg': '#cfe9e7', '--btn': '#013f3f', '--btn-stroke': '#02625e', '--pill': '#012b2f', '--led': '#33ff99'
+        '--bg': '#031b21', '--bg2': '#021318', '--fg': '#d2f4e0', '--btn': '#073c44', '--btn-stroke': '#0b6a62', '--pill': '#052933', '--led': '#33ff99'
       },
-      bg: 'linear-gradient(180deg, #011d28, #013842 55%, #001e28)'
+      bg: 'linear-gradient(180deg, #021b25, #003f4b 55%, #00252c)'
     },
     arc: {
-      // 電弧風格：深海藍搭配冷電光藍 LED
       rootVars: {
-        '--bg': '#031b34', '--bg2': '#05305c', '--fg': '#d9e9ff', '--btn': '#073d72', '--btn-stroke': '#0b539f', '--pill': '#052f5b', '--led': '#66baff'
+        '--bg': '#041b33', '--bg2': '#072d54', '--fg': '#d4e8ff', '--btn': '#073661', '--btn-stroke': '#0a4d8b', '--pill': '#072b56', '--led': '#66baff'
       },
-      bg: 'linear-gradient(180deg, #041d39, #073e70 55%, #042f57)'
+      bg: 'linear-gradient(180deg, #041c34, #082659 55%, #04254e)'
     },
     ice: {
-      // 冰雪風格：偏冷的藍白色調，LED 為淡青
       rootVars: {
-        '--bg': '#0b2840', '--bg2': '#143f6b', '--fg': '#e1f4ff', '--btn': '#1a4473', '--btn-stroke': '#2a5f9e', '--pill': '#123b60', '--led': '#a3d7ff'
+        '--bg': '#0e233b', '--bg2': '#132e58', '--fg': '#d0e8ff', '--btn': '#102d54', '--btn-stroke': '#1a4680', '--pill': '#0d2b4b', '--led': '#83c9ff'
       },
-      bg: 'linear-gradient(180deg, #0e2a44, #18497a 55%, #123c66)'
+      bg: 'linear-gradient(180deg, #0e223d, #17305e 55%, #0f2c50)'
     },
     vivid: {
-      // 絢麗風格：具強烈對比的紫紅與霓虹
       rootVars: {
-        '--bg': '#160626', '--bg2': '#2b0956', '--fg': '#ffd8f3', '--btn': '#40106c', '--btn-stroke': '#69209f', '--pill': '#2d1150', '--led': '#ff66cc'
+        '--bg': '#0f0a1e', '--bg2': '#1a1459', '--fg': '#ffd3e9', '--btn': '#34114e', '--btn-stroke': '#4f2073', '--pill': '#221a48', '--led': '#ff66cc'
       },
-      bg: 'linear-gradient(180deg, #230639, #45107a 55%, #2a0950)'
+      bg: 'linear-gradient(180deg, #1c0329, #361254 55%, #1a093a)'
     },
     reaper: {
-      // 死神風格：暗灰與酒紅，LED 為血紅
       rootVars: {
-        '--bg': '#1a1a28', '--bg2': '#292838', '--fg': '#f0e9f5', '--btn': '#3a2938', '--btn-stroke': '#5a3e5a', '--pill': '#2c2330', '--led': '#cc3344'
+        '--bg': '#1c1c2a', '--bg2': '#2c2b39', '--fg': '#eae6f0', '--btn': '#3d2c3b', '--btn-stroke': '#5c415a', '--pill': '#2d2431', '--led': '#cc3355'
       },
-      bg: 'linear-gradient(180deg, #281527, #4c2a49 55%, #2e1738)'
+      bg: 'linear-gradient(180deg, #2b182b, #452d49 55%, #2a173a)'
     },
     flame: {
-      // 烈焰風格：深棕與火焰紅，LED 為橘紅
       rootVars: {
-        '--bg': '#2f100a', '--bg2': '#511508', '--fg': '#ffe5d6', '--btn': '#6a2615', '--btn-stroke': '#92381f', '--pill': '#4a1c0f', '--led': '#ff6840'
+        '--bg': '#331410', '--bg2': '#521c12', '--fg': '#ffd7c4', '--btn': '#632c19', '--btn-stroke': '#8a3d23', '--pill': '#421e13', '--led': '#ff6644'
       },
-      bg: 'linear-gradient(180deg, #34130b, #6b1d0f 55%, #4a140b)'
+      bg: 'linear-gradient(180deg, #2f0f0a, #5c1e13 55%, #43140f)'
     },
     demon: {
-      // 魔王風格：暗紫與黑，LED 為深紫
       rootVars: {
-        '--bg': '#140a22', '--bg2': '#241036', '--fg': '#e4d0ff', '--btn': '#3e0d4f', '--btn-stroke': '#5c2176', '--pill': '#2f1042', '--led': '#a249c9'
+        '--bg': '#1a1229', '--bg2': '#2a193d', '--fg': '#e0d0ff', '--btn': '#421653', '--btn-stroke': '#643a7c', '--pill': '#351b48', '--led': '#9a4bbb'
       },
-      bg: 'linear-gradient(180deg, #1a0d2e, #40154f 55%, #2e103c)'
+      bg: 'linear-gradient(180deg, #220f2e, #411d58 55%, #2e123f)'
     }
   };
 
@@ -2797,36 +2748,6 @@ if(performance.now() >= nextForcedDropAt){
 })();
 </script>
 
-<!-- 首頁與主選單控制腳本 -->
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  const home = document.getElementById('homeScreen');
-  const startBtn = document.getElementById('homeStartBtn');
-  const galleryBtn = document.getElementById('homeGalleryBtn');
-  const tutorHomeBtn = document.getElementById('homeTutorialBtn');
-  const centerNote = document.getElementById('centerNote');
-  // 如果有首頁面板，初始顯示，隱藏中心提示
-  if(home){ home.classList.add('show'); }
-  if(centerNote){ centerNote.style.display = 'none'; }
-
-  // 開始遊戲：隱藏首頁，顯示中心提示面板供玩家啟動
-  startBtn?.addEventListener('click', function(){
-    if(home) home.classList.remove('show');
-    if(centerNote){ centerNote.style.display = 'flex'; }
-  });
-  // 首頁畫廊按鍵：透過觸發既有畫廊按鍵開啟
-  galleryBtn?.addEventListener('click', function(){
-    const albumBtn = document.getElementById('albumBtn');
-    if(albumBtn){ albumBtn.click(); }
-  });
-  // 首頁教學按鍵：透過觸發既有教學按鍵開啟
-  tutorHomeBtn?.addEventListener('click', function(){
-    const tBtn = document.getElementById('tutorBtn');
-    if(tBtn){ tBtn.click(); }
-  });
-});
-</script>
-
 <!-- ===== 可隨時進入的畫廊面板（由補丁注入） ===== -->
 <div class="win" id="album" style="display:none;">
   <div class="backdrop"></div>
@@ -2835,16 +2756,6 @@ document.addEventListener('DOMContentLoaded', function(){
     <div id="albumGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;max-height:min(60vh,560px);overflow:auto;margin:8px 0;"></div>
     <div class="small">點縮圖可放大，再次點擊縮回</div>
     <div class="again" style="margin-top:12px"><button class="btn" id="albumClose">回到遊戲</button></div>
-  </div>
-</div>
-
-<!-- === 首頁覆蓋面板 === -->
-<div id="homeScreen" class="home-screen">
-  <div class="home-center">
-    <h2>主選單</h2>
-    <button id="homeStartBtn" class="btn big-btn">開始遊戲</button>
-    <button id="homeGalleryBtn" class="btn big-btn">畫廊</button>
-    <button id="homeTutorialBtn" class="btn big-btn">教學/效果說明</button>
   </div>
 </div>
 
@@ -3050,7 +2961,7 @@ document.addEventListener('DOMContentLoaded', function(){
       for(let i=1;i<=10;i++) items.push({key:'cg'+i, src: window.IMG_PAIRS[i-1].cg});
       for(const it of items){
         const wrap=document.createElement('div'); wrap.style.cssText='position:relative;border:1px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden;';
-        const img=document.createElement('img'); img.src=it.src; img.loading='eager'; img.style.cssText='width:100%;height:72px;object-fit:cover;display:block;';
+        const img=document.createElement('img'); img.src=it.src; img.loading='lazy'; img.style.cssText='width:100%;height:72px;object-fit:cover;display:block;';
         if(!seen[it.key]) img.style.filter='grayscale(100%) brightness(60%)';
         wrap.appendChild(img);
         wrap.addEventListener('click', ()=>openGalleryImage(it.key));
