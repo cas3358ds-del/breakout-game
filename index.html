@@ -192,12 +192,12 @@
     
 /* === Sprint 2: HUD compact & iconized === */
 .hud.hud--compact{
-  position:absolute; left:12px; right:12px; top:8px;
+  position:sticky; top: calc(8px + var(--safe-top)); margin: 0 12px; left:auto; right:auto;
   display:flex; align-items:center; justify-content:space-between;
   gap:12px; z-index:8;
 }
 .hud-left{ display:flex; gap:8px; align-items:center; }
-.hud-right{ display:flex; gap:8px; align-items:center; margin-left:auto; }
+.hud-right{ display:flex; gap:8px; align-items:center; margin-left:auto; flex-wrap:wrap; }
 .icon-btn{
   min-width:40px; min-height:40px; padding:8px; border-radius:10px;
   background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
@@ -209,7 +209,7 @@
   background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:10px; }
 .skin-select select{ background:transparent; color:#fff; border:none; outline:none; }
 .more-menu{
-  position:absolute; right:8px; top:54px; display:flex; flex-direction:column; gap:6px;
+  position:sticky; right:8px; top:54px; display:flex; flex-direction:column; gap:6px;
   background: rgba(10,12,20,.95); border:1px solid rgba(255,255,255,.12); border-radius:12px;
   padding:10px; z-index:9; box-shadow:0 20px 60px rgba(0,0,0,.5);
 }
@@ -285,7 +285,12 @@ body{ padding-top: var(--safe-top); }
 .hud-right{ flex-wrap: wrap; }
 .skin-select select{ max-width: 36vw; }
 
+
+/* === Layout spacing to avoid HUD overlapping title === */
+.wrap > h1{ margin-top: calc(8px + var(--safe-top)); margin-bottom: 8px; }
+canvas{ margin-top: 6px; }
 </style>
+
 </head>
 <body>
 <div class="wrap">
@@ -469,9 +474,7 @@ body{ padding-top: var(--safe-top); }
    * @param {string} text 要顯示的文字內容（可以包含 HTML）
    * @param {string} category 分類: 'info' | 'buff' | 'debuff' | 'special' | 'boss'
    */
-  function showPrompt(key, text, category='info'){
-// Sprint1: show prompt cards with 10s TTL dedupe and max 3 cards (left stack)
-  function showPrompt(key, text, category='info'){
+  function showPrompt(key, text, category='info') {
     const now = performance.now();
     if(!window.__promptSeenAt) window.__promptSeenAt = {};
     if(window.__promptSeenAt[key] && (now - window.__promptSeenAt[key] < 10_000)){
@@ -495,9 +498,7 @@ body{ padding-top: var(--safe-top); }
       setTimeout(()=>{ if(div.parentElement) div.parentElement.removeChild(div); }, 800);
     }, 5000);
   }
-}
-
-  // 9命怪貓使用次數限制
+// 9命怪貓使用次數限制
   let nineUsed = 0;
   // 記錄最近消除磚塊的時間戳，用於掉落率抑制
   const recentBrickClears = [];
@@ -857,9 +858,7 @@ body{ padding-top: var(--safe-top); }
 
   // === Buff/De-buff 顯示 ===
   function badgeIcon(k){ return ((GAME_CONFIG.powers[k] && GAME_CONFIG.powers[k].badge))||'●'; }
-  function updateBuffBadges(){
-// Sprint1: render active buffs as chips with Chinese label + x.x sec + progress ring
-  function updateBuffBadges(){
+  function updateBuffBadges() {
     if(!activeBuffsEl) return;
     activeBuffsEl.innerHTML = '';
     const now = performance.now();
@@ -883,9 +882,7 @@ body{ padding-top: var(--safe-top); }
                         <span class="time">${fmtSec(leftMs)}</span>`;
         items.push(el);
       }
-    }
-
-    // 其它一般效果
+// 其它一般效果
     for(const key of Object.keys(GAME_CONFIG.powers)){
       if(key==='LONG') continue;
       const conf = GAME_CONFIG.powers[key];
@@ -3270,6 +3267,15 @@ if(performance.now() >= nextForcedDropAt){
         const timer = setTimeout(()=>{ img.src=''; rej(new Error('timeout')); }, 8000);
         img.onload = ()=>{ clearTimeout(timer); res(true); };
         img.onerror = ()=>{ clearTimeout(timer); rej(new Error('error')); };
+        img.decoding = 'async'; img.referrerPolicy = 'no-referrer'; img.src = s;
+      });
+      if(ok) return s;
+    }catch(e){}
+  }
+  return null;
+}, 8000);
+        img.onload = ()=>{ clearTimeout(timer); res(true); };
+        img.onerror = ()=>{ clearTimeout(timer); rej(new Error('error')); };
         img.decoding = 'async';
         img.referrerPolicy = 'no-referrer';
         img.src = s;
@@ -3529,6 +3535,35 @@ if(performance.now() >= nextForcedDropAt){
 })();
 </script>
 <!-- ===== End Autostart Guard ===== -->
+
+
+<!-- === Autostart Guard (iOS/WebKit safe) === -->
+<script>
+(function(){
+  function closeOverlays(){
+    ['moreMenu','centerNote','homeScreen'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.hidden = true; el.style.display='none'; el.setAttribute('aria-hidden','true');
+    });
+  }
+  function kick(){
+    closeOverlays();
+    try{
+      if(typeof window.startGameWithCountdown==='function') window.startGameWithCountdown();
+      else if(typeof window.startCountdown==='function') window.startCountdown();
+      else if(typeof window.resumeGame==='function') window.resumeGame();
+    }catch(e){}
+  }
+  if(!window.__bootGuard){
+    window.__bootGuard = true;
+    window.addEventListener('pointerdown', kick, { once:true, passive:true, capture:true });
+    window.addEventListener('keydown', (e)=>{ if(e.key===' '||e.key==='Enter'){ kick(); } }, { once:true, capture:true });
+    window.addEventListener('load', ()=> setTimeout(kick, 1000), { once:true });
+  }
+})();
+</script>
+<!-- === End Autostart Guard === -->
 
 </body>
 </html>
