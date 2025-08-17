@@ -3432,5 +3432,61 @@ if(performance.now() >= nextForcedDropAt){
 })();
 </script>
 
+
+<!-- ===== iOS Quick-Boot Hotfix (2025-08-17) ===== -->
+<script>
+(function(){
+  function closeOverlays(){
+    try{
+      const menu = document.getElementById('moreMenu');
+      if(menu){ menu.hidden = true; menu.style.display = 'none'; }
+      const mb = document.getElementById('moreBtn');
+      if(mb){ mb.setAttribute('aria-expanded','false'); }
+      const cn = document.getElementById('centerNote');
+      if(cn){ cn.style.display='none'; cn.style.pointerEvents='none'; }
+      const home = document.getElementById('homeScreen');
+      if(home){ home.style.display='none'; home.setAttribute('aria-hidden','true'); }
+    }catch(e){}
+  }
+
+  let bootRequested = false;
+  function kick(){
+    closeOverlays();
+    if(typeof window.startGameWithCountdown === 'function'){
+      try{ window.startGameWithCountdown(); }catch(e){}
+    }else{
+      bootRequested = true;
+    }
+  }
+
+  window.addEventListener('pointerdown', kick, { once:true, passive:true, capture:true });
+  window.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' || e.key === ' '){ kick(); }
+  }, { once:true, capture:true });
+
+  window.addEventListener('load', ()=>{
+    setTimeout(()=>{
+      closeOverlays();
+      const menu = document.getElementById('moreMenu'); if(menu) menu.hidden = true;
+      if(!window.__frameTicked){ kick(); }
+    }, 800);
+  }, { once:true });
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    setTimeout(()=>{
+      if(bootRequested && typeof window.startGameWithCountdown === 'function'){
+        window.startGameWithCountdown();
+        bootRequested = false;
+      }
+    }, 0);
+  }, { once:true });
+
+  const _raf = window.requestAnimationFrame;
+  window.requestAnimationFrame = function(cb){
+    return _raf(function(t){ window.__frameTicked = true; cb(t); });
+  };
+})();
+</script>
+<!-- ===== End Hotfix ===== -->
 </body>
 </html>
