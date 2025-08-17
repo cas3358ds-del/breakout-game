@@ -4,7 +4,11 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>Rock打磚塊 Breakout（最終增強版）</title><script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=cN6_m-Vmra0SMBCI30L9VY02q5_R9hnkKDPw2c2m3X6tHj-UJn4EQXcAUwGrmyN1jN0f8bFs0REqpY0O03zULt5prqIpngHUjbTah_cCEgHKcCDK4XWqiE7TZ6rD65IhP8HZqorNFtegcEGCptx1_JCD1JcKOobZzC24IuE6AndatQMnMIs85VCIFPr1b_mTqveuFRLxV5qDH7Th13QmjI8zzcXRqfJitNmjmb9MtR4aBVWj1LqNDgsPLOU_NGXfuwCQldiPF0Eztob0ELWT2QLLixx5kQBv35Yk8Q4Jv4MO82gbyIxe25dqwlWdrAoBwsgKvPOB0B4QMRbfwGusyVS2jGE0WQSE-lIWnIXHldLgSPUlDesFYyyig1X9erxYE54Y6TRyCuFmTTVDUfpiWR6O0kdeSmdo69dPXIMEwRxMwOqyT8VCFX1tNSFqd3Z69O8xBbxzsUg8UmJGt9iFftDBgyxILzMpkW4TwF2AdIfcth913OkmB5eH_V2drE5j_cA9D8kitsGopAzLD_JtRt1lIAvvHMTwJWff0UjTr_Welx5hL0XxeADGtnh0RpVDSvrfz8CWrOz_BQAnRWlOjzwMFHrU_sNjK_pIfsPcmMM" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9wcm9kZnN1cGxvYWRzMDcuYmxvYi5jb3JlLndpbmRvd3MubmV0L2ZpbGVzL2ZpbGUtN3pQN1JKOW5DNGpGTGNRNXA5alZpVz9zZT0yMDI1LTA4LTE3VDAyJTNhMDElM2ExOVomc3A9ciZzdj0yMDI0LTA4LTA0JnNyPWImcnNjYz1tYXgtYWdlJTNkMjk5JTJjJTIwaW1tdXRhYmxlJTJjJTIwcHJpdmF0ZSZyc2NkPWF0dGFjaG1lbnQlM2IlMjBmaWxlbmFtZSUzZGluZGV4Lmh0bWwmc2tvaWQ9Y2JiYWE3MjYtNGEyZS00MTQ3LTkzMmMtNTZlNmU1NTNmMDczJnNrdGlkPWE0OGNjYTU2LWU2ZGEtNDg0ZS1hODE0LTljODQ5NjUyYmNiMyZza3Q9MjAyNS0wOC0xNlQyMiUzYTU4JTNhMTZaJnNrZT0yMDI1LTA4LTE3VDIyJTNhNTglM2ExNlomc2tzPWImc2t2PTIwMjQtMDgtMDQmc2lnPVgxRlpsZ3M5ZDFtTDVoSlJCcFJYZU9Kazd2akoyNjJWeG1EWHBSQkZGZlklM2Q"/><script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=wo5yaN_JFpi4JjU_0pPz2PTXxFD176V_SSNnp16XohYWiKX87-lOsAh6wTQ07PQ1uHzMZRdbgC6iELm6KzsqUnMBN9lI81BLjflYST2edoH3r2sPdXuazS5RqRrRXFlBUMMKtzaa07q4jdEmpOQU1PkcfneRlpnG9GpIt9SekuFBVPFTqdZe2KSSNIdH3g0DUy8XL4PXlL1C9l-cKh_ITxZ9bepVOHfMjasvCxNAZfVzceTcfxokARnHDlpJXP7vHaFp5ospwT6p5p6zJyXwmty_TI75yD7sCgBGm-3HA70tXrdVN4hjq-TPQgYfYq7MnsGd1IhYUZf2yVrAaS3fm9vRn6-geNx9S-HtXcViqd_G4QfiRsIYZaL4VwIZuaneP6BWxd8ytDyfeO8Jc4eZjep-CjvCXcJlav3ttdQYhQdpbvdM8XXNpeOyuvkBUmwB9StVs63bK4CY0vGXaayAsxZi9bJyBNbB33yFpXYfqS-kZMDcLIJmhogsExdLjAFjBRhnoQmQ80me9Fm5CX8zfinUN_8bNV8rGB9jcjQ6oMp9nunlECVZpbeTIFCFMzoYKr8snWqPtZ9y1v8M2QoqcA" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9maWxlczA4Lm9haXVzZXJjb250ZW50LmNvbS9maWxlLU45UUJqTlVmallYM3V1TUZBZ0JqdE0_c2U9MjAyNS0wOC0xNlQxOCUzYTUyJTNhMjJaJnNwPXImc3Y9MjAyNC0wOC0wNCZzcj1iJnJzY2M9bWF4LWFnZSUzZDI5OSUyYyUyMGltbXV0YWJsZSUyYyUyMHByaXZhdGUmcnNjZD1hdHRhY2htZW50JTNiJTIwZmlsZW5hbWUlM2RpbmRleC5odG1sJnNrb2lkPWZhNzk2NmU3LWY4ZWEtNDgzYy05MTlhLTEzYWNmZDYxZDY5NiZza3RpZD1hNDhjY2E1Ni1lNmRhLTQ4NGUtYTgxNC05Yzg0OTY1MmJjYjMmc2t0PTIwMjUtMDgtMTVUMjMlM2E1OCUzYTQ5WiZza2U9MjAyNS0wOC0xNlQyMyUzYTU4JTNhNDlaJnNrcz1iJnNrdj0yMDI0LTA4LTA0JnNpZz0yRkVKdDBLNnN1ZUJMeDVuRlVRTjBJTGxaVG1KZTRpRjJ5T2lwbUg1WThvJTNk"/><style>
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; img-src 'self' data: blob: https:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' data: blob:; frame-ancestors 'self';">
+<title>Rock打磚塊 Breakout（最終增強版）</title>
+
+<style>
     :root {
       --bg:#0b1022; --bg2:#0a0f1e; --fg:#e9ecf1; --accent:#66b2ff;
       --brick1:#ff6b6b; --brick2:#ffd166; --brick3:#06d6a0; --brick4:#4cc9f0;
@@ -3244,10 +3248,22 @@ if(performance.now() >= nextForcedDropAt){
   async function resolveSrc(srcs){
     for(const s of srcs){
       try{
-        const ok = await fetch(s, {method:'HEAD'});
-        if(ok.status>=200 && ok.status<400) return s;
-      }catch(e){}
+        // Use Image() to probe actual GET load (more reliable on iOS than HEAD)
+        const url = s;
+        const ok = await new Promise((res, rej)=>{
+          const img = new Image();
+          const timer = setTimeout(()=>{ img.src=''; rej(new Error('timeout')); }, 8000);
+          img.onload = ()=>{ clearTimeout(timer); res(true); };
+          img.onerror = ()=>{ clearTimeout(timer); rej(new Error('error')); };
+          img.decoding = 'async';
+          img.referrerPolicy = 'no-referrer';
+          img.src = url;
+        });
+        if(ok) return s;
+      }catch(e){ /* try next */ }
     }
+    return null;
+}    }
     return null;
   }
 
