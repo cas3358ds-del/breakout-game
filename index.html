@@ -3,91 +3,93 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Breakout HUD — A1_Ribbon</title>
+<title>Breakout HUD — A2 TwinRow（按鍵上移 / 提示卡三張）</title>
 <style>
 :root{
   --safe-top: env(safe-area-inset-top);
-  --safe-bottom: env(safe-area-inset-bottom);
-  --safe-left: env(safe-area-inset-left);
-  --safe-right: env(safe-area-inset-right);
   --hudBottom: 96px; /* 由 JS 以 HUD 底緣動態更新 */
   --ink: #eaf2ff; --muted:#b8c7ea;
   --glass-1: rgba(255,255,255,.08);
   --glass-2: rgba(255,255,255,.06);
   --stroke: rgba(140,180,255,.28);
-  --accent:#79c8ff;
-  --bg0:#0b1226; --bg1:#091225; --bg2:#081022;
+  --bg:#0a142c;
 }
 html,body{height:100%;margin:0;color:var(--ink);
   background: radial-gradient(140% 140% at 50% -12%, #13224a 0%, #0e1a3a 50%, #081022 100%);
   font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;}
 .wrap{max-width:1200px;margin:0 auto;padding:0 12px 24px}
-header{padding:calc(8px + var(--safe-top)) 0 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+header{padding:calc(8px + var(--safe-top)) 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 h1{font-size:clamp(16px,2.6vw,22px);margin:0 8px 0 0;letter-spacing:.4px;opacity:.95}
+.small{font-size:12px;color:var(--muted)}
 select,button,input[type="range"]{background:var(--glass-2);border:1px solid var(--stroke);color:#fff;border-radius:10px}
-/* === HUD === */
-.hud{position:relative;z-index:20;display:grid;gap:8px;align-items:center}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.pill{padding:6px 12px;border:1px solid var(--stroke);background:var(--glass-2);border-radius:999px;min-height:36px;display:flex;align-items:center;gap:8px;color:#d7e3ff;font-weight:650}
-.pill b{color:#fff}
-.ring{--size:46px;width:var(--size);height:var(--size);border-radius:999px;border:1px solid var(--stroke);background:radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.16), rgba(255,255,255,0) 58%), var(--glass-1);display:grid;place-items:center;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05), 0 12px 28px rgba(0,0,0,.36)}
+
+/* === HUD（A2：兩列，這版把三顆圓鈕上移到第一列右側） === */
+.theme-a2 .hud{position:relative;z-index:20;display:grid;gap:8px;align-items:center;
+  grid-template-columns:1fr auto; /* 由原一欄改為「左統計、右按鍵」 */
+  max-width:min(1080px,96vw);margin:8px auto 0;border:1px solid var(--stroke);
+  border-radius:18px;padding:10px;background:linear-gradient(180deg,rgba(20,25,44,.62),rgba(12,20,42,.44))}
+.theme-a2 .stats{display:grid;grid-template-columns:auto auto;grid-auto-rows:minmax(34px,auto);gap:8px 10px}
+.theme-a2 .stats .wide{grid-column:1 / -1}
+.pill{padding:6px 11px;border:1px solid var(--stroke);background:var(--glass-2);border-radius:999px;min-height:34px;display:flex;align-items:center;gap:8px;color:#d7e3ff;font-weight:650;font-size:14px}
+.pill b{color:#fff;font-variant-numeric:tabular-nums}
+.hearts{letter-spacing:2px;margin-left:4px}
+.controls{display:flex;gap:8px;align-items:center;justify-content:flex-end;align-self:start}
+.ring{--size:42px;width:var(--size);height:var(--size);border-radius:999px;border:1px solid var(--stroke);
+      background:radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.16), rgba(255,255,255,0) 58%), var(--glass-1);
+      display:grid;place-items:center;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05), 0 10px 24px rgba(0,0,0,.34)}
 .ring:active{transform:translateY(1px)}
-.icon{font-size:20px;line-height:1}
-.btn{padding:8px 12px;border-radius:10px;border:1px solid var(--stroke);cursor:pointer}
+.bars{width:14px;height:16px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.bars span{background:#fff;border-radius:2px}
 .menu{position:absolute;top:56px;right:0;min-width:280px;padding:10px;border:1px solid var(--stroke);border-radius:14px;background:rgba(12,18,36,.96);backdrop-filter:blur(10px);transform:scale(.96);opacity:0;pointer-events:none;transition:.16s ease;z-index:60}
 .menu.show{transform:scale(1);opacity:1;pointer-events:auto}
 .menu .item{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--stroke);border-radius:10px;background:var(--glass-2);margin-bottom:8px}
 .menu h4{margin:6px 0 8px;font-size:13px;color:#cfe0ff}
-/* === 主舞台 === */
-.stage{position:relative;margin:12px auto 0;max-width:min(1080px,96vw);border-radius:18px;padding:12px}
-.board{position:relative;height:min(62vh,560px);border-radius:16px;border:1px solid rgba(80,110,170,.45);background:linear-gradient(180deg,#0d132a,#0b1226 55%, #091223);box-shadow:inset 0 0 160px rgba(255,255,255,.03), 0 28px 90px rgba(0,0,0,.46)}
-.boardOverlay{position:absolute;inset:0;pointer-events:none}
-/* 效果倒數（HUD 與遊戲區之間） */
+.btn{padding:8px 12px;border-radius:10px;border:1px solid var(--stroke);cursor:pointer;background:var(--glass-2);color:#fff}
+
+/* 極窄寬度時縮排比例 */
+@media (max-width:390px){
+  .pill{font-size:13px;padding:5px 10px}
+  .ring{--size:40px}
+}
+
+/* === 效果倒數（HUD 與遊戲區之間） === */
 #buffs{position:sticky;z-index:18;top:calc(var(--hudBottom) + 6px);display:flex;gap:8px;align-items:center;max-width:min(1080px,96vw);margin:6px auto 0;padding-left:6px;overflow:auto;scrollbar-width:none}
 #buffs::-webkit-scrollbar{display:none}
 .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--stroke);border-radius:999px;background:var(--glass-1);font-size:12px;white-space:nowrap;color:#cfe0ff}
 .chip b{color:#fff}
-/* 提示卡（位於磚塊與平台之間：此樣品以 60% 高度示意） */
-.prompts{position:absolute;left:10px;right:10px;top:60%;display:flex;flex-direction:column;gap:8px;align-items:flex-start;pointer-events:none}
-.prompt{pointer-events:auto;padding:10px 12px;border:1px solid var(--stroke);border-radius:12px;background:rgba(14,22,40,.92);box-shadow:0 14px 36px rgba(0,0,0,.38);max-width:220px;font-size:12px}
-/* ——— 五種版型差異 ——— */
-/* A1: Ribbon（維持你現在的上方列結構，兩行自適應） */
-.theme-a1 .hud{grid-template-columns:1fr auto;max-width:min(1080px,96vw);margin:8px auto 0;border:1px solid var(--stroke);border-radius:18px;padding:10px;background:linear-gradient(180deg,rgba(18,28,52,.6),rgba(12,22,44,.42))}
-/* A2: TwinRow（統計第一排、按鍵第二排；行動裝置更穩） */
-.theme-a2 .hud{grid-template-columns:1fr;max-width:min(1080px,96vw);margin:8px auto 0;border:1px solid var(--stroke);border-radius:18px;padding:10px;background:linear-gradient(180deg,rgba(20,25,44,.62),rgba(12,20,42,.44))}
-.theme-a2 .hud .row.controls{justify-content:flex-end}
-/* A3: MicroDock（統計在左、按鍵靠右；緊湊不遮擋） */
-.theme-a3 .hud{grid-template-columns:auto 1fr;align-items:center;max-width:min(1080px,96vw);margin:8px auto 0;border:1px solid var(--stroke);border-radius:18px;padding:10px}
-/* A4: GlassBar+（極簡細框；按鍵做成 3 個圓鈕） */
-.theme-a4 .hud{grid-template-columns:1fr auto;max-width:min(1080px,96vw);margin:8px auto 0;padding:8px 10px;border:1px dashed rgba(160,190,255,.26);border-radius:16px;background:rgba(16,22,36,.36)}
-/* A5: HeroPanel（左側直條統計 + 右側控制；桌機高可視） */
-.theme-a5 .hud{grid-template-columns:260px 1fr;max-width:min(1080px,96vw);margin:8px auto 0;gap:12px}
-.theme-a5 .panel{display:flex;flex-direction:column;gap:8px;border:1px solid var(--stroke);border-radius:14px;background:var(--glass-2);padding:10px}
-@media (max-width:560px){ .theme-a5 .hud{grid-template-columns:1fr} .theme-a5 .panel{order:2} }
-/* 細節 */
-.small{font-size:12px;color:var(--muted)}
-.bars{width:16px;height:18px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.bars span{background:#fff;border-radius:2px}
+
+/* === 遊戲舞台 === */
+.stage{position:relative;margin:12px auto 0;max-width:min(1080px,96vw);border-radius:18px;padding:12px}
+.board{position:relative;height:min(62vh,560px);border-radius:16px;border:1px solid rgba(80,110,170,.45);background:linear-gradient(180deg,#0d132a,#0b1226 55%, #091223);box-shadow:inset 0 0 160px rgba(255,255,255,.03), 0 28px 90px rgba(0,0,0,.46)}
+.boardOverlay{position:absolute;inset:0;pointer-events:none}
+
+/* === 提示卡：上移且可橫放三張 === */
+.prompts{position:absolute;left:10px;right:10px;top:44%;
+  display:flex;gap:16px;align-items:flex-start;justify-content:flex-start;pointer-events:none;flex-wrap:nowrap}
+.prompt{pointer-events:auto;padding:10px 12px;border:1px solid var(--stroke);border-radius:12px;background:rgba(14,22,40,.92);box-shadow:0 14px 36px rgba(0,0,0,.38);
+  width:calc((100% - 32px)/3); font-size:12px; line-height:1.45; white-space:normal}
+@media (max-width:480px){
+  .prompts{flex-wrap:wrap}
+  .prompt{width:calc((100% - 16px)/2)}
+}
 </style>
 </head>
 <body>
-<div class="wrap theme-a1" id="app">
+<div class="wrap theme-a2" id="app">
   <header>
-    <h1>Breakout HUD 樣品（A1_Ribbon）</h1><select id="skinSel"><option value="theme-a1">1) A1 Ribbon</option><option value="theme-a2">2) A2 TwinRow</option><option value="theme-a3">3) A3 MicroDock</option><option value="theme-a4">4) A4 GlassBar+</option><option value="theme-a5">5) A5 HeroPanel</option></select>
-    <div class="row">
-      <span class="small">規格：Start/Stop 無子選單；音效/選項展開即停，點空白關閉並續玩；效果倒數置於 HUD 與遊戲區之間；提示卡置於磚塊與平台之間。</span>
-    </div>
+    <h1>Breakout HUD 樣品（A2 TwinRow 改款）</h1>
+    <span class="small">規格：Start/Stop 無子選單；音效/選項展開即停，點空白關閉並續玩；效果倒數於 HUD 與遊戲區之間；提示卡位於磚塊與平台間。</span>
   </header>
 
   <!-- HUD -->
   <section class="hud">
-    <div class="row stats">
+    <div class="stats">
       <div class="pill">分數 <b data-bind="score">1,280</b></div>
       <div class="pill">關卡 <b data-bind="level">3</b>/20</div>
-      <div class="pill">生命 <b data-bind="lives">3</b> <span style="letter-spacing:2px;margin-left:6px">❤️❤️❤️</span></div>
+      <div class="pill wide">生命 <b data-bind="lives">3</b> <span class="hearts">❤️❤️❤️</span></div>
     </div>
-    <div class="row controls" style="justify-self:end;position:relative">
+    <div class="controls" style="position:relative">
       <button class="ring" data-as="start" aria-label="開始/暫停"><span class="bars"><span></span><span></span></span></button>
       <button class="ring" data-as="sound" aria-haspopup="true" aria-expanded="false">🔊</button>
       <div class="menu" data-as="soundMenu">
@@ -120,7 +122,9 @@ select,button,input[type="range"]{background:var(--glass-2);border:1px solid var
     <div class="board">
       <div class="boardOverlay">
         <div class="prompts" id="prompts">
-          <div class="prompt">提示：首次取得「凍結球」，平台會短暫停滯便於掌握節奏。</div>
+          <div class="prompt">凍結球：平台短暫停滯，節奏更好掌握。</div>
+          <div class="prompt">黏滯球：碰平台會吸附，釋放再擊。</div>
+          <div class="prompt">雷射：開火清除同列數塊。</div>
         </div>
       </div>
     </div>
@@ -130,7 +134,7 @@ select,button,input[type="range"]{background:var(--glass-2);border:1px solid var
 
 <script>
 (function(){
-  const app = document.getElementById('app'); const skinSel=document.getElementById("skinSel");
+  const app = document.getElementById('app');
   const hud = app.querySelector('.hud');
   const sentinel = app.querySelector('.hud-sentinel');
   const menus = app.querySelectorAll('.menu');
@@ -155,11 +159,11 @@ select,button,input[type="range"]{background:var(--glass-2);border:1px solid var
     closeMenus();
     if(show){ menu.classList.add('show'); btn?.setAttribute('aria-expanded','true'); stop(); }
     else { btn?.setAttribute('aria-expanded','false'); start(); }
-    queuePlace(); if(skinSel){ skinSel.addEventListener("change", e=>{ app.className="wrap "+e.target.value; setTimeout(queuePlace,0);}); }
+    queuePlace();
   }
   function closeMenus(){
     menus.forEach(m=>m.classList.remove('show'));
-    start(); queuePlace(); if(skinSel){ skinSel.addEventListener("change", e=>{ app.className="wrap "+e.target.value; setTimeout(queuePlace,0);}); }
+    start(); queuePlace();
   }
 
   // wire
@@ -177,7 +181,7 @@ select,button,input[type="range"]{background:var(--glass-2);border:1px solid var
   ['resize','orientationchange','scroll'].forEach(ev=>window.addEventListener(ev, queuePlace, {passive:true}));
   if(window.visualViewport){ ['resize','scroll'].forEach(ev=>visualViewport.addEventListener(ev, queuePlace)); }
   if(document.fonts && document.fonts.ready){ document.fonts.ready.then(queuePlace); }
-  queuePlace(); if(skinSel){ skinSel.addEventListener("change", e=>{ app.className="wrap "+e.target.value; setTimeout(queuePlace,0);}); }
+  queuePlace();
 })();
 </script>
 </body>
