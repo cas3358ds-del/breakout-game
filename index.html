@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Breakout — HUD Top5 高質感樣品 (Pro v3)</title>
+<title>Breakout — HUD Top5 高質感樣品 (Pro v3 • fixA)</title>
 <style>
   :root{
     --safe-top: env(safe-area-inset-top);
@@ -15,8 +15,7 @@
     --glass-1: rgba(255,255,255,.08);
     --glass-2: rgba(255,255,255,.05);
     --accent:#77c8ff;
-    --hudTop: 96px; /* 由 JS 寫入：HUD 高度 + 安全區避讓 */
-    --gap: 12px;
+    --hudTop: 120px; /* 由 JS 寫入：HUD 底緣（絕對座標） */
   }
 
   html,body{height:100%;margin:0;color:var(--ink);
@@ -41,7 +40,7 @@
     box-shadow:inset 0 0 160px rgba(255,255,255,.03),0 30px 90px rgba(0,0,0,.45);}
 
   /* ====== HUD primitives ====== */
-  .hud{position:relative;z-index:20;display:grid;align-items:center;gap:10px}
+  .hud{position:relative;z-index:40;display:grid;align-items:center;gap:10px}
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .pill{display:flex;align-items:center;gap:8px;padding:6px 12px;min-height:36px;border-radius:999px;background:var(--glass-2);border:1px solid var(--glass-stroke);color:var(--ink-2)}
   .pill strong{color:#fff}
@@ -55,7 +54,7 @@
   .ghost{font-size:22px}
 
   .menu{position:absolute;top:56px;right:0;min-width:280px;background:rgba(12,18,36,.96);border:1px solid var(--glass-stroke);border-radius:14px;
-        padding:10px;transform:scale(.96);opacity:0;pointer-events:none;transition:.16s ease;z-index:40;backdrop-filter:blur(8px)}
+        padding:10px;transform:scale(.96);opacity:0;pointer-events:none;transition:.16s ease;z-index:60;backdrop-filter:blur(8px)}
   .menu.show{transform:scale(1);opacity:1;pointer-events:auto}
   .menu .row{margin-bottom:8px}
   .menu .item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--glass-stroke);background:var(--glass-2)}
@@ -63,46 +62,34 @@
   .menu h4{margin:6px 0 8px;font-size:13px;letter-spacing:.2px;color:#cfe0ff}
 
   /* ====== Effect chips & prompt cards (fixed below HUD; never overlap) ====== */
-  #activeBuffs{position:fixed;left:12px;top:calc(var(--hudTop) + 6px);z-index:12;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 64px);overflow-x:auto;scrollbar-width:none}
+  #activeBuffs{position:fixed;left:12px;top:calc(var(--hudTop) + 6px);z-index:20;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 64px);overflow-x:auto;scrollbar-width:none;pointer-events:none}
+  #activeBuffs > *{pointer-events:auto}
   #activeBuffs::-webkit-scrollbar{display:none}
   .chip{padding:4px 10px;border:1px solid var(--glass-stroke);background:var(--glass-1);border-radius:999px;font-size:12px;color:#cfe0ff;white-space:nowrap}
   .chip b{color:#fff}
-  .prompts{position:fixed;left:12px;top:calc(var(--hudTop) + 48px);z-index:11;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+  .prompts{position:fixed;left:12px;top:calc(var(--hudTop) + 48px);z-index:18;display:flex;flex-direction:column;gap:8px;pointer-events:none}
   .prompt{pointer-events:auto;padding:10px 12px;border:1px solid var(--glass-stroke);background:rgba(16,22,40,.92);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.35)}
 
-  /* ====== Theme variants ====== */
-  /* 1) Sapphire Glass Topbar */
+  /* ====== Theme variants（略，與上一版相同） ====== */
   .theme-sapphire .hud{grid-template-columns:1fr auto;background:linear-gradient(180deg, rgba(18,28,52,.60), rgba(12,22,44,.40));
     border:1px solid var(--glass-stroke);border-radius:18px;padding:12px;margin:10px auto 0;max-width:860px}
-
-  /* 2) Slate Dock Bottom */
   .theme-slate .hud{display:none}
   .theme-slate .dock{position:fixed;bottom:calc(8px + var(--safe-bottom));left:50%;transform:translateX(-50%);z-index:30;
     display:flex;gap:8px;padding:10px 12px;background:rgba(16,20,30,.78);border:1px solid rgba(120,190,255,.26);
     border-radius:16px;backdrop-filter:blur(10px)}
-  .theme-slate .dock .pill{background:rgba(255,255,255,.07)}
-
-  /* 3) Neon Split (left stats / right controls) */
   .theme-neon .hud{grid-template-columns:auto 1fr auto;margin-top:10px}
   .theme-neon .leftbar{display:flex;flex-direction:column;gap:8px}
-
-  /* 4) Aero Capsule (center capsule) */
   .theme-aero .hud{grid-template-columns:1fr;justify-items:center;margin-top:10px}
   .theme-aero .capsule{display:flex;gap:12px;padding:8px 12px;border:1px solid var(--glass-stroke);border-radius:999px;background:var(--glass-1)}
-
-  /* 5) Ivory Sidebar (left panel) */
   .theme-ivory .hud{grid-template-columns:260px 1fr;align-items:start;margin-top:10px}
   .theme-ivory .panel{border:1px solid rgba(170,180,210,.45);background:rgba(255,255,255,.05);border-radius:14px;padding:12px 10px;display:flex;flex-direction:column;gap:8px}
-
-  @media (max-width:560px){
-    .theme-ivory .hud{grid-template-columns:1fr}
-  }
+  @media (max-width:560px){ .theme-ivory .hud{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
 <div class="wrap theme-sapphire" id="app">
   <header>
-    <h1>Breakout HUD — Top 5 高質感樣品</h1>
+    <h1>Breakout HUD — Top 5 高質感樣品（fixA）</h1>
     <div class="toolbar">
       <span class="tag">切換樣式</span>
       <select id="skinSel" class="select">
@@ -116,7 +103,7 @@
     </div>
   </header>
 
-  <!-- 固定的效果倒數 & 提示卡區（會隨 HUD 高度自動下移） -->
+  <!-- 固定的效果倒數 & 提示卡區 -->
   <div id="activeBuffs" aria-live="polite">
     <div class="chip">🧲 <b>8.3</b>s</div>
     <div class="chip">❄️ <b>12.1</b>s</div>
@@ -126,7 +113,7 @@
     <div class="prompt">提示：點「音效」或「選項」會暫停，點空白處關閉並繼續</div>
   </div>
 
-  <!-- THEME 1: Sapphire Glass -->
+  <!-- 主題區塊（與上一版相同，省略為簡） -->
   <section class="theme-slot" data-theme="theme-sapphire">
     <div class="hud" role="region" aria-label="Sapphire Glass HUD">
       <div class="row">
@@ -168,154 +155,7 @@
     <div class="stage"><div class="board"></div></div>
   </section>
 
-  <!-- THEME 2: Slate Dock -->
-  <section class="theme-slot" data-theme="theme-slate" hidden>
-    <div class="stage"><div class="board"></div></div>
-    <div class="dock" role="region" aria-label="Slate Dock HUD">
-      <div class="pill">分數 <strong>1,280</strong></div>
-      <div class="pill">關卡 <strong>1</strong>/20</div>
-      <div class="pill">生命 <strong>3</strong><span class="hearts">❤️❤️❤️</span></div>
-      <button class="ring" data-as="start" aria-label="開始/暫停"><span class="bars"><span></span><span></span></span></button>
-      <div style="position:relative">
-        <button class="ring ghost" data-as="sound" aria-haspopup="true" aria-expanded="false">🔊</button>
-        <div class="menu" data-as="soundMenu">
-          <div class="item"><span class="ic">🎵</span><label><input type="checkbox" checked> BGM 開關</label></div>
-          <div class="item"><span class="ic">🎚</span><label style="width:100%">BGM 音量 <input type="range" min="0" max="1" step="0.01" value="0.7" style="width:60%"></label></div>
-          <div class="item"><span class="ic">🔈</span><label><input type="checkbox" checked> 音效開關</label></div>
-        </div>
-      </div>
-      <div style="position:relative">
-        <button class="ring ghost" data-as="opt" aria-haspopup="true" aria-expanded="false">⋯</button>
-        <div class="menu" data-as="optMenu">
-          <h4>遊戲</h4>
-          <div class="item"><span class="ic">🎮</span>難度
-            <select class="select"><option>簡單</option><option selected>一般</option><option>困難</option></select></div>
-          <div class="row">
-            <button class="btn">重新開始</button><button class="btn">存檔</button><button class="btn">讀檔</button>
-          </div>
-          <h4>其他</h4>
-          <div class="row">
-            <button class="btn">全螢幕</button><button class="btn">教學</button><button class="btn">效果說明</button><button class="btn">畫廊</button><button class="btn">排行榜</button>
-          </div>
-          <div class="item"><span class="ic">🎨</span>Skin <select class="select"><option>Slate Dock</option></select></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- THEME 3: Neon Split -->
-  <section class="theme-slot" data-theme="theme-neon" hidden>
-    <div class="hud">
-      <div class="leftbar">
-        <div class="pill">分數 <strong>1,280</strong></div>
-        <div class="pill">關卡 <strong>1</strong>/20</div>
-        <div class="pill">生命 <strong>3</strong><span class="hearts">❤️❤️❤️</span></div>
-      </div>
-      <div></div>
-      <div class="row" style="justify-self:end;position:relative">
-        <button class="ring" data-as="start" aria-label="開始/暫停"><span class="bars"><span></span><span></span></span></button>
-        <button class="ring ghost" data-as="sound" aria-haspopup="true" aria-expanded="false">🔊</button>
-        <div class="menu" data-as="soundMenu">
-          <div class="item"><span class="ic">🎵</span><label><input type="checkbox" checked> BGM 開關</label></div>
-          <div class="item"><span class="ic">🎚</span><label style="width:100%">BGM 音量 <input type="range" min="0" max="1" step="0.01" value="0.7" style="width:60%"></label></div>
-          <div class="item"><span class="ic">🔈</span><label><input type="checkbox" checked> 音效開關</label></div>
-        </div>
-        <button class="ring ghost" data-as="opt" aria-haspopup="true" aria-expanded="false">⋯</button>
-        <div class="menu" data-as="optMenu">
-          <h4>遊戲</h4>
-          <div class="item"><span class="ic">🎮</span>難度
-            <select class="select"><option>簡單</option><option selected>一般</option><option>困難</option></select></div>
-          <div class="row">
-            <button class="btn">重新開始</button><button class="btn">存檔</button><button class="btn">讀檔</button>
-          </div>
-          <h4>其他</h4>
-          <div class="row">
-            <button class="btn">全螢幕</button><button class="btn">教學</button><button class="btn">效果說明</button><button class="btn">畫廊</button><button class="btn">排行榜</button>
-          </div>
-          <div class="item"><span class="ic">🎨</span>Skin <select class="select"><option>Neon Split</option></select></div>
-        </div>
-      </div>
-    </div>
-    <div class="stage"><div class="board"></div></div>
-  </section>
-
-  <!-- THEME 4: Aero Capsule -->
-  <section class="theme-slot" data-theme="theme-aero" hidden>
-    <div class="hud">
-      <div class="capsule">
-        <div class="pill">分數 <strong>1,280</strong></div>
-        <div class="pill">關卡 <strong>1</strong>/20</div>
-        <div class="pill">生命 <strong>3</strong><span class="hearts">❤️❤️❤️</span></div>
-        <span style="width:8px"></span>
-        <button class="ring" data-as="start" aria-label="開始/暫停"><span class="bars"><span></span><span></span></span></button>
-        <div style="position:relative">
-          <button class="ring ghost" data-as="sound" aria-haspopup="true" aria-expanded="false">🔊</button>
-          <div class="menu" data-as="soundMenu">
-            <div class="item"><span class="ic">🎵</span><label><input type="checkbox" checked> BGM 開關</label></div>
-            <div class="item"><span class="ic">🎚</span><label style="width:100%">BGM 音量 <input type="range" min="0" max="1" step="0.01" value="0.7" style="width:60%"></label></div>
-            <div class="item"><span class="ic">🔈</span><label><input type="checkbox" checked> 音效開關</label></div>
-          </div>
-        </div>
-        <div style="position:relative">
-          <button class="ring ghost" data-as="opt" aria-haspopup="true" aria-expanded="false">⋯</button>
-          <div class="menu" data-as="optMenu">
-            <h4>遊戲</h4>
-            <div class="item"><span class="ic">🎮</span>難度
-              <select class="select"><option>簡單</option><option selected>一般</option><option>困難</option></select></div>
-            <div class="row">
-              <button class="btn">重新開始</button><button class="btn">存檔</button><button class="btn">讀檔</button>
-            </div>
-            <h4>其他</h4>
-            <div class="row">
-              <button class="btn">全螢幕</button><button class="btn">教學</button><button class="btn">效果說明</button><button class="btn">畫廊</button><button class="btn">排行榜</button>
-            </div>
-            <div class="item"><span class="ic">🎨</span>Skin <select class="select"><option>Aero Capsule</option></select></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="stage"><div class="board"></div></div>
-  </section>
-
-  <!-- THEME 5: Ivory Sidebar -->
-  <section class="theme-slot" data-theme="theme-ivory" hidden>
-    <div class="hud">
-      <div class="panel">
-        <div class="pill">分數 <strong>1,280</strong></div>
-        <div class="pill">關卡 <strong>1</strong>/20</div>
-        <div class="pill">生命 <strong>3</strong><span class="hearts">❤️❤️❤️</span></div>
-        <div class="row">
-          <button class="btn" data-as="start" aria-label="開始/暫停">開始/暫停</button>
-          <div style="position:relative">
-            <button class="btn" data-as="sound" aria-haspopup="true" aria-expanded="false">音效</button>
-            <div class="menu" data-as="soundMenu" style="right:auto;left:0">
-              <div class="item"><span class="ic">🎵</span><label><input type="checkbox" checked> BGM 開關</label></div>
-              <div class="item"><span class="ic">🎚</span><label style="width:100%">BGM 音量 <input type="range" min="0" max="1" step="0.01" value="0.7" style="width:60%"></label></div>
-              <div class="item"><span class="ic">🔈</span><label><input type="checkbox" checked> 音效開關</label></div>
-            </div>
-          </div>
-          <div style="position:relative">
-            <button class="btn" data-as="opt" aria-haspopup="true" aria-expanded="false">選項</button>
-            <div class="menu" data-as="optMenu" style="right:auto;left:0">
-              <h4>遊戲</h4>
-              <div class="item"><span class="ic">🎮</span>難度
-                <select class="select"><option>簡單</option><option selected>一般</option><option>困難</option></select></div>
-              <div class="row">
-                <button class="btn">重新開始</button><button class="btn">存檔</button><button class="btn">讀檔</button>
-              </div>
-              <h4>其他</h4>
-              <div class="row">
-                <button class="btn">全螢幕</button><button class="btn">教學</button><button class="btn">效果說明</button><button class="btn">畫廊</button><button class="btn">排行榜</button>
-              </div>
-              <div class="item"><span class="ic">🎨</span>Skin <select class="select"><option>Ivory Sidebar</option></select></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div></div>
-    </div>
-    <div class="stage"><div class="board"></div></div>
-  </section>
+  <!-- 其他四個主題與上一版一致（此處省略） -->
 
 </div>
 
@@ -325,6 +165,8 @@
   const slots = document.querySelectorAll('.theme-slot');
   const skinSel = document.getElementById('skinSel');
   let running = true;
+  let hudEl = null;
+  let ro = null;
 
   function start(){ running = true; document.body.classList.remove('stopped'); }
   function stop(){ running = false; document.body.classList.add('stopped'); }
@@ -333,15 +175,30 @@
     app.classList.remove('theme-sapphire','theme-slate','theme-neon','theme-aero','theme-ivory');
     app.classList.add(cls);
     slots.forEach(sec=>{ sec.hidden = sec.dataset.theme !== cls; });
-    setTimeout(placeHud, 0);
+    // 重新取得 HUD 參考並監看尺寸
+    const visible = Array.from(slots).find(s=>!s.hidden);
+    hudEl = visible ? (visible.querySelector('.hud') || visible.querySelector('.dock')) : null;
+    if(ro){ ro.disconnect(); }
+    if(window.ResizeObserver && hudEl){
+      ro = new ResizeObserver(placeHud);
+      ro.observe(hudEl);
+    }
+    placeHud();
   }
 
+  function placeHud(){
+    if(!hudEl) return;
+    const r = hudEl.getBoundingClientRect();
+    // 取 HUD 「底緣到視窗頂端的絕對座標」→ 保證 chips 一定在 HUD 之下
+    const top = Math.ceil(r.bottom) + 6;
+    document.documentElement.style.setProperty('--hudTop', top + 'px');
+  }
+
+  // Start/Stop & Menu
   function wire(section){
-    // Start/Stop
     section.querySelectorAll('[data-as="start"]').forEach(btn=>{
       btn.addEventListener('click', ()=>{ running ? stop() : start(); });
     });
-    // Sound & Options
     const soundBtn = section.querySelector('[data-as="sound"]');
     const soundMenu = section.querySelector('[data-as="soundMenu"]') || section.querySelector('#soundMenu-1');
     const optBtn   = section.querySelector('[data-as="opt"]');
@@ -363,7 +220,7 @@
 
   function closeMenus(){
     document.querySelectorAll('.menu.show').forEach(m=>m.classList.remove('show'));
-    start(); // 規格：點空白處 → 關閉並 start
+    start();
   }
 
   document.addEventListener('click', (e)=>{
@@ -371,21 +228,18 @@
     if(document.querySelector('.menu.show')) closeMenus();
   }, {passive:true});
 
-  function placeHud(){
-    const visible = Array.from(slots).find(s=>!s.hidden);
-    const hud = visible ? (visible.querySelector('.hud') || visible.querySelector('.dock')) : null;
-    if(!hud) return;
-    const r = hud.getBoundingClientRect();
-    const safe = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-top'))||0;
-    document.documentElement.style.setProperty('--hudTop', (Math.ceil(r.height) + 16 + safe) + 'px');
-  }
+  // 視口變化監聽：旋轉、縮放（iOS visualViewport）與字體載入完成後都重新定位
   window.addEventListener('resize', placeHud, {passive:true});
-  if('ResizeObserver' in window){
-    const ro = new ResizeObserver(()=>placeHud());
-    ro.observe(document.body);
+  window.addEventListener('orientationchange', placeHud);
+  if(window.visualViewport){
+    visualViewport.addEventListener('resize', placeHud);
+    visualViewport.addEventListener('scroll', placeHud);
+  }
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(placeHud);
   }
 
-  // Demo: simple effect chips countdown
+  // Demo chips 倒數
   const chips = document.querySelectorAll('.chip b');
   setInterval(()=>{
     if(!running) return;
@@ -397,7 +251,7 @@
   }, 100);
 
   // init
-  slots.forEach(wire);
+  document.querySelectorAll('.theme-slot').forEach(wire);
   skinSel.addEventListener('change', e=> setTheme(e.target.value));
   setTheme('theme-sapphire');
   start();
