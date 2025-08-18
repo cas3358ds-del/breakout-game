@@ -3,39 +3,50 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Breakout HUD — A2 TwinRow（按鍵上移 / 提示卡三張）</title>
+<title>Breakout HUD — Top5 Theme Demo (A2 TwinRow)</title>
 <style>
+/* ==========================
+   Core tokens & layout
+   ========================== */
 :root{
   --safe-top: env(safe-area-inset-top);
-  --hudBottom: 96px; /* 由 JS 以 HUD 底緣動態更新 */
-  --ink: #eaf2ff; --muted:#b8c7ea;
+  --hudBottom: 96px; /* updated by JS */
+  --ink:#eaf2ff; --muted:#b8c7ea;
   --glass-1: rgba(255,255,255,.08);
   --glass-2: rgba(255,255,255,.06);
   --stroke: rgba(140,180,255,.28);
-  --bg:#0a142c;
+  --bg: #0a142c;
+  --radius-outer: 18px; /* container radius */
+  --radius-pill: 999px; /* pill & chip */
+  --radius-ring: 999px; /* control button */
+  --ring-size: 42px;
 }
 html,body{height:100%;margin:0;color:var(--ink);
   background: radial-gradient(140% 140% at 50% -12%, #13224a 0%, #0e1a3a 50%, #081022 100%);
   font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;}
+  -webkit-font-smoothing: antialiased}
 .wrap{max-width:1200px;margin:0 auto;padding:0 12px 24px}
-header{padding:calc(8px + var(--safe-top)) 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+header{padding:calc(8px + var(--safe-top)) 0 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 h1{font-size:clamp(16px,2.6vw,22px);margin:0 8px 0 0;letter-spacing:.4px;opacity:.95}
 .small{font-size:12px;color:var(--muted)}
-select,button,input[type="range"]{background:var(--glass-2);border:1px solid var(--stroke);color:#fff;border-radius:10px}
 
-/* === HUD（A2：兩列，這版把三顆圓鈕上移到第一列右側） === */
+/* Theme switcher (for demo only) */
+.switch{display:flex;gap:8px;flex-wrap:wrap}
+.switch .tbtn{padding:6px 10px;border-radius:12px;border:1px solid var(--stroke);background:var(--glass-2);color:#fff;cursor:pointer}
+.switch .tbtn[aria-pressed="true"]{outline:2px solid #7fc0ff;}
+
+/* === HUD：A2 TwinRow (keep functional distribution) === */
 .theme-a2 .hud{position:relative;z-index:20;display:grid;gap:8px;align-items:center;
-  grid-template-columns:1fr auto; /* 由原一欄改為「左統計、右按鍵」 */
+  grid-template-columns:1fr auto; /* left stats, right controls */
   max-width:min(1080px,96vw);margin:8px auto 0;border:1px solid var(--stroke);
-  border-radius:18px;padding:10px;background:linear-gradient(180deg,rgba(20,25,44,.62),rgba(12,20,42,.44))}
+  border-radius:var(--radius-outer);padding:10px;background:linear-gradient(180deg,rgba(20,25,44,.62),rgba(12,20,42,.44))}
 .theme-a2 .stats{display:grid;grid-template-columns:auto auto;grid-auto-rows:minmax(34px,auto);gap:8px 10px}
 .theme-a2 .stats .wide{grid-column:1 / -1}
-.pill{padding:6px 11px;border:1px solid var(--stroke);background:var(--glass-2);border-radius:999px;min-height:34px;display:flex;align-items:center;gap:8px;color:#d7e3ff;font-weight:650;font-size:14px}
+.pill{padding:6px 11px;border:1px solid var(--stroke);background:var(--glass-2);border-radius:var(--radius-pill);min-height:34px;display:flex;align-items:center;gap:8px;color:#d7e3ff;font-weight:650;font-size:14px}
 .pill b{color:#fff;font-variant-numeric:tabular-nums}
 .hearts{letter-spacing:2px;margin-left:4px}
 .controls{display:flex;gap:8px;align-items:center;justify-content:flex-end;align-self:start}
-.ring{--size:42px;width:var(--size);height:var(--size);border-radius:999px;border:1px solid var(--stroke);
+.ring{width:var(--ring-size);height:var(--ring-size);border-radius:var(--radius-ring);border:1px solid var(--stroke);
       background:radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.16), rgba(255,255,255,0) 58%), var(--glass-1);
       display:grid;place-items:center;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05), 0 10px 24px rgba(0,0,0,.34)}
 .ring:active{transform:translateY(1px)}
@@ -47,77 +58,122 @@ select,button,input[type="range"]{background:var(--glass-2);border:1px solid var
 .menu h4{margin:6px 0 8px;font-size:13px;color:#cfe0ff}
 .btn{padding:8px 12px;border-radius:10px;border:1px solid var(--stroke);cursor:pointer;background:var(--glass-2);color:#fff}
 
-/* 極窄寬度時縮排比例 */
-@media (max-width:390px){
-  .pill{font-size:13px;padding:5px 10px}
-  .ring{--size:40px}
-}
+/* Narrow width Tune */
+@media (max-width:390px){ .pill{font-size:13px;padding:5px 10px} .ring{--ring-size:40px} }
 
-/* === 效果倒數（HUD 與遊戲區之間） === */
+/* Buff chips (between HUD & board) */
 #buffs{position:sticky;z-index:18;top:calc(var(--hudBottom) + 6px);display:flex;gap:8px;align-items:center;max-width:min(1080px,96vw);margin:6px auto 0;padding-left:6px;overflow:auto;scrollbar-width:none}
 #buffs::-webkit-scrollbar{display:none}
-.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--stroke);border-radius:999px;background:var(--glass-1);font-size:12px;white-space:nowrap;color:#cfe0ff}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--stroke);border-radius:var(--radius-pill);background:var(--glass-1);font-size:12px;white-space:nowrap;color:#cfe0ff}
 .chip b{color:#fff}
 
-/* === 遊戲舞台 === */
-.stage{position:relative;margin:12px auto 0;max-width:min(1080px,96vw);border-radius:18px;padding:12px}
+/* Stage */
+.stage{position:relative;margin:12px auto 0;max-width:min(1080px,96vw);border-radius:var(--radius-outer);padding:12px}
 .board{position:relative;height:min(62vh,560px);border-radius:16px;border:1px solid rgba(80,110,170,.45);background:linear-gradient(180deg,#0d132a,#0b1226 55%, #091223);box-shadow:inset 0 0 160px rgba(255,255,255,.03), 0 28px 90px rgba(0,0,0,.46)}
 .boardOverlay{position:absolute;inset:0;pointer-events:none}
 
-/* === 提示卡：上移且可橫放三張 === */
-.prompts{position:absolute;left:10px;right:10px;top:44%;
-  display:flex;gap:16px;align-items:flex-start;justify-content:flex-start;pointer-events:none;flex-wrap:nowrap}
-.prompt{pointer-events:auto;padding:10px 12px;border:1px solid var(--stroke);border-radius:12px;background:rgba(14,22,40,.92);box-shadow:0 14px 36px rgba(0,0,0,.38);
-  width:calc((100% - 32px)/3); font-size:12px; line-height:1.45; white-space:normal}
-@media (max-width:480px){
-  .prompts{flex-wrap:wrap}
-  .prompt{width:calc((100% - 16px)/2)}
-}
+/* Prompt cards */
+.prompts{position:absolute;left:10px;right:10px;top:44%;display:flex;gap:16px;align-items:flex-start;justify-content:flex-start;pointer-events:none;flex-wrap:nowrap}
+.prompt{pointer-events:auto;padding:10px 12px;border:1px solid var(--stroke);border-radius:12px;background:rgba(14,22,40,.92);box-shadow:0 14px 36px rgba(0,0,0,.38);width:calc((100% - 32px)/3); font-size:12px; line-height:1.45; white-space:normal}
+@media (max-width:480px){ .prompts{flex-wrap:wrap} .prompt{width:calc((100% - 16px)/2)} }
+
+/* ==========================
+   THEME VARIANTS (Top 5)
+   ========================== */
+/* A) 冷藍玻璃·Pro */
+.theme-pro{--ink:#eaf2ff;--muted:#b8c7ea;--glass-1:rgba(255,255,255,.08);--glass-2:rgba(255,255,255,.06);--stroke:rgba(140,180,255,.28);--bg:#0a142c;--radius-outer:18px;--radius-pill:999px;--radius-ring:999px}
+.theme-pro body{background: radial-gradient(140% 140% at 50% -12%, #13224a 0%, #0e1a3a 50%, #081022 100%)}
+.theme-pro .ring{box-shadow:inset 0 0 0 1px rgba(255,255,255,.05), 0 10px 30px rgba(64,120,255,.24)}
+.theme-pro .chip{box-shadow:0 6px 18px rgba(64,120,255,.18)}
+
+/* B) 石墨鈦金屬 */
+.theme-titanium{--ink:#dfe6f1;--muted:#9fb0c6;--glass-1:rgba(255,255,255,.06);--glass-2:rgba(255,255,255,.045);--stroke:rgba(170,190,220,.25);--bg:#0a0e14;--radius-outer:16px;--radius-pill:22px;--radius-ring:14px}
+.theme-titanium body{background: radial-gradient(130% 120% at 50% -10%, #171a22 0%, #0f131a 55%, #0a0e14 100%)}
+.theme-titanium .hud{background:linear-gradient(180deg,rgba(26,30,40,.72),rgba(16,20,30,.5)),
+  linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  backdrop-filter: blur(8px)}
+.theme-titanium .ring{background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.0)),
+  repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 1px, rgba(255,255,255,0) 1px 4px), var(--glass-1)}
+
+/* C) 象牙陶瓷（霧面淺色） */
+.theme-ivory{--ink:#1b2330;--muted:#5c6a7e;--glass-1:rgba(0,0,0,.06);--glass-2:rgba(0,0,0,.045);--stroke:rgba(40,60,90,.22);--bg:#f4f5f7;--radius-outer:16px;--radius-pill:999px;--radius-ring:12px}
+.theme-ivory body{color:var(--ink);background:linear-gradient(180deg,#fcfdff 0%, #eaedf3 60%, #dfe5ee 100%)}
+.theme-ivory .hud{border-color:rgba(30,50,80,.2);background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.55))}
+.theme-ivory .pill,.theme-ivory .btn,.theme-ivory .menu .item{color:#1b2330;background:rgba(255,255,255,.7);border-color:rgba(30,50,80,.2)}
+.theme-ivory .ring{border-color:rgba(30,50,80,.28); background:radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.9), rgba(255,255,255,.5) 58%), rgba(255,255,255,.8)}
+.theme-ivory .menu{background:rgba(255,255,255,.94)}
+.theme-ivory .bars span{background:#1b2330}
+
+/* D) 星雲漸層 Aurora */
+.theme-aurora{--ink:#eff6ff;--muted:#c5d7ff;--glass-1:rgba(255,255,255,.10);--glass-2:rgba(255,255,255,.07);--stroke:rgba(146,208,255,.30);--bg:#0b0f2a;--radius-outer:20px;--radius-pill:16px;--radius-ring:999px}
+.theme-aurora body{background: radial-gradient(140% 160% at 20% -20%, #233a7a 0%, #1a1a4a 40%, #0b0f2a 100%), linear-gradient(130deg,#47ffd8 0%,#9b7bff 50%,#ff77c8 100%);
+ background-blend-mode: overlay}
+.theme-aurora .hud{background:linear-gradient(180deg,rgba(16,24,54,.72),rgba(10,16,38,.5))}
+.theme-aurora .ring{border-image:linear-gradient(135deg,#47ffd8,#9b7bff,#ff77c8) 1; border-width:1px; background:linear-gradient(135deg, rgba(71,255,216,.18), rgba(155,123,255,.18) 50%, rgba(255,119,200,.18)), var(--glass-1);}
+.theme-aurora .pill{background:linear-gradient(135deg, rgba(71,255,216,.12), rgba(155,123,255,.12) 50%, rgba(255,119,200,.12)), var(--glass-2)}
+
+/* E) 銀藍禪風 Minimal */
+.theme-zen{--ink:#e9f1ff;--muted:#9cb3cc;--glass-1:rgba(255,255,255,.08);--glass-2:rgba(255,255,255,.05);--stroke:rgba(160,190,220,.26);--bg:#0c1522;--radius-outer:14px;--radius-pill:24px;--radius-ring:12px}
+.theme-zen body{background:linear-gradient(180deg,#0f1c2e 0%, #0c1522 60%, #0a111b 100%)}
+.theme-zen .hud{background:linear-gradient(180deg,rgba(16,28,44,.68),rgba(10,18,30,.48))}
+.theme-zen .pill{letter-spacing:.2px}
+.theme-zen .ring{background:var(--glass-1)}
+
+/* Accessibility cues */
+:focus-visible{outline:2px solid #7fc0ff;outline-offset:2px}
+
 </style>
 </head>
 <body>
-<div class="wrap theme-a2" id="app">
+<div class="wrap theme-a2 theme-pro" id="app" data-theme="pro">
   <header>
-    <h1>Breakout HUD 樣品（A2 TwinRow 改款）</h1>
-    <span class="small">規格：Start/Stop 無子選單；音效/選項展開即停，點空白關閉並續玩；效果倒數於 HUD 與遊戲區之間；提示卡位於磚塊與平台間。</span>
+    <h1>Breakout HUD 樣品（A2 TwinRow — Top5 Theme Demo）</h1>
+    <span class="small">操作：點上方按鈕快速切換 5 種風格。保留原功能分布不變。</span>
+    <div class="switch" role="toolbar" aria-label="切換主題">
+      <button class="tbtn" data-theme="pro" aria-pressed="true">A 冷藍玻璃·Pro</button>
+      <button class="tbtn" data-theme="titanium">B 石墨鈦金屬</button>
+      <button class="tbtn" data-theme="ivory">C 象牙陶瓷</button>
+      <button class="tbtn" data-theme="aurora">D 星雲漸層</button>
+      <button class="tbtn" data-theme="zen">E 銀藍禪風</button>
+    </div>
   </header>
 
-  <!-- HUD -->
-  <section class="hud">
+  <!-- HUD (functional distribution unchanged) -->
+  <section class="hud" aria-label="遊戲 HUD">
     <div class="stats">
-      <div class="pill">分數 <b data-bind="score">1,280</b></div>
-      <div class="pill">關卡 <b data-bind="level">3</b>/20</div>
-      <div class="pill wide">生命 <b data-bind="lives">3</b> <span class="hearts">❤️❤️❤️</span></div>
+      <div class="pill">分數 <b data-bind="score">12,480</b></div>
+      <div class="pill">關卡 <b data-bind="level">7</b>/20</div>
+      <div class="pill wide">生命 <b data-bind="lives">3</b> <span class="hearts" aria-hidden="true">❤️❤️❤️</span></div>
     </div>
     <div class="controls" style="position:relative">
       <button class="ring" data-as="start" aria-label="開始/暫停"><span class="bars"><span></span><span></span></span></button>
-      <button class="ring" data-as="sound" aria-haspopup="true" aria-expanded="false">🔊</button>
-      <div class="menu" data-as="soundMenu">
+      <button class="ring" data-as="sound" aria-haspopup="true" aria-expanded="false" aria-controls="soundMenu">🔊</button>
+      <div class="menu" id="soundMenu" data-as="soundMenu">
         <div class="item"><span>🎵</span><label><input type="checkbox" checked> BGM 開關</label></div>
-        <div class="item"><span>🎚</span><label style="width:100%">BGM 音量 <input type="range" min="0" max="1" step="0.01" value="0.7" style="width:60%"></label></div>
+        <div class="item"><span>🎚</span><label style="width:100%">BGM 音量 <input type="range" min="0" max="1" step="0.01" value="0.7" style="width:60%" aria-label="BGM 音量"></label></div>
         <div class="item"><span>🔈</span><label><input type="checkbox" checked> 音效開關</label></div>
       </div>
-      <button class="ring" data-as="opt" aria-haspopup="true" aria-expanded="false">⋯</button>
-      <div class="menu" data-as="optMenu">
+      <button class="ring" data-as="opt" aria-haspopup="true" aria-expanded="false" aria-controls="optMenu">⋯</button>
+      <div class="menu" id="optMenu" data-as="optMenu">
         <h4>遊戲</h4>
-        <div class="item"><span>🎮</span>難度 <select><option>簡單</option><option selected>一般</option><option>困難</option></select></div>
-        <div class="row"><button class="btn">重新開始</button><button class="btn">存檔</button><button class="btn">讀檔</button></div>
+        <div class="item"><span>🎮</span>難度 <select aria-label="難度"><option>簡單</option><option selected>一般</option><option>困難</option></select></div>
+        <div class="row" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">重新開始</button><button class="btn">存檔</button><button class="btn">讀檔</button></div>
         <h4>其他</h4>
-        <div class="row"><button class="btn">全螢幕</button><button class="btn">教學</button><button class="btn">效果說明</button><button class="btn">畫廊</button><button class="btn">排行榜</button></div>
-        <div class="item"><span>🎨</span>Skin <select><option>依遊戲內為準</option></select></div>
+        <div class="row" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">全螢幕</button><button class="btn">教學</button><button class="btn">效果說明</button><button class="btn">畫廊</button><button class="btn">排行榜</button></div>
+        <div class="item"><span>🎨</span>Skin <select aria-label="Skin"><option>依遊戲內為準</option></select></div>
       </div>
     </div>
   </section>
   <div class="hud-sentinel" style="height:0"></div>
 
-  <!-- 效果倒數 -->
+  <!-- Buff countdown chips -->
   <div id="buffs" aria-live="polite">
     <span class="chip">🧲 <b>8.2</b>s</span>
     <span class="chip">❄️ <b>11.7</b>s</span>
     <span class="chip">🎯 <b>4.9</b>s</span>
   </div>
 
-  <!-- 遊戲舞台（示意） -->
+  <!-- Stage (visual mock) -->
   <div class="stage">
     <div class="board">
       <div class="boardOverlay">
@@ -133,50 +189,45 @@ select,button,input[type="range"]{background:var(--glass-2);border:1px solid var
 </div>
 
 <script>
-(function(){
+(()=>{
   const app = document.getElementById('app');
   const hud = app.querySelector('.hud');
   const sentinel = app.querySelector('.hud-sentinel');
   const menus = app.querySelectorAll('.menu');
-  let running = true, rafId = 0, ro=null;
+  const tbtns = document.querySelectorAll('.tbtn');
+  let running = true, rafId = 0, ro = null;
 
   function start(){ running = true; document.body.classList.remove('stopped'); }
   function stop(){ running = false; document.body.classList.add('stopped'); }
 
-  function queuePlace(){
-    if(rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(placeHud);
-  }
-  function placeHud(){
-    rafId=0;
-    const rect = (sentinel||hud).getBoundingClientRect();
-    const top = Math.max(0, Math.ceil(rect.top)) + 6;
-    document.documentElement.style.setProperty('--hudBottom', top + 'px');
-  }
+  function queuePlace(){ if(rafId) cancelAnimationFrame(rafId); rafId = requestAnimationFrame(placeHud); }
+  function placeHud(){ rafId=0; const rect = (sentinel||hud).getBoundingClientRect(); const top = Math.max(0, Math.ceil(rect.top)) + 6; document.documentElement.style.setProperty('--hudBottom', top + 'px'); }
 
-  function toggleMenu(menu, btn){
-    const show = !menu.classList.contains('show');
-    closeMenus();
-    if(show){ menu.classList.add('show'); btn?.setAttribute('aria-expanded','true'); stop(); }
-    else { btn?.setAttribute('aria-expanded','false'); start(); }
-    queuePlace();
-  }
-  function closeMenus(){
-    menus.forEach(m=>m.classList.remove('show'));
-    start(); queuePlace();
-  }
+  function toggleMenu(menu, btn){ const show = !menu.classList.contains('show'); closeMenus(); if(show){ menu.classList.add('show'); btn?.setAttribute('aria-expanded','true'); stop(); } else { btn?.setAttribute('aria-expanded','false'); start(); } queuePlace(); }
+  function closeMenus(){ menus.forEach(m=>m.classList.remove('show')); hud.querySelectorAll('[aria-expanded="true"]').forEach(b=>b.setAttribute('aria-expanded','false')); start(); queuePlace(); }
 
-  // wire
-  hud.querySelector('[data-as="start"]').addEventListener('click', ()=>{ running?stop():start(); });
+  // Bind once
+  hud.querySelector('[data-as="start"]').addEventListener('click', ()=>{ running?stop():start(); }, { once:false });
   const soundBtn = hud.querySelector('[data-as="sound"]');
   const optBtn = hud.querySelector('[data-as="opt"]');
   const soundMenu = hud.querySelector('[data-as="soundMenu"]');
   const optMenu = hud.querySelector('[data-as="optMenu"]');
-  soundBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleMenu(soundMenu, soundBtn); });
-  optBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleMenu(optMenu, optBtn); });
-  document.addEventListener('click', (e)=>{ if(!e.target.closest('.menu') && !e.target.closest('[data-as="sound"]') && !e.target.closest('[data-as="opt"]')) closeMenus(); });
+  soundBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleMenu(soundMenu, soundBtn); }, { once:false });
+  optBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleMenu(optMenu, optBtn); }, { once:false });
+  document.addEventListener('click', (e)=>{ if(!e.target.closest('.menu') && !e.target.closest('[data-as="sound"]') && !e.target.closest('[data-as="opt"]')) closeMenus(); }, { once:false });
 
-  // observe
+  // Theme switcher
+  function applyTheme(name){
+    const names = ['pro','titanium','ivory','aurora','zen'];
+    names.forEach(n=>app.classList.remove('theme-'+n));
+    app.classList.add('theme-'+name);
+    app.dataset.theme = name;
+    tbtns.forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.theme===name)));
+    queuePlace();
+  }
+  tbtns.forEach(b=>b.addEventListener('click', ()=>applyTheme(b.dataset.theme)));
+
+  // Observe layout
   if(window.ResizeObserver){ ro = new ResizeObserver(queuePlace); ro.observe(hud); }
   ['resize','orientationchange','scroll'].forEach(ev=>window.addEventListener(ev, queuePlace, {passive:true}));
   if(window.visualViewport){ ['resize','scroll'].forEach(ev=>visualViewport.addEventListener(ev, queuePlace)); }
