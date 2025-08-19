@@ -3,8 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Rock Breakout — 經典＋科技感 Skin</title>
-  <!-- 規格：維持原檔所有按鍵/配置不變；新增 5 種「科技感風格」Skin（只影響：燈條、按鍵樣式、HUD 面板、背景面板）。 -->
+  <title>Rock Breakout — 精簡後的 Skin（FX Pass 3）</title>
+  <!-- 規格：保持所有設置/配置/按鍵功能不變；本次僅針對三款 Skin 的「遊戲區(Canvas) 背景」做質感強化：
+       1) 科技感風格2：加入全息「prism」絢麗特效（低對比、優雅）。
+       2) 科技感風格5：宇宙星點顆粒放大＋光暈更明顯（仍柔和）。
+       3) 木紋・白橡北歐：木紋更優雅可辨（加入 ray fleck＋油光）。 -->
   <style>
     :root{
       /* 共用色票（可被 Skin 覆寫） */
@@ -69,19 +72,8 @@
 
     @media (max-width:390px){ .pill{font-size:14px;padding:7px 14px} .ic-btn{width:44px;height:36px} }
 
-    /* ======== Skin：科技感（以 body[data-skin] 覆寫變數） ======== */
-    /* 1. 科技感風格1：藍白電路流光 */
-    body[data-skin="科技感風格1"]{
-      --ink:#eaf7ff; --muted:#a8d1ff; --stroke:rgba(110,200,255,.35);
-      --bg1:#0a1630; --bg2:#04101f;
-      --hudGrad1:rgba(12,30,60,.64); --hudGrad2:rgba(8,24,44,.48);
-      --glass-1:rgba(255,255,255,.10); --glass-2:rgba(255,255,255,.08);
-      --stageGlass:linear-gradient(180deg, rgba(120,170,255,.06), rgba(0,0,0,0));
-      --panelPattern:repeating-linear-gradient(90deg, rgba(120,200,255,.08) 0 1px, transparent 1px 24px),
-                      repeating-linear-gradient(0deg, rgba(120,200,255,.06) 0 1px, transparent 1px 18px);
-      --btnGlow:0 0 18px rgba(120,200,255,.22);
-    }
-    /* 2. 科技感風格2：全息 HUD */
+    /* ======== Skin：科技感（保留 2/3/5） ======== */
+    /* 2. 科技感風格2：全息 HUD（加 prism 絢麗特效） */
     body[data-skin="科技感風格2"]{
       --ink:#f6fbff; --muted:#dbe6ff; --stroke:rgba(200,220,255,.38);
       --bg1:#0b0f2a; --bg2:#070a18;
@@ -91,7 +83,7 @@
       --panelPattern:conic-gradient(from 0deg at 60% 40%, rgba(255,160,220,.08), rgba(160,220,255,.06), rgba(160,255,200,.06), rgba(255,220,160,.06), rgba(255,160,220,.08));
       --btnGlow:0 0 20px rgba(160,220,255,.25);
     }
-    /* 3. 科技感風格3：賽博格綠脈衝 */
+    /* 3. 科技感風格3：賽博格綠脈衝（沿用前次強化） */
     body[data-skin="科技感風格3"]{
       --ink:#e7ffe7; --muted:#bdfdcc; --stroke:rgba(120,255,170,.34);
       --bg1:#081812; --bg2:#03110a;
@@ -101,17 +93,7 @@
       --panelPattern:repeating-linear-gradient(180deg, rgba(140,255,190,.05) 0 1px, transparent 1px 3px);
       --btnGlow:0 0 16px rgba(120,255,170,.25);
     }
-    /* 4. 科技感風格4：量子晶格 */
-    body[data-skin="科技感風格4"]{
-      --ink:#e7faff; --muted:#bde7ff; --stroke:rgba(120,210,255,.36);
-      --bg1:#061a24; --bg2:#021018;
-      --hudGrad1:rgba(10,36,52,.60); --hudGrad2:rgba(6,22,34,.44);
-      --glass-1:rgba(120,220,255,.10); --glass-2:rgba(80,200,255,.08);
-      --stageGlass:linear-gradient(180deg, rgba(120,220,255,.05), rgba(0,0,0,0));
-      --panelPattern:radial-gradient(12px 12px at 4px 4px, rgba(120,220,255,.10) 1px, transparent 1px);
-      --btnGlow:0 0 18px rgba(120,220,255,.24);
-    }
-    /* 5. 科技感風格5：藍紫星際霓虹 */
+    /* 5. 科技感風格5：藍紫星際霓虹（星點更大更明顯） */
     body[data-skin="科技感風格5"]{
       --ink:#eef0ff; --muted:#c9c9ff; --stroke:rgba(160,140,255,.34);
       --bg1:#0c0b24; --bg2:#09081a;
@@ -122,7 +104,61 @@
                       radial-gradient(160px 120px at 80% 20%, rgba(180,100,255,.08), transparent 60%);
       --btnGlow:0 0 22px rgba(150,120,255,.25);
     }
-  </style>
+
+    /* ======== Skin：木紋（保留 黑檀曜金／白橡北歐） ======== */
+    /* B. 黑檀曜金（深色豪華） */
+    body[data-skin="木紋-黑檀曜金"]{
+      --ink:#f6edd8; --muted:#d9caa8; --stroke:rgba(255,220,140,.28);
+      --bg1:#0e0b09; --bg2:#060403;
+      --hudGrad1:rgba(28,18,10,.72); --hudGrad2:rgba(18,12,8,.56);
+      --glass-1:rgba(255,220,140,.10); --glass-2:rgba(255,220,140,.07);
+      --stageGlass:linear-gradient(180deg, rgba(255,220,140,.04), rgba(0,0,0,0));
+      --panelPattern:repeating-linear-gradient(12deg, rgba(40,28,18,.35) 0 18px, rgba(0,0,0,0) 18px 34px),
+                      repeating-linear-gradient(192deg, rgba(60,44,28,.20) 0 12px, rgba(0,0,0,0) 12px 28px);
+      --btnGlow:0 0 20px rgba(255,210,120,.24);
+    }
+    /* D. 白橡北歐（淺木極簡） - 強化優雅木紋 */
+    body[data-skin="木紋-白橡北歐"]{
+      --ink:#fff8ec; --muted:#e6d8c2; --stroke:rgba(255,215,170,.26);
+      --bg1:#3a2d19; --bg2:#1c150b;
+      --hudGrad1:rgba(78,60,30,.66); --hudGrad2:rgba(48,36,18,.50);
+      --glass-1:rgba(255,220,170,.10); --glass-2:rgba(255,220,170,.08);
+      --stageGlass:linear-gradient(180deg, rgba(255,230,190,.05), rgba(0,0,0,0));
+      --panelPattern:repeating-linear-gradient(8deg, rgba(210,170,120,.14) 0 14px, rgba(0,0,0,0) 14px 26px),
+                      repeating-linear-gradient(188deg, rgba(240,210,160,.05) 0 2px, rgba(0,0,0,0) 2px 8px);
+      --btnGlow:0 0 16px rgba(255,220,170,.22);
+    }
+  
+/* ======== Skin：冰雪系列（新增 3 種） ======== */
+body[data-skin="冰雪-極光絲綢"]{
+  --ink:#f6fbff; --muted:#d7e9ff; --stroke:rgba(190,220,255,.38);
+  --bg1:#0b1626; --bg2:#060b14;
+  --hudGrad1:rgba(18,28,60,.56); --hudGrad2:rgba(10,20,44,.42);
+  --glass-1:rgba(220,245,255,.12); --glass-2:rgba(210,235,255,.09);
+  --stageGlass:linear-gradient(180deg, rgba(230,245,255,.04), transparent);
+  --panelPattern:conic-gradient(from 0deg at 60% 40%, rgba(180,220,255,.06), rgba(160,210,255,.05), rgba(180,230,255,.06));
+  --btnGlow:0 0 20px rgba(180,220,255,.26);
+}
+body[data-skin="冰雪-極地冰晶"]{
+  --ink:#eef8ff; --muted:#cfe6ff; --stroke:rgba(200,230,255,.35);
+  --bg1:#0a1828; --bg2:#071320;
+  --hudGrad1:rgba(26,44,78,.58); --hudGrad2:rgba(14,28,54,.44);
+  --glass-1:rgba(235,250,255,.10); --glass-2:rgba(210,235,255,.08);
+  --stageGlass:linear-gradient(180deg, rgba(210,235,255,.05), transparent);
+  --panelPattern:repeating-linear-gradient(30deg, rgba(200,235,255,.06) 0 10px, transparent 10px 22px);
+  --btnGlow:0 0 18px rgba(190,225,255,.24);
+}
+body[data-skin="冰雪-暴雪霧光"]{
+  --ink:#eaf4ff; --muted:#bed4ee; --stroke:rgba(170,210,255,.32);
+  --bg1:#071225; --bg2:#050a18;
+  --hudGrad1:rgba(14,22,40,.60); --hudGrad2:rgba(10,16,30,.46);
+  --glass-1:rgba(200,225,255,.09); --glass-2:rgba(180,210,240,.07);
+  --stageGlass:linear-gradient(180deg, rgba(200,225,255,.04), transparent);
+  --panelPattern:radial-gradient(120% 60% at 50% 0%, rgba(160,200,255,.05), transparent 60%);
+  --btnGlow:0 0 16px rgba(160,200,255,.22);
+}
+
+</style>
 </head>
 <body data-skin="經典風格">
   <div class="wrap" id="app">
@@ -225,9 +261,175 @@
       // Skin 參數（可由外部套用）
       let skin = {
         base:[92,136,255], hi:[255,255,255], period:2000,
-        effects:{ rainbow:false, scanline:false, stars:false, grid:false }
+        effects:{ rainbow:false, scanline:false, stars:false, grid:false },
+        bg:null // 可覆蓋背景漸層色 [top, mid, bottom]
       };
-      let stars=[], starCount=64; // 給星空用
+
+      // ===== 增強用離屏／快取資料 =====
+      // 木紋圖樣（離屏快取）
+      let woodPattern=null, woodKind=null;
+      // 星點場（僅用於星際風格）
+      let stars=null, starOpts={}, starSizeKey='';
+let snows=null, snowOpts={}, snowKey='';
+let shards=null, shardOpts={}, shardKey='';
+
+      function buildWoodPattern(kind){
+        const oc = document.createElement('canvas');
+        const S = 320; oc.width=S; oc.height=S; const c = oc.getContext('2d');
+        const presets = {
+          walnut:{ ang:25*Math.PI/180, step:16, line:8, dark:'#3b2517', light:'rgba(156,106,62,0.12)', rings:'#6e4a2e' },
+          ebony: { ang:12*Math.PI/180, step:18, line:9, dark:'#120d0a', light:'rgba(80,65,50,0.10)',  rings:'#3c2b1e' },
+          cherry:{ ang:160*Math.PI/180,step:14, line:7, dark:'#5a2c33', light:'rgba(162,90,102,0.12)',rings:'#a8616f' },
+          oak:   { ang:8*Math.PI/180,  step:18, line:7, dark:'#6c5432', light:'rgba(182,138,84,0.12)', rings:'#a07a45' },
+          bamboo:{ ang:90*Math.PI/180, step:10, line:3, dark:'#305a3e', light:'rgba(100,150,110,0.10)',rings:'#3f7552' }
+
+// ========= 雪花場 =========
+function ensureSnowIfNeeded(){
+  if(!(skin.effects && skin.effects.snow)){ snows=null; snowOpts={}; return; }
+  const o = typeof skin.effects.snow==='object' ? skin.effects.snow : {};
+  const density = Math.max(40, o.count || Math.round((W*H)/(420*420)* (o.countScale||120)));
+  const key = [W,H,density,o.gust||0,o.twinkle?1:0,o.sizeMin||1,o.sizeMax||3].join('x');
+  if(snows && snowKey===key) return;
+  snowKey = key;
+  snows = new Array(density).fill(0).map(()=>{
+    const size = (o.sizeMin||1) + Math.random()*((o.sizeMax||3)-(o.sizeMin||1));
+    return {
+      x: Math.random()*W, y: Math.random()*H, size,
+      baseX: Math.random()*W,
+      speed: (o.speed||0.25) + Math.random()*((o.speedMax||0.9)-(o.speed||0.25)),
+      sway: (o.sway||0.8) * (0.5+Math.random()),
+      phase: Math.random()*Math.PI*2,
+      twinkle: !!o.twinkle && Math.random()<0.25
+    };
+  });
+  snowOpts = o;
+}
+function drawSnow(t){
+  if(!snows) return;
+  const tt = t*0.001, gust = snowOpts.gust||0;
+  const aBase = Math.min(.22, .10 + .12*(Math.sin(tt*0.6+1.7)*.5+.5));
+  const glow = Math.min(.14, .06 + .08*(Math.sin(tt*0.8+0.4)*.5+.5));
+  for(const f of snows){
+    f.phase += 0.01 + gust*0.015;
+    f.y += f.speed * (1 + 0.6*Math.sin(tt*0.9));
+    f.x = f.baseX + Math.sin(f.phase)* (f.sway*4 + gust*24);
+    if(f.y > H+10){ f.y = -10; f.baseX = Math.random()*W; }
+    if(f.x < -10){ f.baseX = W+10; }
+    const alpha = aBase * (f.twinkle ? (0.7+0.3*Math.sin(tt*6+f.phase)) : 1);
+    ctx.save(); ctx.globalAlpha = alpha;
+    ctx.beginPath(); ctx.arc(f.x, f.y, f.size*dpr, 0, Math.PI*2); ctx.fillStyle = 'white'; ctx.fill();
+    if(glow>0){
+      const r = (f.size*3+2)*dpr;
+      const g = ctx.createRadialGradient(f.x,f.y,0, f.x,f.y,r);
+      g.addColorStop(0,'rgba(255,255,255,'+glow+')'); g.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(f.x,f.y,r,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+// ========= 冰晶碎片（長形霜裂） =========
+function ensureShardsIfNeeded(){
+  if(!(skin.effects && skin.effects.shards)){ shards=null; shardOpts={}; return; }
+  const o = typeof skin.effects.shards==='object' ? skin.effects.shards : {};
+  const count = Math.max(6, o.count || Math.round((W+H)/200));
+  const key = [W,H,count,o.alpha||0.12,o.speed||0.06,o.lenMin||40,o.lenMax||180].join('x');
+  if(shards && shardKey===key) return;
+  shardKey = key;
+  shards = new Array(count).fill(0).map(()=>{
+    const len = (o.lenMin||40) + Math.random()*((o.lenMax||180)-(o.lenMin||40));
+    const angle = (o.angleDeg!==undefined ? o.angleDeg : -28) * Math.PI/180;
+    const x = Math.random()*W, y = Math.random()*H;
+    return { x, y, len, angle, width:(o.width||1.2)*dpr, alpha:(o.alpha||0.12), speed:(o.speed||0.06) };
+  });
+  shardOpts = o;
+}
+function drawShards(t){
+  if(!shards) return;
+  const drift = (shardOpts.drift||0.20);
+  ctx.save();
+  ctx.globalAlpha = Math.min(.22, (shardOpts.alpha||0.12));
+  ctx.strokeStyle = 'rgba(220,245,255,1)';
+  ctx.lineWidth = Math.max(0.6, (shardOpts.width||1.2)*dpr);
+  for(const s of shards){
+    s.x += Math.cos(s.angle)*s.speed*60;
+    s.y += Math.sin(s.angle)*s.speed*60 + drift;
+    if(s.x<-50 || s.x>W+50 || s.y<-50 || s.y>H+50){ s.x = Math.random()*W; s.y = -20; }
+    const x2 = s.x + Math.cos(s.angle)*s.len, y2 = s.y + Math.sin(s.angle)*s.len;
+    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ========= 霜緣（邊界輕霧） =========
+function drawFrostEdge(t){
+  if(!(skin.effects && skin.effects.frost)) return;
+  const a = Math.min(.18, (skin.effects.frost.alpha||0.12));
+  const gTop = ctx.createLinearGradient(0,0,0,Math.round(24*dpr));
+  gTop.addColorStop(0,'rgba(230,245,255,'+a+')'); gTop.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gTop; ctx.fillRect(0,0,W,Math.round(24*dpr));
+  const gLeft = ctx.createLinearGradient(0,0,Math.round(24*dpr),0);
+  gLeft.addColorStop(0,'rgba(230,245,255,'+a+')'); gLeft.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gLeft; ctx.fillRect(0,0,Math.round(24*dpr),H);
+  const gRight = ctx.createLinearGradient(W,0,W-Math.round(24*dpr),0);
+  gRight.addColorStop(0,'rgba(230,245,255,'+a+')'); gRight.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gRight; ctx.fillRect(W-Math.round(24*dpr),0,Math.round(24*dpr),H);
+}
+
+        };
+        const p = presets[kind] || presets.walnut;
+        c.clearRect(0,0,S,S);
+        // 條紋
+        c.save(); c.translate(S/2,S/2); c.rotate(p.ang); c.translate(-S/2,-S/2);
+        c.fillStyle=p.light; for(let x=-S; x<=S*2; x+=p.step){ c.fillRect(x,0,p.line,S); }
+        c.globalAlpha=0.25; c.fillStyle=p.dark; for(let x=-S; x<=S*2; x+=p.step*3){ c.fillRect(x,0,Math.max(1,p.line-4),S); }
+        c.restore();
+        // 年輪（橢圓）
+        c.globalAlpha=0.06; c.strokeStyle=p.rings; c.lineWidth=2;
+        const cx=S*0.32, cy=S*0.42; for(let r=28;r<S*0.9;r+=22){ c.beginPath(); c.ellipse(cx,cy,r, r*(0.82+0.06*Math.sin(r)), 0, 0, Math.PI*2); c.stroke(); }
+        // 細小纖維
+        c.globalAlpha=0.04; c.fillStyle='#000';
+        for(let i=0;i<80;i++){ const sx=Math.random()*S, sy=Math.random()*S, w=2+Math.random()*4, h=1+Math.random()*2; c.beginPath(); c.ellipse(sx,sy,w,h,Math.random()*Math.PI,0,Math.PI*2); c.fill(); }
+        // 黑檀：增加毛孔與極細髮絲線
+        if(kind==='ebony'){
+          c.globalAlpha=0.08; c.strokeStyle='rgba(20,12,8,0.5)'; c.lineWidth=1;
+          for(let i=0;i<90;i++){ const x=Math.random()*S, y=Math.random()*S, len=6+Math.random()*14, ang=(Math.random()*0.6-0.3); c.save(); c.translate(x,y); c.rotate(ang); c.beginPath(); c.moveTo(-len/2,0); c.lineTo(len/2,0); c.stroke(); c.restore(); }
+          c.globalAlpha=0.06; c.fillStyle='rgba(255,245,210,0.04)';
+          for(let i=0;i<30;i++){ const x=Math.random()*S, y=Math.random()*S, r=1+Math.random()*2; c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill(); }
+        }
+        // 白橡：加入 ray fleck（髓射線）與淺色毛孔，維持優雅低對比
+        if(kind==='oak'){
+          c.globalAlpha=0.06; c.fillStyle='rgba(240,220,170,0.06)';
+          for(let i=0;i<50;i++){ const x=Math.random()*S, y=Math.random()*S, w=2+Math.random()*6, h=1+Math.random()*2; c.fillRect(x,y,w,h); }
+          c.globalAlpha=0.05; c.strokeStyle='rgba(200,170,120,0.18)'; c.lineWidth=1;
+          c.save(); c.translate(S/2,S/2); c.rotate(p.ang); c.translate(-S/2,-S/2);
+          for(let x=0;x<S;x+=24){ c.beginPath(); c.moveTo(x,-10); c.lineTo(x+6,S+10); c.stroke(); }
+          c.restore();
+        }
+        woodPattern = ctx.createPattern(oc,'repeat');
+        woodKind = kind;
+      }
+
+      function buildStars(){
+        const baseCount = 140; // 以 1100x700 為基準
+        const scale = (W*H)/(1100*700);
+        const countScale = (starOpts.countScale||1);
+        const N = Math.max(60, Math.floor(baseCount*scale*countScale));
+        stars = new Array(N).fill(0).map(()=>{
+          return {
+            x: Math.random()*W,
+            y: Math.random()*H,
+            r: (starOpts.sizeMin||0.9) + Math.random()*((starOpts.sizeMax||1.8)-(starOpts.sizeMin||0.9)),
+            a: 0.05 + Math.random()*0.12,
+            ph: Math.random()*Math.PI*2,
+            sp: 0.6 + Math.random()*1.2, // twinkle speed
+            px: 0.3 + Math.random()*0.7  // parallax
+          };
+        });
+        starSizeKey = W+'x'+H;
+      }
+
+      function ensureStarsIfNeeded(){
+        if(!skin.effects || !skin.effects.stars) { stars=null; return; }
+        if(!stars || starSizeKey !== (W+'x'+H)) buildStars();
+      }
 
       function resize(){
         const contentW = box.clientWidth;
@@ -239,20 +441,98 @@
         cv.width  = Math.round(w * dpr);
         cv.height = Math.round(h * dpr);
         W=cv.width;H=cv.height;
-        if(skin.effects.stars){ buildStars(); }
-      }
-
-      function buildStars(){
-        stars = new Array(starCount).fill(0).map(()=>({
-          x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.2 + .2, p: Math.random()*Math.PI*2
-        }));
+        ensureStarsIfNeeded();
       }
 
       const rgba = (rgb,a)=>`rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a.toFixed(3)})`;
-      function hslToRgb(h,s,l){
-        s/=100; l/=100; const k=n=> (n+ h/30)%12; const a=s*Math.min(l,1-l);
-        const f=n=> l - a*Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n),1)));
-        return [Math.round(255*f(0)),Math.round(255*f(8)),Math.round(255*f(4))];
+      function hslToRgb(h,s,l){ s/=100; l/=100; const k=n=> (n+ h/30)%12; const a=s*Math.min(l,1-l); const f=n=> l - a*Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n),1))); return [Math.round(255*f(0)),Math.round(255*f(8)),Math.round(255*f(4))]; }
+
+      function drawStarField(t){
+        if(!stars) return;
+        const twinkle = (typeof skin.effects.stars==='object' && skin.effects.stars.twinkle!=null)? skin.effects.stars.twinkle : 0.6;
+        const drift = (typeof skin.effects.stars==='object' && skin.effects.stars.drift!=null)? skin.effects.stars.drift : 0.008;
+        const glow = (typeof skin.effects.stars==='object' && skin.effects.stars.glow!=null)? skin.effects.stars.glow : 1.2;
+        const bright = (typeof skin.effects.stars==='object' && skin.effects.stars.brightness!=null)? skin.effects.stars.brightness : 1.0;
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        for(const s of stars){
+          const tw = 0.5 + 0.5*Math.sin(t*0.001*s.sp + s.ph);
+          const a  = (s.a * (0.55 + twinkle*tw)) * bright;
+          const dx = (t * drift * s.px) % (W+20);
+          const x  = (s.x + dx);
+          const y  = s.y;
+          const r  = s.r * dpr * glow;
+          const g = ctx.createRadialGradient(x,y,0,x,y,r);
+          g.addColorStop(0, `rgba(255,255,255,${(a*1.5).toFixed(3)})`);
+          g.addColorStop(1, `rgba(180,160,255,0)`);
+          ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawPulse(t){
+        const p = skin.effects && skin.effects.pulse; if(!p) return;
+        const rings = p.rings||3; const thick = Math.max(2, (p.thickness||6)*dpr);
+        const col = p.color || skin.base; const strength = p.strength!=null? p.strength : 0.12;
+        const cx = W/2, cy = H*0.48; const maxR = Math.min(W,H)*0.55;
+        ctx.save(); ctx.globalCompositeOperation = 'screen';
+        for(let i=0;i<rings;i++){
+          const ph = ((t % skin.period)/skin.period + i/rings) % 1;
+          const r = ph*maxR;
+          const fade = Math.pow(1 - ph, 2);
+          ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+          ctx.lineWidth = thick*(0.7 + 0.6*(1-ph));
+          ctx.strokeStyle = rgba(col, strength*fade);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawWoodSheen(t){
+        const ws = skin.effects && skin.effects.woodSheen; if(!ws) return;
+        const a = (ws.alpha!=null? ws.alpha:0.08) * (0.8 + 0.2*Math.sin(t*0.001));
+        const off = Math.sin(t*0.0006)*W*0.2;
+        ctx.save();
+        const x0 = -W*0.2 + off, y0 = H*0.2; const x1 = W*1.2 + off, y1 = H*0.8;
+        const g = ctx.createLinearGradient(x0,y0,x1,y1);
+        g.addColorStop(0, 'rgba(255,255,255,0)');
+        g.addColorStop(0.5, `rgba(255,240,200,${a.toFixed(3)})`);
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        const prev = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'soft-light';
+        ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+        ctx.globalCompositeOperation = prev;
+        ctx.restore();
+      }
+
+      function drawPrism(t){
+        const p = skin.effects && skin.effects.prism; if(!p) return;
+        const beams = p.beams||8; const speed = p.speed||0.0005; const alpha = (p.alpha!=null?p.alpha:0.10);
+        const spread = p.spread||0.85; const hueShift = p.hueShift||0;
+        const cx=W*0.5, cy=H*0.45; const R=Math.hypot(W,H);
+        ctx.save(); ctx.globalCompositeOperation='screen';
+        for(let i=0;i<beams;i++){
+          const ang = t*speed + i*(Math.PI*2/beams);
+          ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang);
+          const w = R*0.12;
+          const grad = ctx.createLinearGradient(0,0,R,0);
+          const h0 = (i*360/beams + (t*0.02) + hueShift)%360; const h1=(h0+60)%360;
+          const c0 = hslToRgb(h0, 85, 62); const c1=hslToRgb(h1, 80, 58);
+          grad.addColorStop(0.00, 'rgba(255,255,255,0)');
+          grad.addColorStop(0.10, rgba(c0, 0.20));
+          grad.addColorStop(0.55, rgba(c1, 0.12));
+          grad.addColorStop(1.00, 'rgba(255,255,255,0)');
+          ctx.fillStyle=grad; ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.moveTo(-w,0);
+          ctx.lineTo(R*spread,-w*0.40);
+          ctx.lineTo(R,0);
+          ctx.lineTo(R*spread,w*0.40);
+          ctx.lineTo(w,0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.restore();
       }
 
       function drawFrame(t){
@@ -262,35 +542,50 @@
         const bevel= Math.max(3, Math.round(4*dpr));
         const aura = Math.max(10, Math.round(12*dpr));
 
-        // 背景層（可加效果）
+        // 背景層：如 Skin 指定 bg，則使用主題深色；否則使用原藍色
         const bg = ctx.createLinearGradient(0,0,0,H);
-        bg.addColorStop(0,'#0d132a'); bg.addColorStop(0.55,'#0b1226'); bg.addColorStop(1,'#091223');
+        if(Array.isArray(skin.bg) && skin.bg.length>=3){
+          bg.addColorStop(0, skin.bg[0]); bg.addColorStop(0.55, skin.bg[1]); bg.addColorStop(1, skin.bg[2]);
+        }else{
+          bg.addColorStop(0,'#0d132a'); bg.addColorStop(0.55,'#0b1226'); bg.addColorStop(1,'#091223');
+        }
         ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
 
-        if(skin.effects.grid){ // 極淡格線（量子/電路輔助感）
+        // 底層星點（若啟用）
+        if(skin.effects && skin.effects.stars){ drawStarField(t); }
+        // 木紋（若啟用）
+        if(woodPattern){
+          ctx.save();
+          const baseA = (skin.effects && skin.effects.woodBoost)? 0.12 : 0.07;
+          const a = baseA + 0.05*(0.5+0.5*Math.sin(phase*2*Math.PI));
+          ctx.globalAlpha=a; ctx.fillStyle=woodPattern; ctx.fillRect(0,0,W,H); ctx.restore();
+          if(skin.effects && skin.effects.woodSheen){ drawWoodSheen(t); }
+        }
+        // Prism 絢麗光束（風格2）
+        if(skin.effects && skin.effects.prism){ drawPrism(t); 
+// ice effects
+if(skin.effects && skin.effects.snow){ ensureSnowIfNeeded(); drawSnow(t); }
+if(skin.effects && skin.effects.shards){ ensureShardsIfNeeded(); drawShards(t); }
+drawFrostEdge(t); }
+
+        if(skin.effects && skin.effects.grid){ // 極淡格線
           ctx.save(); ctx.globalAlpha=.08; ctx.lineWidth=.6*dpr; ctx.strokeStyle='rgba(180,220,255,.6)';
           const step=Math.round(18*dpr);
           for(let x=0;x<W;x+=step){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
           for(let y=0;y<H;y+=step){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
           ctx.restore();
         }
-        if(skin.effects.scanline){ // 螢幕掃描線
+        if(skin.effects && skin.effects.scanline){ // 螢幕掃描線
           ctx.save(); ctx.globalAlpha=.06; ctx.fillStyle='#00ff7f';
           for(let y=0;y<H;y+=Math.round(3*dpr)){ ctx.fillRect(0,y,W,1); }
           ctx.restore();
         }
-        if(skin.effects.stars){ // 星點微閃
-          ctx.save(); ctx.globalAlpha=.7; ctx.fillStyle='#fff';
-          for(const s of stars){ const tw=.5+.5*Math.sin(t/700 + s.p); ctx.globalAlpha= .25 + .55*tw; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }
-          ctx.restore();
-        }
+        // 綠脈衝圈（風格3）
+        if(skin.effects && skin.effects.pulse){ drawPulse(t); }
 
-        // 呼吸透明度
+        // 呼吸透明度（LED 邊）
         let hiRGB = skin.hi, baseRGB = skin.base;
-        if(skin.effects.rainbow){
-          hiRGB = hslToRgb((phase*360), 85, 65);
-          baseRGB = hslToRgb((phase*360+200)%360, 80, 60);
-        }
+        if(skin.effects && skin.effects.rainbow){ hiRGB = hslToRgb((phase*360), 85, 65); baseRGB = hslToRgb((phase*360+200)%360, 80, 60); }
         const glowA = 0.20 + 0.22 * breathe;  // 柔光
         const coreA = 0.75 + 0.20 * breathe;  // 主體
         const hiA   = 0.60 * breathe;         // 高光
@@ -339,64 +634,80 @@
 
       // 對外：套用 Skin 參數
       window.__applySkinCanvas = function(params){
-        skin = Object.assign({ base:[92,136,255], hi:[255,255,255], period:2000, effects:{} }, params||{});
-        if(skin.effects && skin.effects.stars){ buildStars(); }
+        const next = Object.assign({ base:[92,136,255], hi:[255,255,255], period:2000, effects:{}, bg:null }, params||{});
+        skin = next;
+        // 木紋圖樣切換
+        if(skin.effects && typeof skin.effects.wood === 'string'){
+          if(woodKind !== skin.effects.wood){ buildWoodPattern(skin.effects.wood); }
+        }else{ woodPattern = null; woodKind = null; }
+        // 星點選項（物件或布林均可）
+        if(skin.effects && skin.effects.stars){
+          starOpts = typeof skin.effects.stars==='object' ? skin.effects.stars : {};
+          ensureStarsIfNeeded();
+        }else{ stars=null; starOpts={}; }
       };
     })();
 
-    /* ---------------- Skin 管理（新增 5 種「科技感風格」） ---------------- */
+    /* ---------------- Skin 管理（保留：經典 + 科技2/3/5 + 木紋：黑檀/白橡） ---------------- */
     (function(){
       const skinSel = document.getElementById('skinSel');
       const skinTitle = document.getElementById('skinTitle');
       const skinDesc = document.getElementById('skinDesc');
 
-      // 集中定義（不動按鍵功能，只改樣式與 LED 參數）
       const SKINS = {
         classic:{
           label:'經典風格', selectLabel:'冷藍玻璃',
           css:{},
-          canvas:{ base:[92,136,255], hi:[255,255,255], period:2000, effects:{ rainbow:false, scanline:false, stars:false, grid:false } },
+          canvas:{ base:[92,136,255], hi:[255,255,255], period:2000, effects:{ rainbow:false, scanline:false, stars:false, grid:false }, bg:null },
           desc:'LED：三側一致深藍，右側鏡像，2s 呼吸。'
         },
-        s1:{ // 藍白電路流光
-          label:'科技感風格1', selectLabel:'科技感風格1',
-          cssSkin:'科技感風格1',
-          canvas:{ base:[120,200,255], hi:[255,255,255], period:1600, effects:{ grid:true } },
-          desc:'藍白電路流光：1.6s 呼吸、電路格線淡紋。'
-        },
-        s2:{ // 全息 HUD（彩虹邊）
-          label:'科技感風格2', selectLabel:'科技感風格2',
-          cssSkin:'科技感風格2',
-          canvas:{ base:[160,220,255], hi:[255,255,255], period:2200, effects:{ rainbow:true } },
-          desc:'全息 HUD：彩虹高光邊、2.2s 呼吸。'
-        },
-        s3:{ // 賽博格綠脈衝（掃描線）
-          label:'科技感風格3', selectLabel:'科技感風格3',
-          cssSkin:'科技感風格3',
-          canvas:{ base:[80,255,160], hi:[255,255,255], period:1200, effects:{ scanline:true } },
-          desc:'賽博格綠脈衝：掃描線效果、1.2s 呼吸。'
-        },
-        s4:{ // 量子晶格（格線更冷）
-          label:'科技感風格4', selectLabel:'科技感風格4',
-          cssSkin:'科技感風格4',
-          canvas:{ base:[120,220,255], hi:[255,255,255], period:2000, effects:{ grid:true } },
-          desc:'量子晶格：冷光晶格淡紋、2.0s 呼吸。'
-        },
-        s5:{ // 藍紫星際霓虹（星空）
-          label:'科技感風格5', selectLabel:'科技感風格5',
-          cssSkin:'科技感風格5',
-          canvas:{ base:[150,120,255], hi:[255,255,255], period:2800, effects:{ stars:true } },
-          desc:'藍紫星際霓虹：微量星光閃爍、2.8s 呼吸。'
-        }
-      };
+        s2:{ label:'科技感風格2', selectLabel:'科技感風格2', cssSkin:'科技感風格2',
+             canvas:{ base:[160,220,255], hi:[255,255,255], period:2200, effects:{ rainbow:true, prism:{ beams:8, speed:0.0005, alpha:0.10, spread:0.85, hueShift:40 } }, bg:['#0b0f2a','#0a0e26','#070a18'] },
+             desc:'全息 HUD：彩虹高光邊＋Holo Prism 光束（低對比）、2.2s 呼吸。' },
+        s3:{ label:'科技感風格3', selectLabel:'科技感風格3', cssSkin:'科技感風格3',
+             canvas:{ base:[80,255,160], hi:[255,255,255], period:1200, effects:{ scanline:true, pulse:{ rings:3, thickness:6, strength:0.13, color:[80,255,160] } }, bg:['#07150f','#06130e','#041009'] },
+             desc:'賽博格綠脈衝：掃描線＋綠色脈衝擴散圈，1.2s呼吸。' },
+        s5:{ label:'科技感風格5', selectLabel:'科技感風格5', cssSkin:'科技感風格5',
+             canvas:{ base:[150,120,255], hi:[255,255,255], period:2800, effects:{ stars:{ countScale:1.1, twinkle:0.85, drift:0.009, sizeMin:1.6, sizeMax:3.2, glow:2.0, brightness:1.2 } }, bg:['#0b0a20','#0a0820','#08071a'] },
+             desc:'藍紫星際霓虹：更大更亮的星點與光暈、緩慢漂移，2.8s 呼吸。' },
+        w2:{ label:'木紋・黑檀曜金', selectLabel:'木紋・黑檀曜金', cssSkin:'木紋-黑檀曜金',
+             canvas:{ base:[240,190,110], hi:[255,245,210], period:2400, effects:{ wood:'ebony', woodBoost:true, woodSheen:{alpha:0.08} }, bg:['#0b0806','#090705','#070504'] },
+             desc:'黑檀深棕：加強木孔/髮絲紋，油潤柔光高光；2.4s。' },
+        w4:{ label:'木紋・白橡北歐', selectLabel:'木紋・白橡北歐', cssSkin:'木紋-白橡北歐',
+             canvas:{ base:[255,220,170], hi:[255,250,230], period:1900, effects:{ wood:'oak', woodBoost:true, woodSheen:{alpha:0.06} }, bg:['#322515','#261c10','#1b140b'] },
+             desc:'白橡淺木：直紋＋ray fleck（低對比）、優雅油光；1.9s。' }
+      ,
+  i1:{ label:'冰雪・極光絲綢', selectLabel:'冰雪・極光絲綢', cssSkin:'冰雪-極光絲綢',
+       canvas:{ base:[170,210,255], hi:[255,255,255], period:2200,
+                effects:{ snow:{countScale:120, twinkle:true, sway:1.0, speed:0.28, speedMax:0.72, gust:0.12, sizeMin:1.0, sizeMax:2.5},
+                          shards:{count:10, speed:0.05, width:1.2, alpha:0.10, lenMin:60, lenMax:160, drift:0.15},
+                          frost:{alpha:0.10},
+                          prism:{ beams:6, speed:0.0004, alpha:0.06, spread:0.82, hueShift:18 } },
+                bg:['#0b1626','#0a1a2f','#081628'] },
+       desc:'極光絲緞：冰藍呼吸＋輕雪＋低對比極光束；2.2s。' },
+  i2:{ label:'冰雪・極地冰晶', selectLabel:'冰雪・極地冰晶', cssSkin:'冰雪-極地冰晶',
+       canvas:{ base:[195,235,255], hi:[255,255,255], period:2000,
+                effects:{ snow:{countScale:90, twinkle:false, sway:0.6, speed:0.24, speedMax:0.6, gust:0.06, sizeMin:1.2, sizeMax:2.8},
+                          shards:{count:14, speed:0.06, width:1.4, alpha:0.12, lenMin:80, lenMax:200, drift:0.18},
+                          frost:{alpha:0.12} },
+                bg:['#0a1828','#0a1d34','#081a2c'] },
+       desc:'冷光冰晶：鏡面冰裂長片＋稀薄雪花；2.0s。' },
+  i3:{ label:'冰雪・暴雪霧光', selectLabel:'冰雪・暴雪霧光', cssSkin:'冰雪-暴雪霧光',
+       canvas:{ base:[150,190,255], hi:[255,255,255], period:1800,
+                effects:{ snow:{countScale:200, twinkle:true, sway:1.6, speed:0.45, speedMax:1.1, gust:0.28, sizeMin:1.0, sizeMax:3.4},
+                          shards:{count:8, speed:0.08, width:1.0, alpha:0.10, lenMin:50, lenMax:140, drift:0.25},
+                          frost:{alpha:0.14} },
+                bg:['#071225','#09152a','#060d1b'] },
+       desc:'暴風雪：高速細雪＋輕薄霧光，速度越快越有壓迫；1.8s。' }
+};
 
-      // 初始化下拉：保留原有「冷藍玻璃」，再追加 5 個科技感 Skin
+      // 初始化下拉：先保留經典，再追加（2/3/5、黑檀、白橡）
       (function populate(){
         const existing = Array.from(skinSel.options).map(o=>o.textContent.trim());
         if(!existing.includes(SKINS.classic.selectLabel)){
           const opt = document.createElement('option'); opt.textContent = SKINS.classic.selectLabel; skinSel.appendChild(opt);
         }
-        ['s1','s2','s3','s4','s5'].forEach(k=>{ const opt=document.createElement('option'); opt.textContent = SKINS[k].selectLabel; skinSel.appendChild(opt); });
+        ['s2','s3','s5','w2','w4','i1','i2','i3'].forEach(k=>{ const opt=document.createElement('option'); opt.textContent = SKINS[k].selectLabel; skinSel.appendChild(opt); });
       })();
 
       function applyClassic(){
@@ -404,9 +715,9 @@
         window.__applySkinCanvas(SKINS.classic.canvas);
         skinTitle.textContent = SKINS.classic.label; skinDesc.textContent = SKINS.classic.desc;
       }
-      function applyTech(key){
+      function applySkinKey(key){
         const s = SKINS[key];
-        document.body.dataset.skin = s.cssSkin;
+        document.body.dataset.skin = s.cssSkin || '經典風格';
         window.__applySkinCanvas(s.canvas);
         skinTitle.textContent = s.label; skinDesc.textContent = s.desc;
       }
@@ -415,12 +726,15 @@
       skinSel.addEventListener('change',()=>{
         const val = skinSel.value.trim();
         if(val === SKINS.classic.selectLabel){ applyClassic(); return; }
-        if(val === SKINS.s1.selectLabel) return applyTech('s1');
-        if(val === SKINS.s2.selectLabel) return applyTech('s2');
-        if(val === SKINS.s3.selectLabel) return applyTech('s3');
-        if(val === SKINS.s4.selectLabel) return applyTech('s4');
-        if(val === SKINS.s5.selectLabel) return applyTech('s5');
-      }, {passive:true});
+        if(val === SKINS.s2.selectLabel) return applySkinKey('s2');
+        if(val === SKINS.s3.selectLabel) return applySkinKey('s3');
+        if(val === SKINS.s5.selectLabel) return applySkinKey('s5');
+        if(val === SKINS.w2.selectLabel) return applySkinKey('w2');
+        if(val === SKINS.w4.selectLabel) return applySkinKey('w4');
+      if(val === SKINS.i1.selectLabel) return applySkinKey('i1');
+        if(val === SKINS.i2.selectLabel) return applySkinKey('i2');
+        if(val === SKINS.i3.selectLabel) return applySkinKey('i3');
+}, {passive:true});
 
       // 預設套用經典
       applyClassic();
