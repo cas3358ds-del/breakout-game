@@ -128,37 +128,7 @@
                       repeating-linear-gradient(188deg, rgba(240,210,160,.05) 0 2px, rgba(0,0,0,0) 2px 8px);
       --btnGlow:0 0 16px rgba(255,220,170,.22);
     }
-  
-/* ======== Skin：冰雪系列（新增 3 種） ======== */
-body[data-skin="冰雪-極光絲綢"]{
-  --ink:#f6fbff; --muted:#d7e9ff; --stroke:rgba(190,220,255,.38);
-  --bg1:#0b1626; --bg2:#060b14;
-  --hudGrad1:rgba(18,28,60,.56); --hudGrad2:rgba(10,20,44,.42);
-  --glass-1:rgba(220,245,255,.12); --glass-2:rgba(210,235,255,.09);
-  --stageGlass:linear-gradient(180deg, rgba(230,245,255,.04), transparent);
-  --panelPattern:conic-gradient(from 0deg at 60% 40%, rgba(180,220,255,.06), rgba(160,210,255,.05), rgba(180,230,255,.06));
-  --btnGlow:0 0 20px rgba(180,220,255,.26);
-}
-body[data-skin="冰雪-極地冰晶"]{
-  --ink:#eef8ff; --muted:#cfe6ff; --stroke:rgba(200,230,255,.35);
-  --bg1:#0a1828; --bg2:#071320;
-  --hudGrad1:rgba(26,44,78,.58); --hudGrad2:rgba(14,28,54,.44);
-  --glass-1:rgba(235,250,255,.10); --glass-2:rgba(210,235,255,.08);
-  --stageGlass:linear-gradient(180deg, rgba(210,235,255,.05), transparent);
-  --panelPattern:repeating-linear-gradient(30deg, rgba(200,235,255,.06) 0 10px, transparent 10px 22px);
-  --btnGlow:0 0 18px rgba(190,225,255,.24);
-}
-body[data-skin="冰雪-暴雪霧光"]{
-  --ink:#eaf4ff; --muted:#bed4ee; --stroke:rgba(170,210,255,.32);
-  --bg1:#071225; --bg2:#050a18;
-  --hudGrad1:rgba(14,22,40,.60); --hudGrad2:rgba(10,16,30,.46);
-  --glass-1:rgba(200,225,255,.09); --glass-2:rgba(180,210,240,.07);
-  --stageGlass:linear-gradient(180deg, rgba(200,225,255,.04), transparent);
-  --panelPattern:radial-gradient(120% 60% at 50% 0%, rgba(160,200,255,.05), transparent 60%);
-  --btnGlow:0 0 16px rgba(160,200,255,.22);
-}
-
-</style>
+  </style>
 </head>
 <body data-skin="經典風格">
   <div class="wrap" id="app">
@@ -270,8 +240,6 @@ body[data-skin="冰雪-暴雪霧光"]{
       let woodPattern=null, woodKind=null;
       // 星點場（僅用於星際風格）
       let stars=null, starOpts={}, starSizeKey='';
-let snows=null, snowOpts={}, snowKey='';
-let shards=null, shardOpts={}, shardKey='';
 
       function buildWoodPattern(kind){
         const oc = document.createElement('canvas');
@@ -282,97 +250,6 @@ let shards=null, shardOpts={}, shardKey='';
           cherry:{ ang:160*Math.PI/180,step:14, line:7, dark:'#5a2c33', light:'rgba(162,90,102,0.12)',rings:'#a8616f' },
           oak:   { ang:8*Math.PI/180,  step:18, line:7, dark:'#6c5432', light:'rgba(182,138,84,0.12)', rings:'#a07a45' },
           bamboo:{ ang:90*Math.PI/180, step:10, line:3, dark:'#305a3e', light:'rgba(100,150,110,0.10)',rings:'#3f7552' }
-
-// ========= 雪花場 =========
-function ensureSnowIfNeeded(){
-  if(!(skin.effects && skin.effects.snow)){ snows=null; snowOpts={}; return; }
-  const o = typeof skin.effects.snow==='object' ? skin.effects.snow : {};
-  const density = Math.max(40, o.count || Math.round((W*H)/(420*420)* (o.countScale||120)));
-  const key = [W,H,density,o.gust||0,o.twinkle?1:0,o.sizeMin||1,o.sizeMax||3].join('x');
-  if(snows && snowKey===key) return;
-  snowKey = key;
-  snows = new Array(density).fill(0).map(()=>{
-    const size = (o.sizeMin||1) + Math.random()*((o.sizeMax||3)-(o.sizeMin||1));
-    return {
-      x: Math.random()*W, y: Math.random()*H, size,
-      baseX: Math.random()*W,
-      speed: (o.speed||0.25) + Math.random()*((o.speedMax||0.9)-(o.speed||0.25)),
-      sway: (o.sway||0.8) * (0.5+Math.random()),
-      phase: Math.random()*Math.PI*2,
-      twinkle: !!o.twinkle && Math.random()<0.25
-    };
-  });
-  snowOpts = o;
-}
-function drawSnow(t){
-  if(!snows) return;
-  const tt = t*0.001, gust = snowOpts.gust||0;
-  const aBase = Math.min(.22, .10 + .12*(Math.sin(tt*0.6+1.7)*.5+.5));
-  const glow = Math.min(.14, .06 + .08*(Math.sin(tt*0.8+0.4)*.5+.5));
-  for(const f of snows){
-    f.phase += 0.01 + gust*0.015;
-    f.y += f.speed * (1 + 0.6*Math.sin(tt*0.9));
-    f.x = f.baseX + Math.sin(f.phase)* (f.sway*4 + gust*24);
-    if(f.y > H+10){ f.y = -10; f.baseX = Math.random()*W; }
-    if(f.x < -10){ f.baseX = W+10; }
-    const alpha = aBase * (f.twinkle ? (0.7+0.3*Math.sin(tt*6+f.phase)) : 1);
-    ctx.save(); ctx.globalAlpha = alpha;
-    ctx.beginPath(); ctx.arc(f.x, f.y, f.size*dpr, 0, Math.PI*2); ctx.fillStyle = 'white'; ctx.fill();
-    if(glow>0){
-      const r = (f.size*3+2)*dpr;
-      const g = ctx.createRadialGradient(f.x,f.y,0, f.x,f.y,r);
-      g.addColorStop(0,'rgba(255,255,255,'+glow+')'); g.addColorStop(1,'rgba(255,255,255,0)');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(f.x,f.y,r,0,Math.PI*2); ctx.fill();
-    }
-    ctx.restore();
-  }
-}
-
-// ========= 冰晶碎片（長形霜裂） =========
-function ensureShardsIfNeeded(){
-  if(!(skin.effects && skin.effects.shards)){ shards=null; shardOpts={}; return; }
-  const o = typeof skin.effects.shards==='object' ? skin.effects.shards : {};
-  const count = Math.max(6, o.count || Math.round((W+H)/200));
-  const key = [W,H,count,o.alpha||0.12,o.speed||0.06,o.lenMin||40,o.lenMax||180].join('x');
-  if(shards && shardKey===key) return;
-  shardKey = key;
-  shards = new Array(count).fill(0).map(()=>{
-    const len = (o.lenMin||40) + Math.random()*((o.lenMax||180)-(o.lenMin||40));
-    const angle = (o.angleDeg!==undefined ? o.angleDeg : -28) * Math.PI/180;
-    const x = Math.random()*W, y = Math.random()*H;
-    return { x, y, len, angle, width:(o.width||1.2)*dpr, alpha:(o.alpha||0.12), speed:(o.speed||0.06) };
-  });
-  shardOpts = o;
-}
-function drawShards(t){
-  if(!shards) return;
-  const drift = (shardOpts.drift||0.20);
-  ctx.save();
-  ctx.globalAlpha = Math.min(.22, (shardOpts.alpha||0.12));
-  ctx.strokeStyle = 'rgba(220,245,255,1)';
-  ctx.lineWidth = Math.max(0.6, (shardOpts.width||1.2)*dpr);
-  for(const s of shards){
-    s.x += Math.cos(s.angle)*s.speed*60;
-    s.y += Math.sin(s.angle)*s.speed*60 + drift;
-    if(s.x<-50 || s.x>W+50 || s.y<-50 || s.y>H+50){ s.x = Math.random()*W; s.y = -20; }
-    const x2 = s.x + Math.cos(s.angle)*s.len, y2 = s.y + Math.sin(s.angle)*s.len;
-    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(x2, y2); ctx.stroke();
-  }
-  ctx.restore();
-}
-
-// ========= 霜緣（邊界輕霧） =========
-function drawFrostEdge(t){
-  if(!(skin.effects && skin.effects.frost)) return;
-  const a = Math.min(.18, (skin.effects.frost.alpha||0.12));
-  const gTop = ctx.createLinearGradient(0,0,0,Math.round(24*dpr));
-  gTop.addColorStop(0,'rgba(230,245,255,'+a+')'); gTop.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gTop; ctx.fillRect(0,0,W,Math.round(24*dpr));
-  const gLeft = ctx.createLinearGradient(0,0,Math.round(24*dpr),0);
-  gLeft.addColorStop(0,'rgba(230,245,255,'+a+')'); gLeft.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gLeft; ctx.fillRect(0,0,Math.round(24*dpr),H);
-  const gRight = ctx.createLinearGradient(W,0,W-Math.round(24*dpr),0);
-  gRight.addColorStop(0,'rgba(230,245,255,'+a+')'); gRight.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gRight; ctx.fillRect(W-Math.round(24*dpr),0,Math.round(24*dpr),H);
-}
-
         };
         const p = presets[kind] || presets.walnut;
         c.clearRect(0,0,S,S);
@@ -562,11 +439,7 @@ function drawFrostEdge(t){
           if(skin.effects && skin.effects.woodSheen){ drawWoodSheen(t); }
         }
         // Prism 絢麗光束（風格2）
-        if(skin.effects && skin.effects.prism){ drawPrism(t); 
-// ice effects
-if(skin.effects && skin.effects.snow){ ensureSnowIfNeeded(); drawSnow(t); }
-if(skin.effects && skin.effects.shards){ ensureShardsIfNeeded(); drawShards(t); }
-drawFrostEdge(t); }
+        if(skin.effects && skin.effects.prism){ drawPrism(t); }
 
         if(skin.effects && skin.effects.grid){ // 極淡格線
           ctx.save(); ctx.globalAlpha=.08; ctx.lineWidth=.6*dpr; ctx.strokeStyle='rgba(180,220,255,.6)';
@@ -676,30 +549,7 @@ drawFrostEdge(t); }
         w4:{ label:'木紋・白橡北歐', selectLabel:'木紋・白橡北歐', cssSkin:'木紋-白橡北歐',
              canvas:{ base:[255,220,170], hi:[255,250,230], period:1900, effects:{ wood:'oak', woodBoost:true, woodSheen:{alpha:0.06} }, bg:['#322515','#261c10','#1b140b'] },
              desc:'白橡淺木：直紋＋ray fleck（低對比）、優雅油光；1.9s。' }
-      ,
-  i1:{ label:'冰雪・極光絲綢', selectLabel:'冰雪・極光絲綢', cssSkin:'冰雪-極光絲綢',
-       canvas:{ base:[170,210,255], hi:[255,255,255], period:2200,
-                effects:{ snow:{countScale:120, twinkle:true, sway:1.0, speed:0.28, speedMax:0.72, gust:0.12, sizeMin:1.0, sizeMax:2.5},
-                          shards:{count:10, speed:0.05, width:1.2, alpha:0.10, lenMin:60, lenMax:160, drift:0.15},
-                          frost:{alpha:0.10},
-                          prism:{ beams:6, speed:0.0004, alpha:0.06, spread:0.82, hueShift:18 } },
-                bg:['#0b1626','#0a1a2f','#081628'] },
-       desc:'極光絲緞：冰藍呼吸＋輕雪＋低對比極光束；2.2s。' },
-  i2:{ label:'冰雪・極地冰晶', selectLabel:'冰雪・極地冰晶', cssSkin:'冰雪-極地冰晶',
-       canvas:{ base:[195,235,255], hi:[255,255,255], period:2000,
-                effects:{ snow:{countScale:90, twinkle:false, sway:0.6, speed:0.24, speedMax:0.6, gust:0.06, sizeMin:1.2, sizeMax:2.8},
-                          shards:{count:14, speed:0.06, width:1.4, alpha:0.12, lenMin:80, lenMax:200, drift:0.18},
-                          frost:{alpha:0.12} },
-                bg:['#0a1828','#0a1d34','#081a2c'] },
-       desc:'冷光冰晶：鏡面冰裂長片＋稀薄雪花；2.0s。' },
-  i3:{ label:'冰雪・暴雪霧光', selectLabel:'冰雪・暴雪霧光', cssSkin:'冰雪-暴雪霧光',
-       canvas:{ base:[150,190,255], hi:[255,255,255], period:1800,
-                effects:{ snow:{countScale:200, twinkle:true, sway:1.6, speed:0.45, speedMax:1.1, gust:0.28, sizeMin:1.0, sizeMax:3.4},
-                          shards:{count:8, speed:0.08, width:1.0, alpha:0.10, lenMin:50, lenMax:140, drift:0.25},
-                          frost:{alpha:0.14} },
-                bg:['#071225','#09152a','#060d1b'] },
-       desc:'暴風雪：高速細雪＋輕薄霧光，速度越快越有壓迫；1.8s。' }
-};
+      };
 
       // 初始化下拉：先保留經典，再追加（2/3/5、黑檀、白橡）
       (function populate(){
@@ -707,7 +557,7 @@ drawFrostEdge(t); }
         if(!existing.includes(SKINS.classic.selectLabel)){
           const opt = document.createElement('option'); opt.textContent = SKINS.classic.selectLabel; skinSel.appendChild(opt);
         }
-        ['s2','s3','s5','w2','w4','i1','i2','i3'].forEach(k=>{ const opt=document.createElement('option'); opt.textContent = SKINS[k].selectLabel; skinSel.appendChild(opt); });
+        ['s2','s3','s5','w2','w4'].forEach(k=>{ const opt=document.createElement('option'); opt.textContent = SKINS[k].selectLabel; skinSel.appendChild(opt); });
       })();
 
       function applyClassic(){
@@ -731,10 +581,7 @@ drawFrostEdge(t); }
         if(val === SKINS.s5.selectLabel) return applySkinKey('s5');
         if(val === SKINS.w2.selectLabel) return applySkinKey('w2');
         if(val === SKINS.w4.selectLabel) return applySkinKey('w4');
-      if(val === SKINS.i1.selectLabel) return applySkinKey('i1');
-        if(val === SKINS.i2.selectLabel) return applySkinKey('i2');
-        if(val === SKINS.i3.selectLabel) return applySkinKey('i3');
-}, {passive:true});
+      }, {passive:true});
 
       // 預設套用經典
       applyClassic();
