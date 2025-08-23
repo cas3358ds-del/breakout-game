@@ -3,14 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Rock Breakout — 冰雪＋烈焰皮膚 0820</title>
+  <title>Rock Breakout — 冰雪＋烈焰皮膚 0823（金耀日蝕調整）</title>
   <!--
-    版本說明（0820-火系增補）
-    - 在保持既有 UI/HUD/功能 與 冰雪/科技/木紋 Skins 不變的前提下，新增 3 款「烈焰風格」：
-      1) 烈焰・龍脈熾光  2) 烈焰・熔岩脈動  3) 烈焰・星火風暴。
-    - 新增 Canvas 背景特效：embers（星火飛舞）、heat（熱擾動波）。
-    - 不移除任何舊特效；未改動 DOM 結構；僅擴充 CSS Tokens 與 SKINS。
-    - Skin 下拉已加入三款火系，切換即生效。
+    版本說明（0823-金耀日蝕調整）
+    - 本版僅微調 Skin「魔法・金耀日蝕」：
+      (1) 生命圖示：魔法帽 → 高質感金色星徽。
+      (2) 刪除月相環；新增「咒文圈」：六芒星外圈半透明金色魔法咒文，逆時針 24s 一圈，6s 呼吸。
+    - 其他 Skin 與所有 UI/按鍵功能維持不變。
   -->
   <style>
     :root{
@@ -24,7 +23,7 @@
       --panelPattern:none;
       --btnGlow:0 0 0 rgba(0,0,0,0);
       --hudBottom:96px;
-      --heartGlow: rgba(0,0,0,0); /* 新增：心形光暈色（依 Skin 覆蓋） */
+      --heartGlow: rgba(0,0,0,0); /* 生命圖示光暈色（依 Skin 覆蓋） */
     }
     html,body{height:100%;margin:0;color:var(--ink);
       background: radial-gradient(140% 140% at 50% -12%, var(--bg1) 0%, #0e1a3a 50%, #0b1633 75%, var(--bg2) 100%);
@@ -72,10 +71,11 @@
     .legend .box{width:14px;height:14px;display:inline-block;border-radius:3px;margin-right:4px;vertical-align:middle}
 
     .hearts{filter: drop-shadow(0 0 10px var(--heartGlow));}
+    .hearts.flame{filter: drop-shadow(0 0 12px var(--heartGlow));}
 
     @media (max-width:390px){ .pill{font-size:14px;padding:7px 14px} .ic-btn{width:44px;height:36px} }
 
-    /* ======== 既有 Skins（科技/木紋/冰雪） — 內容維持，略去重複註解 ======== */
+    /* ======== 既有 Skins（科技/木紋/冰雪） ======== */
     body[data-skin="科技感風格2"]{ --ink:#f6fbff; --muted:#dbe6ff; --stroke:rgba(200,220,255,.38); --bg1:#0b0f2a; --bg2:#070a18; --hudGrad1:rgba(24,28,70,.58); --hudGrad2:rgba(16,22,58,.42); --glass-1:rgba(255,255,255,.12); --glass-2:rgba(255,255,255,.09); --stageGlass:linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,0)); --panelPattern:conic-gradient(from 0deg at 60% 40%, rgba(255,160,220,.08), rgba(160,220,255,.06), rgba(160,255,200,.06), rgba(255,220,160,.06), rgba(255,160,220,.08)); --btnGlow:0 0 20px rgba(160,220,255,.25);}    
     body[data-skin="科技感風格3"]{ --ink:#e7ffe7; --muted:#bdfdcc; --stroke:rgba(120,255,170,.34); --bg1:#081812; --bg2:#03110a; --hudGrad1:rgba(10,40,26,.64); --hudGrad2:rgba(6,28,18,.46); --glass-1:rgba(160,255,200,.12); --glass-2:rgba(120,220,170,.08); --stageGlass:linear-gradient(180deg, rgba(120,255,180,.05), rgba(0,0,0,0)); --panelPattern:repeating-linear-gradient(180deg, rgba(140,255,190,.05) 0 1px, transparent 1px 3px); --btnGlow:0 0 16px rgba(120,255,170,.25);}    
     body[data-skin="科技感風格5"]{ --ink:#eef0ff; --muted:#c9c9ff; --stroke:rgba(160,140,255,.34); --bg1:#0c0b24; --bg2:#09081a; --hudGrad1:rgba(30,24,70,.58); --hudGrad2:rgba(20,18,50,.44); --glass-1:rgba(200,180,255,.10); --glass-2:rgba(160,140,255,.08); --stageGlass:linear-gradient(180deg, rgba(160,140,255,.05), rgba(0,0,0,0)); --panelPattern:radial-gradient(120px 80px at 20% 10%, rgba(110,80,255,.08), transparent 60%), radial-gradient(160px 120px at 80% 20%, rgba(180,100,255,.08), transparent 60%); --btnGlow:0 0 22px rgba(150,120,255,.25);}    
@@ -83,27 +83,26 @@
     body[data-skin="木紋-白橡北歐"]{ --ink:#fff8ec; --muted:#e6d8c2; --stroke:rgba(255,215,170,.26); --bg1:#3a2d19; --bg2:#1c150b; --hudGrad1:rgba(78,60,30,.66); --hudGrad2:rgba(48,36,18,.50); --glass-1:rgba(255,220,170,.10); --glass-2:rgba(255,220,170,.08); --stageGlass:linear-gradient(180deg, rgba(255,230,190,.05), rgba(0,0,0,0)); --panelPattern:repeating-linear-gradient(8deg, rgba(210,170,120,.14) 0 14px, rgba(0,0,0,0) 14px 26px), repeating-linear-gradient(188deg, rgba(240,210,160,.05) 0 2px, rgba(0,0,0,0) 2px 8px); --btnGlow:0 0 16px rgba(255,220,170,.22);}    
     body[data-skin="冰雪-極光絲綢"]{ --ink:#f6fbff; --muted:#d7e9ff; --stroke:rgba(190,220,255,.38); --bg1:#0b1626; --bg2:#060b14; --hudGrad1:rgba(18,28,60,.56); --hudGrad2:rgba(10,20,44,.42); --glass-1:rgba(220,245,255,.12); --glass-2:rgba(210,235,255,.09); --stageGlass:linear-gradient(180deg, rgba(230,245,255,.04), transparent); --panelPattern:conic-gradient(from 0deg at 60% 40%, rgba(180,220,255,.06), rgba(160,210,255,.05), rgba(180,230,255,.06)); --btnGlow:0 0 20px rgba(180,220,255,.26);}    
 
-    /* ======== 新增：烈焰 Skins（3款） ======== */
-    body[data-skin="烈焰-龍脈熾光"]{
-      --ink:#fff5e9; --muted:#ffd7b3; --stroke:rgba(255,168,80,.32);
-      --bg1:#1a0b06; --bg2:#0b0503;
-      --hudGrad1:rgba(48,18,8,.70); --hudGrad2:rgba(28,10,6,.55);
-      --glass-1:rgba(255,160,60,.12); --glass-2:rgba(255,140,40,.08);
-      --stageGlass:linear-gradient(180deg, rgba(255,160,60,.04), rgba(0,0,0,0));
-      --panelPattern:radial-gradient(160px 120px at 20% 10%, rgba(255,120,40,.08), transparent 60%), radial-gradient(200px 160px at 80% 30%, rgba(255,200,120,.06), transparent 60%);
-      --btnGlow:0 0 22px rgba(255,120,40,.30);
-      --heartGlow:rgba(255,100,20,.75);
+    
+    /* ======== 騎士・白銀劍光 ======== */
+    body[data-skin="騎士-白銀劍光"]{
+      --ink:#eef4ff; --muted:#cfd9ec;
+      --stroke:rgba(190,205,235,.34);
+      --bg1:#0D0D0F; --bg2:#0A0A0C;
+      --hudGrad1:rgba(22,26,36,.66); --hudGrad2:rgba(14,18,26,.52);
+      --glass-1:rgba(255,255,255,.10); --glass-2:rgba(255,255,255,.07);
+      --stageGlass:linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,0));
+      --panelPattern:
+        repeating-linear-gradient(90deg, rgba(220,230,245,.06) 0 2px, rgba(0,0,0,0) 2px 8px),
+        radial-gradient(160px 100px at 72% 14%, rgba(176,196,222,.06), transparent 60%);
+      --btnGlow:0 0 20px rgba(200,220,255,.18);
+      --heartGlow:rgba(210,230,255,.85);
     }
-    body[data-skin="烈焰-熔岩脈動"]{
-      --ink:#fff6ef; --muted:#ffd9c7; --stroke:rgba(255,120,90,.34);
-      --bg1:#240b08; --bg2:#0c0504;
-      --hudGrad1:rgba(60,20,12,.70); --hudGrad2:rgba(30,10,8,.56);
-      --glass-1:rgba(255,110,60,.12); --glass-2:rgba(255,110,60,.08);
-      --stageGlass:linear-gradient(180deg, rgba(255,110,60,.04), rgba(0,0,0,0));
-      --panelPattern:repeating-linear-gradient(12deg, rgba(255,80,40,.09) 0 2px, transparent 2px 12px);
-      --btnGlow:0 0 24px rgba(255,90,60,.32);
-      --heartGlow:rgba(255,80,40,.78);
-    }
+    /* 生命圖示（頭盔/帽/星）尺寸 */
+    .hearts .life-icon{ display:inline-block; width:18px; height:18px; margin:0 2px; vertical-align:-3px; }
+    .hearts .life-icon svg{ width:18px; height:18px; }
+
+    /* ======== 烈焰・星火風暴（唯一保留的烈焰皮膚） ======== */
     body[data-skin="烈焰-星火風暴"]{
       --ink:#fff3ec; --muted:#ffd0b8; --stroke:rgba(255,160,120,.30);
       --bg1:#150807; --bg2:#080404;
@@ -112,8 +111,88 @@
       --stageGlass:linear-gradient(180deg, rgba(255,140,90,.04), rgba(0,0,0,0));
       --panelPattern:radial-gradient(120px 90px at 30% 20%, rgba(255,120,90,.06), transparent 60%);
       --btnGlow:0 0 22px rgba(255,150,100,.28);
-      --heartGlow:rgba(255,110,70,.7);
+      --heartGlow:rgba(255,120,60,.9);
     }
+    /* 星火風暴：UI燃邊與按鈕微閃爍 */
+    @keyframes fireFlicker{ 0%{filter:brightness(1);} 50%{filter:brightness(1.08);} 100%{filter:brightness(1);} }
+    @keyframes emberBorder{ 0%{ box-shadow:0 0 0 rgba(0,0,0,0), 0 0 28px rgba(255,130,80,.25);} 50%{ box-shadow:0 0 0 rgba(0,0,0,0), 0 0 38px rgba(255,160,110,.34);} 100%{ box-shadow:0 0 0 rgba(0,0,0,0), 0 0 28px rgba(255,130,80,.25);} }
+    body[data-skin="烈焰-星火風暴"] .ic-btn,
+    body[data-skin="烈焰-星火風暴"] .btn{
+      background:
+        conic-gradient(from 120deg at 80% 10%, rgba(255,220,180,.12), rgba(255,160,100,.12) 40%, rgba(255,120,80,.08) 60%, rgba(255,220,180,.12)),
+        radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.18), rgba(255,255,255,0) 58%),
+        var(--glass-1);
+      border-color: rgba(255,150,110,.45);
+      animation: fireFlicker 1.2s ease-in-out infinite alternate;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 8px 22px rgba(0,0,0,.28), 0 0 32px rgba(255,140,90,.25);
+    }
+    body[data-skin="烈焰-星火風暴"] .hud{
+      animation: emberBorder 2.6s ease-in-out infinite;
+      border-color: rgba(255,150,110,.35);
+    }
+  
+    /* ======== 魔法・金耀日蝕 ======== */
+    body[data-skin="魔法-金耀日蝕"]{
+      --ink:#FFF6E6; --muted:#EED9B6;
+      --stroke:rgba(255,210,120,.30);
+      --bg1:#0E0C08; --bg2:#0A0906;
+      --hudGrad1:rgba(34,26,12,.72); --hudGrad2:rgba(22,16,8,.58);
+      --glass-1:rgba(255,228,168,.10); --glass-2:rgba(184,133,46,.08);
+      --stageGlass:linear-gradient(180deg, rgba(255,228,168,.045), rgba(0,0,0,0));
+      --panelPattern: radial-gradient(160px 100px at 70% 18%, rgba(255,210,120,.06), transparent 60%),
+                      radial-gradient(220px 160px at 18% 6%, rgba(184,133,46,.05), transparent 60%);
+      --btnGlow:0 0 22px rgba(255,210,120,.22);
+      --heartGlow:rgba(255,210,120,.88);
+    }
+    @keyframes goldBreath{0%{filter:brightness(1)}50%{filter:brightness(1.08)}100%{filter:brightness(1)}}
+    body[data-skin="魔法-金耀日蝕"] .ic-btn,
+    body[data-skin="魔法-金耀日蝕"] .btn{
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0) 42%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 2px, rgba(0,0,0,0) 2px 6px),
+        radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.16), rgba(255,255,255,0) 58%),
+        var(--glass-1);
+      border-color: rgba(255,210,120,.50);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 8px 22px rgba(0,0,0,.28), 0 0 32px rgba(255,210,120,.18);
+      animation: goldBreath 3.5s ease-in-out infinite;
+    }
+    body[data-skin="魔法-金耀日蝕"] .ic-btn:active,
+    body[data-skin="魔法-金耀日蝕"] .btn:active{
+      transform: translateY(1px);
+      box-shadow: inset 0 1px 0 rgba(0,0,0,.35), 0 6px 18px rgba(0,0,0,.24);
+      filter: brightness(1.08);
+    }
+
+  
+    /* ======== 兔兔・奶油雲朵 ======== */
+    body[data-skin="兔兔-奶油雲朵"]{
+      --ink:#FFF9FB; --muted:#F7DDE6;
+      --stroke:rgba(255,200,180,.28);
+      --bg1:#1a1218; --bg2:#0b0a10;
+      --hudGrad1:rgba(255,240,246,.18); --hudGrad2:rgba(255,255,255,.10);
+      --glass-1:rgba(255,255,255,.18); --glass-2:rgba(255,255,255,.12);
+      --stageGlass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+      --panelPattern:none;
+      --btnGlow:0 0 20px rgba(255,190,220,.18);
+      --heartGlow:rgba(255,182,193,.85);
+    }
+    body[data-skin="兔兔-奶油雲朵"] .hud{ border-radius:20px; box-shadow:0 10px 34px rgba(255,190,220,.18), 0 2px 0 rgba(255,255,255,.04) inset; }
+    body[data-skin="兔兔-奶油雲朵"] .hearts .life-icon, body[data-skin="兔兔-奶油雲朵"] .hearts .life-icon svg{width:24px;height:24px}
+    body[data-skin="兔兔-奶油雲朵"] .hearts.compact .life-icon, body[data-skin="兔兔-奶油雲朵"] .hearts.compact .life-icon svg{width:21px;height:21px}
+    @media (max-width:360px){ body[data-skin="兔兔-奶油雲朵"] .hearts .life-icon, body[data-skin="兔兔-奶油雲朵"] .hearts .life-icon svg{width:22px;height:22px} }
+    body[data-skin="兔兔-奶油雲朵"] .ic-btn,
+    body[data-skin="兔兔-奶油雲朵"] .btn{
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 46%),
+        radial-gradient(90% 120% at 30% 18%, rgba(255,244,234,.36), rgba(255,244,234,0) 60%),
+        var(--glass-1);
+      border-color: rgba(255,210,230,.45);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 8px 22px rgba(0,0,0,.22), 0 0 24px rgba(255,200,220,.20);
+      transition: filter .2s ease;
+    }
+    body[data-skin="兔兔-奶油雲朵"] .ic-btn:active,
+    body[data-skin="兔兔-奶油雲朵"] .btn:active{ filter: brightness(1.06); transform: translateY(1px); }
+
   </style>
 </head>
 <body data-skin="經典風格">
@@ -145,7 +224,7 @@
             <div class="item"><span>🎨</span>Skin <select aria-label="Skin" id="skinSel"><option>冷藍玻璃</option></select></div>
           </div>
         </div>
-        <div class="pill wide">生命 <b id="lives">3</b> <span class="hearts" aria-hidden="true">❤️❤️❤️</span></div>
+        <div class="pill wide">生命 <b id="lives">3</b> <span class="hearts" id="hearts" aria-hidden="true">❤️❤️❤️</span></div>
       </div>
     </section>
     <div class="hud-sentinel" style="height:0"></div>
@@ -186,7 +265,7 @@
     schedule();
   })();
 
-  /* ---------------- Canvas Renderer（擴充：embers/heat） ---------------- */
+  /* ---------------- Canvas Renderer（含：六芒星、咒文圈、旋渦 embers） ---------------- */
   (function(){
     const cv  = document.getElementById('game');
     const box = document.querySelector('.stage');
@@ -201,11 +280,8 @@
     let snows=null, snowOpts={}, snowKey='';
     let shards=null, shardOpts={}, shardKey='';
 
-    \1
-
-    // 新增：火龍（dragons）與火焰龍捲（tornado）
-    let dragons=null, dragonOpts={}, dragonKey='';
-    let tornado=null, tornadoOpts={}, tornadoKey='';
+    // 星火與熱擾動
+    let embers=null, emberOpts={}, emberKey='';
 
     const rgba = (rgb,a)=>`rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a.toFixed(3)})`;
     function hslToRgb(h,s,l){ s/=100; l/=100; const k=n=> (n+ h/30)%12; const a=s*Math.min(l,1-l); const f=n=> l - a*Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n),1))); return [Math.round(255*f(0)),Math.round(255*f(8)),Math.round(255*f(4))]; }
@@ -219,7 +295,7 @@
       cv.style.width = '100%'; cv.style.height = Math.round(h) + 'px';
       cv.width  = Math.round(w * dpr); cv.height = Math.round(h * dpr);
       W=cv.width;H=cv.height;
-      ensureStarsIfNeeded(); ensureSnowIfNeeded(); ensureShardsIfNeeded(); ensureEmbersIfNeeded(); ensureDragonsIfNeeded(); ensureTornadoIfNeeded();
+      ensureStarsIfNeeded(); ensureSnowIfNeeded(); ensureShardsIfNeeded(); ensureEmbersIfNeeded(); ensureCloudsIfNeeded();
     }
 
     /* ========= 木紋 ========= */
@@ -236,200 +312,439 @@
       woodPattern = ctx.createPattern(oc,'repeat'); woodKind = kind;
     }
 
-    /* ========= 星點 ========= */
+    
+        
+    /* ========= 奶油雲層（集中雲核版：強化核心、限制擴散、橢圓裁切） ========= */
+    let clouds=null, cloudOpts={}, cloudKey='';
+    
+    function ensureCloudsIfNeeded(){
+      if(!(skin.effects && skin.effects.clouds)){ clouds=null; cloudOpts={}; return; }
+      const o = typeof skin.effects.clouds==='object' ? skin.effects.clouds : {};
+      const count = Math.max(4, o.count || 7);
+      // v4: cumulus clustered (nuclei + lobes), flat base shading
+      const key = [W,H,count,o.speed||0.003,o.alpha||0.18,o.sizePx||300,o.lifeMs||32000,o.fadeInMs||6000,o.fadeOutMs||8000,'cluster-v4'].join('x');
+      if(clouds && cloudKey===key) return;
+      cloudKey = key; cloudOpts = o;
+      const rng = Math.random;
+      const baseScale = W/1100;
+      const sizePx = ((o.sizePx || 300) * 0.55) * Math.max(0.7, Math.min(1.5, baseScale));
+
+      function makePalette(){
+        const r = rng();
+        let h1, h2, s1 = 86 + rng()*10, s2 = 84 + rng()*12, l1 = 92 + rng()*4, l2 = 89 + rng()*5;
+        if(r < 0.45){        // 蜜桃 → 草莓粉
+          h1 = 24 + rng()*8; h2 = 340 + rng()*12;
+        }else if(r < 0.75){  // 香草 → 蜜桃
+          h1 = 36 + rng()*6; h2 = 14 + rng()*10;
+        }else{               // 奶油白 → 玫瑰粉
+          h1 = 10 + rng()*8; h2 = 350 + rng()*10;
+        }
+        return { A: hslToRgb(h1, Math.min(100, s1), Math.min(100, l1)),
+                 B: hslToRgb(h2, Math.min(100, s2), Math.min(100, l2)) };
+      }
+
+      function clampEllipse(x,y,rx,ry){
+        const nx = x/rx, ny = y/ry;
+        const k = Math.hypot(nx,ny);
+        if(k<=1) return {x,y};
+        const s = 1/k; return { x: x*s, y: y*s };
+      }
+
+      clouds = new Array(count).fill(0).map(()=>{
+        const bw = sizePx * (0.95 + rng()*0.35);
+        const bh = bw * (0.52 + rng()*0.36);
+        const life = (o.lifeMs || 32000) * (0.85 + rng()*0.40);
+        const fadeIn  = o.fadeInMs  || 6000;
+        const fadeOut = o.fadeOutMs || 8000;
+
+        // 核心種子（2–4 個）— 2D 高斯，集中雲心
+        const seedN = 2 + Math.floor(rng()*3);
+        const seeds = [];
+        for(let i=0;i<seedN;i++){
+          // 確保分佈集中於雲中心（避免空心）
+          let sx = (rng()-0.5) * bw * 0.35;
+          let sy = (rng()-0.5) * bh * 0.28 - bh*0.08; // 稍微偏上
+          const cl = clampEllipse(sx, sy, bw*0.45, bh*0.40);
+          sx = cl.x; sy = cl.y;
+          seeds.push({sx, sy, r:(0.20 + rng()*0.14)});
+        }
+
+        // 雲瓣：由種子擴展（每個種子 3–6 個瓣）＋中心大瓣保證不空心
+        const lobes = [];
+        for(const sd of seeds){
+          const ln = 3 + Math.floor(rng()*4);
+          for(let i=0;i<ln;i++){
+            let lx = sd.sx + (rng()-0.5)*bw*0.22;
+            let ly = sd.sy + (rng()-0.5)*bh*0.20;
+            const cl = clampEllipse(lx, ly, bw*0.52, bh*0.50);
+            lx = cl.x; ly = cl.y;
+            const rMul = (sd.r * (0.85 + rng()*0.45));
+            const b = 0.68 + rng()*0.32;
+            lobes.push({ xoff: lx/bw, yoff: ly/bh, rMul, b });
+          }
+        }
+        // 中心雲核（最大瓣）
+        lobes.push({ xoff: 0, yoff: -0.06, rMul: 0.26 + rng()*0.10, b: 0.95 });
+
+        // 底裙少量小瓣，集中度更高
+        const skirtN = 2 + Math.floor(rng()*3);
+        for(let i=0;i<skirtN;i++){
+          const t = (i/(skirtN-1)-0.5);
+          const lx = t*(0.6 + rng()*0.2) * bw * 0.6;
+          const ly = (0.06 + rng()*0.10) * bh;
+          const cl = clampEllipse(lx, ly, bw*0.55, bh*0.55);
+          lobes.push({ xoff: cl.x/bw, yoff: cl.y/bh, rMul: 0.12 + rng()*0.08, b: 0.60 + rng()*0.18 });
+        }
+
+        const palette = makePalette();
+        const tilt = (rng()-0.5) * 0.22;             // 輕微傾角
+        const speed = (o.speed||0.003)*(0.65 + rng()*0.70);
+        const alpha = (o.alpha||0.18)*(0.85 + rng()*0.35);
+        const edgeSoft = 0.72 + rng()*0.22;          // 邊緣柔化
+        const breathAmp = 0.00 + rng()*0.04;         // 微呼吸
+
+        // 少量飄絮（偏下風向，避免四散）
+        const wisps = Array.from({length: (rng()<0.45? Math.floor(rng()*3) : 0)}, ()=>({
+          x:(rng()-0.2)*0.6, y:0.00 + rng()*0.22, r:0.06 + rng()*0.08, a:0.30 + rng()*0.25
+        }));
+
+        return {
+          x0: rng()*W,
+          y: (H*0.22) + rng()*H*0.42,
+          bw, bh, lobes,
+          paletteA: palette.A, paletteB: palette.B,
+          tilt, phase: rng()*life, speed, a: alpha,
+          lifeMs: life, fadeInMs: fadeIn, fadeOutMs: fadeOut,
+          edgeSoft, breathAmp, wisps,
+          baseFlat: 0.30 + rng()*0.12   // 底部扁平比例（0.3–0.42）
+        };
+      });
+    }
+
+    
+    function drawClouds(t){
+      if(!clouds) return;
+      ctx.save();
+      ctx.globalCompositeOperation='source-over';
+
+      for(const c of clouds){
+        // ----- 位置與時間參數 -----
+        const dx = (t*c.speed + c.phase*0.35) % (W + c.bw*2);
+        const x = -c.bw + dx;
+        const y = c.y + Math.sin(t*0.00018 + c.phase*0.013)*6;
+        const cx = x + c.bw*0.5, cy = y + c.bh*0.5;
+
+        // 生命淡入/淡出
+        const L = c.lifeMs, fi = c.fadeInMs, fo = c.fadeOutMs;
+        const tt = (t + c.phase) % L;
+        let lifeA = 1.0;
+        if(tt < fi){ lifeA = tt/fi; }
+        else if(tt > L - fo){ lifeA = (L-tt)/fo; }
+        lifeA = Math.max(0, Math.min(1, lifeA));
+
+        // 顏色/透明度
+        const colA = c.paletteA || [255,244,234];
+        const colB = c.paletteB || [255,217,230];
+        const a0 = Math.min(0.50, c.a*lifeA);
+
+                // ----- 棉團雲瓣（集中排列） -----
+        const cosT = Math.cos(c.tilt||0), sinT = Math.sin(c.tilt||0);
+        const baseY = cy + c.bh*(c.baseFlat!=null? c.baseFlat : 0.34); // 扁平基準線
+        // 依相對 y 排序，讓上層瓣蓋過下層（塑造層次）
+        const lobes = c.lobes.slice().sort((a,b)=> (a.yoff - b.yoff));
+
+        // 先畫出上半部（clip：避免底部圓滑過頭）
+        ctx.save();
+        ctx.beginPath();
+        // 曲線上緣裁切（避免直線長方形感）
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, baseY);
+        // 以一條淺拱曲線作為雲底邊緣
+        ctx.quadraticCurveTo(W*0.5, baseY - c.bh*0.22, W, baseY);
+        ctx.lineTo(W, 0);
+        ctx.closePath();
+        ctx.clip();
+
+        let li = 0;
+        for(const l of lobes){
+          // 旋轉後位置
+          const dx0 = c.bw * (l.xoff||0);
+          const dy0 = c.bh * (l.yoff||0);
+          const rx = cosT*dx0 - sinT*dy0;
+          const ry = sinT*dx0 + cosT*dy0;
+          const lx = cx + rx, ly = cy + ry;
+
+          // 半徑＋微呼吸
+          const rBase = Math.max(2, (c.bw * (l.rMul||0.16)) * 0.92);
+          const rPulse = 1 + (c.breathAmp||0)*Math.sin(t*0.0015 + c.phase*0.008 + li*0.7);
+          const rr = Math.max(2, rBase * rPulse);
+
+          const lb = (l && typeof l.b==='number') ? l.b : 1.0;
+          // 漸層中心稍微上移，製造向上受光
+          const ly2 = ly - rr*0.18;
+          const gg = ctx.createRadialGradient(lx,ly2, rr*0.08, lx,ly2, rr * (0.78 - 0.18*(c.edgeSoft||0.0)));
+          gg.addColorStop(0, `rgba(${colA[0]},${colA[1]},${colA[2]},${(a0*0.95*lb).toFixed(3)})`);
+          gg.addColorStop(1, `rgba(${colB[0]},${colB[1]},${colB[2]},0)`);
+          ctx.fillStyle=gg;
+          ctx.beginPath(); ctx.arc(lx,ly, rr, 0, Math.PI*2); ctx.fill();
+          li++;
+        }
+        ctx.restore();
+
+        
+        // 下風向的少量絮絲（不破壞集中度）
+        if(c.wisps && c.wisps.length){
+          for(const w of c.wisps){
+            const dx0 = c.bw * w.x, dy0 = c.bh * w.y;
+            const rx = cosT*dx0 - sinT*dy0;
+            const ry = sinT*dx0 + cosT*dy0;
+            const lx = cx + rx, ly = cy + ry;
+            const r = Math.max(2, c.bw * w.r);
+            const ga = (a0 * lifeA) * (0.45 * (w.a||0.5));
+            const gw = ctx.createRadialGradient(lx,ly, r*0.06, lx,ly, r*0.95);
+            gw.addColorStop(0, `rgba(${colA[0]},${colA[1]},${colA[2]},${ga.toFixed(3)})`);
+            gw.addColorStop(1, `rgba(${colB[0]},${colB[1]},${colB[2]},0)`);
+            ctx.fillStyle=gw;
+            ctx.beginPath(); ctx.arc(lx,ly, r, 0, Math.PI*2); ctx.fill();
+          }
+        }
+      }
+
+      ctx.restore();
+    }
+
+/* ========= 星點 ========= */
     function buildStars(){
-      const baseCount = 140; const scale = (W*H)/(1100*700); const countScale = (starOpts.countScale||1);
-      const N = Math.max(60, Math.floor(baseCount*scale*countScale));
-      stars = new Array(N).fill(0).map(()=>({ x:Math.random()*W, y:Math.random()*H, r:(starOpts.sizeMin||0.9)+Math.random()*((starOpts.sizeMax||1.8)-(starOpts.sizeMin||0.9)), a:0.05+Math.random()*0.12, ph:Math.random()*Math.PI*2, sp:0.6+Math.random()*1.2, px:0.3+Math.random()*0.7 }));
+      const baseCount = (starOpts && typeof starOpts.count==='number') ? starOpts.count : 140; const scale = (W*H)/(1100*700); const N = Math.max( Math.min(60, baseCount), Math.floor(baseCount*scale) );
+      stars = new Array(N).fill(0).map(()=>({ x:Math.random()*W, y:Math.random()*H, r:0.9+Math.random()*0.9, a:0.05+Math.random()*0.12, ph:Math.random()*Math.PI*2, sp:0.6+Math.random()*1.2, px:0.3+Math.random()*0.7 }));
       starSizeKey = W+'x'+H;
     }
     function ensureStarsIfNeeded(){ if(!(skin.effects && skin.effects.stars)){ stars=null; return; } if(!stars || starSizeKey !== (W+'x'+H)) buildStars(); }
-    function drawStarField(t){ if(!stars) return; const tw=(typeof skin.effects.stars==='object' && skin.effects.stars.twinkle!=null)? skin.effects.stars.twinkle : 0.6; const drift=(typeof skin.effects.stars==='object' && skin.effects.stars.drift!=null)? skin.effects.stars.drift : 0.008; const glow=(typeof skin.effects.stars==='object' && skin.effects.stars.glow!=null)? skin.effects.stars.glow : 1.2; const bright=(typeof skin.effects.stars==='object' && skin.effects.stars.brightness!=null)? skin.effects.stars.brightness : 1.0; ctx.save(); ctx.globalCompositeOperation='screen'; for(const s of stars){ const twi=0.5+0.5*Math.sin(t*0.001*s.sp + s.ph); const a=(s.a*(0.55+tw*twi))*bright; const dx=(t*drift*s.px)%(W+20); const x=(s.x+dx), y=s.y, r=s.r*dpr*glow; const g=ctx.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,`rgba(255,255,255,${(a*1.5).toFixed(3)})`); g.addColorStop(1,'rgba(180,160,255,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); } ctx.restore(); }
+    function drawStarField(t){ if(!stars) return; ctx.save(); ctx.globalCompositeOperation='screen'; for(const s of stars){ const twi=0.5+0.5*Math.sin(t*0.001*s.sp + s.ph); const baseA=(s.a*(0.55+0.6*twi)); const bMul = (starOpts && starOpts.brightness!=null)? starOpts.brightness : 1.0; const a = baseA * bMul; const dx=(t*0.008*s.px)%(W+20); const x=(s.x+dx), y=s.y, r=s.r*dpr*1.2; const g=ctx.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,`rgba(255,255,255,${(a*1.35).toFixed(3)})`); g.addColorStop(1,'rgba(180,160,255,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); } ctx.restore(); }
 
     /* ========= 冰雪 ========= */
-    function ensureSnowIfNeeded(){ if(!(skin.effects && skin.effects.snow)){ snows=null; snowOpts={}; return; } const o=typeof skin.effects.snow==='object'? skin.effects.snow : {}; const density=Math.max(40, o.count || Math.round((W*H)/(420*420)*(o.countScale||120))); const key=[W,H,density,o.gust||0,o.twinkle?1:0,o.sizeMin||1,o.sizeMax||3].join('x'); if(snows && snowKey===key) return; snowKey=key; snows=new Array(density).fill(0).map(()=>{ const size=(o.sizeMin||1)+Math.random()*((o.sizeMax||3)-(o.sizeMin||1)); return {x:Math.random()*W,y:Math.random()*H,size, baseX:Math.random()*W, speed:(o.speed||0.25)+Math.random()*((o.speedMax||0.9)-(o.speed||0.25)), sway:(o.sway||0.8)*(0.5+Math.random()), phase:Math.random()*Math.PI*2, twinkle:!!o.twinkle && Math.random()<0.25}; }); snowOpts=o; }
+    function ensureSnowIfNeeded(){ if(!(skin.effects && skin.effects.snow)){ snows=null; snowOpts={}; return; } const o=typeof skin.effects.snow==='object'? skin.effects.snow : {}; const density=Math.max(40, o.count || Math.round((W*H)/(420*420)*120)); const key=[W,H,density,o.gust||0,o.twinkle?1:0,o.sizeMin||1,o.sizeMax||3].join('x'); if(snows && snowKey===key) return; snowKey=key; snows=new Array(density).fill(0).map(()=>{ const size=(o.sizeMin||1)+Math.random()*((o.sizeMax||3)-(o.sizeMin||1)); return {x:Math.random()*W,y:Math.random()*H,size, baseX:Math.random()*W, speed:(o.speed||0.25)+Math.random()*((o.speedMax||0.9)-(o.speed||0.25)), sway:(o.sway||0.8)*(0.5+Math.random()), phase:Math.random()*Math.PI*2, twinkle:!!o.twinkle && Math.random()<0.25}; }); snowOpts=o; }
     function drawSnow(t){ if(!snows) return; const tt=t*0.001, gust=snowOpts.gust||0; const aBase=Math.min(.22, .10 + .12*(Math.sin(tt*0.6+1.7)*.5+.5)); const glow=Math.min(.14, .06 + .08*(Math.sin(tt*0.8+0.4)*.5+.5)); for(const f of snows){ f.phase += 0.01 + gust*0.015; f.y += f.speed * (1 + 0.6*Math.sin(tt*0.9)); f.x = f.baseX + Math.sin(f.phase)*(f.sway*4 + gust*24); if(f.y>H+10){ f.y=-10; f.baseX=Math.random()*W; } if(f.x<-10){ f.baseX=W+10; } const a=aBase*(f.twinkle?(0.7+0.3*Math.sin(tt*6+f.phase)):1); ctx.save(); ctx.globalAlpha=a; ctx.beginPath(); ctx.arc(f.x,f.y,f.size*dpr,0,Math.PI*2); ctx.fillStyle='white'; ctx.fill(); if(glow>0){ const r=(f.size*3+2)*dpr; const g=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,r); g.addColorStop(0,'rgba(255,255,255,'+glow+')'); g.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(f.x,f.y,r,0,Math.PI*2); ctx.fill(); } ctx.restore(); } }
 
     /* ========= 冰裂 ========= */
     function ensureShardsIfNeeded(){ if(!(skin.effects && skin.effects.shards)){ shards=null; shardOpts={}; return; } const o=typeof skin.effects.shards==='object'? skin.effects.shards : {}; const count=Math.max(6, o.count || Math.round((W+H)/200)); const key=[W,H,count,o.alpha||0.12,o.speed||0.06,o.lenMin||40,o.lenMax||180].join('x'); if(shards && shardKey===key) return; shardKey=key; shards=new Array(count).fill(0).map(()=>{ const len=(o.lenMin||40)+Math.random()*((o.lenMax||180)-(o.lenMin||40)); const angle=(o.angleDeg!==undefined? o.angleDeg : -28)*Math.PI/180; const x=Math.random()*W, y=Math.random()*H; return {x,y,len,angle,width:(o.width||1.2)*dpr,alpha:(o.alpha||0.12),speed:(o.speed||0.06)}; }); shardOpts=o; }
     function drawShards(t){ if(!shards) return; const drift=(shardOpts.drift||0.20); ctx.save(); ctx.globalAlpha=Math.min(.22,(shardOpts.alpha||0.12)); ctx.strokeStyle='rgba(220,245,255,1)'; ctx.lineWidth=Math.max(0.6,(shardOpts.width||1.2)*dpr); for(const s of shards){ s.x += Math.cos(s.angle)*s.speed*60; s.y += Math.sin(s.angle)*s.speed*60 + drift; if(s.x<-50 || s.x>W+50 || s.y<-50 || s.y>H+50){ s.x=Math.random()*W; s.y=-20; } const x2=s.x+Math.cos(s.angle)*s.len, y2=s.y+Math.sin(s.angle)*s.len; ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(x2,y2); ctx.stroke(); } ctx.restore(); }
 
-
-    /* ========= 新增：火龍（dragons） ========= */
-    function ensureDragonsIfNeeded(){
-      if(!(skin.effects && skin.effects.dragons)){ dragons=null; dragonOpts={}; return; }
-      const o = typeof skin.effects.dragons==='object' ? skin.effects.dragons : {};
-      const count = Math.max(1, o.count||1);
-      const key = [W,H,count,o.width||14,o.speed||0.0008,o.ampX||0.28,o.ampY||0.16,o.hue||18,o.jitter||0.25].join('x');
-      if(dragons && dragonKey===key) return;
-      dragonKey = key;
-      dragons = new Array(count).fill(0).map((_,i)=>{
-        return {
-          seed: Math.random()*1000 + i*123.45,
-          width: (o.width||14)* (0.85 + Math.random()*0.3),
-          speed: o.speed || 0.0008,
-          ampX: (o.ampX||0.28),
-          ampY: (o.ampY||0.16),
-          hue: (o.hue||18) + Math.random()*8,
-          jitter: o.jitter||0.25,
-          phase: Math.random()*Math.PI*2
-        };
-      });
-      dragonOpts = o;
-    }
-    function drawDragons(t){
-      if(!dragons) return;
-      const tt = t;
-      const N = 120; // segments per dragon
-      ctx.save();
-      ctx.globalCompositeOperation='screen';
-      for(const d of dragons){
-        const baseY = H*0.38;
-        const baseX = W*0.5;
-        const speed = d.speed;
-        for(let i=0;i<N;i++){
-          const s = i/(N-1);
-          const prog = (tt*speed + d.phase + s*6.0 + d.seed*0.01);
-          const x = baseX + Math.sin(prog*1.2)*W*d.ampX*(0.5+0.5*Math.cos(s*Math.PI)) + Math.sin(prog*0.6+d.seed)*W*0.02;
-          const y = baseY + Math.cos(prog*1.1)*H*d.ampY*(0.3+0.7*s) + s*H*0.20;
-          const r = (d.width*(1.0 - s*0.65))*Math.max(1, dpr);
-          const g = ctx.createRadialGradient(x,y,0,x,y,r*3.2);
-          const hue = d.hue + 10*(0.5+0.5*Math.sin(prog*0.8));
-          const cCore = `hsla(${hue}, 100%, 55%, ${(0.65+0.25*(1-s)).toFixed(3)})`;
-          const cMid  = `hsla(${hue+8}, 100%, 50%, 0.18)`;
-          g.addColorStop(0.0, cCore);
-          g.addColorStop(1.0, cMid);
-          ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.arc(x,y,r*1.4,0,Math.PI*2);
-          ctx.fill();
-        }
-        // dragon head glow
-        const headProg = (tt*speed + d.phase + d.seed*0.01 + 6.0);
-        const hx = W*0.5 + Math.sin(headProg*1.2)*W*d.ampX + Math.sin(headProg*0.6+d.seed)*W*0.02;
-        const hy = H*0.38 + Math.cos(headProg*1.1)*H*d.ampY + H*0.20;
-        const hr = d.width*1.6*Math.max(1,dpr);
-        const hg = ctx.createRadialGradient(hx,hy,0,hx,hy,hr*3.6);
-        hg.addColorStop(0, 'hsla(20, 100%, 65%, 0.95)');
-        hg.addColorStop(1, 'hsla(28, 100%, 45%, 0)');
-        ctx.fillStyle = hg;
-        ctx.beginPath(); ctx.arc(hx,hy,hr*1.8,0,Math.PI*2); ctx.fill();
-      }
-      ctx.restore();
-    }
-    
-    /* ========= 新增：火焰龍捲（tornado） ========= */
-    function ensureTornadoIfNeeded(){
-      if(!(skin.effects && skin.effects.tornado)){ tornado=null; tornadoOpts={}; return; }
-      const o = typeof skin.effects.tornado==='object' ? skin.effects.tornado : {};
-      const key = [W,H,o.cxFrac||0.5,o.baseRFrac||0.46,o.topRFrac||0.10,o.heightFrac||0.82,o.alpha||0.08,o.bands||5,o.swirl||1.6].join('x');
-      if(tornado && tornadoKey===key) return;
-      tornadoKey = key;
-      tornado = { cx:(o.cxFrac||0.5)*W, baseR: (o.baseRFrac||0.46)*Math.min(W,H), topR:(o.topRFrac||0.10)*Math.min(W,H), height:(o.heightFrac||0.82)*H };
-      tornadoOpts = Object.assign({ alpha:0.08, bands:5, swirl:1.6 }, o);
-    }
-    function drawTornado(t){
-      if(!tornado) return;
-      const {cx, baseR, topR, height} = tornado;
-      const bands = Math.max(3, tornadoOpts.bands||5);
-      const layers = 36;
-      ctx.save();
-      ctx.globalCompositeOperation='screen';
-      for(let b=0;b<bands;b++){
-        const phase = (t*0.001*(0.3 + 0.15*b) + b*0.8);
-        for(let i=0;i<layers;i++){
-          const s = i/(layers-1);
-          const y = H - s*height;
-          const R = baseR*(1-s) + topR*s;
-          const theta = phase + s*8.0 + i*0.03*b;
-          const x = cx + Math.cos(theta)*R*0.6;
-          const r = (8 + 18*(1-s))*Math.max(1,dpr);
-          const g = ctx.createRadialGradient(x,y,0,x,y,r*3.5);
-          const aCore = (0.25 + 0.4*(1-s))* (tornadoOpts.alpha||0.08);
-          g.addColorStop(0, `hsla(20, 100%, 60%, ${aCore.toFixed(3)})`);
-          g.addColorStop(1, 'hsla(28, 100%, 45%, 0)');
-          ctx.fillStyle = g;
-          ctx.beginPath(); ctx.arc(x,y,r*1.4,0,Math.PI*2); ctx.fill();
-        }
-      }
-      ctx.restore();
-    }
-
-    /* ========= 新增：星火（embers） ========= */
+    /* ========= 星火（embers） with Vortex Mode ========= */
     function ensureEmbersIfNeeded(){
       if(!(skin.effects && skin.effects.embers)){ embers=null; emberOpts={}; return; }
       const o=typeof skin.effects.embers==='object'? skin.effects.embers : {};
-      const base = Math.round((W*H)/(1100*700) * (o.count || 160));
-      const key=[W,H,base,o.sizeMin||1.0,o.sizeMax||2.6,o.up||0.35,o.swirl||0.18,o.twinkle?1:0].join('x');
-      if(embers && emberKey===key) return; emberKey=key;
-      const vortex = (skin.effects && skin.effects.tornado) ? (skin.effects.tornado) : null;
-      embers = new Array(base).fill(0).map(()=>{
+      const N = Math.round((W*H)/(1100*700) * (o.count || 320));
+      const key=[W,H,N,o.sizeMin||1.0,o.sizeMax||2.6,o.mode||'rise',o.omega||0.0018,(o.tail||6), (o.center?o.center.join(','):'0.5,0.5'), o.twinkle?1:0, o.noise||0.12].join('|');
+      if(embers && emberKey===key) return;
+      emberKey=key;
+      embers = new Array(N).fill(0).map(()=>{
         const s=(o.sizeMin||1.0)+Math.random()*((o.sizeMax||2.6)-(o.sizeMin||1.0));
-        const baseY = H*(0.30 + 0.70*Math.random());
-        const baseX = Math.random()*W;
-        const p = { x: baseX, y: baseY, vx:(Math.random()-.5)*0.2, vy:-(o.up||0.35)*(0.6+Math.random()*0.8), size:s, hue: 25+Math.random()*20, tw: (!!o.twinkle && Math.random()<0.3), t:Math.random()*Math.PI*2 };
-        if(vortex){
-          const cx = (vortex.cxFrac||0.5)*W;
-          const baseR = (vortex.baseRFrac||0.46)*Math.min(W,H);
-          const topR  = (vortex.topRFrac||0.10)*Math.min(W,H);
-          const h = 1 - (p.y/H);
-          const R = baseR*(1-h) + topR*h;
-          p.theta = Math.random()*Math.PI*2;
-          p.rad = R;
-          p.cx = cx;
-          p.baseR = baseR; p.topR = topR;
-          p.vortex = { swirl: vortex.swirl||1.6, heightFrac: vortex.heightFrac||0.82 };
-        }
+        const p={
+          x:Math.random()*W, y:Math.random()*H,
+          vx:(Math.random()-.5)*0.1, vy:(Math.random()-.5)*0.1,
+          size:s, hue: 25+Math.random()*20, tw: (!!o.twinkle && Math.random()<0.4),
+          t:Math.random()*Math.PI*2, hist:[]
+        };
         return p;
       });
       emberOpts=o;
     }
-    function drawEmbers(t){ if(!embers) return; const swirl=emberOpts.swirl||0.18; ctx.save(); ctx.globalCompositeOperation='screen';
+
+    let lastT=0;
+    function drawEmbers(t){
+      if(!embers) return;
+      const dt = Math.max(10, Math.min(34, lastT? (t - lastT) : 16)); // 估算幀時間，夾在 [10,34]ms
+      const mode = emberOpts.mode || 'rise';
+      ctx.save();
+      ctx.globalCompositeOperation='screen';
+      const cx = W * ((emberOpts.center && emberOpts.center[0] != null)? emberOpts.center[0] : 0.5);
+      const cy = H * ((emberOpts.center && emberOpts.center[1] != null)? emberOpts.center[1] : 0.50);
+      const omega = emberOpts.omega != null ? emberOpts.omega : 0.0018; // rad/ms
+      const tailLen = Math.max(3, emberOpts.tail || 6);
+      const noise = emberOpts.noise != null ? emberOpts.noise : 0.12;
+
       for(const p of embers){
-        if(p.vortex){
-          const h = 1 - (p.y/H);
-          p.rad = p.baseR*(1-h) + p.topR*h;
-          p.theta += 0.06 * (p.vortex.swirl||1.6) * (1.0 - h + 0.2);
-          p.y += p.vy;
-          if(p.y < H*(1 - (p.vortex.heightFrac||0.82))){
-            p.y = H + 4;
-            p.theta = Math.random()*Math.PI*2;
-          }
-          p.x = p.cx + Math.cos(p.theta)*p.rad;
-        } else {
-          p.t += 0.02 + swirl*0.02;
-          p.x += p.vx + Math.sin(p.t)*swirl*1.2; p.y += p.vy - Math.cos(p.t)*swirl*0.4;
-          if(p.y < -10 || p.x<-10 || p.x>W+10){ p.x=Math.random()*W; p.y=H+10; p.t=Math.random()*Math.PI*2; }
+        // --- 更新位置（vortex or rise） ---
+        if(mode==='vortex'){
+          // 指向中心的向量
+          const dx = p.x - cx, dy = p.y - cy;
+          const r = Math.hypot(dx, dy) + 0.0001;
+          // 切向單位向量（逆時針）
+          const tx = -dy / r, ty = dx / r;
+          // 中等速度：vt 隨半徑略增
+          const vt = omega * dt * (0.45 + 0.55*Math.min(1, r/Math.max(120,Math.min(W,H)*0.28)));
+          // 微弱向心/離心雜訊，避免粒子聚集
+          const radialJit = (Math.random()-0.5) * noise;
+          p.vx += tx*vt + radialJit * (dx/r);
+          p.vy += ty*vt + radialJit * (dy/r);
+          // 輕微黏滯阻尼，穩定旋轉
+          p.vx *= 0.985; p.vy *= 0.985;
+        }else{
+          // 舊式：向上飄＋小旋擺
+          p.t += 0.02 + (emberOpts.swirl||0.18)*0.02;
+          p.x += p.vx + Math.sin(p.t)*(emberOpts.swirl||0.18)*1.2;
+          p.y += p.vy - Math.cos(p.t)*(emberOpts.swirl||0.18)*0.4 - (emberOpts.up||0.35);
         }
-        const r=p.size*dpr*(1 + (p.tw? 0.2*Math.sin(t*0.01+(p.t||p.theta||0)*3):0));
-        const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*3.2);
-        const cCore = `hsla(${p.hue}, 100%, 65%, 0.85)`;
-        const cHalo = `hsla(${p.hue+10}, 100%, 50%, 0)`;
-        g.addColorStop(0.0, cCore); g.addColorStop(1.0, cHalo);
-        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,r*1.6,0,Math.PI*2); ctx.fill();
+
+        // 移動
+        p.x += p.vx; p.y += p.vy;
+
+        // 邊界再生：確保全畫面都有粒子
+        if(p.x<-12 || p.x>W+12 || p.y<-12 || p.y>H+12){
+          p.x = Math.random()*W; p.y = Math.random()*H;
+          p.vx = (Math.random()-.5)*0.2; p.vy = (Math.random()-.5)*0.2;
+          p.hist.length = 0;
+        }
+
+        // --- 畫尾巴（歷史路徑） ---
+        p.hist.push({x:p.x, y:p.y});
+        if(p.hist.length>tailLen) p.hist.shift();
+
+        // head glow
+        const twk = p.tw ? (0.85 + 0.15*Math.sin(t*0.012 + p.t*3)) : 1.0;
+        const headR = p.size*dpr*(1.6 * twk);
+        const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,headR*3.0);
+        const colorHue = p.hue;
+        g.addColorStop(0.0, `hsla(${colorHue}, 100%, 65%, 0.90)`);
+        g.addColorStop(1.0, `hsla(${colorHue+10}, 100%, 50%, 0)`);
+        ctx.fillStyle=g;
+        ctx.beginPath(); ctx.arc(p.x,p.y,headR,0,Math.PI*2); ctx.fill();
+
+        // tail segments
+        ctx.lineCap='round';
+        for(let i=1;i<p.hist.length;i++){
+          const a = i/(p.hist.length-1);
+          const p0 = p.hist[i-1], p1 = p.hist[i];
+          const w = Math.max(1, (p.size*1.2*dpr) * (1-a));
+          ctx.strokeStyle = `hsla(${colorHue+6}, 100%, ${55 - a*25}%, ${0.32*(1-a)})`;
+          ctx.lineWidth = w;
+          ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+        }
       }
       ctx.restore();
+      lastT = t;
     }
 
-    /* ========= 新增：熱擾動（heat） ========= */
-    function drawHeatHaze(t){
-      const h = skin.effects && skin.effects.heat; if(!h) return;
-      const bands = h.bands || 3; const amp = (h.amplitude||8)*dpr; const speed = h.speed || 0.0007; const alpha = (h.alpha!=null? h.alpha:0.06);
-      ctx.save(); ctx.globalCompositeOperation = 'soft-light';
-      for(let i=0;i<bands;i++){
-        const y0 = H*(0.25 + 0.22*i/bands) + Math.sin(t*speed + i)*12;
-        const grad = ctx.createLinearGradient(0,y0-amp,0,y0+amp);
-        grad.addColorStop(0,`rgba(255,180,120,0)`);
-        grad.addColorStop(0.5,`rgba(255,180,120,${alpha})`);
-        grad.addColorStop(1,`rgba(255,180,120,0)`);
-        ctx.fillStyle=grad; ctx.fillRect(0,y0-amp,W,amp*2);
-      }
-      ctx.restore();
-    }
-
-    /* ========= Prism / Pulse（沿用） ========= */
+    /* ========= 背景框架與 LED ========= */
     function drawPrism(t){ const p=skin.effects && skin.effects.prism; if(!p) return; const beams=p.beams||8, speed=p.speed||0.0005, alpha=(p.alpha!=null?p.alpha:0.10), spread=p.spread||0.85, hueShift=p.hueShift||0; const cx=W*0.5, cy=H*0.45, R=Math.hypot(W,H); ctx.save(); ctx.globalCompositeOperation='screen'; for(let i=0;i<beams;i++){ const ang=t*speed + i*(Math.PI*2/beams); ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang); const w=R*0.12; const grad=ctx.createLinearGradient(0,0,R,0); const h0=(i*360/beams + (t*0.02) + hueShift)%360, h1=(h0+60)%360; const c0=hslToRgb(h0,85,62), c1=hslToRgb(h1,80,58); grad.addColorStop(0.00,'rgba(255,255,255,0)'); grad.addColorStop(0.10,rgba(c0,0.20)); grad.addColorStop(0.55,rgba(c1,0.12)); grad.addColorStop(1.00,'rgba(255,255,255,0)'); ctx.fillStyle=grad; ctx.globalAlpha=alpha; ctx.beginPath(); ctx.moveTo(-w,0); ctx.lineTo(R*spread,-w*0.40); ctx.lineTo(R,0); ctx.lineTo(R*spread,w*0.40); ctx.lineTo(w,0); ctx.closePath(); ctx.fill(); ctx.restore(); } ctx.restore(); }
     function drawPulse(t){ const p=skin.effects && skin.effects.pulse; if(!p) return; const time = t * (p.speedFactor!=null? p.speedFactor : 1.0); const rings = p.rings || 5; const thick = Math.max(1.5,(p.thickness||6)*dpr*0.85); const col = p.color || skin.base; const col2 = mix(col, [120,240,255], 0.35); const strength = (p.strength!=null? p.strength:0.20); const cx=W/2, cy=H*0.48, maxR=Math.min(W,H)*0.56; const micro = Math.max(1, p.microRipples||2); const dash  = p.dash!==false; const baseDelay = skin.period / rings; const ringDelay = (p.ringDelayMs!=null) ? p.ringDelayMs : baseDelay * (p.intervalMul || 1); ctx.save(); ctx.globalCompositeOperation='screen'; for(let i=0;i<rings;i++){ const raw = ((time - i*ringDelay) % skin.period + skin.period) % skin.period; const ph = raw / skin.period; const jitter = Math.sin((time*0.0009 + i)*3.7)*0.012; const eased = easeOutQuad(Math.min(1, Math.max(0, ph + jitter))); const r = eased * maxR; const fade = Math.pow(1-ph, 2.15); ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.lineWidth = thick*(0.72 + 0.52*(1-ph)); ctx.shadowColor = rgba(col, Math.min(0.30,strength*0.50)*fade); ctx.shadowBlur = 18; ctx.strokeStyle = rgba(col, Math.min(0.78, strength*0.92) * fade); ctx.stroke(); ctx.restore(); ctx.save(); ctx.beginPath(); ctx.arc(cx,cy, r*0.996, 0, Math.PI*2); ctx.lineWidth = Math.max(1, thick*0.42); ctx.strokeStyle = rgba(col2, Math.min(0.48, strength*0.40) * fade); ctx.stroke(); ctx.restore(); const band = Math.max(2, thick*1.2); const rg = ctx.createRadialGradient(cx,cy, Math.max(0,r-band), cx,cy, r+band); rg.addColorStop(0.45, 'rgba(0,0,0,0)'); rg.addColorStop(0.50, rgba(col, Math.min(0.36, strength*0.30)*fade)); rg.addColorStop(0.55, 'rgba(0,0,0,0)'); ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(cx,cy,r+band,0,Math.PI*2); ctx.fill(); for(let m=1;m<=micro;m++){ const rr = r + m*(band*0.65); const g2 = ctx.createRadialGradient(cx,cy, rr-1.5, cx,cy, rr+1.5); g2.addColorStop(0,'rgba(0,0,0,0)'); g2.addColorStop(0.49, rgba(col2, Math.min(0.33, strength*0.24)*(fade*(0.85-0.25*m)))); g2.addColorStop(0.51, 'rgba(0,0,0,0)'); ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(cx,cy,rr+2,0,Math.PI*2); ctx.fill(); } if(dash){ ctx.save(); ctx.setLineDash([8,14]); ctx.lineDashOffset = - (time*0.06) * (i+1); ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.lineWidth = Math.max(1, thick*0.34); ctx.strokeStyle = rgba(col2, Math.min(0.30, strength*0.22) * fade); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); } } ctx.restore(); }
+
+    /* ========= 魔法幾何：六芒星 ========= */
+    function drawHexagram(t){
+      const hex = skin.effects && skin.effects.hexagram; if(!hex) return;
+      const cx = W*0.5, cy = H*0.48;
+      const R = Math.min(W,H) * (hex.radiusMul != null ? hex.radiusMul : 0.44);
+      const rotT = (t % (hex.rotationPeriodMs||24000)) / (hex.rotationPeriodMs||24000);
+      const ang = rotT * Math.PI*2; // 24s 一圈（順時針）
+      // 明暗曲線：9s 漸亮 3s 回落 → 12s 週期
+      const up = hex.fadeUpMs != null ? hex.fadeUpMs : 9000;
+      const down = hex.fadeDownMs != null ? hex.fadeDownMs : 3000;
+      const cyc = (up+down);
+      const tt = (t % cyc);
+      const br = tt < up ? (0.35 + 0.65 * (0.5 - 0.5*Math.cos(Math.PI*tt/up)))
+                         : (1.0 - 0.5 * (1 - Math.cos(Math.PI*(tt-up)/down)));
+      const baseCol = hex.color || '#FFD27A';
+      const strokePx = Math.max(1.5, (hex.strokePx||2.8)*dpr);
+      ctx.save();
+      ctx.translate(cx,cy); ctx.rotate(ang);
+      ctx.globalCompositeOperation = 'screen';
+      ctx.lineWidth = strokePx;
+      ctx.strokeStyle = baseCol;
+      ctx.globalAlpha = Math.min(1, (hex.alpha!=null?hex.alpha:0.9) * br);
+
+      // 兩個等邊三角形組成六芒星
+      const drawTri = (start)=>{
+        ctx.beginPath();
+        for(let i=0;i<3;i++){
+          const a = start + i*(2*Math.PI/3);
+          const x = Math.cos(a)*R, y = Math.sin(a)*R;
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.closePath(); ctx.stroke();
+      };
+      drawTri(-Math.PI/2);
+      drawTri(-Math.PI/2 + Math.PI/3);
+
+      // 內側暗金暈光
+      const glow = ctx.createRadialGradient(0,0, R*0.55, 0,0, R*1.02);
+      glow.addColorStop(0, 'rgba(255,210,122,0.20)');
+      glow.addColorStop(1, 'rgba(255,210,122,0.0)');
+      ctx.fillStyle = glow; ctx.globalAlpha = 0.8*br; ctx.beginPath(); ctx.arc(0,0,R*1.05,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+
+    /* ========= 魔法咒文圈（取代月相環）：24s 逆時針、6s 呼吸 ========= */
+    function drawScriptRing(t){
+      const sr = skin.effects && skin.effects.scriptRing; if(!sr) return;
+      const cx = W*0.5, cy = H*0.48;
+      const R = Math.min(W,H) * (sr.radiusMul != null ? sr.radiusMul : 0.58); // 外於六芒星
+      const rotT = (t % (sr.rotationPeriodMs||24000)) / (sr.rotationPeriodMs||24000);
+      const ang = - rotT * Math.PI*2; // 逆時針
+      const breath = (0.6 + 0.4 * (0.5 + 0.5 * Math.sin((t % (sr.breathMs||6000)) / (sr.breathMs||6000) * Math.PI*2)));
+      const alpha = Math.min(1, (sr.alpha!=null? sr.alpha:0.72) * breath);
+      const stroke = Math.max(1.0, (sr.strokePx||1.6)*dpr);
+      const col = sr.color || '#FFD27A';
+      const glyphs = (sr.glyphs || '✶✷✸✹✺✻✼✽✾✿☀︎☼☽☾✧✦⟡◇◆◈').split('');
+      const N = sr.count || 84;
+      const tickN = sr.ticks || 42;
+      const fontPx = Math.max(8, (sr.fontPx||12)*dpr);
+
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang); ctx.globalCompositeOperation='screen';
+
+      // 基礎外圈
+      ctx.globalAlpha = alpha * 0.55;
+      ctx.strokeStyle = sr.strokeColor || col;
+      ctx.lineWidth = stroke;
+      ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2); ctx.stroke();
+
+      // Glyphs
+      ctx.font = fontPx + 'px ui-sans-serif, "Noto Sans TC", system-ui';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      for(let i=0;i<N;i++){
+        const a = (i/N)*Math.PI*2;
+        ctx.save();
+        ctx.rotate(a); ctx.translate(0,-R);
+        ctx.rotate(Math.PI/2); // 文字沿切線
+        ctx.globalAlpha = alpha * (0.75 + 0.25*Math.sin(t*0.003 + i));
+        ctx.fillStyle = col;
+        ctx.fillText(glyphs[i % glyphs.length], 0, 0);
+        ctx.restore();
+      }
+
+      // 細刻度（不影響六芒星，可視化節奏）
+      ctx.globalAlpha = alpha * 0.45;
+      ctx.strokeStyle = col; ctx.lineWidth = Math.max(0.8, (sr.tickPx||1.0)*dpr);
+      for(let i=0;i<tickN;i++){
+        const a=(i/tickN)*Math.PI*2;
+        const r1=R-3*dpr, r2=R+3*dpr;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*r1, Math.sin(a)*r1);
+        ctx.lineTo(Math.cos(a)*r2, Math.sin(a)*r2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawSparks(t){
+      const sp = skin.effects && skin.effects.sparks; if(!sp) return;
+      // 極少量小金色火花（偶發）
+      const cx=W*0.5, cy=H*0.48, R=Math.min(W,H)*0.48;
+      ctx.save(); ctx.globalCompositeOperation='screen';
+      const n = sp.count || 12;
+      for(let i=0;i<n;i++){
+        const a = (t*0.0003 + i*0.618) * Math.PI*2;
+        const r = R*(0.75 + 0.25*(0.5+0.5*Math.sin(t*0.0007+i)));
+        const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r;
+        const rr = (sp.size || 1.6)*dpr;
+        const g = ctx.createRadialGradient(x,y,0,x,y,rr*6);
+        g.addColorStop(0, 'rgba(255,210,122,0.80)'); g.addColorStop(1, 'rgba(255,210,122,0)');
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,rr,0,Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+    }
+
 
     function drawFrame(t){
       const phase=(t%skin.period)/skin.period; const breathe = 0.65 + 0.35 * (0.5 + 0.5 * Math.sin(phase * Math.PI * 2));
@@ -441,28 +756,103 @@
       else { bg.addColorStop(0,'#0d132a'); bg.addColorStop(0.55,'#0b1226'); bg.addColorStop(1,'#091223'); }
       ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
 
+      // 柔和暗角（只在本 skin 開啟）
+      (function bgVignette(){
+        const vg = skin.effects && skin.effects.bgVignette; if(!vg) return;
+        const g = ctx.createRadialGradient(W*0.5, H*0.5, Math.min(W,H)*0.10, W*0.5, H*0.5, Math.max(W,H)*0.70);
+        g.addColorStop(0, 'rgba(0,0,0,0)');
+        g.addColorStop(1, 'rgba(200,210,230,0.16)');
+        ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      })();
+
       // 背景特效層
+      ensureCloudsIfNeeded();
+      drawClouds(t);
       if(skin.effects && skin.effects.stars) drawStarField(t);
-      if(woodPattern){ const baseA=(skin.effects && skin.effects.woodBoost)? 0.12:0.07; const a=baseA + 0.05*(0.5+0.5*Math.sin(phase*2*Math.PI)); ctx.save(); ctx.globalAlpha=a; ctx.fillStyle=woodPattern; ctx.fillRect(0,0,W,H); ctx.restore(); if(skin.effects && skin.effects.woodSheen){ const ws=skin.effects.woodSheen; const a2=(ws.alpha!=null? ws.alpha:0.08)*(0.8+0.2*Math.sin(t*0.001)); const off=Math.sin(t*0.0006)*W*0.2; ctx.save(); const x0=-W*0.2+off, y0=H*0.2, x1=W*1.2+off, y1=H*0.8; const g=ctx.createLinearGradient(x0,y0,x1,y1); g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(0.5,`rgba(255,240,200,${a2.toFixed(3)})`); g.addColorStop(1,'rgba(255,255,255,0)'); const prev=ctx.globalCompositeOperation; ctx.globalCompositeOperation='soft-light'; ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ctx.globalCompositeOperation=prev; ctx.restore(); } }
       drawPrism(t);
       drawPulse(t);
       if(skin.effects && skin.effects.snow){ ensureSnowIfNeeded(); drawSnow(t); }
       if(skin.effects && skin.effects.shards){ ensureShardsIfNeeded(); drawShards(t); }
-      if(skin.effects && skin.effects.heat){ drawHeatHaze(t); }
-      if(skin.effects && skin.effects.tornado){ ensureTornadoIfNeeded(); drawTornado(t); }
-      if(skin.effects && skin.effects.dragons){ ensureDragonsIfNeeded(); drawDragons(t); }
       if(skin.effects && skin.effects.embers){ drawEmbers(t); }
 
-      // LED 邊（上/左/右）
-      let hiRGB=skin.hi, baseRGB=skin.base;
-      if(skin.effects && skin.effects.rainbow){ hiRGB=hslToRgb((phase*360),85,65); baseRGB=hslToRgb((phase*360+200)%360,80,60); }
-      if(skin.effects && skin.effects.ledFlameGrad){ baseRGB=[170,20,24]; hiRGB=[255,174,74]; }
+      // 魔法圖形
+      drawHexagram(t);
+      drawScriptRing(t); // 新增：外圈咒文，24s CCW、6s 呼吸
+      drawSparks(t);
+      // 兔兔・奶油雲朵專屬 LED 燈條（6px 粉白→蜜桃，3.2s 呼吸＋珠點）
+      
+(function drawLedStrip(){
+  const ls = skin.effects && skin.effects.ledStrip; if(!ls) return;
+  const period = (ls.period||3200);
+  const phase = ((t % period) / period);
+  const breathe = 0.65 + 0.35 * (0.5 + 0.5 * Math.sin(phase * Math.PI * 2));
+  const thick = Math.max(2, Math.round(6*dpr));
+  const seg = Math.max(10, (ls.segment||28) * dpr);
+  const hi = ls.hi || [255,182,193];
+  const lo = ls.lo || [255,244,234];
+  ctx.save();
+  ctx.globalCompositeOperation='screen';
+  for(let x=0, i=0; x<W; x+=seg, i++){
+    const g = ctx.createLinearGradient(0,0,0,thick);
+    const isPink = (i % 2 === 0);
+    const base = isPink ? hi : lo;
+    const tip  = isPink ? lo : hi;
+    g.addColorStop(0, `rgba(${base[0]},${base[1]},${base[2]},${0.42*breathe})`);
+    g.addColorStop(1, `rgba(${tip[0]},${tip[1]},${tip[2]},0)`);
+    ctx.fillStyle=g; ctx.fillRect(x,0,Math.min(seg,W-x),thick);
+  }
+  for(let y=0, i=0; y<H; y+=seg, i++){
+    const g = ctx.createLinearGradient(0,0,thick,0);
+    const isPink = (i % 2 === 0);
+    const base = isPink ? hi : lo;
+    const tip  = isPink ? lo : hi;
+    g.addColorStop(0, `rgba(${base[0]},${base[1]},${base[2]},${0.42*breathe})`);
+    g.addColorStop(1, `rgba(${tip[0]},${tip[1]},${tip[2]},0)`);
+    ctx.fillStyle=g; ctx.fillRect(0,y,thick,Math.min(seg,H-y));
+  }
+  for(let y=0, i=0; y<H; y+=seg, i++){
+    const g = ctx.createLinearGradient(W,0,W-thick,0);
+    const isPink = (i % 2 === 0);
+    const base = isPink ? hi : lo;
+    const tip  = isPink ? lo : hi;
+    g.addColorStop(0, `rgba(${base[0]},${base[1]},${base[2]},${0.42*breathe})`);
+    g.addColorStop(1, `rgba(${tip[0]},${tip[1]},${tip[2]},0)`);
+    ctx.fillStyle=g; ctx.fillRect(W-thick,y,thick,Math.min(seg,H-y));
+  }
+  ctx.fillStyle=`rgba(${lo[0]},${lo[1]},${lo[2]},${Math.min(0.85,0.50+0.38*breathe)})`;
+  ctx.fillRect(0,0,W,1*dpr);
+  const pearlStep = Math.max(14, 16) * dpr;
+  const pearlA = 0.28 * breathe;
+  for(let x=0, i=0; x<W; x+=pearlStep, i++){
+    const base = (i%2===0) ? hi : lo;
+    const r=1.2*dpr;
+    const cx = x+pearlStep*0.5, cy = 0.5*thick;
+    const gg=ctx.createRadialGradient(cx, cy, 0, cx, cy, r*4);
+    gg.addColorStop(0, `rgba(${base[0]},${base[1]},${base[2]},${pearlA})`);
+    gg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  }
+  for(let y=0, i=0; y<H; y+=pearlStep, i++){
+    const base = (i%2===0) ? hi : lo;
+    const r=1.2*dpr;
+    let cx = 0.5*thick, cy = y+pearlStep*0.5;
+    let gg=ctx.createRadialGradient(cx, cy, 0, cx, cy, r*4);
+    gg.addColorStop(0, `rgba(${base[0]},${base[1]},${base[2]},${pearlA})`);
+    gg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+    cx = W-0.5*thick; cy = y+pearlStep*0.5;
+    gg=ctx.createRadialGradient(cx, cy, 0, cx, cy, r*4);
+    gg.addColorStop(0, `rgba(${base[0]},${base[1]},${base[2]},${pearlA})`);
+    gg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+})();
+
+// LED 邊（上/左/右）
+      let hiRGB=skin.hi, baseRGB=skin.base; if(skin.effects && skin.effects.rainbow){ hiRGB=hslToRgb((phase*360),85,65); baseRGB=hslToRgb((phase*360+200)%360,80,60); }
       const coreA=0.78 + 0.20*breathe, hiA=0.62*breathe;
-      const gTop=ctx.createLinearGradient(0,0,0,edgThick);
-      gTop.addColorStop(0,   rgba(hiRGB,  hiA));
-      gTop.addColorStop(0.55,rgba(baseRGB,coreA));
-      if(skin.effects && skin.effects.ledFlameGrad){ gTop.addColorStop(0.85, rgba(hiRGB, hiA*0.9)); }
-      gTop.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gTop; ctx.fillRect(0,0,W,edgThick);
+      const gTop=ctx.createLinearGradient(0,0,0,edgThick); gTop.addColorStop(0,   rgba(hiRGB,  hiA)); gTop.addColorStop(0.55,rgba(baseRGB,coreA)); gTop.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gTop; ctx.fillRect(0,0,W,edgThick);
       const spec=Math.max(1, Math.round(1*dpr)); ctx.fillStyle=rgba(hiRGB, Math.min(0.88, 0.55+0.40*breathe)); ctx.fillRect(0,0,W,spec);
       const gLeft=ctx.createLinearGradient(0,0,edgThick,0); gLeft.addColorStop(0,rgba(hiRGB,hiA)); gLeft.addColorStop(0.55,rgba(baseRGB,coreA)); gLeft.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gLeft; ctx.fillRect(0,0,edgThick,H);
       const gRight=ctx.createLinearGradient(W,0,W-edgThick,0); gRight.addColorStop(0,rgba(hiRGB,hiA)); gRight.addColorStop(0.55,rgba(baseRGB,coreA)); gRight.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gRight; ctx.fillRect(W-edgThick,0,edgThick,H);
@@ -480,41 +870,103 @@
       if(skin.effects && typeof skin.effects.wood==='string'){ if(woodKind!==skin.effects.wood){ buildWoodPattern(skin.effects.wood); } }
       else { woodPattern=null; woodKind=null; }
       if(skin.effects && skin.effects.stars){ starOpts = (typeof skin.effects.stars==='object')? skin.effects.stars : {}; ensureStarsIfNeeded(); } else { stars=null; starOpts={}; }
-      ensureEmbersIfNeeded(); ensureDragonsIfNeeded(); ensureTornadoIfNeeded(); // 其餘 ensure 在 draw / resize 中執行
+      ensureEmbersIfNeeded(); // 其餘 ensure 在 draw / resize 中執行
+      ensureCloudsIfNeeded(); // FIX: 切換 Skin 時重建奶油雲層，避免初始為 null 看不到雲朵
     };
   })();
 
-  /* ---------------- Skin 管理（擴充：烈焰三款） ---------------- */
+  /* ---------------- Skin 管理（火系僅保留星火旋渦） ---------------- */
   (function(){
     const skinSel = document.getElementById('skinSel');
     const skinTitle = document.getElementById('skinTitle');
     const skinDesc = document.getElementById('skinDesc');
+    const heartsEl = document.getElementById('hearts');
+    const livesEl = document.getElementById('lives');
+
+    function updateHeartsIcons(mode){ const lives = parseInt(livesEl.textContent,10) || 0; heartsEl.classList.toggle('compact', lives>=5);
+      if(mode !== 'flame') heartsEl.classList.remove('flame');
+      switch(mode){
+        case 'star':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>STAR_SVG).join('');
+          break;
+        case 'hat':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>HAT_SVG).join('');
+          break;
+        case 'flame':
+          heartsEl.classList.add('flame');
+          heartsEl.innerHTML = '🔥'.repeat(Math.max(0,lives));
+          break;
+        case 'helmet':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>HELMET_SVG).join('');
+          break;
+        case 'rabbit':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>RABBIT_SVG).join('');
+          break;
+        case 'helmet':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>HELMET_SVG).join('');
+          break;
+        default:
+          heartsEl.textContent = '❤️'.repeat(Math.max(0,lives));
+      }
+    }
+    
+    
+    const HELMET_SVG = '<span class="life-icon helmet" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img"><defs><linearGradient id="knGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2F4F8"/><stop offset="1" stop-color="#B0C4DE"/></linearGradient></defs><path d="M6 10.2c0-3.8 3.1-6.9 6.9-6.9s6.9 3.1 6.9 6.9v6.3c0 .9-.5 1.7-1.3 2.1l-3.3 1.9c-1 .6-2.2 .6-3.2 0l-3.3-1.9c-.8-.4-1.3-1.2-1.3-2.1v-6.3z" fill="url(#knGrad)" stroke="#cfd8e6" stroke-width="1"/><path d="M7 10.6h10" stroke="#e7eef8" stroke-width="1" opacity=".9"/><rect x="8" y="11" width="8" height="2.2" rx="1.1" fill="#0D0D0F" opacity=".88"/><path d="M12 13.2v3.1" stroke="#0D0D0F" stroke-width="1.1" opacity=".88"/><path d="M8.4 9.8c.8-2.0 2.6-3.4 3.6-3.7 1 .3 2.8 1.7 3.6 3.7" stroke="#b9c9e2" stroke-width="1.1" stroke-linecap="round" opacity=".9"/><circle cx="9.5" cy="10.6" r=".35" fill="#e6eef8" stroke="#aebdd2" stroke-width=".2"/><circle cx="12" cy="10.6" r=".35" fill="#e6eef8" stroke="#aebdd2" stroke-width=".2"/><circle cx="14.5" cy="10.6" r=".35" fill="#e6eef8" stroke="#aebdd2" stroke-width=".2"/><path d="M6.8 12.2v3.8a1.8 1.8 0 0 0 1 1.6l1.8 1.0" stroke="#cbd6e6" stroke-width=".9" opacity=".8"/><path d="M17.2 12.2v3.8a1.8 1.8 0 0 1-1 1.6l-1.8 1.0" stroke="#cbd6e6" stroke-width=".9" opacity=".8"/></svg></span>';
+
+    const HAT_SVG = '<span class="life-icon hat" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img"><defs><linearGradient id="hatGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E0C08"/><stop offset="1" stop-color="#2B2011"/></linearGradient><linearGradient id="pinGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#B8852E"/></linearGradient></defs><path d="M4 16.8c0-1.2 6.2-3.4 8.0-3.4s8.0 2.2 8.0 3.4-6.2 2.6-8.0 2.6S4 18.0 4 16.8z" fill="#0E0C08" opacity=".65"/><path d="M12 4.2c-1.4 1.6-2.4 4.4-2.6 6.4-.1 .6-.6 1.0-1.2 1.1-1.6 .2-3.7 1.0-4.0 1.9 3.2-.5 6.6-.8 7.8-.8s4.6 .3 7.8 .8c-.4-.9-2.4-1.7-4.0-1.9-.6-.1-1.1-.5-1.2-1.1-.2-2.0-1.2-4.8-2.6-6.4z" fill="url(#hatGrad)" stroke="#B8852E" stroke-width=".8"/><path d="M13.6 7.8l2.1-1.0" stroke="url(#pinGrad)" stroke-width="1.2" stroke-linecap="round"/><circle cx="16.0" cy="6.9" r=".75" fill="url(#pinGrad)"/></svg></span>';
+
+    const RABBIT_SVG = '<span class="life-icon rabbit" aria-hidden="true" style="filter:drop-shadow(0 0 6px var(--heartGlow))"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img"><defs><linearGradient id="earGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD9E6"/><stop offset="1" stop-color="#FFC0D6"/></linearGradient></defs><path d="M7.2 5.6c0-2.2 1.6-4.4 3.0-4.4s3.0 2.2 3.0 4.4c0 1.1-.2 2.0-.7 2.7-.5.7-1.1 1.0-2.3 1.0s-1.8-.3-2.3-1.0c-.5-.7-.7-1.6-.7-2.7z" fill="#FFF4EA" stroke="#EADBD0" stroke-width=".8"/><path d="M10.8 5.6c0-2.2 1.6-4.4 3.0-4.4s3.0 2.2 3.0 4.4c0 1.1-.2 2.0-.7 2.7-.5.7-1.1 1.0-2.3 1.0s-1.8-.3-2.3-1.0c-.5-.7-.7-1.6-.7-2.7z" fill="#FFF4EA" stroke="#EADBD0" stroke-width=".8"/><path d="M9.0 3.8c.7-.2 1.2.3 1.3 1.2l.1 1.8c0 .3-.2.6-.6.7-.3.1-.6-.1-.7-.4l-.5-1.7c-.2-.8 0-1.4.4-1.6z" fill="url(#earGrad)"/><path d="M14.0 3.8c-.7-.2-1.2.3-1.3 1.2l-.1 1.8c0 .3.2.6.6.7.3.1.6-.1.7-.4l.5-1.7c.2-.8 0-1.4-.4-1.6z" fill="url(#earGrad)"/><ellipse cx="12" cy="13.2" rx="6.2" ry="5.6" fill="#FFF4EA" stroke="#EADBD0" stroke-width=".8"/><circle cx="10.3" cy="12.5" r="1.0" fill="#333"/><circle cx="13.7" cy="12.5" r="1.0" fill="#333"/><path d="M12 13.6l-.9.6c.4.5 1.4.5 1.8 0z" fill="#FF9DB8"/><path d="M11.1 15.4c.6.3 1.8.3 2.4 0" stroke="#FF9DB8" stroke-width=".8" stroke-linecap="round"/></svg></span>';
+
+    const STAR_SVG = '<span class="life-icon star" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img"><defs><linearGradient id="starGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE49A"/><stop offset="1" stop-color="#B8852E"/></linearGradient><radialGradient id="starGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="rgba(255,210,120,0.85)"/><stop offset="1" stop-color="rgba(255,210,120,0)"/></radialGradient></defs><circle cx="12" cy="12" r="7.2" fill="url(#starGlow)" opacity=".55"/><path d="M12 3.6l2.35 4.76 5.26 .77-3.8 3.70 .90 5.24-4.71-2.47-4.71 2.47 .90-5.24-3.8-3.70 5.26-.77L12 3.6z" fill="url(#starGrad)" stroke="#F3C96A" stroke-width=".8"/></svg></span>';
 
     const SKINS = {
       classic:{ label:'經典風格', selectLabel:'冷藍玻璃', cssSkin:'經典風格', canvas:{ base:[92,136,255], hi:[255,255,255], period:2000, effects:{}, bg:null }, desc:'LED：三側一致深藍，右側鏡像，2s 呼吸。' },
-      s2:{ label:'科技感風格2', selectLabel:'科技感風格2', cssSkin:'科技感風格2', canvas:{ base:[160,220,255], hi:[255,255,255], period:2200, effects:{ rainbow:true, prism:{ beams:6, speed:0.0005, alpha:0.10, spread:0.85, hueShift:40 } }, bg:['#0b0f2a','#0a0e26','#070a18'] }, desc:'全息 HUD：彩虹高光邊＋Holo Prism 光束（低對比）、2.2s 呼吸。' },
-      s3:{ label:'科技感風格3', selectLabel:'科技感風格3', cssSkin:'科技感風格3', canvas:{ base:[80,255,160], hi:[255,255,255], period:2400, effects:{ scanline:true, pulse:{ rings:6, thickness:6, strength:0.16, color:[80,255,160], speedFactor:0.45, intervalMul:1.6, microRipples:2, dash:true } }, bg:['#07150f','#06130e','#041009'] }, desc:'賽博格綠脈衝：速度放緩（×0.45）、每圈間隔加長（×1.6），顏色更淡；2.4s 呼吸。' },
-      s5:{ label:'科技感風格5', selectLabel:'科技感風格5', cssSkin:'科技感風格5', canvas:{ base:[150,120,255], hi:[255,255,255], period:2800, effects:{ stars:{ countScale:1.1, twinkle:0.85, drift:0.009, sizeMin:1.6, sizeMax:3.2, glow:2.0, brightness:1.2 } }, bg:['#0b0a20','#0a0820','#08071a'] }, desc:'藍紫星際霓虹：更大更亮的星點與光暈、緩慢漂移，2.8s 呼吸。' },
+      s2:{ label:'霓虹．魅影幻彩', selectLabel:'霓虹．魅影幻彩', cssSkin:'科技感風格2', canvas:{ base:[160,220,255], hi:[255,255,255], period:2200, effects:{ rainbow:true, prism:{ beams:6, speed:0.0005, alpha:0.10, spread:0.85, hueShift:40 } }, bg:['#0b0f2a','#0a0e26','#070a18'] }, desc:'全息 HUD：彩虹高光邊＋Holo Prism 光束（低對比）、2.2s 呼吸。' },
+      s3:{ label:'科技．賽博格綠', selectLabel:'科技．賽博格綠', cssSkin:'科技感風格3', canvas:{ base:[80,255,160], hi:[255,255,255], period:2400, effects:{ scanline:true, pulse:{ rings:6, thickness:6, strength:0.16, color:[80,255,160], speedFactor:0.45, intervalMul:1.6, microRipples:2, dash:true } }, bg:['#07150f','#06130e','#041009'] }, desc:'賽博格綠脈衝：速度放緩（×0.45）、每圈間隔加長（×1.6），顏色更淡；2.4s 呼吸。' },
+      s5:{ label:'宇宙．星辰絮語', selectLabel:'宇宙．星辰絮語', cssSkin:'科技感風格5', canvas:{ base:[150,120,255], hi:[255,255,255], period:2800, effects:{ stars:{ countScale:1.1, twinkle:0.85, drift:0.009, sizeMin:1.6, sizeMax:3.2, glow:2.0, brightness:1.2 } }, bg:['#0b0a20','#0a0820','#08071a'] }, desc:'藍紫星際霓虹：更大更亮的星點與光暈、緩慢漂移，2.8s 呼吸。' },
       w2:{ label:'木紋・黑檀曜金', selectLabel:'木紋・黑檀曜金', cssSkin:'木紋-黑檀曜金', canvas:{ base:[240,190,110], hi:[255,245,210], period:2400, effects:{ wood:'ebony', woodBoost:true, woodSheen:{alpha:0.08} }, bg:['#0b0806','#090705','#070504'] }, desc:'黑檀深棕：加強木孔/髮絲紋，油潤柔光高光；2.4s。' },
       w4:{ label:'木紋・白橡北歐', selectLabel:'木紋・白橡北歐', cssSkin:'木紋-白橡北歐', canvas:{ base:[255,220,170], hi:[255,250,230], period:1900, effects:{ wood:'oak', woodBoost:true, woodSheen:{alpha:0.06} }, bg:['#322515','#261c10','#1b140b'] }, desc:'白橡淺木：直紋＋ray fleck（低對比）、優雅油光；1.9s。' },
       i1:{ label:'冰雪・極光絲綢', selectLabel:'冰雪・極光絲綢', cssSkin:'冰雪-極光絲綢', canvas:{ base:[170,210,255], hi:[255,255,255], period:2200, effects:{ snow:{countScale:120, twinkle:true, sway:1.0, speed:0.28, speedMax:0.72, gust:0.12, sizeMin:1.0, sizeMax:2.5}, shards:{count:10, speed:0.05, width:1.2, alpha:0.10, lenMin:60, lenMax:160, drift:0.15}, frost:{alpha:0.10}, prism:{ beams:6, speed:0.0004, alpha:0.06, spread:0.82, hueShift:18 } }, bg:['#0b1626','#0a1a2f','#081628'] }, desc:'極光絲緞：冰藍呼吸＋輕雪＋低對比極光束；2.2s。' },
-
-      /* === 新增火系三款 === */
-      f1:{ label:'烈焰・龍脈熾光', selectLabel:'烈焰・龍脈熾光', cssSkin:'烈焰-龍脈熾光',
-          canvas:{ base:[255,160,70], hi:[255,230,200], period:2000,
-                   effects:{ ledFlameGrad:true, embers:{count:180, sizeMin:1.2, sizeMax:2.4, up:0.36, swirl:0.20, twinkle:true}, heat:{bands:3, amplitude:10, speed:0.0010, alpha:0.07}, dragons:{count:1, width:16, speed:0.0007, ampX:0.30, ampY:0.18, hue:18, jitter:0.25}, prism:{beams:7, speed:0.00035, alpha:0.06, spread:0.80, hueShift:12} },
-                   bg:['#1a0b06','#120805','#0b0503'] },
-          desc:'龍捲火流：橙金星火上升＋柔和熱擾動；暖金 LED 呼吸，2.0s。' },
-      f2:{ label:'烈焰・熔岩脈動', selectLabel:'烈焰・熔岩脈動', cssSkin:'烈焰-熔岩脈動',
-          canvas:{ base:[255,120,80], hi:[255,240,220], period:2300,
-                   effects:{ embers:{count:150, sizeMin:1.0, sizeMax:2.0, up:0.32, swirl:0.14, twinkle:true}, pulse:{rings:5, thickness:7, strength:0.18, color:[255,120,80], speedFactor:0.55, intervalMul:1.7, microRipples:2, dash:true}, heat:{bands:2, amplitude:12, speed:0.0008, alpha:0.06} },
-                   bg:['#240b08','#160705','#0c0504'] },
-          desc:'熔岩呼吸：暖紅脈衝波＋熾亮星火；2.3s。' },
+      k1:{ label:'騎士．白銀劍光', selectLabel:'騎士．白銀劍光', cssSkin:'騎士-白銀劍光',
+          canvas:{ base:[176,196,222], hi:[235,238,245], period:2300,
+                   effects:{
+                     pulse:{ rings:5, thickness:5, strength:0.22, color:[235,238,245], speedFactor:1.0, intervalMul:1.0, microRipples:2, dash:true, ringDelayMs:0 },
+                     shards:{ count:9, alpha:0.12, speed:0.06, width:1.2, lenMin:70, lenMax:180, drift:0.12, angleDeg:-18 }
+                   },
+                   bg:['#0D0D0F','#0B0B0D','#0A0A0C'] },
+          desc:'高貴正義：冷白漸層＋銀光流動；Pulse 白光規律閃動，Shards 劍光稀疏。生命圖示＝騎士頭盔。2.3s。' },
+      /* === 唯一保留且改為旋渦粒子的火系 === */
       f3:{ label:'烈焰・星火風暴', selectLabel:'烈焰・星火風暴', cssSkin:'烈焰-星火風暴',
           canvas:{ base:[255,150,110], hi:[255,250,240], period:2100,
-                   effects:{ embers:{count:220, sizeMin:1.0, sizeMax:2.2, up:0.40, swirl:0.22, twinkle:true}, tornado:{cxFrac:0.5, baseRFrac:0.46, topRFrac:0.08, heightFrac:0.86, swirl:1.8, alpha:0.08, bands:6}, prism:{beams:9, speed:0.00045, alpha:0.08, spread:0.86, hueShift:8} },
+                   effects:{
+                     /* 移除 flames/heat/prism，僅保留旋渦 embers */
+                     embers:{ mode:'vortex', count:360, sizeMin:1.0, sizeMax:2.4, tail:7, twinkle:true, omega:0.0020, center:[0.5,0.50], noise:0.12 }
+                   },
                    bg:['#150807','#0d0504','#080404'] },
-          desc:'星火風暴：高密度星火雨＋橙紅光束掃描；2.1s。' }
+          desc:'星火旋渦：全畫面帶尾巴的火焰粒子繞中央龍捲以中速旋轉；生命改為🔥，UI燃邊微閃。2.1s。' },
+
+      
+      b1:{ label:'兔兔・奶油雲朵', selectLabel:'兔兔・奶油雲朵', cssSkin:'兔兔-奶油雲朵',
+          canvas:{ base:[255,244,234], hi:[255,217,230], period:3200,
+                   effects:{
+                     clouds:{ count:7, sizePx:300, speed:0.003, alpha:0.20, lifeMs:30000, fadeInMs:6000, fadeOutMs:8000 },
+                     stars:{ count:38, brightness:0.85 }, /* 柔光白星點 < 50 顆（降亮度） */
+                     ledStrip:{ period:3200, hi:[255,182,193], lo:[255,244,234], segment:28 },
+                     bgVignette:true
+                   },
+                   bg:['#0B1430','#0D1E4A','#1B4C8E'] },
+          desc:'粉嫩清新：A1/A2/A3 已套用——奶油雲層更霧散、星點更柔、LED 改粉白→蜜桃 3.2s 呼吸；HUD 20px 霧面玻璃；生命圖示＝大尺寸兔兔頭。' },
+
+      m1:{ label:'魔法．金耀日蝕', selectLabel:'魔法．金耀日蝕', cssSkin:'魔法-金耀日蝕',
+          canvas:{ base:[255,228,168], hi:[255,210,122], period:3500,
+                   effects:{
+                     hexagram:{ strokePx:2.8, color:'#FFD27A', rotationPeriodMs:24000, fadeUpMs:9000, fadeDownMs:3000, radiusMul:0.44 },
+                     /* 移除 moonRing；改為 scriptRing（外圈金色咒文），24s 逆時針，6s 呼吸 */
+                     scriptRing:{ strokePx:1.6, strokeColor:'#FFD27A', color:'#FFD27A', breathMs:6000, rotationPeriodMs:24000, radiusMul:0.58, alpha:0.72, fontPx:12, count:84, ticks:42 },
+                     sparks:{ count:10, size:1.4 }
+                   },
+                   bg:['#0E0C08','#0B0A07','#0A0906'] },
+          desc:'日蝕聖環：六芒星 24s 匀速旋轉；外圈金色咒文圈 24s 逆時針、6s 呼吸；LED 金絲亮點（3.5s）。生命圖示＝金耀星徽。' },
     };
 
     (function populate(){
@@ -522,11 +974,18 @@
       if(!exists.includes(SKINS.classic.selectLabel)){
         const opt=document.createElement('option'); opt.textContent=SKINS.classic.selectLabel; skinSel.appendChild(opt);
       }
-      ['s2','s3','s5','w2','w4','i1','f1','f2','f3'].forEach(k=>{ const opt=document.createElement('option'); opt.textContent=SKINS[k].selectLabel; skinSel.appendChild(opt); });
+      ['s2','s3','s5','w2','w4','i1','k1','f3','m1','b1'].forEach(k=>{ const opt=document.createElement('option'); opt.textContent=SKINS[k].selectLabel; skinSel.appendChild(opt); });
     })();
 
-    function applyClassic(){ document.body.dataset.skin = SKINS.classic.cssSkin; window.__applySkinCanvas(SKINS.classic.canvas); skinTitle.textContent=SKINS.classic.label; skinDesc.textContent=SKINS.classic.desc; }
-    function applySkinKey(key){ const s=SKINS[key]; document.body.dataset.skin=s.cssSkin||'經典風格'; window.__applySkinCanvas(s.canvas); skinTitle.textContent=s.label; skinDesc.textContent=s.desc; }
+    function applyClassic(){ document.body.dataset.skin = SKINS.classic.cssSkin; window.__applySkinCanvas(SKINS.classic.canvas); skinTitle.textContent=SKINS.classic.label; skinDesc.textContent=SKINS.classic.desc; updateHeartsIcons('heart'); }
+    function applySkinKey(key){
+      const s=SKINS[key];
+      document.body.dataset.skin=s.cssSkin||'經典風格';
+      window.__applySkinCanvas(s.canvas);
+      skinTitle.textContent=s.label; skinDesc.textContent=s.desc;
+      // 切換生命圖示
+      if(key==='f3'){ updateHeartsIcons('flame'); } else if(key==='k1'){ updateHeartsIcons('helmet'); } else if(key==='m1'){ updateHeartsIcons('star'); } else if(key==='b1'){ updateHeartsIcons('rabbit'); } else { updateHeartsIcons('heart'); }
+    }
 
     skinSel.addEventListener('change',()=>{
       const val = skinSel.value.trim();
@@ -537,11 +996,13 @@
       if(val===SKINS.w2.selectLabel) return applySkinKey('w2');
       if(val===SKINS.w4.selectLabel) return applySkinKey('w4');
       if(val===SKINS.i1.selectLabel) return applySkinKey('i1');
-      if(val===SKINS.f1.selectLabel) return applySkinKey('f1');
-      if(val===SKINS.f2.selectLabel) return applySkinKey('f2');
+      if(val===SKINS.k1.selectLabel) return applySkinKey('k1');
       if(val===SKINS.f3.selectLabel) return applySkinKey('f3');
+      if(val===SKINS.m1.selectLabel) return applySkinKey('m1');
+      if(val===SKINS.b1.selectLabel) return applySkinKey('b1');
     }, {passive:true});
 
+    // 初始載入
     applyClassic();
   })();
   </script>
