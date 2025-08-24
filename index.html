@@ -73,6 +73,15 @@
     .hearts{filter: drop-shadow(0 0 10px var(--heartGlow));}
     .hearts.flame{filter: drop-shadow(0 0 12px var(--heartGlow));}
 
+    /* Skulls revive animation (灰化→重組) */
+    .hearts.revive .life-icon{ animation: skull-revive 800ms ease-out; }
+    @keyframes skull-revive{
+      0%{ filter: grayscale(1) blur(1.5px); opacity:.2; transform: translateY(6px) scale(.9); }
+      60%{ filter: grayscale(1) blur(2.5px); opacity:.1; transform: translateY(10px) scale(.85); }
+      100%{ filter:none; opacity:1; transform:none; }
+    }
+
+
     @media (max-width:390px){ .pill{font-size:14px;padding:7px 14px} .ic-btn{width:44px;height:36px} }
 
     /* ======== 既有 Skins（科技/木紋/冰雪） ======== */
@@ -193,7 +202,46 @@
     body[data-skin="兔兔-奶油雲朵"] .ic-btn:active,
     body[data-skin="兔兔-奶油雲朵"] .btn:active{ filter: brightness(1.06); transform: translateY(1px); }
 
-  </style>
+  
+    /* ======== 魔王．終焉寂滅（Apocalypse Silence） ======== */
+    body[data-skin="魔王-終焉寂滅"]{
+      --ink:#C0C0C0; --muted:#9aa3ad; --stroke:#363636;
+      --hudGrad1:rgba(14,14,14,.82); --hudGrad2:rgba(10,10,10,.66);
+      --glass-1:rgba(192,192,192,.08); --glass-2:rgba(120,120,120,.06);
+      --stageGlass:linear-gradient(180deg, rgba(14,14,14,.85), rgba(10,10,10,.65));
+      --panelPattern:
+        repeating-linear-gradient(125deg, rgba(255,255,255,0.04) 0 2px, rgba(0,0,0,0) 2px 10px),
+        repeating-linear-gradient(305deg, rgba(255,140,0,0.035) 0 3px, rgba(0,0,0,0) 3px 14px);
+      --heartGlow:rgba(255,120,80,.25);
+    }
+
+
+/* 魔王．終焉寂滅：骷髏生命圖示加大 */
+body[data-skin="魔王-終焉寂滅"] .hearts .life-icon,
+body[data-skin="魔王-終焉寂滅"] .hearts .life-icon svg{
+  width:22px; height:22px;
+}
+
+/* Oak background refinement */
+body[data-skin="木紋-白橡北歐"]{
+  --panelPattern:
+    /* base oak tone */
+    linear-gradient(180deg, rgba(240,221,190,.18), rgba(210,190,160,.14)),
+    /* straight grain */
+    repeating-linear-gradient(12deg, rgba(120,85,40,.28) 0 6px, rgba(0,0,0,0) 6px 18px),
+    /* ray fleck subtle highlights */
+    repeating-linear-gradient(90deg, rgba(255,240,210,.08) 0 2px, rgba(0,0,0,0) 2px 12px);
+  --stageGlass: linear-gradient(180deg, rgba(255,245,230,.10), rgba(255,245,230,.00));
+}
+
+/* Per-skin larger life icons for wood & ice skins */
+body[data-skin="木紋-黑檀曜金"] .hearts .life-icon,
+body[data-skin="木紋-白橡北歐"] .hearts .life-icon,
+body[data-skin="冰雪-極光絲綢"] .hearts .life-icon{ width:24px; height:24px; }
+body[data-skin="木紋-黑檀曜金"] .hearts .life-icon svg,
+body[data-skin="木紋-白橡北歐"] .hearts .life-icon svg,
+body[data-skin="冰雪-極光絲綢"] .hearts .life-icon svg{ width:24px; height:24px; }
+</style>
 </head>
 <body data-skin="經典風格">
   <div class="wrap" id="app">
@@ -221,7 +269,7 @@
             <div class="row" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="resetBtn">重新開始</button><button class="btn" id="saveBtn">存檔</button><button class="btn" id="loadBtn">讀檔</button></div>
             <h4>其他</h4>
             <div class="row" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="fsBtn">全螢幕</button><button class="btn" id="tutorBtn">教學</button><button class="btn" id="effectsBtn">效果說明</button><button class="btn" id="galleryBtn">畫廊</button><button class="btn" id="rankBtn">排行榜</button></div>
-            <div class="item"><span>🎨</span>Skin <select aria-label="Skin" id="skinSel"><option>冷藍玻璃</option></select></div>
+            <div class="item"><span>🎨</span>Skin <select aria-label="Skin" id="skinSel"><option>經典．冷藍玻璃</option></select></div>
           </div>
         </div>
         <div class="pill wide">生命 <b id="lives">3</b> <span class="hearts" id="hearts" aria-hidden="true">❤️❤️❤️</span></div>
@@ -275,13 +323,25 @@
     let skin = { base:[92,136,255], hi:[255,255,255], period:2000, effects:{}, bg:null };
 
     // 既有狀態（木紋/星點/冰雪/冰裂）
-    let woodPattern=null, woodKind=null;
+    let woodPattern=null, woodKind=null; let oakOverlayPat=null;
     let stars=null, starOpts={}, starSizeKey='';
     let snows=null, snowOpts={}, snowKey='';
     let shards=null, shardOpts={}, shardKey='';
 
     // 星火與熱擾動
-    let embers=null, emberOpts={}, emberKey='';
+    
+    // 終焉寂滅：廢墟＋殘光＋震動＋Hit白閃
+    let ruins=null, ruinOpts={}, ruinsKey='';
+    let nukeFlashUntil=0, nukeNextAt=0, shakeUntil=0;
+    let ledHitFlashUntil=0;
+let embers=null, emberOpts={}, emberKey='';
+    // 切割線（血紅）與暗灰擴散（終焉寂滅專用）
+    let slicers = [];      // {t0, x, y, ang, w}
+    let nextSliceAt = 0;
+    let burstNextAt = 0;
+    let slicerOpts = {};
+    let diffusionStart = performance.now();
+
 
     const rgba = (rgb,a)=>`rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a.toFixed(3)})`;
     function hslToRgb(h,s,l){ s/=100; l/=100; const k=n=> (n+ h/30)%12; const a=s*Math.min(l,1-l); const f=n=> l - a*Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n),1))); return [Math.round(255*f(0)),Math.round(255*f(8)),Math.round(255*f(4))]; }
@@ -295,13 +355,61 @@
       cv.style.width = '100%'; cv.style.height = Math.round(h) + 'px';
       cv.width  = Math.round(w * dpr); cv.height = Math.round(h * dpr);
       W=cv.width;H=cv.height;
-      ensureStarsIfNeeded(); ensureSnowIfNeeded(); ensureShardsIfNeeded(); ensureEmbersIfNeeded(); ensureCloudsIfNeeded();
+      if(woodKind==='oak'){ buildWoodPattern('oak'); }
+      ensureStarsIfNeeded(); ensureSnowIfNeeded(); ensureShardsIfNeeded(); ensureEmbersIfNeeded(); ensureCloudsIfNeeded(); ensureRuinsIfNeeded(); ensureSlicerIfNeeded(); if(skin.effects && skin.effects.diffuse){ diffusionStart = performance.now(); }
     }
 
     /* ========= 木紋 ========= */
     function buildWoodPattern(kind){
       const oc = document.createElement('canvas'); const S = 320; oc.width=S; oc.height=S; const c = oc.getContext('2d');
-      const presets = { walnut:{ ang:25*Math.PI/180, step:16, line:8, dark:'#3b2517', light:'rgba(156,106,62,0.12)', rings:'#6e4a2e' }, ebony:{ ang:12*Math.PI/180, step:18, line:9, dark:'#120d0a', light:'rgba(80,65,50,0.10)',  rings:'#3c2b1e' }, cherry:{ ang:160*Math.PI/180,step:14, line:7, dark:'#5a2c33', light:'rgba(162,90,102,0.12)',rings:'#a8616f' }, oak:{ ang:8*Math.PI/180,  step:18, line:7, dark:'#6c5432', light:'rgba(182,138,84,0.12)', rings:'#a07a45' } };
+      
+      // --- unified white oak (no patchwork): draw a full-canvas grain and use 'no-repeat' ---
+      if(kind==='oak'){
+        const Sx = Math.max(512, W|0), Sy = Math.max(512, H|0);
+        const oc2 = document.createElement('canvas'); oc2.width = Sx; oc2.height = Sy;
+        const cx = oc2.getContext('2d');
+        // base tone gradient for elegant furniture-like oak
+        const g = cx.createLinearGradient(0,0,0,Sy);
+        g.addColorStop(0.00,'#efe6d6');
+        g.addColorStop(0.50,'#dfceb4');
+        g.addColorStop(1.00,'#cfb997');
+        cx.fillStyle = g; cx.fillRect(0,0,Sx,Sy);
+
+        // long-grain bands across the whole canvas (slight angle, soft contrast)
+        cx.save(); cx.translate(Sx/2,Sy/2); cx.rotate(8*Math.PI/180); cx.translate(-Sx/2,-Sy/2);
+        for(let x=-Sx; x<Sx*2; x+=18){
+          cx.fillStyle='rgba(120,85,40,0.06)'; cx.fillRect(x, 0, 5, Sy);
+          cx.fillStyle='rgba(255,240,210,0.030)'; cx.fillRect(x+7, 0, 2, Sy);
+        }
+        cx.restore();
+
+        // gentle growth-ring curvature to avoid straight plank feeling
+        cx.save();
+        cx.globalAlpha = 0.06;
+        cx.strokeStyle = 'rgba(100,75,40,0.25)';
+        const Rmax = Math.max(Sx,Sy);
+        for(let r = Rmax*0.55; r <= Rmax*1.35; r += 90){
+          cx.beginPath();
+          cx.ellipse(Sx*0.2, Sy*0.85, r, r*0.36, -12*Math.PI/180, 0, Math.PI*2);
+          cx.stroke();
+        }
+        cx.restore();
+
+        // sparse ray-flecks (white oak medullary rays) — very subtle
+        cx.fillStyle='rgba(255,230,200,0.04)';
+        const flecks = Math.round((Sx*Sy)/40000);
+        for(let i=0;i<flecks;i++){
+          const ex = Math.random()*Sx, ey = Math.random()*Sy, ew=1+Math.random()*3, eh=10+Math.random()*24;
+          cx.save(); cx.translate(ex,ey); cx.rotate((Math.random()*10-5)*Math.PI/180);
+          cx.fillRect(-ew/2,-eh/2,ew,eh); cx.restore();
+        }
+
+        // create a no-repeat pattern so the fill is one-piece on this canvas size
+        woodPattern = ctx.createPattern(oc2, 'no-repeat');
+        woodKind = 'oak';
+        return;
+      }
+const presets = { walnut:{ ang:25*Math.PI/180, step:16, line:8, dark:'#3b2517', light:'rgba(156,106,62,0.12)', rings:'#6e4a2e' }, ebony:{ ang:12*Math.PI/180, step:18, line:9, dark:'#120d0a', light:'rgba(80,65,50,0.10)',  rings:'#3c2b1e' }, cherry:{ ang:160*Math.PI/180,step:14, line:7, dark:'#5a2c33', light:'rgba(162,90,102,0.12)',rings:'#a8616f' }, oak:{ ang:8*Math.PI/180,  step:18, line:7, dark:'#6c5432', light:'rgba(182,138,84,0.12)', rings:'#a07a45' } };
       const p = presets[kind] || presets.walnut; const S2=S; c.clearRect(0,0,S2,S2);
       c.save(); c.translate(S2/2,S2/2); c.rotate(p.ang); c.translate(-S2/2,-S2/2);
       c.fillStyle=p.light; for(let x=-S2; x<=S2*2; x+=p.step){ c.fillRect(x,0,p.line,S2); }
@@ -746,7 +854,172 @@
     }
 
 
-    function drawFrame(t){
+    
+    
+    function ensureSlicerIfNeeded(){
+      const sfx = skin.effects && skin.effects.slicer;
+      if(!sfx){ slicers = []; slicerOpts = {}; nextSliceAt = 0; burstNextAt = 0; return; }
+      slicerOpts = sfx;
+      if(nextSliceAt === 0 || !burstNextAt){
+        const now = performance.now();
+        nextSliceAt = now + (sfx.intervalMs || 3000);
+        burstNextAt = now + (sfx.burstEveryMs || 30000);
+      }
+    }
+    function scheduleSlice(at){
+      const x = Math.random()*W;
+      const y = Math.random()*H;
+      const ang = (Math.random()*Math.PI*2);
+      const w = Math.max(6, Math.round(8*dpr));
+      slicers.push({ t0: at, x, y, ang, w });
+    }
+    function maybeSlicers(t){
+      const sfx = skin.effects && skin.effects.slicer; if(!sfx) return;
+      const now = performance.now();
+      if(now >= nextSliceAt){
+        scheduleSlice(now);
+        nextSliceAt = now + (sfx.intervalMs || 3000);
+      }
+      if(now >= burstNextAt){
+        const step = sfx.burstIntervalMs || 200;
+        for(let i=0;i<10;i++){ scheduleSlice(now + i*step); }
+        burstNextAt = now + (sfx.burstEveryMs || 30000);
+      }
+      // draw & prune
+      const lifeMs = sfx.lifeMs || 500;
+      const color = sfx.color || 'rgba(190,0,30,0.38)';
+      const colorEdge = sfx.edge || 'rgba(255,120,140,0.55)';
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const maxLen = Math.hypot(W, H);
+      const keep = [];
+      for(const s of slicers){
+        const p = (now - s.t0) / lifeMs;
+        if(p < 0){ keep.push(s); continue; }
+        if(p > 1.0) continue;
+        const ease = p<0.5 ? (p/0.5) : (1 - (p-0.5)/0.5);
+        const alpha = Math.max(0, ease);
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate(s.ang);
+        // core line
+        ctx.fillStyle = color;
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(-maxLen, -s.w*0.5, maxLen*2, s.w);
+        // bright edge
+        const g = ctx.createLinearGradient(-maxLen, 0, maxLen, 0);
+        g.addColorStop(0.48, 'rgba(255,255,255,0)');
+        g.addColorStop(0.50, colorEdge);
+        g.addColorStop(0.52, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(-maxLen, -s.w*0.7, maxLen*2, s.w*1.4);
+        ctx.restore();
+        keep.push(s);
+      }
+      ctx.restore();
+      slicers = keep;
+    }
+    function drawDiffuse(t){
+      const dfx = skin.effects && skin.effects.diffuse; if(!dfx) return;
+      const now = performance.now();
+      const cycle = (dfx.cycleMs || 40000);
+      const expandMs = (dfx.expandMs || 30000);
+      const retractMs = (dfx.retractMs || 10000);
+      const elapsed = (now - diffusionStart) % cycle;
+      let prog;
+      if(elapsed <= expandMs){ prog = elapsed / expandMs; }
+      else { prog = 1 - (elapsed - expandMs) / retractMs; }
+      prog = Math.max(0, Math.min(1, prog));
+      const cx = W*0.5, cy = H*0.5;
+      const maxR = Math.hypot(W, H);
+      const r = Math.max(0, prog) * maxR;
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      const base = dfx.color || 'rgba(40,40,40,0.65)';
+      g.addColorStop(0, base);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+function ensureRuinsIfNeeded(){
+      const rfx = skin.effects && skin.effects.ruins;
+      if(!rfx){ ruins=null; ruinOpts={}; return; }
+      const layers = Math.max(1, (rfx.layers||3));
+      const key = [W,H,layers].join('x');
+      if(ruins && ruinsKey===key) return;
+      ruinsKey = key; ruinOpts = rfx;
+      const rng = Math.random;
+      ruins = new Array(layers).fill(0).map((_,i)=>{
+        const yBase = H*0.55 + i*(H*0.08);
+        const count = 6 - i + Math.floor(rng()*2);
+        const alpha = 0.12 + i*0.06;
+        const objs = new Array(count).fill(0).map(()=>{
+          const w = 80 + rng()*180;
+          const h = 40 + rng()*120;
+          const x = -40 + rng()*(W+80);
+          const y = yBase + rng()*30;
+          const tilt = (rng()-0.5)*0.2;
+          const rebar = rng()<0.5;
+          return {x,y,w,h,tilt,rebar,alpha};
+        });
+        return {alpha, objs};
+      });
+    }
+    function drawRuins(t){
+      if(!ruins) return;
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      for(const layer of ruins){
+        ctx.globalAlpha = Math.max(0, Math.min(1, (1-(ruinOpts.haze||0))*layer.alpha));
+        for(const o of layer.objs){
+          ctx.save();
+          ctx.translate(o.x, o.y);
+          ctx.rotate(o.tilt);
+          const g = ctx.createLinearGradient(0,0,o.w,0);
+          g.addColorStop(0,'rgba(50,50,50,0.5)');
+          g.addColorStop(1,'rgba(20,20,20,0.2)');
+          ctx.fillStyle = g;
+          ctx.fillRect(0,0,o.w,o.h);
+          if(o.rebar){
+            ctx.strokeStyle='rgba(160,160,160,0.25)';
+            ctx.lineWidth = 1*dpr;
+            for(let i=0;i<3;i++){
+              const rx = 6 + i*(8+Math.random()*12);
+              ctx.beginPath(); ctx.moveTo(rx,-6); ctx.lineTo(rx,o.h+8); ctx.stroke();
+            }
+          }
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+    }
+    function maybeNuke(t){
+      const nfx = skin.effects && skin.effects.nuke;
+      if(!nfx) return;
+      const now = performance.now();
+      if(now > nukeNextAt && Math.random() < 0.015){
+        nukeFlashUntil = now + (nfx.flashMs||220);
+        shakeUntil = now + 300;
+        nukeNextAt = now + (nfx.intervalMs||13000) * (0.7 + Math.random()*0.6);
+      }
+      if(nukeFlashUntil > now){
+        const x = W*(0.2 + Math.random()*0.6);
+        const y = H*(0.45 + Math.random()*0.15);
+        const r = Math.max(W,H)*0.8;
+        const g = ctx.createRadialGradient(x,y,0,x,y,r);
+        g.addColorStop(0,'rgba(255,255,255,0.55)');
+        g.addColorStop(0.35,'rgba(255,160,80,0.25)');
+        g.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.save();
+        ctx.globalCompositeOperation='screen';
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+    }
+    window.__skinNotifyHit = function(ms){ ledHitFlashUntil = performance.now() + (ms||180); };
+function drawFrame(t){
       const phase=(t%skin.period)/skin.period; const breathe = 0.65 + 0.35 * (0.5 + 0.5 * Math.sin(phase * Math.PI * 2));
       const edge=Math.max(2,Math.round(1.5*dpr)), bevel=Math.max(3,Math.round(4*dpr)); const aura=Math.max(10,Math.round(12*dpr)); const edgThick = edge + bevel;
 
@@ -755,6 +1028,60 @@
       if(Array.isArray(skin.bg) && skin.bg.length>=3){ bg.addColorStop(0,skin.bg[0]); bg.addColorStop(0.55,skin.bg[1]); bg.addColorStop(1,skin.bg[2]); }
       else { bg.addColorStop(0,'#0d132a'); bg.addColorStop(0.55,'#0b1226'); bg.addColorStop(1,'#091223'); }
       ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+      // --- White Oak end-grain background (full-canvas) ---
+      if(woodPattern && woodKind==='oak'){
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1.0; // dominate background so users clearly see wood texture
+        ctx.fillStyle = woodPattern;
+        ctx.fillRect(0,0,W,H);
+        // subtle sheen for elegance, if defined
+        const sheen = skin.effects && skin.effects.woodSheen && (skin.effects.woodSheen.alpha||0.06);
+        if(sheen){
+          const gSheen = ctx.createLinearGradient(0,0,W,H);
+          gSheen.addColorStop(0.0, 'rgba(255,255,255,0.05)');
+          gSheen.addColorStop(0.5, 'rgba(255,255,255,0.00)');
+          gSheen.addColorStop(1.0, 'rgba(0,0,0,0.03)');
+          ctx.globalAlpha = sheen;
+          ctx.fillStyle = gSheen;
+          ctx.fillRect(0,0,W,H);
+        }
+        
+        // unify oak long-grain overlay for furniture-like continuity
+        if(!oakOverlayPat){
+          const oc=document.createElement('canvas'); oc.width=256; oc.height=256; const c=oc.getContext('2d');
+          // base gentle longitudinal grain
+          c.fillStyle='rgba(210,190,160,0.06)'; c.fillRect(0,0,256,256);
+          c.save(); c.translate(128,128); c.rotate(12*Math.PI/180); c.translate(-128,-128);
+          for(let x=-256; x<512; x+=18){
+            c.fillStyle='rgba(120,85,40,0.08)'; c.fillRect(x,0,4,256);
+            c.fillStyle='rgba(255,240,210,0.035)'; c.fillRect(x+6,0,2,256);
+          }
+          c.restore();
+          // sparse ray flecks (very subtle)
+          c.fillStyle='rgba(255,230,200,0.04)';
+          for(let i=0;i<22;i++){
+            const ex=Math.random()*256, ey=Math.random()*256, ew=1+Math.random()*3, eh=8+Math.random()*22;
+            c.save(); c.translate(ex,ey); c.rotate((Math.random()*10-5)*Math.PI/180);
+            c.fillRect(-ew/2,-eh/2,ew,eh); c.restore();
+          }
+          oakOverlayPat = ctx.createPattern(oc,'repeat');
+        }
+        ctx.globalCompositeOperation='soft-light';
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = oakOverlayPat;
+        ctx.fillRect(0,0,W,H);
+        ctx.globalCompositeOperation='source-over';
+ctx.restore();
+      }
+      // 背景震動（終焉寂滅）
+      if(shakeUntil>performance.now()){
+        const amp = 2*dpr; ctx.save(); ctx.translate((Math.random()-0.5)*amp, (Math.random()-0.5)*amp);
+      }
+      drawRuins(t);
+      drawDiffuse(t);
+      maybeSlicers(t);
+      maybeNuke(t);
 
       // 柔和暗角（只在本 skin 開啟）
       (function bgVignette(){
@@ -782,14 +1109,15 @@
       // 兔兔・奶油雲朵專屬 LED 燈條（6px 粉白→蜜桃，3.2s 呼吸＋珠點）
       
 (function drawLedStrip(){
-  const ls = skin.effects && skin.effects.ledStrip; if(!ls) return;
+  let ls = skin.effects && skin.effects.ledStrip; if(!ls){ if(window.__currentSkinKey==='w4'){ ls={ period:2400, hi:[255,236,210], lo:[230,210,180], segment:28, vignette:true }; } else { return; } }
   const period = (ls.period||3200);
   const phase = ((t % period) / period);
   const breathe = 0.65 + 0.35 * (0.5 + 0.5 * Math.sin(phase * Math.PI * 2));
   const thick = Math.max(2, Math.round(6*dpr));
   const seg = Math.max(10, (ls.segment||28) * dpr);
-  const hi = ls.hi || [255,182,193];
-  const lo = ls.lo || [255,244,234];
+  let hi = ls.hi || [255,182,193];
+  let lo = ls.lo || [255,244,234];
+  if(ls.hitFlash && ledHitFlashUntil>performance.now()){ hi=[255,255,255]; lo=[255,255,255]; }
   ctx.save();
   ctx.globalCompositeOperation='screen';
   for(let x=0, i=0; x<W; x+=seg, i++){
@@ -849,7 +1177,8 @@
   ctx.restore();
 })();
 
-// LED 邊（上/左/右）
+if(shakeUntil>performance.now()) { ctx.restore(); }
+      // LED 邊（上/左/右）
       let hiRGB=skin.hi, baseRGB=skin.base; if(skin.effects && skin.effects.rainbow){ hiRGB=hslToRgb((phase*360),85,65); baseRGB=hslToRgb((phase*360+200)%360,80,60); }
       const coreA=0.78 + 0.20*breathe, hiA=0.62*breathe;
       const gTop=ctx.createLinearGradient(0,0,0,edgThick); gTop.addColorStop(0,   rgba(hiRGB,  hiA)); gTop.addColorStop(0.55,rgba(baseRGB,coreA)); gTop.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=gTop; ctx.fillRect(0,0,W,edgThick);
@@ -872,6 +1201,7 @@
       if(skin.effects && skin.effects.stars){ starOpts = (typeof skin.effects.stars==='object')? skin.effects.stars : {}; ensureStarsIfNeeded(); } else { stars=null; starOpts={}; }
       ensureEmbersIfNeeded(); // 其餘 ensure 在 draw / resize 中執行
       ensureCloudsIfNeeded(); // FIX: 切換 Skin 時重建奶油雲層，避免初始為 null 看不到雲朵
+      ensureRuinsIfNeeded(); ensureSlicerIfNeeded(); if(skin.effects && skin.effects.diffuse){ diffusionStart = performance.now(); }
     };
   })();
 
@@ -883,7 +1213,7 @@
     const heartsEl = document.getElementById('hearts');
     const livesEl = document.getElementById('lives');
 
-    function updateHeartsIcons(mode){ const lives = parseInt(livesEl.textContent,10) || 0; heartsEl.classList.toggle('compact', lives>=5);
+    function updateHeartsIcons(mode){ const prev = parseInt(heartsEl.dataset.prevLives||'0',10); const lives = parseInt(livesEl.textContent,10) || 0; heartsEl.classList.toggle('compact', lives>=5); heartsEl.dataset.prevLives = String(lives);
       if(mode !== 'flame') heartsEl.classList.remove('flame');
       switch(mode){
         case 'star':
@@ -899,11 +1229,48 @@
         case 'helmet':
           heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>HELMET_SVG).join('');
           break;
+        case 'ebony':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>EBONY_SVG).join('');
+          break;
+        case 'oak':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>OAK_SVG).join('');
+          break;
+        case 'ice':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>ICE_SVG).join('');
+          break;
+        case 'helmet':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>HELMET_SVG).join('');
+          break;
         case 'rabbit':
           heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>RABBIT_SVG).join('');
           break;
         case 'helmet':
           heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>HELMET_SVG).join('');
+          break;
+        case 'ebony':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>EBONY_SVG).join('');
+          break;
+        case 'oak':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>OAK_SVG).join('');
+          break;
+        case 'ice':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>ICE_SVG).join('');
+          break;
+        case 'helmet':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>HELMET_SVG).join('');
+          break;
+                case 'ebony':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>EBONY_SVG).join('');
+          break;
+        case 'oak':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>OAK_SVG).join('');
+          break;
+        case 'ice':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>ICE_SVG).join('');
+          break;
+case 'skull':
+          heartsEl.innerHTML = new Array(Math.max(0,lives)).fill(0).map(()=>SKULL_SVG).join('');
+          if(lives>prev){ heartsEl.classList.add('revive'); setTimeout(()=>heartsEl.classList.remove('revive'), 900); }
           break;
         default:
           heartsEl.textContent = '❤️'.repeat(Math.max(0,lives));
@@ -917,10 +1284,17 @@
 
     const RABBIT_SVG = '<span class="life-icon rabbit" aria-hidden="true" style="filter:drop-shadow(0 0 6px var(--heartGlow))"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img"><defs><linearGradient id="earGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD9E6"/><stop offset="1" stop-color="#FFC0D6"/></linearGradient></defs><path d="M7.2 5.6c0-2.2 1.6-4.4 3.0-4.4s3.0 2.2 3.0 4.4c0 1.1-.2 2.0-.7 2.7-.5.7-1.1 1.0-2.3 1.0s-1.8-.3-2.3-1.0c-.5-.7-.7-1.6-.7-2.7z" fill="#FFF4EA" stroke="#EADBD0" stroke-width=".8"/><path d="M10.8 5.6c0-2.2 1.6-4.4 3.0-4.4s3.0 2.2 3.0 4.4c0 1.1-.2 2.0-.7 2.7-.5.7-1.1 1.0-2.3 1.0s-1.8-.3-2.3-1.0c-.5-.7-.7-1.6-.7-2.7z" fill="#FFF4EA" stroke="#EADBD0" stroke-width=".8"/><path d="M9.0 3.8c.7-.2 1.2.3 1.3 1.2l.1 1.8c0 .3-.2.6-.6.7-.3.1-.6-.1-.7-.4l-.5-1.7c-.2-.8 0-1.4.4-1.6z" fill="url(#earGrad)"/><path d="M14.0 3.8c-.7-.2-1.2.3-1.3 1.2l-.1 1.8c0 .3.2.6.6.7.3.1.6-.1.7-.4l.5-1.7c.2-.8 0-1.4-.4-1.6z" fill="url(#earGrad)"/><ellipse cx="12" cy="13.2" rx="6.2" ry="5.6" fill="#FFF4EA" stroke="#EADBD0" stroke-width=".8"/><circle cx="10.3" cy="12.5" r="1.0" fill="#333"/><circle cx="13.7" cy="12.5" r="1.0" fill="#333"/><path d="M12 13.6l-.9.6c.4.5 1.4.5 1.8 0z" fill="#FF9DB8"/><path d="M11.1 15.4c.6.3 1.8.3 2.4 0" stroke="#FF9DB8" stroke-width=".8" stroke-linecap="round"/></svg></span>';
 
-    const STAR_SVG = '<span class="life-icon star" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img"><defs><linearGradient id="starGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE49A"/><stop offset="1" stop-color="#B8852E"/></linearGradient><radialGradient id="starGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="rgba(255,210,120,0.85)"/><stop offset="1" stop-color="rgba(255,210,120,0)"/></radialGradient></defs><circle cx="12" cy="12" r="7.2" fill="url(#starGlow)" opacity=".55"/><path d="M12 3.6l2.35 4.76 5.26 .77-3.8 3.70 .90 5.24-4.71-2.47-4.71 2.47 .90-5.24-3.8-3.70 5.26-.77L12 3.6z" fill="url(#starGrad)" stroke="#F3C96A" stroke-width=".8"/></svg></span>';
+        const SKULL_SVG = '<span class="life-icon skull" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img"><defs><linearGradient id="skullGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0e0e0"/><stop offset="1" stop-color="#9aa0a6"/></linearGradient></defs><g fill="url(#skullGrad)" stroke="#2f2f2f" stroke-width=".8" stroke-linejoin="round"><path d="M12 3.2c-4.4 0-7.6 3-7.6 7 0 2.7 1.4 4.8 3.6 6v2.2c0 .7.6 1.2 1.3 1.2h.7c.4 0 .7-.3.7-.7v-1.1c0-.4.3-.7.7-.7h1.2c.4 0 .7.3.7.7v1.1c0 .4.3.7.7.7h.7c.7 0 1.3-.5 1.3-1.2v-2.2c2.2-1.2 3.6-3.3 3.6-6 0-4-3.2-7-7.6-7z"/><circle cx="9.3" cy="10.4" r="2.1" fill="#0e0e0e"/><circle cx="14.7" cy="10.4" r="2.1" fill="#0e0e0e"/><path d="M11.2 12.8l1.6-1.1-.7-1 .9-.6" fill="none" stroke="#64696f" stroke-width=".9"/><rect x="8.4" y="16.6" width="7.2" height="2.8" rx="1.2"/><g fill="#0e0e0e"><rect x="9.2" y="17" width="1.1" height="1.8" rx=".2"/><rect x="11.1" y="17" width="1.1" height="1.8" rx=".2"/><rect x="13" y="17" width="1.1" height="1.8" rx=".2"/><rect x="14.9" y="17" width="1.1" height="1.8" rx=".2"/></g></g></svg></span>';
+const EBONY_SVG = '<span class=\"life-icon wood-ebony\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" role=\"img\" aria-label=\"ebony trunk\"><defs><linearGradient id=\"eb_side\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2b1e16\"/><stop offset=\"1\" stop-color=\"#120c08\"/></linearGradient><radialGradient id=\"eb_top\" cx=\"50%\" cy=\"45%\" r=\"60%\"><stop offset=\"0\" stop-color=\"#261a12\"/><stop offset=\"1\" stop-color=\"#110b07\"/></radialGradient><linearGradient id=\"eb_edge\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#caa464\"/><stop offset=\"1\" stop-color=\"#8f6a2f\"/></linearGradient></defs><g transform=\"rotate(-18 12 12) translate(0,1)\"><ellipse cx=\"12\" cy=\"9.2\" rx=\"7.6\" ry=\"4.2\" fill=\"url(#eb_top)\" stroke=\"url(#eb_edge)\" stroke-width=\"1\"/><rect x=\"4.4\" y=\"9.2\" width=\"15.2\" height=\"9.0\" fill=\"url(#eb_side)\"/><ellipse cx=\"12\" cy=\"18.2\" rx=\"7.6\" ry=\"4.2\" fill=\"url(#eb_side)\" /><g opacity=\".9\"><ellipse cx=\"12\" cy=\"9.2\" rx=\"6.1\" ry=\"3.4\" fill=\"none\" stroke=\"rgba(202,164,100,55)\" stroke-width=\".8\"/><ellipse cx=\"12\" cy=\"9.2\" rx=\"4.4\" ry=\"2.5\" fill=\"none\" stroke=\"rgba(202,164,100,35)\" stroke-width=\".7\"/><ellipse cx=\"12\" cy=\"9.2\" rx=\"2.5\" ry=\"1.4\" fill=\"none\" stroke=\"rgba(202,164,100,35)\" stroke-width=\".6\"/></g><ellipse cx=\"12\" cy=\"9.2\" rx=\"7.6\" ry=\"4.2\" fill=\"none\" stroke=\"rgba(255,255,255,08)\" stroke-width=\"1\"/></g><ellipse cx=\"12\" cy=\"19.9\" rx=\"8.0\" ry=\"2.8\" fill=\"rgba(0,0,0,25)\"/></svg></span>';
+const OAK_SVG = '<span class="life-icon wood-oak" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="oak trunk"><defs><linearGradient id="ok_side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b786"/><stop offset="1" stop-color="#b08853"/></linearGradient><radialGradient id="ok_top" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#e9cfaa"/><stop offset="1" stop-color="#c5a074"/></radialGradient><linearGradient id="ok_edge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9c7a4b"/><stop offset="1" stop-color="#6d4f2a"/></linearGradient></defs><g transform="rotate(-18 12 12) translate(0,1)"><ellipse cx="12" cy="9.2" rx="7.6" ry="4.2" fill="url(#ok_top)" stroke="url(#ok_edge)" stroke-width="1"/><rect x="4.4" y="9.2" width="15.2" height="6.6" fill="url(#ok_side)"/><ellipse cx="12" cy="15.8" rx="7.6" ry="4.2" fill="url(#ok_side)" /><g opacity=".9"><ellipse cx="12" cy="9.2" rx="6.1" ry="3.4" fill="none" stroke="rgba(120,85,40,.55)" stroke-width=".8"/><ellipse cx="12" cy="9.2" rx="4.4" ry="2.5" fill="none" stroke="rgba(120,85,40,.38)" stroke-width=".7"/><ellipse cx="12" cy="9.2" rx="2.5" ry="1.4" fill="none" stroke="rgba(120,85,40,.32)" stroke-width=".6"/></g><ellipse cx="12" cy="9.2" rx="7.6" ry="4.2" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="1"/></g><ellipse cx="12" cy="17.5" rx="8.0" ry="2.8" fill="rgba(0,0,0,.18)"/></svg></span>';
+const ICE_SVG = '<span class="life-icon ice-cube" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="ice cube"><defs><linearGradient id="iceg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d7eeff"/><stop offset="1" stop-color="#9ed1ff"/></linearGradient></defs><rect x="5.5" y="5.5" width="13" height="13" rx="2.5" ry="2.5" fill="url(#iceg)" stroke="#b6d9ff" stroke-width="1"/><path d="M8.2 9.1l7.0-1.3-1.1 7.0-7.1 1.3z" fill="rgba(255,255,255,.35)"/><path d="M8 8.5h8.5v7.0H8z" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="0.6"/></svg></span>';
+
+    
+
+const STAR_SVG = '<span class="life-icon star" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img"><defs><linearGradient id="starGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE49A"/><stop offset="1" stop-color="#B8852E"/></linearGradient><radialGradient id="starGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="rgba(255,210,120,0.85)"/><stop offset="1" stop-color="rgba(255,210,120,0)"/></radialGradient></defs><circle cx="12" cy="12" r="7.2" fill="url(#starGlow)" opacity=".55"/><path d="M12 3.6l2.35 4.76 5.26 .77-3.8 3.70 .90 5.24-4.71-2.47-4.71 2.47 .90-5.24-3.8-3.70 5.26-.77L12 3.6z" fill="url(#starGrad)" stroke="#F3C96A" stroke-width=".8"/></svg></span>';
 
     const SKINS = {
-      classic:{ label:'經典風格', selectLabel:'冷藍玻璃', cssSkin:'經典風格', canvas:{ base:[92,136,255], hi:[255,255,255], period:2000, effects:{}, bg:null }, desc:'LED：三側一致深藍，右側鏡像，2s 呼吸。' },
+      classic:{ label:'經典風格', selectLabel:'經典．冷藍玻璃', cssSkin:'經典風格', canvas:{ base:[92,136,255], hi:[255,255,255], period:2000, effects:{}, bg:null }, desc:'LED：三側一致深藍，右側鏡像，2s 呼吸。' },
       s2:{ label:'霓虹．魅影幻彩', selectLabel:'霓虹．魅影幻彩', cssSkin:'科技感風格2', canvas:{ base:[160,220,255], hi:[255,255,255], period:2200, effects:{ rainbow:true, prism:{ beams:6, speed:0.0005, alpha:0.10, spread:0.85, hueShift:40 } }, bg:['#0b0f2a','#0a0e26','#070a18'] }, desc:'全息 HUD：彩虹高光邊＋Holo Prism 光束（低對比）、2.2s 呼吸。' },
       s3:{ label:'科技．賽博格綠', selectLabel:'科技．賽博格綠', cssSkin:'科技感風格3', canvas:{ base:[80,255,160], hi:[255,255,255], period:2400, effects:{ scanline:true, pulse:{ rings:6, thickness:6, strength:0.16, color:[80,255,160], speedFactor:0.45, intervalMul:1.6, microRipples:2, dash:true } }, bg:['#07150f','#06130e','#041009'] }, desc:'賽博格綠脈衝：速度放緩（×0.45）、每圈間隔加長（×1.6），顏色更淡；2.4s 呼吸。' },
       s5:{ label:'宇宙．星辰絮語', selectLabel:'宇宙．星辰絮語', cssSkin:'科技感風格5', canvas:{ base:[150,120,255], hi:[255,255,255], period:2800, effects:{ stars:{ countScale:1.1, twinkle:0.85, drift:0.009, sizeMin:1.6, sizeMax:3.2, glow:2.0, brightness:1.2 } }, bg:['#0b0a20','#0a0820','#08071a'] }, desc:'藍紫星際霓虹：更大更亮的星點與光暈、緩慢漂移，2.8s 呼吸。' },
@@ -967,24 +1341,39 @@
                    },
                    bg:['#0E0C08','#0B0A07','#0A0906'] },
           desc:'日蝕聖環：六芒星 24s 匀速旋轉；外圈金色咒文圈 24s 逆時針、6s 呼吸；LED 金絲亮點（3.5s）。生命圖示＝金耀星徽。' },
-    };
+    
+      d1:{ label:'魔王．終焉寂滅', selectLabel:'魔王．終焉寂滅', cssSkin:'魔王-終焉寂滅',
+          canvas:{ base:[14,14,14], hi:[255,69,0], period:3000,
+                   effects:{
+                     ruins:{ layers:3, haze:0.22 },
+                     nuke:{ intervalMs:13000, flashMs:220 },
+                     slicer:{ intervalMs:3000, burstEveryMs:30000, burstIntervalMs:200, lifeMs:500, color:'rgba(190,0,30,0.35)', edge:'rgba(255,120,140,0.55)' },
+                     diffuse:{ cycleMs:40000, expandMs:30000, retractMs:10000 },
+                     ledStrip:{ hi:[255,69,0], lo:[96,96,96], period:3200, segment:26, hitFlash:true }
+                   },
+                   bg:['#0E0E0E','#1A1A1A','#0E0E0E'] },
+          desc:'廢墟鐵影＋殘光：遠景廢墟陰影、偶爾核爆殘光觸發0.3s震動；LED 灰→橘，擊中瞬白閃；生命圖示＝裂痕骷髏。' },
+};
 
     (function populate(){
       const exists = Array.from(skinSel.options).map(o=>o.textContent.trim());
       if(!exists.includes(SKINS.classic.selectLabel)){
         const opt=document.createElement('option'); opt.textContent=SKINS.classic.selectLabel; skinSel.appendChild(opt);
       }
-      ['s2','s3','s5','w2','w4','i1','k1','f3','m1','b1'].forEach(k=>{ const opt=document.createElement('option'); opt.textContent=SKINS[k].selectLabel; skinSel.appendChild(opt); });
+      ['s2','s3','s5','w2','w4','i1','k1','f3','m1','d1','b1'].forEach(k=>{ const opt=document.createElement('option'); opt.textContent=SKINS[k].selectLabel; skinSel.appendChild(opt); });
     })();
 
     function applyClassic(){ document.body.dataset.skin = SKINS.classic.cssSkin; window.__applySkinCanvas(SKINS.classic.canvas); skinTitle.textContent=SKINS.classic.label; skinDesc.textContent=SKINS.classic.desc; updateHeartsIcons('heart'); }
     function applySkinKey(key){
       const s=SKINS[key];
       document.body.dataset.skin=s.cssSkin||'經典風格';
-      window.__applySkinCanvas(s.canvas);
+      window.__applySkinCanvas(s.canvas); window.__currentSkinKey=key;
       skinTitle.textContent=s.label; skinDesc.textContent=s.desc;
       // 切換生命圖示
-      if(key==='f3'){ updateHeartsIcons('flame'); } else if(key==='k1'){ updateHeartsIcons('helmet'); } else if(key==='m1'){ updateHeartsIcons('star'); } else if(key==='b1'){ updateHeartsIcons('rabbit'); } else { updateHeartsIcons('heart'); }
+      if(key==='w2'){ updateHeartsIcons('ebony'); }
+      else if(key==='w4'){ updateHeartsIcons('oak'); }
+      else if(key==='i1'){ updateHeartsIcons('ice'); }
+      else if(key==='f3'){ updateHeartsIcons('flame'); } else if(key==='k1'){ updateHeartsIcons('helmet'); } else if(key==='m1'){ updateHeartsIcons('star'); } else if(key==='b1'){ updateHeartsIcons('rabbit'); } else if(key==='d1'){ updateHeartsIcons('skull'); } else { updateHeartsIcons('heart'); }
     }
 
     skinSel.addEventListener('change',()=>{
@@ -999,6 +1388,7 @@
       if(val===SKINS.k1.selectLabel) return applySkinKey('k1');
       if(val===SKINS.f3.selectLabel) return applySkinKey('f3');
       if(val===SKINS.m1.selectLabel) return applySkinKey('m1');
+      if(val===SKINS.d1.selectLabel) return applySkinKey('d1');
       if(val===SKINS.b1.selectLabel) return applySkinKey('b1');
     }, {passive:true});
 
