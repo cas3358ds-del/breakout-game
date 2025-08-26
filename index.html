@@ -1222,7 +1222,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
       let released=false; for(const b of balls){ if(b.stuck){ b.stuck=false; b.vy=-Math.abs(b.vy||6); released=true; } }
       if(released) return;
     }
-  }, {passive:true});
+  }, {passive:false});
   canvas.addEventListener('touchmove',(e)=>{ if(!touchActive) return; if(performance.now()<=paddleStunUntil) return; const t=e.touches[0]; const rect=canvas.getBoundingClientRect(); if(!orientLeft){ const x=(t.clientX-rect.left)*(1100/rect.width); paddle.x=Math.max(0, Math.min(1100-paddle.w, x - paddle.w/2)); } else { const y=(t.clientY-rect.top)*(700/rect.height); paddle.y=Math.max(0, Math.min(700-paddle.w, y - paddle.w/2)); } }, {passive:true});
   canvas.addEventListener('touchend',()=>{ touchActive=false; }, {passive:true});
   pauseBtn.addEventListener('click',()=>togglePause()); resetBtn.addEventListener('click',()=>resetGame()); fsBtn.addEventListener('click',()=>toggleFullscreen());
