@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Rock打磚塊 Breakout（最終增強版）</title>
-  <style>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=DBoWnEos32TbdwXyFBHCXIYDdjYfcR1BpIlcNlWGioDDbcNV5A_bTOTI6tXcifAWoOzaMMoNqgvw4XtlltXXB2CPRksoMZFbbtBlQx5XzCIT8rj62BwDq1pJQ5YhFn_gLjg8SjDpOmM7OBFhdVa_FDrS0aSwzoxG2vdAkNz6KubfpExOhpsMQX93dyRvRLvyN5auIlry3tbsYABpnH5fxLQd-tpTY0qYRmVrhnYm5m_Q7j7cS_zOQm8HDXmF7CmS" charset="UTF-8"></script><style>
     /* 全面換用全新 UI 風格（取自 index_skin.html） */
     :root{
       --ink:#eaf2ff; --muted:#b8c7ea;
@@ -291,7 +291,7 @@ body[data-skin="木紋．白橡北歐"]{
           <button class="ic-btn" id="optBtn" aria-haspopup="true" aria-expanded="false" aria-controls="optMenu" title="選項">⋯</button>
           <div class="menu" id="optMenu">
             <h4>遊戲</h4>
-            <div class="item"><span>🎮</span>難度 <select id="difficulty" aria-label="難度">
+              <div class="item"><span>🎮</span>難度 <select id="difficultySel" aria-label="難度">
               <option value="easy">簡單</option>
               <option value="normal" selected>一般</option>
               <option value="hard">困難</option>
@@ -447,7 +447,7 @@ body[data-skin="木紋．白橡北歐"]{
               p.MEGA.mega = p.MEGA.mega || {};
               if (p.MEGA.mega.sizeMul == null) p.MEGA.mega.sizeMul = 3;
               if (p.MEGA.mega.speedMul == null) p.MEGA.mega.speedMul = 0.8;
-            }
+            };
             (window.__configWarnings = window.__configWarnings||[]).push(`[validateConfig] ${k} 缺少 ${f}，已套安全預設`);
           }
         }
@@ -541,14 +541,20 @@ const SKINS = {
                      ledStrip:{ hi:[255,69,0], lo:[96,96,96], period:3200, segment:26, hitFlash:true }
                    },
                    bg:['#0E0E0E','#1A1A1A','#0E0E0E'] },
-          desc:'廢墟鐵影＋殘光：遠景廢墟陰影、偶爾核爆殘光觸發0.3s震動；LED 灰→橘，擊中瞬白閃；生命圖示＝裂痕骷髏。' },
-}
+  desc:'廢墟鐵影＋殘光：遠景廢墟陰影、偶爾核爆殘光觸發0.3s震動；LED 灰→橘，擊中瞬白閃；生命圖示＝裂痕骷髏。' },
+};
+
+// (Removed development-only global error handler and script-run test)
 
 /* ---------------- Canvas Renderer（含：六芒星、咒文圈、旋渦 embers） ---------------- */
   (function(){
     const cv  = document.getElementById('game');
     const box = document.querySelector('.stage');
     const ctx = cv.getContext('2d');
+    // Expose canvas and context globally for game logic modules
+    // Some downstream game functions refer to global variables `canvas` and `ctx`. Assign them here
+    window.canvas = cv;
+    window.ctx = ctx;
 
     let W=0,H=0,dpr=1, rafId=0;
     let skin = { base:[92,136,255], hi:[255,255,255], period:2000, effects:{}, bg:null };
@@ -1436,6 +1442,9 @@ if(shakeUntil>performance.now()) { ctx.restore(); }
       ensureEmbersIfNeeded(); // 其餘 ensure 在 draw / resize 中執行
       ensureCloudsIfNeeded(); // FIX: 切換 Skin 時重建奶油雲層，避免初始為 null 看不到雲朵
       ensureRuinsIfNeeded(); ensureSlicerIfNeeded(); if(skin.effects && skin.effects.diffuse){ diffusionStart = performance.now(); }
+        // Assign global hooks for skin rendering and resizing after definitions become available
+        window.__drawSkinFrame = drawFrame;
+        window.__skinResize = resize;
     };
   })();
 
@@ -1448,8 +1457,7 @@ if(shakeUntil>performance.now()) { ctx.restore(); }
     const livesEl = document.getElementById('lives');
 
     
-window.__drawSkinFrame = drawFrame;
-window.__skinResize = resize;
+// (Removed early assignment; assignments moved to end of first IIFE)
 
 const HELMET_SVG = '<span class="life-icon helmet" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img"><defs><linearGradient id="knGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2F4F8"/><stop offset="1" stop-color="#B0C4DE"/></linearGradient></defs><path d="M6 10.2c0-3.8 3.1-6.9 6.9-6.9s6.9 3.1 6.9 6.9v6.3c0 .9-.5 1.7-1.3 2.1l-3.3 1.9c-1 .6-2.2 .6-3.2 0l-3.3-1.9c-.8-.4-1.3-1.2-1.3-2.1v-6.3z" fill="url(#knGrad)" stroke="#cfd8e6" stroke-width="1"/><path d="M7 10.6h10" stroke="#e7eef8" stroke-width="1" opacity=".9"/><rect x="8" y="11" width="8" height="2.2" rx="1.1" fill="#0D0D0F" opacity=".88"/><path d="M12 13.2v3.1" stroke="#0D0D0F" stroke-width="1.1" opacity=".88"/><path d="M8.4 9.8c.8-2.0 2.6-3.4 3.6-3.7 1 .3 2.8 1.7 3.6 3.7" stroke="#b9c9e2" stroke-width="1.1" stroke-linecap="round" opacity=".9"/><circle cx="9.5" cy="10.6" r=".35" fill="#e6eef8" stroke="#aebdd2" stroke-width=".2"/><circle cx="12" cy="10.6" r=".35" fill="#e6eef8" stroke="#aebdd2" stroke-width=".2"/><circle cx="14.5" cy="10.6" r=".35" fill="#e6eef8" stroke="#aebdd2" stroke-width=".2"/><path d="M6.8 12.2v3.8a1.8 1.8 0 0 0 1 1.6l1.8 1.0" stroke="#cbd6e6" stroke-width=".9" opacity=".8"/><path d="M17.2 12.2v3.8a1.8 1.8 0 0 1-1 1.6l-1.8 1.0" stroke="#cbd6e6" stroke-width=".9" opacity=".8"/></svg></span>';
 const HAT_SVG = '<span class="life-icon hat" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img"><defs><linearGradient id="hatGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E0C08"/><stop offset="1" stop-color="#2B2011"/></linearGradient><linearGradient id="pinGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#B8852E"/></linearGradient></defs><path d="M4 16.8c0-1.2 6.2-3.4 8.0-3.4s8.0 2.2 8.0 3.4-6.2 2.6-8.0 2.6S4 18.0 4 16.8z" fill="#0E0C08" opacity=".65"/><path d="M12 4.2c-1.4 1.6-2.4 4.4-2.6 6.4-.1 .6-.6 1.0-1.2 1.1-1.6 .2-3.7 1.0-4.0 1.9 3.2-.5 6.6-.8 7.8-.8s4.6 .3 7.8 .8c-.4-.9-2.4-1.7-4.0-1.9-.6-.1-1.1-.5-1.2-1.1-.2-2.0-1.2-4.8-2.6-6.4z" fill="url(#hatGrad)" stroke="#B8852E" stroke-width=".8"/><path d="M13.6 7.8l2.1-1.0" stroke="url(#pinGrad)" stroke-width="1.2" stroke-linecap="round"/><circle cx="16.0" cy="6.9" r=".75" fill="url(#pinGrad)"/></svg></span>';
@@ -2552,6 +2560,10 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
   function hideCenter(){ centerNote.style.display='none'; }
 
   function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; updateHUD(); initBricks(); resetBalls(); paused=true; running=false;
+    // Debug: update title with bricks count after initialization to verify bricks are generated correctly
+    try{
+      document.title = 'Bricks:' + (Array.isArray(bricks) ? bricks.length : 'N/A');
+    }catch(ignored){}
     for(const k of Object.keys(buffs)){ if(k!=='LONG'){ buffs[k].active=false; buffs[k].until=0; } } buffs.LONG.stacks=[]; powerups.length=0; particles.length=0; plasmas.length=0; holyFlashes.length=0; phoenixAnim=null; fireBursts.length=0;
     updateBuffBadges(); computePaddleWidth(); paddle.x=1100/2-paddle.w/2; showCenter('按 Space 或點畫面開始','用 ←/→ 或 A/D 移動；手指拖曳畫面也可。'); countdownShow=0; scheduleNextSkyDrop(); }
 
@@ -2767,9 +2779,9 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
       html += '</div>';
       showCenter('效果說明（按鈕再按一次關閉）', html);
     }
-  }
+    };
 
-  /* ---------------- HUD 互動（移植自 index_skin.html） ---------------- */
+    /* ---------------- HUD 互動（移植自 index_skin.html） ---------------- */
   (function(){
     const hud = document.querySelector('.hud');
     const sentinel = document.querySelector('.hud-sentinel');
@@ -3548,6 +3560,15 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     window.__lastError = (e && e.stack) ? e.stack : String(e);
     console.error(e);
   }
+  // Expose global error handler to help surface any uncaught errors after initialization. This updates the document
+  // title with the line number where the error occurred and stores the error in window.__lastError for inspection.
+  window.onerror = function(msg, url, line, col, err){
+    try{
+      document.title = 'ERR@' + line;
+    }catch(ignored){}
+    window.__lastError = err || msg;
+    return false;
+  };
 })();
 </script>
 </body>
