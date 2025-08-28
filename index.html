@@ -1593,6 +1593,10 @@ function drawBGDecor(){
     if(running){ startCountdown(); } else { startGameWithCountdown(); }
   }
   noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+  // 玩家點擊提示視窗任意處也可開始／繼續遊戲
+  if (typeof centerNote !== 'undefined' && centerNote) {
+    centerNote.addEventListener('click', closeNoteAndResume);
+  }
 
 
   // === DPR 縮放 ===
