@@ -1636,7 +1636,7 @@ function drawBGDecor(){
   if (sfxOnEl) {
     const stored = localStorage.getItem('sfx_on');
     // 若本地有設定則使用，否則沿用預設的 soundsOn
-    soundsOn = (stored ?? (soundsOn ? '1' : '0')) === '1';
+    soundsOn = ((stored !== null && stored !== undefined) ? stored : (soundsOn ? '1' : '0')) === '1';
     sfxOnEl.checked = soundsOn;
     // 切換複選框即呼叫舊邏輯的按鈕 click，並依據更新後的變數同步複選框狀態
     sfxOnEl.addEventListener('change', () => {
@@ -1646,7 +1646,7 @@ function drawBGDecor(){
   }
   if (bgmOnEl) {
     const stored = localStorage.getItem('bgm_on');
-    bgmOn = (stored ?? (bgmOn ? '1' : '0')) === '1';
+    bgmOn = ((stored !== null && stored !== undefined) ? stored : (bgmOn ? '1' : '0')) === '1';
     bgmOnEl.checked = bgmOn;
     bgmOnEl.addEventListener('change', () => {
       bgmBtn.click();
@@ -1964,7 +1964,7 @@ let paddleStunUntil=0;
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
-  let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0}}; }
+  let balls=[]; function makeBall(stuck=false,x=null){ return {x:(x!==null && x!==undefined)?x:(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0}}; }
 
   // === 聲音與BGM ===
 
@@ -2418,9 +2418,9 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     // 定時類
     if(def.durationMs){ if(type!=='LONG'){ const b=buffs[type]||(buffs[type]={active:false,until:0}); b.active=true; b.until=now+def.durationMs; } }
     if(def.paddleWidthAdd){ buffs.WIDE.active=true; buffs.WIDE.until=now+def.durationMs; }
-    if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const max=def.stacksMax??2; if(act.length<max){ buffs.LONG.stacks.push(now+def.durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+def.durationMs; } }
+    if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const max=(def.stacksMax!==undefined && def.stacksMax!==null)?def.stacksMax:2; if(act.length<max){ buffs.LONG.stacks.push(now+def.durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+def.durationMs; } }
     if(def.sticky){ buffs.STICKY.active=true; buffs.STICKY.until=now+def.durationMs; }
-    if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; news.push(b1);} balls=balls.concat(news); const cap=def.maxBalls??4; if(balls.length>cap) balls.length=cap; } }
+    if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; news.push(b1);} balls=balls.concat(news); const cap=(def.maxBalls!==undefined && def.maxBalls!==null)?def.maxBalls:4; if(balls.length>cap) balls.length=cap; } }
     if(def.speedMul){ buffs.SLOW.active=true; buffs.SLOW.until=now+def.durationMs; }
     if(def.piercing){ buffs.PIERCE.active=true; buffs.PIERCE.until=now+def.durationMs; for(const b of balls) b.piercing=true; }
     if(def.oneShotShield){ buffs.SHIELD.active=true; }
@@ -2830,7 +2830,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
   }
 
 
-  function speedMultiplier(now){ let mul=1.0; if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul??1.0);} if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul??1.0);} if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); } return mul; }
+  function speedMultiplier(now){ let mul=1.0; if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul!=null ? GAME_CONFIG.powers.SLOW.speedMul : 1.0);} if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul!=null ? GAME_CONFIG.powers.FAST.globalSpeedMul : 1.0);} if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); } return mul; }
 
   // === 背景裝飾 & LED 燈條 ===
   function ledColor(){
@@ -3237,8 +3237,8 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     function effectiveMul(){
       if(buffs.GODSPEED.active) return 1.0;
       let mul=1.0;
-      if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul??1.0); }
-      if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul??1.0); }
+      if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul!=null ? GAME_CONFIG.powers.SLOW.speedMul : 1.0); }
+      if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul!=null ? GAME_CONFIG.powers.FAST.globalSpeedMul : 1.0); }
       if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); }
       if(buffs.HELL.active){ mul*=(GAME_CONFIG.powers.HELL.hell.speedMul); }
       if(buffs.MEGA.active){ mul*=(GAME_CONFIG.powers.MEGA.mega.speedMul); }
