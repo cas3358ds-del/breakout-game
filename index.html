@@ -1576,6 +1576,9 @@ function drawBGDecor(){
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
   const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2');
   const retryBtn=document.getElementById('retryBtn');
+  const centerNote=document.getElementById('centerNote'),
+        noteTitle=document.getElementById('noteTitle'),
+        noteText=document.getElementById('noteText');
 
   /*
    * 新 UI 音效與 BGM 控制
@@ -1594,9 +1597,7 @@ function drawBGDecor(){
   }
   noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
   // 玩家點擊提示視窗任意處也可開始／繼續遊戲
-  if (typeof centerNote !== 'undefined' && centerNote) {
-    centerNote.addEventListener('click', closeNoteAndResume);
-  }
+  if(centerNote){ centerNote.addEventListener('click', closeNoteAndResume); }
 
 
   // === DPR 縮放 ===
