@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Rock打磚塊 Breakout（最終增強版）</title>
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=DBoWnEos32TbdwXyFBHCXIYDdjYfcR1BpIlcNlWGioDDbcNV5A_bTOTI6tXcifAWoOzaMMoNqgvw4XtlltXXB2CPRksoMZFbbtBlQx5XzCIT8rj62BwDq1pJQ5YhFn_gLjg8SjDpOmM7OBFhdVa_FDrS0aSwzoxG2vdAkNz6KubfpExOhpsMQX93dyRvRLvyN5auIlry3tbsYABpnH5fxLQd-tpTY0qYRmVrhnYm5m_Q7j7cS_zOQm8HDXmF7CmS" charset="UTF-8"></script><style>
+<style>
     /* 全面換用全新 UI 風格（取自 index_skin.html） */
     :root{
       --ink:#eaf2ff; --muted:#b8c7ea;
@@ -1582,6 +1582,10 @@ function drawBGDecor(){
     });
   }
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
+  const soundBtn = document.getElementById('soundBtn');
+const sfxOnEl = document.getElementById('sfxOn');
+const bgmOnEl = document.getElementById('bgmOn');
+
   const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2');
   const retryBtn=document.getElementById('retryBtn');
   const centerNote=document.getElementById('centerNote'),
