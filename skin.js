@@ -23,7 +23,7 @@
         period: 2200,
         effects: {
           rainbow: true,
-          prism: { beams: 6, speed: 0.00014, alpha: 0.10, spread: 0.85, hueShift: 40 }
+          prism: { beams: 6, speed: 0.0005, alpha: 0.10, spread: 0.85, hueShift: 40 }
         },
         bg: ['#0b0f2a', '#0a0e26', '#070a18']
       },
