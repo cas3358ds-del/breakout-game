@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Rock打磚塊 Breakout（最終增強版）</title>
-  <style>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=7AZ9GDmdk-0nXflGBh_OSV4sbUY45NaCzZxEmVqbH7Xoa5XDaFySHgwINA_LKoYnTF-Tn0R31QrGwOed9CZ3OnvNc_qFz8_F8SsZHNBXvxPBQW9Ws4MMsapYX00pYtOHM5cR9iTy3FkOPbVcloFwV5-a4dnUqEiHa46LkjY7j77ICU6vp9MI_Ee0xq88-jqlk_Lc7TmXPpXFPDrdBDVq5xpeyXyeCeGW2qDiFIazeduFGfcwWHRoifZbFYWPMOlo" charset="UTF-8"></script><script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=xpcCKmpP02pGpAdk4lURQozfYVx-VrJiimPXD3ZPoW9TIv1EzIua7bKjDuvLpPHY5MGoMNnz-RZNqInmE2AiGIv1FM8_RTM5oF19CfAA6TuNQNa3rPpVJLnwmci3doH8EuGNihYABQQUc5dUImRJArx-xrY4n8XP7tzZNKYcjrVE6OSgQt5EgZeGVJ11JygDLcAX--0dUZf8dggdbPhFsXbA-YBxJ4Dz5F3CMnNgJErVZJAS5LnFHwe5jJMlZVHU" charset="UTF-8"></script><style>
     /* 全面換用全新 UI 風格（取自 index_skin.html） */
     :root{
       --ink:#eaf2ff; --muted:#b8c7ea;
@@ -158,7 +158,59 @@
       .ic-btn{width:44px;height:36px}
     }
 
-  </style>
+  
+    /* === 霓虹．魅影幻彩（from index_skin.html） === */
+    body[data-skin="霓虹．魅影幻彩"]{ --ink:#f6fbff; --muted:#dbe6ff; --stroke:rgba(200,220,255,.38); --bg1:#0b0f2a; --bg2:#070a18; --hudGrad1:rgba(24,28,70,.58); --hudGrad2:rgba(16,22,58,.42); --glass-1:rgba(255,255,255,.12); --glass-2:rgba(255,255,255,.09); --stageGlass:linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,0)); --panelPattern:conic-gradient(from 0deg at 60% 40%, rgba(255,160,220,.08), rgba(160,220,255,.06), rgba(160,255,200,.06), rgba(255,220,160,.06), rgba(255,160,220,.08)); --btnGlow:0 0 20px rgba(160,220,255,.25);}
+
+/* === 修正下拉選單：避免全白看不到選項文字 === */
+select { color: #fff; background: var(--glass-2); }
+/* 強制下拉清單的選項可見（不同瀏覽器可能各自處理，但這能改善多數情況） */
+select option { color: #0b1022; background: #eaf2ff; }
+select optgroup { color: #0b1022; }
+/* 菜單內的 select 維持深色外觀，但選單展開的選項仍是深字淺底 */
+.menu select { color: #eaf2ff; background: rgba(20,28,52,.6); border:1px solid var(--stroke); }
+.menu select option { color: #0b1022; background: #eaf2ff; }
+
+
+/* === Canvas FX 層：在遊戲畫布下層繪製霓虹光束與彩虹暈 === */
+.stage{position:relative}
+.stage #fx{
+  position:absolute; inset:12px; border-radius:16px; display:block; width:calc(100% - 24px); height:auto;
+  pointer-events:none; filter: blur(0.2px);
+}
+.stage{--fxViz:0}
+body[data-skin="霓虹．魅影幻彩"] .stage{--fxViz:1}
+
+/* === 霓虹 LED 燈條（與 index_skin.html 一致的六色流光） === */
+.stage::before{
+  content:""; position:absolute; inset:8px; border-radius:18px; pointer-events:none;
+  opacity: calc(var(--fxViz) * .9);
+  background: conic-gradient(
+    from 0deg,
+    rgba(255,0,102,.0) 0deg,
+    rgba(255,0,102,.32) 20deg,
+    rgba(255,204,0,.26) 60deg,
+    rgba(0,200,255,.28) 120deg,
+    rgba(160,80,255,.28) 180deg,
+    rgba(0,255,200,.26) 240deg,
+    rgba(255,0,102,.32) 300deg,
+    rgba(255,0,102,.0) 360deg
+  );
+  -webkit-mask: radial-gradient(closest-side, transparent  calc(100% - 3px), black calc(100% - 2px));
+          mask: radial-gradient(closest-side, transparent  calc(100% - 3px), black calc(100% - 2px));
+  box-shadow: 0 0 40px rgba(0,200,255,.25), inset 0 0 22px rgba(255,255,255,.08);
+  animation: neon-rotate 24s linear infinite;
+}
+@keyframes neon-rotate{ to{ transform: rotate(360deg);} }
+
+/* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */
+body[data-skin="霓虹．魅影幻彩"]{
+  --btnGlow: 0 0 0 rgba(0,0,0,0), 0 0 24px rgba(0,220,255,.25), 0 0 60px rgba(160,80,255,.25);
+  --heartGlow: rgba(0,220,255,.8);
+  --panelPattern: radial-gradient(1200px 380px at 20% -80%, rgba(0,255,255,.05), rgba(0,0,0,0)), radial-gradient(700px 300px at 80% -60%, rgba(180,80,255,.05), rgba(0,0,0,0));
+}
+
+</style>
 </head>
 <body>
   <!-- 新增 UI 包裝 -->
@@ -219,7 +271,8 @@
     <div id="promptsDock"></div>
     <!-- 遊戲區域 -->
     <div class="stage">
-      <canvas id="game" width="1100" height="700"></canvas>
+      <canvas id="fx"></canvas>
+<canvas id="game" width="1100" height="700"></canvas>
       <div class="legend">
         <span class="item"><span class="box" style="background:var(--expl)"></span>爆炸磚</span>
         <span class="item"><span class="box" style="background:var(--brick2)"></span>一般磚</span>
@@ -271,9 +324,12 @@
           </p>
         </div>
       </div>
-    </div>
+</div>
   </div>
 
+<!-- Load skin definitions before the game script.  This file defines
+     window.SKINS, window.applySkin and initializes the default skin. -->
+<script src="skin.js"></script>
 <script>
 (() => {
   // === 設定 ===
@@ -358,9 +414,54 @@
   const gallery=document.getElementById('gallery'), galleryImg=document.getElementById('galleryImg');
   const win=document.getElementById('win'), ring=document.getElementById('ring'), finalScore=document.getElementById('finalScore'), againBtn=document.getElementById('againBtn');
   document.getElementById('retryBtn')?.addEventListener('click', ()=>{ gameover.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });
+
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
   const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2');
   const retryBtn=document.getElementById('retryBtn');
+
+  // === Skin initialization ===
+  // Populate the skin dropdown and set up the current skin.  Skins are
+  // defined in skin.js and exposed via the global SKINS object.  Each
+  // option uses its key as the value; the displayed text comes from
+  // selectLabel or falls back to the label.
+  if (window.SKINS && skinSel) {
+    // Remove any existing options before populating.
+    skinSel.innerHTML = '';
+    Object.keys(window.SKINS).forEach((key) => {
+      const opt = document.createElement('option');
+      opt.value = key;
+      const s = window.SKINS[key];
+      opt.textContent = (s.selectLabel || s.label || key);
+      skinSel.appendChild(opt);
+    });
+    // Provide a UI update callback on window so skin.js can call it.
+    window.updateSkinUI = function (skin) {
+      const titleEl = document.getElementById('skinTitle');
+      const descEl = document.getElementById('skinDesc');
+      if (titleEl) titleEl.textContent = skin.label || '';
+      if (descEl) descEl.textContent = skin.desc || '';
+    };
+    // Determine the initial skin from localStorage, with fallback.
+    let initKey;
+    try {
+      initKey = localStorage.getItem('selected_skin') || 'classic';
+    } catch (e) {
+      initKey = 'classic';
+    }
+    if (!window.SKINS[initKey]) initKey = 'classic';
+    skinSel.value = initKey;
+    // Apply the initial skin using the helper from skin.js.  This also
+    // stores the selection for later and updates the UI via updateSkinUI.
+    if (typeof window.applySkin === 'function') {
+      window.applySkin(initKey);
+    }
+    // Listen for changes and re-apply skins accordingly.
+    skinSel.addEventListener('change', function () {
+      if (typeof window.applySkin === 'function') {
+        window.applySkin(this.value);
+      }
+    }, { passive: true });
+  }
 
   /*
    * 新 UI 音效與 BGM 控制
@@ -1337,6 +1438,9 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
         menu.classList.add('show');
         btn.setAttribute('aria-expanded', 'true');
       }
+      // Pause game when any menu is open; resume when none open
+      const anyOpen = soundMenu.classList.contains('show') || optMenu.classList.contains('show');
+      if (typeof window.__setMenuPause === 'function') window.__setMenuPause(anyOpen);
       schedule();
     }
     if(sndBtn) sndBtn.addEventListener('click', (e) => { e.stopPropagation(); toggle(soundMenu, sndBtn); }, {passive:true});
@@ -1344,6 +1448,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     document.addEventListener('click', (e) => {
       if(!e.target.closest('.menu') && !e.target.closest('#optBtn') && !e.target.closest('#sndBtn')){
         [soundMenu, optMenu].forEach(m => m.classList.remove('show'));
+        if (typeof window.__setMenuPause === 'function') window.__setMenuPause(false);
         schedule();
       }
     }, {passive:true});
@@ -1400,6 +1505,19 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     if(buffs.RAMPAGE.active || buffs.PIERCE.active || buffs.TRACK.active) return '#7fd8ff';
     if(buffs.FAST.active) return '#ffb37a';
     if(buffs.WAVY.active) return '#ba8fff';
+    // Fallback colour when no special buff is active.  If a skin is
+    // currently selected and defines a base colour, derive the border
+    // colour from it; otherwise revert to the original blue tint.
+    if (window.currentSkin && window.currentSkin.canvas && Array.isArray(window.currentSkin.canvas.base)) {
+      const arr = window.currentSkin.canvas.base;
+      // Convert RGB triplet to a hex string.  Values are clamped to 0–255.
+      const hex = '#' + arr.map((v) => {
+        const n = Math.max(0, Math.min(255, Math.round(v)));
+        const h = n.toString(16);
+        return h.length === 1 ? '0' + h : h;
+      }).join('');
+      return hex;
+    }
     return '#8fb3ff';
   }
 
@@ -1417,7 +1535,20 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     const c=ledColor();
     let spAvg=0; for(const b of balls){ spAvg += Math.hypot(b.vx,b.vy); } spAvg = balls.length? spAvg/balls.length : 8;
     const nowT = performance.now();
-    const breathClassic = (Math.sin(nowT / (180 - Math.min(120, spAvg*6)))+1)/2; // 原：依球速
+    // For the classic LED breathing effect, prefer the period defined by the
+    // current skin (if available).  When a skin is selected its period
+    // defines the full cycle (in ms).  Otherwise fall back to the original
+    // behaviour based on ball speed.
+    let __periodClassic;
+    if (window.currentSkin && window.currentSkin.canvas && typeof window.currentSkin.canvas.period === 'number') {
+      __periodClassic = window.currentSkin.canvas.period;
+    } else {
+      // Preserve the old dynamic period based on average ball speed (spAvg).
+      __periodClassic = (180 - Math.min(120, spAvg * 6));
+    }
+    // Compute a phase between 0 and 1, wrapping around __periodClassic.
+    const __phaseClassic = ((__periodClassic > 0) ? ((nowT % __periodClassic) / __periodClassic) : 0);
+    const breathClassic = (Math.sin(__phaseClassic * Math.PI * 2) + 1) / 2;
     const breath5 = (Math.sin(nowT / (5000 / (2*Math.PI)))+1)/2;  // 5s
     const breath3 = (Math.sin(nowT / (3000 / (2*Math.PI)))+1)/2;  // 3s
     const breath8 = (Math.sin(nowT / (8000 / (2*Math.PI)))+1)/2;  // 8s
@@ -2016,7 +2147,21 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
 
 
   function loop(){ if(!paused && running) update(); draw(); requestAnimationFrame(loop); }
-  function boot(){
+  
+  // 菜單暫停控制：當音效或選項菜單開啟時停住遊戲，關閉時恢復（不影響 Game Over / 倒數邏輯）
+  (function(){
+    let menuPaused = false;
+    window.__setMenuPause = function(flag){
+      menuPaused = !!flag;
+      if(menuPaused){ paused = true; } else if(running && !gameOver && !resumePending){ paused = false; }
+    };
+    // 保護性：若 UI 在小尺寸下重排導致狀態不同步，定時校正
+    setInterval(()=>{
+      const anyOpen = !!(document.querySelector('#soundMenu.show') || document.querySelector('#optMenu.show'));
+      if(anyOpen !== menuPaused){ window.__setMenuPause(anyOpen); }
+    }, 400);
+  })();
+function boot(){
     resetGame(); updateHUD(); loop();
     // 自動讀取音效/BGM偏好
     soundsOn = (localStorage.getItem('sfx_on')||'0')==='1'; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
@@ -2029,5 +2174,155 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
   boot();
 })();
 </script>
+
+
+<script>
+(function(){
+  const $ = sel => document.querySelector(sel);
+  const skinSel = $('#skinSel');
+  const skinTitle = $('#skinTitle');
+  const skinDesc = $('#skinDesc');
+
+  function populateSkinOptions(){
+    if (!skinSel || !window.SKINS) return;
+    while (skinSel.firstChild) skinSel.removeChild(skinSel.firstChild);
+    const order = Object.keys(window.SKINS);
+    for (const key of order){
+      const def = window.SKINS[key];
+      if (!def) continue;
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = def.selectLabel || def.label || key;
+      skinSel.appendChild(opt);
+    }
+  }
+
+  window.updateSkinUI = function(skin){
+    if (skinTitle) skinTitle.textContent = skin.label || skin.selectLabel || '經典風格';
+    if (skinDesc) skinDesc.textContent = skin.desc || '';
+  };
+
+  function restoreAndApply(){
+    let key = 'classic';
+    try {
+      const saved = localStorage.getItem('selected_skin');
+      if (saved && window.SKINS && window.SKINS[saved]) key = saved;
+    } catch(e){}
+    if (skinSel) skinSel.value = key;
+    if (typeof window.applySkin === 'function') window.applySkin(key);
+  }
+
+  function init(){
+    if (!window.SKINS) { console.warn('[skin] SKINS not ready yet.'); return; }
+    populateSkinOptions();
+    restoreAndApply();
+  }
+
+  // 監聽選擇
+  if (skinSel) {
+    skinSel.addEventListener('change', function(){
+      const key = skinSel.value;
+      if (typeof window.applySkin === 'function') window.applySkin(key);
+    }, { passive: true });
+  }
+
+  // 若 skin.js 較晚載入，這裡用 DOMContentLoaded 後再 init，多次呼叫也安全
+  document.addEventListener('DOMContentLoaded', init, { once:true });
+  // 如果已過 DOMContentLoaded，直接 init
+  if (document.readyState === 'interactive' || document.readyState === 'complete') { init(); }
+})();
+</script>
+
+
+<script>
+// === Prism / Rainbow FX 引擎 ===
+(function(){
+  let rafId = 0, ctx = null, cvs = null;
+  let t0 = 0;
+  function resize(){
+    if (!cvs) return;
+    const parent = cvs.parentElement;
+    const rect = parent.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    cvs.width  = Math.max(1, Math.floor(rect.width  * ratio));
+    cvs.height = Math.max(1, Math.floor((parent.querySelector('#game')?.getBoundingClientRect().height || rect.width*0.56) * ratio));
+    cvs.style.height = (cvs.height/ratio)+'px';
+  }
+  function drawRainbowWash(w, h, time){
+    const g = ctx.createLinearGradient(0,0,w,0);
+    const hueShift = (time*0.02)%360;
+    for(let i=0;i<=6;i++){
+      const hue = (hueShift + i*60)%360;
+      g.addColorStop(i/6, `hsla(${hue}, 80%, 60%, 0.035)`);
+    }
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,w,h);
+  }
+  function drawPrismBeams(w, h, time, opt){
+    const beams = opt.beams||6;
+    const speed = opt.speed||0.0005;
+    const alpha = opt.alpha||0.10;
+    const spread= opt.spread||0.85;
+    const hueShift = opt.hueShift||40;
+    const cx = w*0.5, cy = h*0.2; // source near top
+    const r = Math.hypot(w, h);
+    const baseAngle = time*speed*2*Math.PI;
+    for(let i=0;i<beams;i++){
+      const a = baseAngle + i*(2*Math.PI/beams);
+      const hue = (hueShift + i*(360/beams))%360;
+      const x2 = cx + Math.cos(a)*r;
+      const y2 = cy + Math.sin(a)*r;
+      const grad = ctx.createLinearGradient(cx, cy, x2, y2);
+      grad.addColorStop(0, `hsla(${hue}, 95%, 65%, 0)`);
+      grad.addColorStop(0.15, `hsla(${hue}, 95%, 65%, ${alpha})`);
+      grad.addColorStop(spread, `hsla(${hue}, 95%, 65%, 0)`);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = Math.max(1, r*0.012);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+  }
+  function loop(ts){
+    if (!ctx || !cvs) return;
+    if (!t0) t0 = ts;
+    const dt = ts - t0;
+    const w = cvs.width, h = cvs.height;
+    ctx.clearRect(0,0,w,h);
+    // subtle rainbow wash
+    drawRainbowWash(w,h,dt);
+    // prism beams using current skin params
+    const s = window.currentSkin && window.currentSkin.canvas && window.currentSkin.canvas.effects;
+    if (s && s.prism){
+      ctx.globalCompositeOperation = 'screen';
+      drawPrismBeams(w,h,dt,s.prism);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+  function start(skin){
+    if (!cvs){
+      cvs = document.getElementById('fx');
+      if (!cvs) return;
+      ctx = cvs.getContext('2d', { alpha: true });
+      window.addEventListener('resize', resize);
+    }
+    resize();
+    cancelAnimationFrame(rafId);
+    t0 = 0;
+    rafId = requestAnimationFrame(loop);
+  }
+  function stop(){
+    cancelAnimationFrame(rafId);
+    if (ctx && cvs){
+      ctx.clearRect(0,0,cvs.width,cvs.height);
+    }
+  }
+  window.fxStart = start;
+  window.fxStop = stop;
+})();
+</script>
+
 </body>
 </html>
