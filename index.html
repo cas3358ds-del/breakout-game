@@ -200,7 +200,7 @@ body[data-skin="霓虹．魅影幻彩"] .stage{--fxViz:1}
 
 /* === 霓虹 LED 燈條（與 index_skin.html 一致的六色流光） === */
 .stage::before{
-  content:""; position:absolute; inset:8px; border-radius:18px; pointer-events:none;
+  content:""; position:absolute; inset:var(--stage-inset); border-radius:18px; pointer-events:none;
   opacity: calc(var(--fxViz) * .9);
   background: conic-gradient(
     from 0deg,
@@ -216,9 +216,10 @@ body[data-skin="霓虹．魅影幻彩"] .stage{--fxViz:1}
   -webkit-mask: radial-gradient(closest-side, transparent  calc(100% - 3px), black calc(100% - 2px));
           mask: radial-gradient(closest-side, transparent  calc(100% - 3px), black calc(100% - 2px));
   box-shadow: 0 0 40px rgba(0,200,255,.25), inset 0 0 22px rgba(255,255,255,.08);
-  animation: neon-rotate 24s linear infinite;
+  filter: hue-rotate(0deg);
+  animation: neon-hue 8s linear infinite;
 }
-@keyframes neon-rotate{ to{ transform: rotate(360deg);} }
+@keyframes neon-hue{ to{ filter: hue-rotate(360deg); } }
 
 /* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */
 body[data-skin="霓虹．魅影幻彩"]{
