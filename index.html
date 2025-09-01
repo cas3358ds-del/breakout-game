@@ -97,14 +97,21 @@
     #promptsDock{
       position:sticky;z-index:20;top:calc(var(--hudBottom) + 48px);
       max-width:min(1080px,96vw);margin:6px auto 0;padding:0 6px;
-      display:flex;gap:8px;align-items:flex-start;overflow:auto;scrollbar-width:none
+      display:flex;gap:8px;align-items:flex-start;overflow:auto;scrollbar-width:none;
+      flex-direction:row
+    }
+    @media (min-width:768px){
+      #promptsDock{flex-direction:column}
     }
     #promptsDock::-webkit-scrollbar{display:none}
     .prompt{
       padding:8px 10px;border:1px solid var(--stroke);border-radius:12px;
       background:rgba(14,22,40,.92);box-shadow:0 10px 26px rgba(0,0,0,.34);
-      font-size:12px;line-height:1.45;color:#eaf2ff;white-space:nowrap
+      font-size:12px;line-height:1.45;color:#eaf2ff;white-space:normal;
+      display:flex;align-items:center;justify-content:center;text-align:center;
+      opacity:1;transition:opacity .4s
     }
+    .prompt.fade{opacity:0}
     /* Stage */
     .stage{position:relative;margin:12px auto 0;max-width:min(1080px,96vw);border-radius:18px;padding:12px;box-sizing:border-box;background:var(--stageGlass);background-image:var(--panelPattern);background-blend-mode:overlay;}
     canvas#game{background:linear-gradient(180deg,#0d132a,#0b1226 55%, #091223);border:1px solid rgba(80,110,170,.45);border-radius:16px;display:block;width:100%;height:auto;margin:0 auto;box-shadow:inset 0 0 160px rgba(255,255,255,.03), 0 28px 90px rgba(0,0,0,.46);touch-action:none;}
@@ -453,7 +460,7 @@ select optgroup { color: #0b1022; }
   const soundBtn=document.getElementById('soundBtn'), saveBtn=document.getElementById('saveBtn'), loadBtn=document.getElementById('loadBtn'), clearSaveBtn=document.getElementById('clearSaveBtn');
   const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn');
   const centerNote=document.getElementById('centerNote'), noteTitle=document.getElementById('noteTitle'), noteText=document.getElementById('noteText'), noteBox=document.getElementById('noteBox');
-  const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs');
+  const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs'), promptsDock=document.getElementById('promptsDock');
   const ledStyleSel=document.getElementById('ledStyle');
 
   // 新增元素參考
@@ -930,9 +937,33 @@ select optgroup { color: #0b1022; }
   function badgeIcon(k){ return (GAME_CONFIG.powers[k]?.badge)||'●'; }
   function updateBuffBadges(){ activeBuffsEl.innerHTML=''; const now=performance.now();
     // LONG 堆疊
-    const longAct=buffs.LONG.stacks.filter(t=>t>now); if(longAct.length){ const s=document.createElement('span'); s.className='badge'; s.textContent=`${badgeIcon('LONG')} LONG×${longAct.length} ${Math.max(0,Math.max(...longAct)-now|0)}ms`; activeBuffsEl.appendChild(s); }
+    const longAct=buffs.LONG.stacks.filter(t=>t>now);
+    if(longAct.length){
+      const s=document.createElement('span');
+      s.className='badge';
+      const leftSec=(Math.max(...longAct)-now)/1000;
+      s.textContent=`${badgeIcon('LONG')} LONG×${longAct.length} ${leftSec.toFixed(1)}s`;
+      activeBuffsEl.appendChild(s);
+    }
     // 其它
     for(const key of Object.keys(GAME_CONFIG.powers)){ if(key==='LONG') continue; const b=buffs[key]; if(!b?.active) continue; const left=b.until&&b.until>now?((b.until-now)/1000).toFixed(1)+'s':''; const s=document.createElement('span'); s.className='badge'; s.textContent=`${badgeIcon(key)} ${key}${left?' '+left:''}`; activeBuffsEl.appendChild(s); }
+  }
+
+  const promptQueue=[];
+  function showPrompt(text){
+    if(!promptsDock) return;
+    const L = layout();
+    const w = brickW*4 + L.pad*3;
+    const h = brickH*4 + L.pad*3;
+    const div=document.createElement('div');
+    div.className='prompt';
+    div.textContent=text;
+    div.style.width=w+'px';
+    div.style.height=h+'px';
+    promptsDock.appendChild(div);
+    promptQueue.push(div);
+    while(promptQueue.length>3){ const old=promptQueue.shift(); old.remove(); }
+    setTimeout(()=>{ div.classList.add('fade'); setTimeout(()=>{ const idx=promptQueue.indexOf(div); if(idx>=0) promptQueue.splice(idx,1); div.remove(); },400); },5000);
   }
 
   // === Buff 狀態 ===
@@ -1247,8 +1278,30 @@ function generateLevel(lv, L){
 
 
   function canDestroyBrick(b){ const now=performance.now(); if(b.unbreakable) return false; if(b.lockedUntil && now < b.lockedUntil) return false; return true; }
-  function damageOrDestroy(i, amount=1){ const b=bricks[i]; if(!b) return; if(b.unbreakable) return; const now=performance.now(); if(b.lockedUntil && now < b.lockedUntil) return; b.hp = (b.hp||1) - amount; if(b.hp<=0){ if(b.elite){ stats.eliteKills++; } revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD(); } }
-  function destroyBrick(i){ const b=bricks[i]; if(!b) return; if(!canDestroyBrick(b)) return; if(b.boss){ b.hp-=1; if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; stats.bossKills++; updateHUD(); } return; } if(b.elite){ stats.eliteKills++; } revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD(); }
+  function damageOrDestroy(i, amount=1){
+    const b=bricks[i]; if(!b) return; if(b.unbreakable) return;
+    if(b.elite && !b.prompted){ showPrompt('遇到菁英磚'); b.prompted=true; }
+    if(b.boss && !b.prompted){ showPrompt('遇到Boss'); b.prompted=true; }
+    const now=performance.now();
+    if(b.lockedUntil && now < b.lockedUntil) return;
+    b.hp = (b.hp||1) - amount;
+    if(b.hp<=0){
+      if(b.elite){ stats.eliteKills++; }
+      revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD();
+    }
+  }
+  function destroyBrick(i){
+    const b=bricks[i]; if(!b) return; if(!canDestroyBrick(b)) return;
+    if(b.elite && !b.prompted){ showPrompt('遇到菁英磚'); b.prompted=true; }
+    if(b.boss && !b.prompted){ showPrompt('遇到Boss'); b.prompted=true; }
+    if(b.boss){
+      b.hp-=1;
+      if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; stats.bossKills++; updateHUD(); }
+      return;
+    }
+    if(b.elite){ stats.eliteKills++; }
+    revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD();
+  }
   function destroyNeighbors(idx){ const b=bricks[idx]; if(!b) return; const L=layout(); const near=[]; for(let j=bricks.length-1;j>=0;j--){ if(j===idx) continue; const t=bricks[j]; const dx=Math.abs((t.x+t.w/2)-(b.x+b.w/2)); const dy=Math.abs((t.y+t.h/2)-(b.y+b.h/2)); const thx=brickW+L.pad+2, thy=brickH+L.pad+2; if(dx<=thx && dy<=thy){ // 鄰近一格
         if(canDestroyBrick(t)){ if(t.boss){ t.hp-=1; if(t.hp<=0){ revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); score+=50; } } else { revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); score+=10; } }
       }
@@ -1402,7 +1455,12 @@ function generateLevel(lv, L){
 
   function applyPower(type){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type) stats.buffs++; }
-const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
+    const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
+    let promptText='';
+    if(def.type==='buff') promptText=`獲得增益：${def.label}`;
+    else if(def.type==='debuff') promptText=`減益道具：${def.label}`;
+    else if(def.type==='special' || def.type==='rare') promptText=`特殊增益：${def.label}`;
+    if(promptText) showPrompt(promptText);
     // 更新最近取得增益的時間：非減益類型（含特殊/稀有）皆視為增益
     if(def.type !== 'debuff'){
       lastBeneficialPickupAt = now;
