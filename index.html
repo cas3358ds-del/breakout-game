@@ -409,18 +409,21 @@ body[data-skin="霓虹．魅影幻彩"]{
   const IMG_PAIRS_FALLBACK = Array.from({length:10}, (_,i)=> i+1).map(i=>({bg:`images/bg${i}.jpg`, cg:`images/cg${i}.jpg`}));
 
   function makeImg(src, fallback){
-    const im = new Image(); im.decoding='async'; im.loading='eager'; im.src=src;
+    const im = new Image(); im.decoding='async'; im.loading='lazy'; im.src=src;
     if(fallback){
       im.onerror=()=>{ if(im.src!==fallback) im.src=fallback; };
     }
     return im;
   }
-  const IMG_MAP = []; // 0..9: {bg:Image, cg:Image}
-  for(let i=0;i<10;i++){
-    IMG_MAP[i] = {
-      bg: makeImg(IMG_PAIRS[i].bg, IMG_PAIRS_FALLBACK[i].bg),
-      cg: makeImg(IMG_PAIRS[i].cg, IMG_PAIRS_FALLBACK[i].cg),
-    };
+  const IMG_MAP = new Array(10); // caches {bg, cg}
+  function loadImagePair(i){
+    if(!IMG_MAP[i]){
+      IMG_MAP[i] = {
+        bg: makeImg(IMG_PAIRS[i].bg, IMG_PAIRS_FALLBACK[i].bg),
+        cg: makeImg(IMG_PAIRS[i].cg, IMG_PAIRS_FALLBACK[i].cg),
+      };
+    }
+    return IMG_MAP[i];
   }
 
   // === 參考 DOM ===
@@ -998,12 +1001,13 @@ body[data-skin="霓虹．魅影幻彩"]{
   // 取得本關顯示影像（1~10隨機BG/CG；11~20用另一張）
   function getLevelImage(levelNum){
     const idx=((levelNum-1)%10);
+    const imgs = loadImagePair(idx);
     if(levelNum<=10){
       if(imageChoice[idx]<0){ imageChoice[idx]= Math.random()<0.5 ? 0:1; }
-      return imageChoice[idx]===0? IMG_MAP[idx].bg : IMG_MAP[idx].cg;
+      return imageChoice[idx]===0? imgs.bg : imgs.cg;
     }else{
       if(imageChoice[idx]<0){ imageChoice[idx]=0; } // 保底
-      return imageChoice[idx]===0? IMG_MAP[idx].cg : IMG_MAP[idx].bg;
+      return imageChoice[idx]===0? imgs.cg : imgs.bg;
     }
   }
 
