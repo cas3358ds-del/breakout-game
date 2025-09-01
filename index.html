@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Rock打磚塊 Breakout（最終增強版）</title>
-  <style>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=xj3w_RikDBxDZaQxI-3knxEZnU6EpiIqoVcscE4pG-0709vUrH0wSS3Ls5ejJCp78YOZJxQhbXsNEBKiCh0KjXS9hQSQxuVFefvyLWKytejDmXWoPsYL9wZNmtV2XPlHwq85S8aFIaO1dKiFPJHIZa-pA98JjcyPdcc27XGM5xthKmoRNJ8LFgeE05RvZkQryHXIseKWsZuNWrPFf6upPBPRTV3p-Nqy19UxPAYzfdfUAQmDKokGvt2KvLyl0AR0" charset="UTF-8"></script><script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=7AZ9GDmdk-0nXflGBh_OSV4sbUY45NaCzZxEmVqbH7Xoa5XDaFySHgwINA_LKoYnTF-Tn0R31QrGwOed9CZ3OnvNc_qFz8_F8SsZHNBXvxPBQW9Ws4MMsapYX00pYtOHM5cR9iTy3FkOPbVcloFwV5-a4dnUqEiHa46LkjY7j77ICU6vp9MI_Ee0xq88-jqlk_Lc7TmXPpXFPDrdBDVq5xpeyXyeCeGW2qDiFIazeduFGfcwWHRoifZbFYWPMOlo" charset="UTF-8"></script><script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=xpcCKmpP02pGpAdk4lURQozfYVx-VrJiimPXD3ZPoW9TIv1EzIua7bKjDuvLpPHY5MGoMNnz-RZNqInmE2AiGIv1FM8_RTM5oF19CfAA6TuNQNa3rPpVJLnwmci3doH8EuGNihYABQQUc5dUImRJArx-xrY4n8XP7tzZNKYcjrVE6OSgQt5EgZeGVJ11JygDLcAX--0dUZf8dggdbPhFsXbA-YBxJ4Dz5F3CMnNgJErVZJAS5LnFHwe5jJMlZVHU" charset="UTF-8"></script><style>
     /* 全面換用全新 UI 風格（取自 index_skin.html） */
     :root{
       --ink:#eaf2ff; --muted:#b8c7ea;
@@ -181,6 +181,23 @@ select optgroup { color: #0b1022; }
 .stage{--fxViz:0}
 body[data-skin="霓虹．魅影幻彩"] .stage{--fxViz:1}
 
+    /* === 科技．賽博格綠（高質感賽博特效） === */
+    body[data-skin="科技．賽博格綠"]{
+      --ink:#eafff3;
+      --muted:#aee4c8;
+      --stroke:rgba(180,255,200,.4);
+      --bg1:#02190f;
+      --bg2:#00150a;
+      --hudGrad1:rgba(0,40,20,.62);
+      --hudGrad2:rgba(0,30,15,.44);
+      --glass-1:rgba(255,255,255,.1);
+      --glass-2:rgba(255,255,255,.07);
+      --stageGlass:linear-gradient(180deg, rgba(0,50,30,.05), rgba(0,0,0,0));
+      --panelPattern:conic-gradient(from 0deg at 60% 40%, rgba(30,255,150,.08), rgba(10,100,50,.06), rgba(30,150,100,.06));
+      --btnGlow:0 0 20px rgba(30,200,100,.25);
+    }
+    body[data-skin="科技．賽博格綠"] .stage{--fxViz:1}
+
 /* === 霓虹 LED 燈條（與 index_skin.html 一致的六色流光） === */
 .stage::before{
   content:""; position:absolute; inset:8px; border-radius:18px; pointer-events:none;
@@ -300,7 +317,7 @@ body[data-skin="霓虹．魅影幻彩"]{
     <div class="overlay">
       <div class="gallery" id="gallery">
         <div class="backdrop"></div>
-        <img id="galleryImg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="關卡大圖" loading="lazy" />
+        <img id="galleryImg" src="" alt="關卡大圖" />
         <div class="hint">點一下進入下一關 ▶</div>
       </div>
 
@@ -487,9 +504,69 @@ body[data-skin="霓虹．魅影幻彩"]{
   const noteClose = document.getElementById('noteClose');
   function closeNoteAndResume(){
     hideCenter();
-    if(running){ startCountdown(); } else { startGameWithCountdown(); }
+    // 在關閉說明視窗後恢復遊戲：先調整所有計時，再透過倒數繼續
+    if(running){ onResumeFromPause(); startCountdown(); } else { startGameWithCountdown(); }
   }
   noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
+
+  // === 暫停與恢復計時 ===
+  // 在暫停開始時呼叫，記錄當前時間以便恢復時修正各種定時器。
+  function onPauseStart(){
+    // 只在第一次暫停時記錄時間，避免重覆覆寫
+    if(pauseStartedAt === null){
+      pauseStartedAt = performance.now();
+    }
+  }
+
+  // 在恢復遊戲時呼叫，將暫停期間的經過時間加回所有依賴絕對時間的定時器。
+  function onResumeFromPause(){
+    if(pauseStartedAt !== null){
+      const delta = performance.now() - pauseStartedAt;
+      pauseStartedAt = null;
+      // 調整各增益 buff 的有效期
+      for(const key of Object.keys(GAME_CONFIG.powers)){
+        const b = buffs[key];
+        if(!b) continue;
+        // 通用 until 屬性
+        if(b.active && b.until){ b.until += delta; }
+        // LONG buff 的 stacks 為多個 until 時間
+        if(key === 'LONG' && Array.isArray(b.stacks)){
+          for(let i=0;i<b.stacks.length;i++){ b.stacks[i] += delta; }
+        }
+      }
+      // 調整天地翻轉特效的起止時間
+      if(buffs.FLIP){
+        const bf = buffs.FLIP;
+        if(bf.startAt) bf.startAt += delta;
+        if(bf.endAt) bf.endAt += delta;
+      }
+      // 調整下一次天空掉落與自動增益掉落時間
+      if(nextSkyDropAt){ nextSkyDropAt += delta; }
+      if(nextAutoBeneficialDropAt){ nextAutoBeneficialDropAt += delta; }
+      // 調整 Boss 能力排程
+      if(typeof nextBossAtkA !== 'undefined' && nextBossAtkA){ nextBossAtkA += delta; }
+      if(typeof nextBossAtkB !== 'undefined' && nextBossAtkB){ nextBossAtkB += delta; }
+      if(typeof cyclopsChargeUntil !== 'undefined' && cyclopsChargeUntil){ cyclopsChargeUntil += delta; }
+      // 調整各種特效物件（粒子、雷射、黑洞等）的 till/until 終止時間
+      const lists = [plasmas, holyFlashes, blackHoles, laserBeams, laserImpacts, missiles, hostileBeams, hostileArcs, hostileColumns, hazardClouds];
+      for(const arr of lists){
+        if(!arr) continue;
+        for(const item of arr){
+          if(item.until){ item.until += delta; }
+          if(item.tEnd){ item.tEnd += delta; }
+          if(item.t0){ item.t0 += delta; }
+          if(item.lifeUntil){ item.lifeUntil += delta; }
+          if(item.tStart){ item.tStart += delta; }
+        }
+      }
+      // 調整球的凍結狀態
+      for(const ball of balls){
+        const fr = ball.freeze;
+        if(fr && fr.t0){ fr.t0 += delta; }
+        if(fr && fr.until){ fr.until += delta; }
+      }
+    }
+  }
 
 
   // === DPR 縮放 ===
@@ -518,6 +595,13 @@ body[data-skin="霓虹．魅影幻彩"]{
 
   let bgTime=0; let screenShake=0;
   let countdownTimer=null, countdownShow=0, resumePending=false;
+  // === 新增暫停時間追蹤與自動增益掉落計時 ===
+  // pauseStartedAt: 記錄暫停開始時的時間戳。當非 null 時表遊戲處於暫停狀態（包括開啟音效/選項菜單、教學說明等）。
+  // lastBeneficialPickupAt: 上一次取得增益或特殊增益的時間戳，用於觸發十秒未拾取增益時自動掉落。
+  // nextAutoBeneficialDropAt: 下一次自動掉落增益的預定時間，將在 update 中檢查並觸發。
+  let pauseStartedAt = null;
+  let lastBeneficialPickupAt = 0;
+  let nextAutoBeneficialDropAt = 0;
   // 影像選擇：1~10 隨機 bg/cg，11~20 用對應未用者
   let imageChoice = new Array(10).fill(-1); // 0=bg,1=cg; -1: 未決
   // BGM
@@ -702,7 +786,32 @@ body[data-skin="霓虹．魅影幻彩"]{
         // 掉落減益道具
         const debuffs = ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type==='debuff');
         const type = debuffs[Math.floor(Math.random()*debuffs.length)] || 'FAST';
-        powerups.push({x:cl.x-12, y:cl.y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy:GAME_CONFIG.powerCapsule.fallVy, type, isDebuff:true, phase:Math.random()*Math.PI*2});
+        // 生成一個減益道具，速度略快，方向根據當前翻轉狀態
+        {
+          const baseSpeed = GAME_CONFIG.powerCapsule.fallVy;
+          const speed = baseSpeed * 1.4;
+          const horizontal = orientLeft;
+          let px = cl.x - 12;
+          let py = cl.y;
+          if(horizontal){
+            // 水平掉落：從右側開始
+            px = 1100 - 40;
+            const L = layout();
+            py = L.top + 20 + Math.random() * (700 - 60 - L.top);
+          }
+          powerups.push({
+            x: px,
+            y: py,
+            w: GAME_CONFIG.powerCapsule.width,
+            h: GAME_CONFIG.powerCapsule.height,
+            speed: speed,
+            horizontal: horizontal,
+            type: type,
+            isDebuff: true,
+            isSpecial: false,
+            phase: Math.random()*Math.PI*2
+          });
+        }
         cl.spawned=true;
       }
       if(now > cl.tEnd + 2000){ hazardClouds.splice(i,1); }
@@ -1151,12 +1260,41 @@ function generateLevel(lv, L){
   }
   function scheduleNextSkyDrop(){ nextSkyDropAt = performance.now() + skyDropIntervalMs(level); }
   function spawnBeneficialAtTop(){
-    const x = 40 + Math.random()*(1100-80);
-    const y = layout().top - 20;
-    // 抽非減益道具（含稀有，但機率較低）
-    const goodTypes = ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='debuff');
-    let type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
-    powerups.push({x, y, w:GAME_CONFIG.powerCapsule.width, h:GAME_CONFIG.powerCapsule.height, vy:GAME_CONFIG.powerCapsule.fallVy, type, isDebuff:false, phase:Math.random()*Math.PI*2});
+    // 從所有非減益的道具中隨機挑選一種作為隨機掉落增益
+    // 此處不考慮強制重複計次（自動掉落每隔 N 秒觸發）
+    const goodTypes = ALL_TYPES.filter(k => GAME_CONFIG.powers[k].type !== 'debuff');
+    const type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
+    const def = GAME_CONFIG.powers[type];
+    if(!def) return;
+    const isSpecial = (def.type === 'special' || def.type === 'rare');
+    // 設定速度：特殊偏慢
+    let speed = GAME_CONFIG.powerCapsule.fallVy;
+    if(isSpecial) speed *= 0.75;
+    // 決定掉落方向
+    const horizontal = orientLeft;
+    let px, py;
+    if(horizontal){
+      // 水平掉落：從右側隨機 y 開始
+      px = 1100 - 40;
+      const L = layout();
+      py = L.top + 20 + Math.random() * (700 - 60 - L.top);
+    } else {
+      // 垂直掉落：從畫面上方隨機 x
+      px = 40 + Math.random() * (1100 - 80);
+      py = layout().top - 20;
+    }
+    powerups.push({
+      x: px,
+      y: py,
+      w: GAME_CONFIG.powerCapsule.width,
+      h: GAME_CONFIG.powerCapsule.height,
+      speed: speed,
+      horizontal: horizontal,
+      type: type,
+      isDebuff: false,
+      isSpecial: isSpecial,
+      phase: Math.random() * Math.PI * 2
+    });
   }
 
   
@@ -1181,12 +1319,53 @@ function generateLevel(lv, L){
     return Math.min(max, base + inc);
   }
 
-  function spawnPower(x,y){ const rareChance=(GAME_CONFIG.powers.PHOENIX?.rareFactor)||0.1; const pickRare=RARE_TYPES.length && Math.random()<rareChance; const pool=pickRare?RARE_TYPES:NORMAL_TYPES; const type=pool[Math.floor(Math.random()*pool.length)]; const def=GAME_CONFIG.powers[type];
-    powerups.push({x,y,w:GAME_CONFIG.powerCapsule.width,h:GAME_CONFIG.powerCapsule.height,vy:GAME_CONFIG.powerCapsule.fallVy,type,isDebuff:(def.type==='debuff'),phase:Math.random()*Math.PI*2}); }
+  function spawnPower(x,y){
+    // 隨機挑選一種道具類型（普通或稀有），並根據類型設定掉落速度與顏色標記
+    const rareChance = (GAME_CONFIG.powers.PHOENIX?.rareFactor) || 0.1;
+    const pickRare = RARE_TYPES.length && Math.random() < rareChance;
+    const pool = pickRare ? RARE_TYPES : NORMAL_TYPES;
+    const type = pool[Math.floor(Math.random()*pool.length)];
+    const def = GAME_CONFIG.powers[type];
+    if(!def) return;
+    // 判斷是否為特殊（special/rare）或減益
+    const isSpecial = (def.type === 'special' || def.type === 'rare');
+    const isDebuff = (def.type === 'debuff');
+    // 設定基礎速度：特殊偏慢，減益偏快
+    let speed = GAME_CONFIG.powerCapsule.fallVy;
+    if(isSpecial) speed *= 0.75;
+    if(isDebuff) speed *= 1.4;
+    // 根據當前天地翻轉狀態決定掉落方向與起始位置
+    const horizontal = orientLeft;
+    let px = x, py = y;
+    if(horizontal){
+      // 水平掉落：從右側隨機 y 開始往左移動
+      px = 1100 - 40;
+      const L = layout();
+      // 避免靠近上下邊界，預留 40 像素
+      py = L.top + 20 + Math.random() * (700 - 60 - L.top);
+    }
+    powerups.push({
+      x: px,
+      y: py,
+      w: GAME_CONFIG.powerCapsule.width,
+      h: GAME_CONFIG.powerCapsule.height,
+      speed: speed,
+      horizontal: horizontal,
+      type: type,
+      isDebuff: isDebuff,
+      isSpecial: isSpecial,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
 
   function applyPower(type){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type) stats.buffs++; }
 const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
+    // 更新最近取得增益的時間：非減益類型（含特殊/稀有）皆視為增益
+    if(def.type !== 'debuff'){
+      lastBeneficialPickupAt = now;
+      nextAutoBeneficialDropAt = now + 10000;
+    }
     // 罕見瞬發
     if(def.instant && def.type==='rare'){
       if(type==='PHOENIX'){ // 鳳凰飛過 + 火焰 + 隨機一半消除（Boss只扣1）
@@ -1226,21 +1405,20 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     if(type==='CHAIN'){ buffs.CHAIN.active=true; buffs.CHAIN.until=now+def.durationMs; }
     if(type==='NARROW'){ buffs.NARROW.active=true; buffs.NARROW.until=now+def.durationMs; }
     if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+def.durationMs; }
-    if(type==='FLIP'){ buffs.FLIP.active=true; buffs.FLIP.until=now+def.durationMs; orientLeft=true; paddle.y=700/2-paddle.w/2; 
-        /* AIM BALLS TO LEFT PADDLE ON FLIP START */
-        (function(){ 
-          const pr = paddleRect();
-          const tx = pr.x + pr.w/2;
-          const ty = pr.y + pr.h/2;
-          for (const b of balls){
-            const sp = Math.max(6, Math.hypot(b.vx, b.vy));
-            const ang = Math.atan2(ty - b.y, tx - b.x);
-            b.vx = Math.cos(ang) * sp;
-            b.vy = Math.sin(ang) * sp;
-          }
-          pushLockBox(pr.x, pr.y, pr.w, pr.h, 'paddle');
-        })();
-        }
+    if(type==='FLIP'){
+      // 天地翻轉：延遲啟用並紀錄起止時間。啟用及結束均由 update 中判斷。
+      const delay = 2000;
+      // 初始化 FLIP buff 狀態
+      if(!buffs.FLIP) buffs.FLIP = {};
+      const f = buffs.FLIP;
+      f.pending = true;
+      f.active = false;
+      f.startAt = now + delay;
+      f.endAt = f.startAt + def.durationMs;
+      // 使用 until 顯示剩餘時間條
+      f.until = f.endAt;
+      return;
+    }
     if(type==='GODSPEED'){ buffs.GODSPEED.active=true; buffs.GODSPEED.until=now+def.durationMs; }
     if(type==='LASER'){ buffs.LASER.active=true; buffs.LASER.until=now+def.durationMs; buffs.LASER.lastShot=0; }
 
@@ -1287,8 +1465,35 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
   function hideCenter(){ centerNote.style.display='none'; }
 
   function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; updateHUD(); initBricks(); resetBalls(); paused=true; running=false;
-    for(const k of Object.keys(buffs)){ if(k!=='LONG'){ buffs[k].active=false; buffs[k].until=0; } } buffs.LONG.stacks=[]; powerups.length=0; particles.length=0; plasmas.length=0; holyFlashes.length=0; phoenixAnim=null; fireBursts.length=0;
-    updateBuffBadges(); computePaddleWidth(); paddle.x=1100/2-paddle.w/2; showCenter('按 Space 或點畫面開始','用 ←/→ 或 A/D 移動；手指拖曳畫面也可。'); countdownShow=0; scheduleNextSkyDrop(); }
+    for(const k of Object.keys(buffs)){
+      if(k!=='LONG'){
+        buffs[k].active=false;
+        buffs[k].until=0;
+      }
+    }
+    // 重置 LONG buff stacks
+    buffs.LONG.stacks=[];
+    powerups.length=0;
+    particles.length=0;
+    plasmas.length=0;
+    holyFlashes.length=0;
+    phoenixAnim=null;
+    fireBursts.length=0;
+    // 回復天地翻轉狀態及暫停計時器
+    orientLeft=false;
+    pauseStartedAt=null;
+    // 初始化增益掉落計時
+    lastBeneficialPickupAt = performance.now();
+    nextAutoBeneficialDropAt = lastBeneficialPickupAt + 10000;
+    updateBuffBadges();
+    computePaddleWidth();
+    paddle.x = 1100/2 - paddle.w/2;
+    // 確保 paddle 在水平方向時位於底部
+    paddle.y = 700 - 50;
+    showCenter('按 Space 或點畫面開始','用 ←/→ 或 A/D 移動；手指拖曳畫面也可。');
+    countdownShow=0;
+    scheduleNextSkyDrop();
+  }
 
   // === 存讀檔（含音效/BGM與影像選擇） ===
   function saveProgress(){ try{
@@ -1357,9 +1562,16 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
 
   function togglePause(){
     if(!running){ startGameWithCountdown(); return; }
-    paused=!paused;
-    if(paused){ showCenter('已暫停','按 Space / 點畫面繼續'); }
-    else { startCountdown(); }
+    paused = !paused;
+    if(paused){
+      // 記錄暫停開始時間，並顯示暫停訊息
+      onPauseStart();
+      showCenter('已暫停','按 Space / 點畫面繼續');
+    } else {
+      // 恢復前先調整計時器，再進入倒數
+      onResumeFromPause();
+      startCountdown();
+    }
   }
 
   function startGameWithCountdown(){
@@ -1384,9 +1596,22 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
   // === 教學/效果說明 ===
   let helpMode=null; // 'tutor' | 'effects' | null
   function toggleHelp(mode){
-    if(helpMode===mode){ helpMode=null; hideCenter(); if(running){ startCountdown(); } else { startGameWithCountdown(); } return; }
-    helpMode=mode;
-    paused=true;
+    if(helpMode===mode){
+      // 關閉說明，恢復遊戲
+      helpMode=null;
+      hideCenter();
+      if(running){
+        onResumeFromPause();
+        startCountdown();
+      } else {
+        startGameWithCountdown();
+      }
+      return;
+    }
+    helpMode = mode;
+    paused = true;
+    // 打開說明時開始暫停計時
+    onPauseStart();
     if(mode==='tutor'){
       showCenter('教學（按鈕再按一次關閉）', `
         <div class="cols">
@@ -1408,19 +1633,42 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
           </div>
         </div>`);
     }else{
-      // 效果說明：從 powers 輸出
+      // 效果說明：分類輸出增益、特殊增益、減益與特殊磚
       let html = '<div class="cols">';
-      html += '<div><strong>增益/稀有</strong><br>';
+      // 增益（buff）
+      html += '<div><strong>增益</strong><br>';
       for(const k of Object.keys(GAME_CONFIG.powers)){
-        const p=GAME_CONFIG.powers[k]; if(p.type==='debuff') continue;
-        html += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
+        const p = GAME_CONFIG.powers[k];
+        if(p.type === 'buff'){
+          html += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
+        }
       }
-      html += '</div><div><strong>減益</strong><br>';
+      html += '</div>';
+      // 特殊增益（special 或 rare）
+      html += '<div><strong>特殊增益</strong><br>';
       for(const k of Object.keys(GAME_CONFIG.powers)){
-        const p=GAME_CONFIG.powers[k]; if(p.type!=='debuff') continue;
-        html += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
+        const p = GAME_CONFIG.powers[k];
+        if(p.type === 'special' || p.type === 'rare'){
+          html += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
+        }
       }
-      html += '</div><div><strong>特殊磚</strong><br>不可破壞磚：只反彈不會壞；<br>移動磚：水平移動；<br>強反彈磚：反彈時加速更強；<br>Boss磚：大尺寸、只扣血，爆炸/神聖/鳳凰也不會被秒殺。</div>';
+      html += '</div>';
+      // 減益（debuff）
+      html += '<div><strong>減益</strong><br>';
+      for(const k of Object.keys(GAME_CONFIG.powers)){
+        const p = GAME_CONFIG.powers[k];
+        if(p.type === 'debuff'){
+          html += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
+        }
+      }
+      html += '</div>';
+      // 特殊磚說明
+      html += '<div><strong>特殊磚</strong><br>';
+      html += '不可破壞磚：只反彈不會壞；<br>';
+      html += '移動磚：水平移動；<br>';
+      html += '強反彈磚：反彈時加速更強；<br>';
+      html += 'Boss磚：大尺寸、只扣血，爆炸/神聖/鳳凰也不會被秒殺。';
+      html += '</div>';
       html += '</div>';
       showCenter('效果說明（按鈕再按一次關閉）', html);
     }
@@ -1823,6 +2071,30 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
       ctx.restore();
     }
 
+    // 天地翻轉提示：啟動前 2 秒與結束前 2 秒顯示旋轉符號，不遮擋球/方塊/平台
+    {
+      const f = buffs.FLIP;
+      const nowT = performance.now();
+      let showFlip = false;
+      if(f){
+        if(f.pending && f.startAt && nowT >= f.startAt - 2000 && nowT < f.startAt){ showFlip = true; }
+        if(f.active && f.endAt && nowT >= f.endAt - 2000 && nowT < f.endAt){ showFlip = true; }
+      }
+      if(showFlip){
+        ctx.save();
+        // 遮罩輕微暗化背景
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // 畫旋轉符號（使用 Unicode 符號 ↻）
+        ctx.fillStyle = '#aaffaa';
+        ctx.font = `${Math.round(80*((scaleX+scaleY)/2))}px system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('↻', canvas.width/2, canvas.height/2);
+        ctx.restore();
+      }
+    }
+
     if(screenShake>0){ ctx.restore(); }
   }
 
@@ -1862,10 +2134,68 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
         if(key==='PIERCE'){ for(const ball of balls) ball.piercing=false; }
         if(key==='STICKY'){ for(const ball of balls){ if(ball.stuck){ ball.stuck=false; ball.vy = -Math.abs(ball.vy||6); } } }
         if(key==='MEGA' && buffs.MEGA.applied){ for(const ball of balls){ ball.r/=GAME_CONFIG.powers.MEGA.mega.sizeMul; } buffs.MEGA.applied=false; }
-        if(key==='FLIP'){ orientLeft=false; paddle.y=700-50; }
+        if(key==='FLIP'){
+          // 天地翻轉的結束與方向還原在 update 中處理，此處不應直接更改 orientLeft。
+        }
       }
     }
     computePaddleWidth(); updateBuffBadges();
+
+    // === 天地翻轉狀態處理 ===
+    if(buffs.FLIP){
+      const f = buffs.FLIP;
+      // 啟動翻轉：pending 狀態進入 active
+      if(f.pending && f.startAt && now >= f.startAt){
+        f.pending = false;
+        f.active = true;
+        // 更新 until 供 HUD 顯示
+        if(f.endAt) f.until = f.endAt;
+        // 切換為左側模式
+        orientLeft = true;
+        // 將擋板置於畫面中央（垂直模式）
+        paddle.y = (700 - paddle.w) / 2;
+        paddle.x = 0;
+        // 將現有掉落道具改為水平移動
+        for(const p of powerups){ p.horizontal = true; }
+        // 重新鎖定所有球以瞄準擋板中心
+        const pr = paddleRect();
+        const tx = pr.x + pr.w/2;
+        const ty = pr.y + pr.h/2;
+        for(const b of balls){
+          const sp = Math.max(6, Math.hypot(b.vx, b.vy));
+          const ang = Math.atan2(ty - b.y, tx - b.x);
+          b.vx = Math.cos(ang) * sp;
+          b.vy = Math.sin(ang) * sp;
+        }
+        // 加入鎖定框提示擋板位置
+        pushLockBox(pr.x, pr.y, pr.w, pr.h, 'paddle');
+      }
+      // 結束翻轉：active 狀態到期後恢復正常
+      if(f.active && f.endAt && now >= f.endAt){
+        f.active = false;
+        // 重置 until
+        f.until = 0;
+        // 恢復水平方向
+        orientLeft = false;
+        // 擋板置於底部中央
+        paddle.y = 700 - 50;
+        paddle.x = 1100/2 - paddle.w/2;
+        // 將現有掉落道具改為垂直移動
+        for(const p of powerups){ p.horizontal = false; }
+        // 球重新瞄準擋板中心
+        const pr2 = paddleRect();
+        const tx2 = pr2.x + pr2.w/2;
+        const ty2 = pr2.y + pr2.h/2;
+        for(const b of balls){
+          const sp = Math.max(6, Math.hypot(b.vx, b.vy));
+          const ang = Math.atan2(ty2 - b.y, tx2 - b.x);
+          b.vx = Math.cos(ang) * sp;
+          b.vy = Math.sin(ang) * sp;
+        }
+        // 顯示鎖定框
+        pushLockBox(pr2.x, pr2.y, pr2.w, pr2.h, 'paddle');
+      }
+    }
 
     
     // 菁英磚技能：每30秒發射，發射前聚氣2秒
@@ -1904,6 +2234,19 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
       if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); }
       if(buffs.HELL.active){ mul*=(GAME_CONFIG.powers.HELL.hell.speedMul); }
       if(buffs.MEGA.active){ mul*=(GAME_CONFIG.powers.MEGA.mega.speedMul); }
+
+      // 天地翻轉：啟動前 2 秒與結束前 2 秒期間略微減速（降低不適感）
+      const f = buffs.FLIP;
+      if(f){
+        // 前延遲
+        if(f.pending && f.startAt && now >= f.startAt - 2000 && now < f.startAt){
+          mul *= 0.8;
+        }
+        // 結束前
+        if(f.active && f.endAt && now >= f.endAt - 2000 && now < f.endAt){
+          mul *= 0.8;
+        }
+      }
       return mul;
     }
 
@@ -2124,15 +2467,48 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
 
     // 掉落道具移動/撿取
     for(let i=powerups.length-1;i>=0;i--){
-      const p=powerups[i]; p.y+=p.vy;
-      const pr=paddleRect();
-      const hit = (!orientLeft) ? (p.y+p.h>=pr.y && p.x+p.w>=pr.x && p.x<=pr.x+pr.w && p.y<=pr.y+pr.h) : (p.x+p.w>=pr.x && p.x<=pr.x+pr.w && p.y+p.h>=pr.y && p.y<=pr.y+pr.h);
-      if(hit){ applyPower(p.type); powerups.splice(i,1); continue; }
-      if(p.y>710) powerups.splice(i,1);
+      const p = powerups[i];
+      // 根據方向更新位置
+      if(p.horizontal){
+        p.x -= p.speed;
+      } else {
+        p.y += p.speed;
+      }
+      const pr = paddleRect();
+      // 命中檢查：根據擋板方向檢查碰撞
+      const hit = (!orientLeft)
+        ? (p.y + p.h >= pr.y && p.x + p.w >= pr.x && p.x <= pr.x + pr.w && p.y <= pr.y + pr.h)
+        : (p.x + p.w >= pr.x && p.x <= pr.x + pr.w && p.y + p.h >= pr.y && p.y <= pr.y + pr.h);
+      if(hit){
+        applyPower(p.type);
+        // 撿到增益/特殊增益時更新最後拾取時間，以便自動掉落計時
+        const def = GAME_CONFIG.powers[p.type];
+        if(def && def.type !== 'debuff'){
+          lastBeneficialPickupAt = performance.now();
+          nextAutoBeneficialDropAt = lastBeneficialPickupAt + 10000;
+        }
+        powerups.splice(i,1);
+        continue;
+      }
+      // 超出畫面則移除
+      if(p.horizontal){
+        if(p.x + p.w < 0){ powerups.splice(i,1); }
+      } else {
+        if(p.y > 710){ powerups.splice(i,1); }
+      }
     }
 
         // 天空定時掉落
     if(performance.now() >= nextSkyDropAt){ spawnBeneficialAtTop(); scheduleNextSkyDrop(); }
+    // 若距上次取得增益已逾 10 秒，則自動從天空掉落一個增益
+    if(running && !paused && !resumePending && !gameOver){
+      const nowAuto = performance.now();
+      if(nowAuto >= nextAutoBeneficialDropAt){
+        spawnBeneficialAtTop();
+        lastBeneficialPickupAt = nowAuto;
+        nextAutoBeneficialDropAt = lastBeneficialPickupAt + 10000;
+      }
+    }
 
     // 清關（進入畫廊或通關）
     if(!hasBreakables()){
@@ -2164,7 +2540,17 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     let menuPaused = false;
     window.__setMenuPause = function(flag){
       menuPaused = !!flag;
-      if(menuPaused){ paused = true; } else if(running && !gameOver && !resumePending){ paused = false; }
+      if(menuPaused){
+        // 開啟選單：立即暫停遊戲並記錄暫停開始時間
+        paused = true;
+        onPauseStart();
+      } else {
+        // 關閉選單：若遊戲正在進行且未進入結束，並且沒有倒數中，則恢復並倒數
+        if(running && !gameOver && !resumePending){
+          onResumeFromPause();
+          startCountdown();
+        }
+      }
     };
     // 保護性：若 UI 在小尺寸下重排導致狀態不同步，定時校正
     setInterval(()=>{
