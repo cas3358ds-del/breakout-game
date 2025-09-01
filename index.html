@@ -159,8 +159,6 @@
     }
 
   
-    /* === 霓虹．魅影幻彩（from index_skin.html） === */
-    body[data-skin="霓虹．魅影幻彩"]{ --ink:#f6fbff; --muted:#dbe6ff; --stroke:rgba(200,220,255,.38); --bg1:#0b0f2a; --bg2:#070a18; --hudGrad1:rgba(24,28,70,.58); --hudGrad2:rgba(16,22,58,.42); --glass-1:rgba(255,255,255,.12); --glass-2:rgba(255,255,255,.09); --stageGlass:linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,0)); --panelPattern:conic-gradient(from 0deg at 60% 40%, rgba(255,160,220,.08), rgba(160,220,255,.06), rgba(160,255,200,.06), rgba(255,220,160,.06), rgba(255,160,220,.08)); --btnGlow:0 0 20px rgba(160,220,255,.25);}
 
 /* === 修正下拉選單：避免全白看不到選項文字 === */
 select { color: #fff; background: var(--glass-2); }
@@ -179,7 +177,6 @@ select optgroup { color: #0b1022; }
   pointer-events:none; filter: blur(0.2px);
 }
 .stage{--fxViz:0}
-body[data-skin="霓虹．魅影幻彩"] .stage{--fxViz:1}
 
     /* === 科技．魅影幻彩（朦朧紫黑七彩霓虹） === */
     body[data-skin="科技．魅影幻彩"]{
@@ -239,11 +236,6 @@ body[data-skin="霓虹．魅影幻彩"] .stage{--fxViz:1}
 @keyframes neon-hue{ to{ filter: hue-rotate(360deg); } }
 
 /* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */
-body[data-skin="霓虹．魅影幻彩"]{
-  --btnGlow: 0 0 0 rgba(0,0,0,0), 0 0 24px rgba(0,220,255,.25), 0 0 60px rgba(160,80,255,.25);
-  --heartGlow: rgba(0,220,255,.8);
-  --panelPattern: radial-gradient(1200px 380px at 20% -80%, rgba(0,255,255,.05), rgba(0,0,0,0)), radial-gradient(700px 300px at 80% -60%, rgba(180,80,255,.05), rgba(0,0,0,0));
-}
 
 
 /* === Mobile scaling & LED alignment tweaks (Game Director standard) === */
@@ -1959,9 +1951,19 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     ctx.restore();}
 
   // 只在磚塊區域揭示圖片切片（依本關影像）
-  function drawRevealTiles(){ const img=getLevelImage(level); if(!img || !(img.naturalWidth>0 && img.naturalHeight>0)) return; const L=layout();
-    const area={x:L.pad,y:L.top,w:1100-L.pad*2,h:L.rows*(brickH+L.pad)-L.pad}; const rImg=img.naturalWidth/img.naturalHeight; const rArea=area.w/area.h; let dw,dh;
-    if(rImg>rArea){ dh=area.h; dw=dh*rImg; } else { dw=area.w; dh=dw/rImg; } const dx=area.x+(area.w-dw)/2; const dy=area.y+(area.h-dh)/2;
+  function drawRevealTiles(){
+    const img=getLevelImage(level);
+    if(!img || !(img.naturalWidth>0 && img.naturalHeight>0)) return;
+    const L=layout();
+    const area={x:L.pad,y:L.top,w:1100-L.pad*2,h:L.rows*(brickH+L.pad)-L.pad};
+    const rImg=img.naturalWidth/img.naturalHeight;
+    const rArea=area.w/area.h;
+    let dw,dh;
+    if(rImg>rArea){ dh=area.h; dw=dh*rImg; } else { dw=area.w; dh=dw/rImg; }
+    const dx=area.x+(area.w-dw)/2;
+    const dy=area.y+(area.h-dh)/2;
+    ctx.save();
+    ctx.scale(scaleX,scaleY);
     for(const r of revealRects){
       let sx=(r.x-dx)/dw*img.naturalWidth;
       let sy=(r.y-dy)/dh*img.naturalHeight;
@@ -1972,9 +1974,11 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
       const sw0=Math.max(0, Math.min(img.naturalWidth - sx0, sw));
       const sh0=Math.max(0, Math.min(img.naturalHeight - sy0, sh));
       if(sw0>0 && sh0>0){
-        ctx.drawImage(img, sx0,sy0,sw0,sh0, r.x*scaleX, r.y*scaleY, r.w*scaleX, r.h*scaleY);
+        ctx.drawImage(img, sx0,sy0,sw0,sh0, r.x, r.y, r.w, r.h);
       }
-    } }
+    }
+    ctx.restore();
+  }
 
   function drawPlasmas(){ const now=performance.now(); ctx.save(); for(let i=plasmas.length-1;i>=0;i--){ const P=plasmas[i]; P.x+=P.vx; P.y+=P.vy; P.vx*=0.995; P.vy*=0.995; if(now>P.until){ plasmas.splice(i,1); continue; }
       const x=P.x*scaleX, y=P.y*scaleY, r=P.radius*((scaleX+scaleY)/2); const grd=ctx.createRadialGradient(x,y,2,x,y,r); grd.addColorStop(0,'rgba(150,230,255,0.9)'); grd.addColorStop(0.4,'rgba(120,200,255,0.35)'); grd.addColorStop(1,'rgba(120,200,255,0)'); ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
