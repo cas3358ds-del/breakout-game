@@ -419,10 +419,14 @@ select optgroup { color: #0b1022; }
   const IMG_PAIRS_FALLBACK = Array.from({length:10}, (_,i)=> i+1).map(i=>({bg:`images/bg${i}.jpg`, cg:`images/cg${i}.jpg`}));
 
   function makeImg(src, fallback){
-    const im = new Image(); im.decoding='async'; im.loading='lazy'; im.src=src;
-    if(fallback){
-      im.onerror=()=>{ if(im.src!==fallback) im.src=fallback; };
+    const im = new Image();
+    im.decoding = 'async';
+    im.loading = 'eager';
+    im.src = src;
+    if (fallback) {
+      im.onerror = () => { if (im.src !== fallback) im.src = fallback; };
     }
+    if (im.decode) { im.decode().catch(() => {}); }
     return im;
   }
   const IMG_MAP = new Array(10); // caches {bg, cg}
@@ -1093,6 +1097,8 @@ select optgroup { color: #0b1022; }
   function initBricks(){
     const L=layout();
     const totalPad=(L.cols+1)*L.pad; brickW=Math.floor((1100-totalPad)/L.cols); brickH=L.h; bricks=[]; revealRects=[];
+    const lvlImg = getLevelImage(level);
+    if (lvlImg && lvlImg.decode) { lvlImg.decode().catch(()=>{}); }
     // 依關卡設計關卡布局
     generateLevel(level, L);
     postAdjustAndDensify(L);
