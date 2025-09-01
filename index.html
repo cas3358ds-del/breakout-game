@@ -246,104 +246,6 @@ select optgroup { color: #0b1022; }
     body[data-skin="冰雪．極光絲綢"] .hearts .life-icon{ width:24px; height:24px; }
     body[data-skin="冰雪．極光絲綢"] .hearts .life-icon svg{ width:24px; height:24px; }
 
-    /* === 騎士．白銀劍光 === */
-    body[data-skin="騎士．白銀劍光"]{
-      --ink:#eef4ff; --muted:#cfd9ec;
-      --stroke:rgba(190,205,235,.34);
-      --bg1:#0D0D0F; --bg2:#0A0A0C;
-      --hudGrad1:rgba(22,26,36,.66); --hudGrad2:rgba(14,18,26,.52);
-      --glass-1:rgba(255,255,255,.10); --glass-2:rgba(255,255,255,.07);
-      --stageGlass:linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,0));
-      --panelPattern: repeating-linear-gradient(90deg, rgba(220,230,245,.06) 0 2px, rgba(0,0,0,0) 2px 8px), radial-gradient(160px 100px at 72% 14%, rgba(176,196,222,.06), transparent 60%);
-      --btnGlow:0 0 20px rgba(200,220,255,.18);
-      --heartGlow:rgba(210,230,255,.85);
-    }
-
-    /* === 烈焰．星火風暴 === */
-    body[data-skin="烈焰．星火風暴"]{
-      --ink:#fff3ec; --muted:#ffd0b8; --stroke:rgba(255,160,120,.30);
-      --bg1:#150807; --bg2:#080404;
-      --hudGrad1:rgba(40,16,12,.68); --hudGrad2:rgba(22,10,8,.52);
-      --glass-1:rgba(255,150,100,.12); --glass-2:rgba(255,130,90,.08);
-      --stageGlass:linear-gradient(180deg, rgba(255,140,90,.04), rgba(0,0,0,0));
-      --panelPattern:radial-gradient(120px 90px at 30% 20%, rgba(255,120,90,.06), transparent 60%);
-      --btnGlow:0 0 22px rgba(255,150,100,.28);
-      --heartGlow:rgba(255,120,60,.9);
-    }
-    @keyframes fireFlicker{0%{filter:brightness(1);}50%{filter:brightness(1.08);}100%{filter:brightness(1);}}
-    @keyframes emberBorder{0%{box-shadow:0 0 0 rgba(0,0,0,0),0 0 28px rgba(255,130,80,.25);}50%{box-shadow:0 0 0 rgba(0,0,0,0),0 0 38px rgba(255,160,110,.34);}100%{box-shadow:0 0 0 rgba(0,0,0,0),0 0 28px rgba(255,130,80,.25);}}
-    body[data-skin="烈焰．星火風暴"] .ic-btn,
-    body[data-skin="烈焰．星火風暴"] .btn{
-      background: conic-gradient(from 120deg at 80% 10%, rgba(255,220,180,.12), rgba(255,160,100,.12) 40%, rgba(255,120,80,.08) 60%, rgba(255,220,180,.12)), radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.18), rgba(255,255,255,0) 58%), var(--glass-1);
-      border-color: rgba(255,150,110,.45);
-      animation: fireFlicker 1.2s ease-in-out infinite alternate;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 8px 22px rgba(0,0,0,.28), 0 0 32px rgba(255,140,90,.25);
-    }
-    body[data-skin="烈焰．星火風暴"] .hud{
-      animation: emberBorder 2.6s ease-in-out infinite;
-      border-color: rgba(255,150,110,.35);
-    }
-
-    /* === 兔兔．奶油雲朵 === */
-    body[data-skin="兔兔．奶油雲朵"]{
-      --ink:#FFF9FB; --muted:#F7DDE6;
-      --stroke:rgba(255,200,180,.28);
-      --bg1:#1a1218; --bg2:#0b0a10;
-      --hudGrad1:rgba(255,240,246,.18); --hudGrad2:rgba(255,255,255,.10);
-      --glass-1:rgba(255,255,255,.18); --glass-2:rgba(255,255,255,.12);
-      --stageGlass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
-      --panelPattern:none;
-      --btnGlow:0 0 20px rgba(255,190,220,.18);
-      --heartGlow:rgba(255,182,193,.85);
-    }
-    body[data-skin="兔兔．奶油雲朵"] .hud{ border-radius:20px; box-shadow:0 10px 34px rgba(255,190,220,.18), 0 2px 0 rgba(255,255,255,.04) inset; }
-    body[data-skin="兔兔．奶油雲朵"] .hearts .life-icon, body[data-skin="兔兔．奶油雲朵"] .hearts .life-icon svg{width:24px;height:24px}
-    body[data-skin="兔兔．奶油雲朵"] .hearts.compact .life-icon, body[data-skin="兔兔．奶油雲朵"] .hearts.compact .life-icon svg{width:21px;height:21px}
-    @media (max-width:360px){ body[data-skin="兔兔．奶油雲朵"] .hearts .life-icon, body[data-skin="兔兔．奶油雲朵"] .hearts .life-icon svg{width:22px;height:22px} }
-    body[data-skin="兔兔．奶油雲朵"] .ic-btn,
-    body[data-skin="兔兔．奶油雲朵"] .btn{
-      background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 46%), radial-gradient(90% 120% at 30% 18%, rgba(255,244,234,.36), rgba(255,244,234,0) 60%), var(--glass-1);
-      border-color: rgba(255,210,230,.45);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 8px 22px rgba(0,0,0,.22), 0 0 24px rgba(255,200,220,.20);
-      transition: filter .2s ease;
-    }
-    body[data-skin="兔兔．奶油雲朵"] .ic-btn:active,
-    body[data-skin="兔兔．奶油雲朵"] .btn:active{ filter: brightness(1.06); transform: translateY(1px); }
-
-    /* === 魔法．金耀日蝕 === */
-    body[data-skin="魔法．金耀日蝕"]{
-      --ink:#FFF6E6; --muted:#EED9B6;
-      --stroke:rgba(255,210,120,.30);
-      --bg1:#0E0C08; --bg2:#0A0906;
-      --hudGrad1:rgba(34,26,12,.72); --hudGrad2:rgba(22,16,8,.58);
-      --glass-1:rgba(255,228,168,.10); --glass-2:rgba(184,133,46,.08);
-      --stageGlass:linear-gradient(180deg, rgba(255,228,168,.045), rgba(0,0,0,0));
-      --panelPattern: radial-gradient(160px 100px at 70% 18%, rgba(255,210,120,.06), transparent 60%), radial-gradient(220px 160px at 18% 6%, rgba(184,133,46,.05), transparent 60%);
-      --btnGlow:0 0 22px rgba(255,210,120,.22);
-      --heartGlow:rgba(255,210,120,.88);
-    }
-    @keyframes goldBreath{0%{filter:brightness(1)}50%{filter:brightness(1.08)}100%{filter:brightness(1)}}
-    body[data-skin="魔法．金耀日蝕"] .ic-btn,
-    body[data-skin="魔法．金耀日蝕"] .btn{
-      background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0) 42%), repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 2px, rgba(0,0,0,0) 2px 6px), radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.16), rgba(255,255,255,0) 58%), var(--glass-1);
-      border-color: rgba(255,210,120,.50);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 8px 22px rgba(0,0,0,.28), 0 0 32px rgba(255,210,120,.18);
-      animation: goldBreath 3.5s ease-in-out infinite;
-    }
-    body[data-skin="魔法．金耀日蝕"] .ic-btn:active,
-    body[data-skin="魔法．金耀日蝕"] .btn:active{ transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(0,0,0,.35), 0 6px 18px rgba(0,0,0,.24); filter: brightness(1.08); }
-
-    /* === 魔王．終焉寂滅 === */
-    body[data-skin="魔王．終焉寂滅"]{
-      --ink:#C0C0C0; --muted:#9aa3ad; --stroke:#363636;
-      --hudGrad1:rgba(14,14,14,.82); --hudGrad2:rgba(10,10,10,.66);
-      --glass-1:rgba(192,192,192,.08); --glass-2:rgba(120,120,120,.06);
-      --stageGlass:linear-gradient(180deg, rgba(14,14,14,.85), rgba(10,10,10,.65));
-      --panelPattern:repeating-linear-gradient(125deg, rgba(255,255,255,0.04) 0 2px, rgba(0,0,0,0) 2px 10px), repeating-linear-gradient(305deg, rgba(255,140,0,0.035) 0 3px, rgba(0,0,0,0) 3px 14px);
-      --heartGlow:rgba(255,120,80,.25);
-    }
-    body[data-skin="魔王．終焉寂滅"] .hearts .life-icon,
-    body[data-skin="魔王．終焉寂滅"] .hearts .life-icon svg{ width:22px; height:22px; }
 
 /* === 霓虹 LED 燈條（與 index_skin.html 一致的六色流光） === */
 .stage::before{
@@ -462,7 +364,7 @@ select optgroup { color: #0b1022; }
     <div class="overlay">
       <div class="gallery" id="gallery">
         <div class="backdrop"></div>
-        <img id="galleryImg" src="" alt="關卡大圖" />
+        <img id="galleryImg" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="關卡大圖" />
         <div class="hint">點一下進入下一關 ▶</div>
       </div>
 
@@ -1034,7 +936,7 @@ select optgroup { color: #0b1022; }
       for(let i=0;i<6;i++){ const a = i*Math.PI/3; ctx.beginPath(); ctx.moveTo(Math.cos(a)*18, Math.sin(a)*18); ctx.lineTo(Math.cos(a)*30, Math.sin(a)*30); ctx.stroke(); }
       ctx.beginPath(); ctx.moveTo(-14,8); ctx.lineTo(-6,14); ctx.moveTo(14,8); ctx.lineTo(6,14); ctx.stroke();
     }else if(idx===1){
-      // 騎士：頭盔 + 羽飾
+      // 頭盔 + 羽飾
       ctx.beginPath(); ctx.arc(0,0,22,Math.PI*0.15, Math.PI*0.85); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(14,0); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-10,-10); ctx.lineTo(0,-22); ctx.lineTo(10,-10); ctx.stroke();
@@ -1044,7 +946,7 @@ select optgroup { color: #0b1022; }
       ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-26,0); ctx.lineTo(26,0); ctx.stroke();
     }else{
-      // 魔王：五芒星 + 角
+      // 五芒星 + 角
       ctx.beginPath();
       for(let i=0;i<5;i++){ const a = -Math.PI/2 + i*2*Math.PI/5; const x = Math.cos(a)*22, y=Math.sin(a)*22;
         const a2 = -Math.PI/2 + ((i*2+2)%10)*Math.PI/5; const x2=Math.cos(a2)*9, y2=Math.sin(a2)*9;
@@ -1095,9 +997,9 @@ select optgroup { color: #0b1022; }
   // === BGM 主題依關卡段落 ===
   function bgmThemeForLevel(lv){
     if(lv<=5) return 'whimsy';       // 輕快奇妙
-    if(lv<=10) return 'knight';      // 騎士戰鬥
+    if(lv<=10) return 'knight';      // 中期戰鬥
     if(lv<=15) return 'colossus';    // 巨人威壓
-    return 'demon';                  // 魔王決戰
+    return 'demon';                  // 終章決戰
   }
   let currentBGMTheme = null;
   function startBGMTheme(theme){
