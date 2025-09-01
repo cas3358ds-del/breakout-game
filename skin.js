@@ -33,16 +33,16 @@
      *
      * 此款 skin 採用深邃黑綠背景搭配明亮的賽博格綠光暈與電路紋理，營造出未來感十足的科技氛圍。
      * canvas.base 決定了實體磚塊和 HUD 呼吸動畫的主色調，hi 為高光顏色，period 為呼吸週期。
-     * effects.prism 啟用輕微的光暈折射效果，以增添質感。bg 可指定畫布底色漸層。
+     * 背景電路紋理改由遊戲畫布繪製，bg 可指定畫布底色漸層。
      */
     cyborgGreen: {
       label: '科技．賽博格綠',
       selectLabel: '科技．賽博格綠',
       cssSkin: '科技．賽博格綠',
-      // 讓 fxViz 預設啟用，並指定賽博綠的 panelPattern，以防被套用時覆蓋為 none
+      // 取消外層特效並停用 panelPattern
       cssVars: {
-        '--fxViz': '1',
-        '--panelPattern': 'conic-gradient(from 0deg at 60% 40%, rgba(30,255,150,.08), rgba(10,100,50,.06), rgba(30,150,100,.06))'
+        '--fxViz': '0',
+        '--panelPattern': 'none'
       },
       canvas: {
         // 主色調：亮綠帶一點青（R,G,B）
@@ -51,10 +51,8 @@
         hi: [255, 255, 255],
         // 呼吸週期稍長，使效果柔和不刺眼
         period: 2400,
-        // 使用 prism 效果，寬度與強度調整為輕柔閃爍
-        effects: {
-          prism: { width: 1.8, amount: 0.6, weight: 0.8 }
-        },
+        // 移除原本的 prism 特效，改由遊戲畫布自行呈現電路網絡
+        effects: {},
         // 畫布背景以深綠與黑色漸層構成
         bg: ['#02190f', '#00150a', '#00140a']
       },
