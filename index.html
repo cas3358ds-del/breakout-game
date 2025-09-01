@@ -1711,9 +1711,12 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     if(optBtn) optBtn.addEventListener('click', (e) => { e.stopPropagation(); toggle(optMenu, optBtn); }, {passive:true});
     document.addEventListener('click', (e) => {
       if(!e.target.closest('.menu') && !e.target.closest('#optBtn') && !e.target.closest('#sndBtn')){
-        [soundMenu, optMenu].forEach(m => m.classList.remove('show'));
-        if (typeof window.__setMenuPause === 'function') window.__setMenuPause(false);
-        schedule();
+        const anyOpen = soundMenu.classList.contains('show') || optMenu.classList.contains('show');
+        if(anyOpen){
+          [soundMenu, optMenu].forEach(m => m.classList.remove('show'));
+          if (typeof window.__setMenuPause === 'function') window.__setMenuPause(false);
+          schedule();
+        }
       }
     }, {passive:true});
     ['resize','orientationchange'].forEach(ev => window.addEventListener(ev, schedule, {passive:true}));
@@ -2132,16 +2135,13 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     const now=performance.now();
     // Buff 過期
     for(const key of Object.keys(GAME_CONFIG.powers)){
-      if(key==='LONG') continue; 
+      if(key==='LONG' || key==='FLIP') continue;
       const b=buffs[key];
       if(b?.active && b.until && now>b.until){
         b.active=false;
         if(key==='PIERCE'){ for(const ball of balls) ball.piercing=false; }
         if(key==='STICKY'){ for(const ball of balls){ if(ball.stuck){ ball.stuck=false; ball.vy = -Math.abs(ball.vy||6); } } }
         if(key==='MEGA' && buffs.MEGA.applied){ for(const ball of balls){ ball.r/=GAME_CONFIG.powers.MEGA.mega.sizeMul; } buffs.MEGA.applied=false; }
-        if(key==='FLIP'){
-          // 天地翻轉的結束與方向還原在 update 中處理，此處不應直接更改 orientLeft。
-        }
       }
     }
     computePaddleWidth(); updateBuffBadges();
