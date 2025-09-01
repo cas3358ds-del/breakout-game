@@ -2549,8 +2549,10 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
         paused = true;
         onPauseStart();
       } else {
-        // 關閉選單：若遊戲正在進行且未進入結束，並且沒有倒數中，則恢復並倒數
-        if(running && !gameOver && !resumePending){
+        // 關閉選單：只要遊戲尚在進行且未 Game Over，立即修正計時並重新倒數
+        if(running && !gameOver){
+          // 確保即便先前已有倒數排程也能正確恢復
+          resumePending = false;
           onResumeFromPause();
           startCountdown();
         }
