@@ -181,6 +181,23 @@ select optgroup { color: #0b1022; }
 .stage{--fxViz:0}
 body[data-skin="霓虹．魅影幻彩"] .stage{--fxViz:1}
 
+    /* === 科技．魅影幻彩（朦朧紫黑七彩霓虹） === */
+    body[data-skin="科技．魅影幻彩"]{
+      --ink:#f3e8ff;
+      --muted:#d6c3ff;
+      --stroke:rgba(200,160,255,.4);
+      --bg1:#140022;
+      --bg2:#05000c;
+      --hudGrad1:rgba(30,10,60,.62);
+      --hudGrad2:rgba(20,6,40,.44);
+      --glass-1:rgba(255,255,255,.1);
+      --glass-2:rgba(255,255,255,.07);
+      --stageGlass:linear-gradient(180deg, rgba(80,40,120,.04), rgba(0,0,0,0));
+      --panelPattern:none;
+      --btnGlow:0 0 20px rgba(160,80,255,.25);
+    }
+    body[data-skin="科技．魅影幻彩"] .stage{--fxViz:0}
+
     /* === 科技．賽博格綠（高質感賽博特效） === */
     body[data-skin="科技．賽博格綠"]{
       --ink:#eafff3;
@@ -1790,6 +1807,7 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
 
   function drawBGDecor(){ const w=canvas.width,h=canvas.height; bgTime+=0.003;
     const isCyborg = window.currentSkin && window.currentSkin.cssSkin === '科技．賽博格綠';
+    const isPhantom = window.currentSkin && window.currentSkin.cssSkin === '科技．魅影幻彩';
     if(isCyborg){
       ctx.save();
       const bg=ctx.createLinearGradient(0,0,0,h); bg.addColorStop(0,'#00140a'); bg.addColorStop(1,'#000b08'); ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
@@ -1799,6 +1817,30 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
       ctx.fillStyle='rgba(0,255,150,0.15)';
       for(let x=-step;x<w+step;x+=step){ const xx=x+offX; for(let y=-step;y<h+step;y+=step){ const yy=y+offY; ctx.beginPath(); ctx.arc(xx,yy,1.2,0,Math.PI*2); ctx.fill(); } }
       const glow=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h)*0.7); glow.addColorStop(0,'rgba(0,255,150,0.12)'); glow.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=glow; ctx.fillRect(0,0,w,h);
+      ctx.restore();
+      if(buffs.SLOW.active){ ctx.fillStyle='rgba(80,140,255,0.08)'; ctx.fillRect(0,0,w,h); }
+    } else if(isPhantom){
+      ctx.save();
+      const grad=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h));
+      const shift=(Math.sin(bgTime*0.4)+1)/2;
+      grad.addColorStop(0,`rgba(60,0,90,${0.55+0.25*shift})`);
+      grad.addColorStop(1,'#000');
+      ctx.fillStyle=grad; ctx.fillRect(0,0,w,h);
+      ctx.globalCompositeOperation='lighter';
+      const cols=['#ff66ff','#ffb366','#fff466','#66ffb3','#66d1ff','#6666ff','#cc66ff'];
+      for(let i=0;i<cols.length;i++){
+        ctx.save();
+        const ang=i/cols.length*Math.PI*2+bgTime*0.2;
+        const x=w/2+Math.cos(ang)*w;
+        const y=h/2+Math.sin(ang)*h;
+        const beam=ctx.createLinearGradient(w/2,h/2,x,y);
+        beam.addColorStop(0,'rgba(0,0,0,0)');
+        beam.addColorStop(1,cols[i]);
+        ctx.strokeStyle=beam; ctx.globalAlpha=0.25; ctx.lineWidth=60;
+        ctx.beginPath(); ctx.moveTo(w/2,h/2); ctx.lineTo(x,y); ctx.stroke();
+        ctx.restore();
+      }
+      ctx.globalCompositeOperation='source-over';
       ctx.restore();
       if(buffs.SLOW.active){ ctx.fillStyle='rgba(80,140,255,0.08)'; ctx.fillRect(0,0,w,h); }
     } else {
@@ -1849,7 +1891,21 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     }
 
     ctx.save();
-    switch(ledStyle){
+    if(isPhantom){
+      const rainbow=['#ff66ff','#ffb366','#fff466','#66ffb3','#66d1ff','#6666ff','#cc66ff'];
+      const periodColor=(window.currentSkin&&window.currentSkin.canvas&&window.currentSkin.canvas.period)||2400;
+      const step=Math.floor(nowT/periodColor)%rainbow.length;
+      const c1=rainbow[step];
+      const c2=rainbow[(step+1)%rainbow.length];
+      const grad=ctx.createLinearGradient(0,0,w,0);
+      grad.addColorStop(0,c1);
+      grad.addColorStop(1,c2);
+      ctx.globalAlpha=0.55+0.35*breathClassic;
+      ctx.strokeStyle=grad; ctx.lineWidth=6;
+      ctx.shadowColor=c2; ctx.shadowBlur=24+12*breathClassic;
+      pathThreeSides(); ctx.stroke();
+      ctx.restore();
+    } else switch(ledStyle){
       case 'tech': {
         ctx.globalAlpha = 0.55 + 0.35*breath5;
         ctx.strokeStyle=c; ctx.lineWidth=8; ctx.shadowColor=c; ctx.shadowBlur=28 + 10*breath5;
