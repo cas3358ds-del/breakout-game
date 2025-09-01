@@ -193,10 +193,10 @@ body[data-skin="霓虹．魅影幻彩"] .stage{--fxViz:1}
       --glass-1:rgba(255,255,255,.1);
       --glass-2:rgba(255,255,255,.07);
       --stageGlass:linear-gradient(180deg, rgba(0,50,30,.05), rgba(0,0,0,0));
-      --panelPattern:conic-gradient(from 0deg at 60% 40%, rgba(30,255,150,.08), rgba(10,100,50,.06), rgba(30,150,100,.06));
+      --panelPattern:none;
       --btnGlow:0 0 20px rgba(30,200,100,.25);
     }
-    body[data-skin="科技．賽博格綠"] .stage{--fxViz:1}
+    body[data-skin="科技．賽博格綠"] .stage{--fxViz:0}
 
 /* === 霓虹 LED 燈條（與 index_skin.html 一致的六色流光） === */
 .stage::before{
@@ -1788,11 +1788,26 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
     return '#8fb3ff';
   }
 
-  function drawBGDecor(){ const w=canvas.width,h=canvas.height; bgTime+=0.003; ctx.save(); ctx.globalAlpha=0.12; ctx.translate(Math.sin(bgTime)*8, Math.cos(bgTime*0.7)*6); const step=40;
+  function drawBGDecor(){ const w=canvas.width,h=canvas.height; bgTime+=0.003;
+    const isCyborg = window.currentSkin && window.currentSkin.cssSkin === '科技．賽博格綠';
+    if(isCyborg){
+      ctx.save();
+      const bg=ctx.createLinearGradient(0,0,0,h); bg.addColorStop(0,'#00140a'); bg.addColorStop(1,'#000b08'); ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
+      const step=40; const offX=(bgTime*20)%step, offY=(bgTime*15)%step; ctx.strokeStyle='rgba(0,255,150,0.15)'; ctx.lineWidth=1;
+      for(let x=-step;x<w+step;x+=step){ const xx=x+offX; ctx.beginPath(); ctx.moveTo(xx,0); ctx.lineTo(xx,h); ctx.stroke(); }
+      for(let y=-step;y<h+step;y+=step){ const yy=y+offY; ctx.beginPath(); ctx.moveTo(0,yy); ctx.lineTo(w,yy); ctx.stroke(); }
+      ctx.fillStyle='rgba(0,255,150,0.15)';
+      for(let x=-step;x<w+step;x+=step){ const xx=x+offX; for(let y=-step;y<h+step;y+=step){ const yy=y+offY; ctx.beginPath(); ctx.arc(xx,yy,1.2,0,Math.PI*2); ctx.fill(); } }
+      const glow=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h)*0.7); glow.addColorStop(0,'rgba(0,255,150,0.12)'); glow.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=glow; ctx.fillRect(0,0,w,h);
+      ctx.restore();
+      if(buffs.SLOW.active){ ctx.fillStyle='rgba(80,140,255,0.08)'; ctx.fillRect(0,0,w,h); }
+    } else {
+      ctx.save(); ctx.globalAlpha=0.12; ctx.translate(Math.sin(bgTime)*8, Math.cos(bgTime*0.7)*6); const step=40;
 
-    for(let x=0;x<w;x+=step){ ctx.fillStyle='rgba(255,255,255,.03)'; ctx.fillRect(x,0,1,h);} for(let y=0;y<h;y+=step){ ctx.fillStyle='rgba(255,255,255,.025)'; ctx.fillRect(0,y,w,1);} ctx.restore();
-    const grad=ctx.createRadialGradient(w/2,h*0.2,0,w/2,h*0.5,Math.max(w,h)); grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(1,'rgba(0,0,0,0.35)'); ctx.fillStyle=grad; ctx.fillRect(0,0,w,h);
-    if(buffs.SLOW.active){ ctx.fillStyle='rgba(80,140,255,0.08)'; ctx.fillRect(0,0,w,h); }
+      for(let x=0;x<w;x+=step){ ctx.fillStyle='rgba(255,255,255,.03)'; ctx.fillRect(x,0,1,h);} for(let y=0;y<h;y+=step){ ctx.fillStyle='rgba(255,255,255,.025)'; ctx.fillRect(0,y,w,1);} ctx.restore();
+      const grad=ctx.createRadialGradient(w/2,h*0.2,0,w/2,h*0.5,Math.max(w,h)); grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(1,'rgba(0,0,0,0.35)'); ctx.fillStyle=grad; ctx.fillRect(0,0,w,h);
+      if(buffs.SLOW.active){ ctx.fillStyle='rgba(80,140,255,0.08)'; ctx.fillRect(0,0,w,h); }
+    }
 
     // 鳳凰火焰殘留
     for(let i=fireBursts.length-1;i>=0;i--){ const f=fireBursts[i]; f.life-=16; if(f.life<=0){ fireBursts.splice(i,1); continue; } const a=Math.min(1, f.life/600); const rx= (f.x*scaleX), ry=(f.y*scaleY); const r=60*((scaleX+scaleY)/2); const g=ctx.createRadialGradient(rx,ry,1,rx,ry,r); g.addColorStop(0,`rgba(255,180,0,${0.6*a})`); g.addColorStop(1,'rgba(255,100,0,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(rx,ry,r,0,Math.PI*2); ctx.fill(); }
@@ -1873,7 +1888,15 @@ const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now()
       }
       default: {
         ctx.globalAlpha = 0.6 + 0.3*breathClassic;
-        ctx.strokeStyle=c; ctx.lineWidth=6; ctx.shadowColor=c; ctx.shadowBlur=20 + 10*breathClassic; pathThreeSides(); ctx.stroke();
+        if(window.currentSkin && window.currentSkin.cssSkin === '科技．賽博格綠'){
+          const g = ctx.createLinearGradient(0,0,w,0);
+          g.addColorStop(0,'#00ff99');
+          g.addColorStop(1,'#00cc66');
+          ctx.strokeStyle=g; ctx.lineWidth=6;
+          ctx.shadowColor='#00ff99'; ctx.shadowBlur=20 + 10*breathClassic; pathThreeSides(); ctx.stroke();
+        }else{
+          ctx.strokeStyle=c; ctx.lineWidth=6; ctx.shadowColor=c; ctx.shadowBlur=20 + 10*breathClassic; pathThreeSides(); ctx.stroke();
+        }
         break;
       }
     }
