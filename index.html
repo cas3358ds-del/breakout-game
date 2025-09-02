@@ -84,15 +84,20 @@
     #buffs{
       position:sticky;z-index:22;
       top:calc(var(--hudBottom) + 6px);
-      display:flex;gap:8px;align-items:center;
+      display:flex;align-items:center;
       max-width:min(1080px,96vw);margin:6px auto 0;padding-left:6px;
-      overflow:auto;scrollbar-width:none
+      overflow:auto;scrollbar-width:none;
+      --buff-scale:1;
+      font-size:calc(12px * var(--buff-scale));
+      gap:calc(8px * var(--buff-scale));
     }
     #buffs::-webkit-scrollbar{display:none}
     #buffs .badge{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:6px 10px;border:1px solid var(--stroke);border-radius:999px;
-      background:var(--glass-1);font-size:12px;white-space:nowrap;color:#cfe0ff
+      display:inline-flex;align-items:center;
+      gap:calc(8px * var(--buff-scale));
+      padding:calc(6px * var(--buff-scale)) calc(10px * var(--buff-scale));
+      border:1px solid var(--stroke);border-radius:999px;
+      background:var(--glass-1);font-size:1em;white-space:nowrap;color:#cfe0ff
     }
     #playArea{
       position:relative;
@@ -299,7 +304,7 @@ select optgroup { color: #0b1022; }
   .stage #fx { inset: 8px; border-radius: 18px; }
   canvas#game { border-radius: 18px; }
   .legend { transform: scale(0.92); transform-origin: top center; }
-  #buffs { transform: scale(0.9); transform-origin: top center; }
+  #buffs { --buff-scale: 0.9; }
 }
 /* Tighten stage inner gap so LED touches the border visually (no空隙) */
 .stage { --stage-inset: 8px; } /* keep a var if future skins need it */
@@ -1058,6 +1063,16 @@ select optgroup { color: #0b1022; }
 
   // === Buff/De-buff 顯示 ===
   function badgeIcon(k){ return (GAME_CONFIG.powers[k]?.badge)||'●'; }
+  function fitBuffBadges(){
+    if(!activeBuffsEl) return;
+    activeBuffsEl.style.setProperty('--buff-scale','1');
+    const total=activeBuffsEl.scrollWidth;
+    const avail=activeBuffsEl.clientWidth;
+    const base=window.innerWidth<=430?0.9:1;
+    let scale=base;
+    if(total*base>avail){ scale=avail/total; }
+    activeBuffsEl.style.setProperty('--buff-scale',scale);
+  }
   function updateBuffBadges(){ activeBuffsEl.innerHTML=''; const now=performance.now();
     // LONG 堆疊
     const longAct=buffs.LONG.stacks.filter(t=>t>now);
@@ -1070,7 +1085,9 @@ select optgroup { color: #0b1022; }
     }
     // 其它
     for(const key of Object.keys(GAME_CONFIG.powers)){ if(key==='LONG') continue; const b=buffs[key]; if(!b?.active) continue; const left=b.until&&b.until>now?((b.until-now)/1000).toFixed(1)+'s':''; const s=document.createElement('span'); s.className='badge'; s.textContent=`${badgeIcon(key)} ${key}${left?' '+left:''}`; activeBuffsEl.appendChild(s); }
+    fitBuffBadges();
   }
+  window.addEventListener('resize', fitBuffBadges);
 
   const promptQueue=[];
   function showPrompt(text){
