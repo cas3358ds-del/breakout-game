@@ -698,7 +698,8 @@ select optgroup { color: #0b1022; }
       // 調整 Boss 能力排程
       if(typeof nextBossAtkA !== 'undefined' && nextBossAtkA){ nextBossAtkA += delta; }
       if(typeof nextBossAtkB !== 'undefined' && nextBossAtkB){ nextBossAtkB += delta; }
-      if(typeof cyclopsChargeUntil !== 'undefined' && cyclopsChargeUntil){ cyclopsChargeUntil += delta; }
+      if(typeof bossChargeUntil !== 'undefined' && bossChargeUntil){ bossChargeUntil += delta; }
+      if(typeof cyclopsShakeUntil !== 'undefined' && cyclopsShakeUntil){ cyclopsShakeUntil += delta; }
       // 調整各種特效物件（粒子、雷射、黑洞等）的 till/until 終止時間
       const lists = [plasmas, holyFlashes, blackHoles, laserBeams, laserImpacts, missiles, hostileBeams, hostileArcs, hostileColumns, hazardClouds];
       for(const arr of lists){
@@ -823,43 +824,59 @@ select optgroup { color: #0b1022; }
 
   function bossCenter(){ for(const b of bricks){ if(b.boss) return {b, x:b.x+b.w/2, y:b.y+b.h/2}; } return null; }
 
-  function spawnLionBeamFrom(x,y){ const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2; const ang=Math.atan2(ty-y, tx-x); const speed=6.0; hostileBeams.push({x:x, y:y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); }}); }
+  function spawnLionBeamFrom(x,y){
+    const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
+    const ang=Math.atan2(ty-y, tx-x); const speed=6.0;
+    hostileBeams.push({x:x, y:y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); }});
+    beep(1100,0.12,0.08);
+  }
   function spawnLionBeam(){
     const bc=bossCenter(); if(!bc) return;
-    const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
-    const ang=Math.atan2(ty-bc.y, tx-bc.x);
-    const speed=6.0;
-    hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); }});
+    bossChargeColor='255,215,90'; bossChargeUntil=performance.now()+2000;
+    setTimeout(()=>{
+      const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
+      const ang=Math.atan2(ty-bc.y, tx-bc.x); const speed=6.0;
+      hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); }});
+      beep(1100,0.12,0.08);
+    },2000);
   }
   function spawnKnightArc(){
     const bc=bossCenter(); if(!bc) return;
-    const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
-    const ang=Math.atan2(ty-bc.y, tx-bc.x);
-    const speed=3.8;
-    hostileArcs.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, phase:0, amp:32, color:'silver', onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
+    bossChargeColor='210,210,255'; bossChargeUntil=performance.now()+2000;
+    setTimeout(()=>{
+      const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
+      const ang=Math.atan2(ty-bc.y, tx-bc.x);
+      const speed=4.5;
+      hostileArcs.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, phase:0, amp:32, color:'silver', onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
+      beep(900,0.12,0.07);
+    },2000);
   }
   function spawnCyclopsColumn(){
     const bc=bossCenter(); if(!bc) return;
-    // 風up：在 boss 上方發光 2 秒
-    cyclopsChargeUntil = performance.now() + 2000;
+    bossChargeColor='255,235,150'; bossChargeUntil=performance.now()+2000;
     setTimeout(()=>{
       hostileColumns.push({x:bc.x, w:150, tStart:performance.now(), tEnd:performance.now()+1000, color:'#eedc9a', applied:false});
+      cyclopsShakeUntil=performance.now()+2000; beep(500,0.12,0.08);
     },2000);
   }
   function spawnDemonBeam(){
     const bc=bossCenter(); if(!bc) return;
-    const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
-    const ang=Math.atan2(ty-bc.y, tx-bc.x);
-    const speed=7.2;
-    hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'#ff3355', hit:false, onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
+    bossChargeColor='255,60,80'; bossChargeUntil=performance.now()+2000;
+    setTimeout(()=>{
+      const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
+      const ang=Math.atan2(ty-bc.y, tx-bc.x); const speed=7.2;
+      hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'red', hit:false, onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
+      beep(600,0.14,0.09);
+    },2000);
   }
   function spawnDemonClouds(){
+    showPrompt('哈哈哈! 接受惡魔的詛咒吧!');
     const picks = Array.from({length:5}, ()=> 40 + Math.random()*(1100-80));
     const y = layout().top - 10;
     const tEnd = performance.now() + 1000;
     for(const x of picks){ hazardClouds.push({x,y,tEnd,spawned:false}); }
   }
-  let nextBossAtkA=0, nextBossAtkB=0, cyclopsChargeUntil=0;
+  let nextBossAtkA=0, nextBossAtkB=0, bossChargeUntil=0, bossChargeColor='', cyclopsShakeUntil=0;
 
   function updateBossAbilities(){
     const bossLv = (level%5===0)? level : 0;
@@ -881,9 +898,20 @@ select optgroup { color: #0b1022; }
       const x1 = (b.x - b.vx*2)*scaleX, y1=(b.y - b.vy*2)*scaleY;
       const x2 = b.x*scaleX, y2=b.y*scaleY;
       ctx.save(); ctx.globalCompositeOperation='lighter';
-      const col = b.color==='gold' ? 'rgba(255,220,120,' : (b.color+' ,');
-      ctx.strokeStyle = (b.color==='gold') ? 'rgba(255,220,120,0.8)' : 'rgba(255,80,120,0.8)';
-      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      if(b.color==='gold'){
+        const grd=ctx.createLinearGradient(x1,y1,x2,y2);
+        grd.addColorStop(0,'rgba(255,240,160,0)');
+        grd.addColorStop(1,'rgba(255,220,120,0.95)');
+        ctx.strokeStyle=grd; ctx.lineWidth=6; ctx.shadowColor='rgba(255,230,150,0.9)'; ctx.shadowBlur=15;
+      }else if(b.color==='red'){
+        const grd=ctx.createLinearGradient(x1,y1,x2,y2);
+        grd.addColorStop(0,'rgba(255,120,120,0)');
+        grd.addColorStop(1,'rgba(255,60,80,0.95)');
+        ctx.strokeStyle=grd; ctx.lineWidth=6; ctx.shadowColor='rgba(255,40,60,0.9)'; ctx.shadowBlur=20;
+      }else{
+        ctx.strokeStyle='rgba(255,80,120,0.8)'; ctx.lineWidth=5;
+      }
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
       ctx.restore();
       // hit check
       if(!b.hit && x2>=pr.x*scaleX && x2<= (pr.x+pr.w)*scaleX && y2>=pr.y*scaleY && y2<= (pr.y+pr.h)*scaleY){
@@ -900,12 +928,15 @@ select optgroup { color: #0b1022; }
       a.y += a.vy + Math.cos(a.phase)*0.4;
       // render
       ctx.save(); ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle='rgba(220,220,255,0.9)'; ctx.lineWidth=3;
-      ctx.beginPath(); 
+      const grad=ctx.createLinearGradient((a.x-a.vx*4)*scaleX,(a.y-a.vy*4)*scaleY,a.x*scaleX,a.y*scaleY);
+      grad.addColorStop(0,'rgba(200,200,255,0)');
+      grad.addColorStop(1,'rgba(220,220,255,0.9)');
+      ctx.strokeStyle=grad; ctx.lineWidth=4;
+      ctx.beginPath();
       ctx.arc(a.x*scaleX, a.y*scaleY, 22*((scaleX+scaleY)/2), Math.PI*0.2, Math.PI*1.2);
       ctx.stroke();
       // 粒子
-      for(let k=0;k<3;k++){ particles.push({x:a.x, y:a.y, vx:(Math.random()-0.5)*0.8, vy:(Math.random()-0.5)*0.8, life:220, size:1.6, color:'rgba(220,220,255,0.7)'}); }
+      for(let k=0;k<5;k++){ particles.push({x:a.x, y:a.y, vx:(Math.random()-0.5)*0.8, vy:(Math.random()-0.5)*0.8, life:220, size:1.6, color:'rgba(200,200,255,0.7)'}); }
       ctx.restore();
       // hit
       if(a.x>=pr.x && a.x<=pr.x+pr.w && a.y>=pr.y && a.y<=pr.y+pr.h){
@@ -1210,7 +1241,7 @@ select optgroup { color: #0b1022; }
 
   
   function postAdjustAndDensify(L){
-    // 將一般磚血量平滑上限為 4，並補磚至 >= 2/3 面積
+    // 將一般磚血量平滑上限為 4，並補磚至 >= 3/4 面積
     const rows=L.rows, cols=L.cols, pad=L.pad;
     const xAt = c=> L.pad + c*(brickW+L.pad);
     const yAt = r=> L.top + r*(brickH+L.pad);
@@ -1240,7 +1271,7 @@ select optgroup { color: #0b1022; }
     // 計算覆蓋度
     let filled = 0;
     for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(occ[r][c]) filled++;
-    const target = Math.ceil(rows*cols * (2/3));
+    const target = Math.ceil(rows*cols * 0.75);
     if(filled >= target) return;
 
     // 由中心往外補磚，維持美感
@@ -1287,7 +1318,7 @@ select optgroup { color: #0b1022; }
       for(const b of candidates){ if(placed>=2) break; b.elite=true; b.hp=Math.min(5, Math.max(3, b.hp||3)); placed++; }
     }
     // 重置 Boss 計時
-    nextBossAtkA = nextBossAtkB = cyclopsChargeUntil = 0;
+    nextBossAtkA = nextBossAtkB = bossChargeUntil = cyclopsShakeUntil = 0; bossChargeColor='';
   }
 
   
@@ -1344,7 +1375,7 @@ function generateLevel(lv, L){
       // 周圍護衛磚
       for(let r=0;r<rows;r++){
         for(let c=0;c<cols;c++){
-          if(c>=bx-2 && c<=bx+3 && r>=by-2 && r<=by+3) continue; // 留 Boss 區域
+          if(c>=bx && c<=bx+1 && r>=by && r<=by+1) continue; // 留 Boss 本體
           const explosive=Math.random()<GAME_CONFIG.bricks.explosiveChance;
           addBrick(bricks, xAt(c), yAt(r), brickW, brickH, {hp:baseHP, colorIdx:(r%4), explosive});
         }
@@ -2296,8 +2327,11 @@ function generateLevel(lv, L){
 
     drawPlasmas(); drawHoly(); drawPhoenix();
 
-    // Cyclops wind-up glow
-    if(cyclopsChargeUntil && performance.now()<cyclopsChargeUntil){ for(const b of bricks){ if(b.boss && b.face==='目'){ const a = 0.5 + 0.5*Math.sin(performance.now()/80); ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba(255,235,150,'+(0.6*a)+')'; ctx.lineWidth=4; drawRoundedRect(b.x,b.y,b.w,b.h,10); ctx.stroke(); ctx.restore(); } } }
+      // Boss wind-up glow
+      if(bossChargeUntil && performance.now()<bossChargeUntil){
+      const a = 0.5 + 0.5*Math.sin(performance.now()/80);
+      for(const b of bricks){ if(b.boss){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba('+bossChargeColor+','+(0.6*a)+')'; ctx.lineWidth=4; drawRoundedRect(b.x,b.y,b.w,b.h,10); ctx.stroke(); ctx.restore(); } }
+    }
 
 
     // 擋板
@@ -2467,6 +2501,7 @@ function generateLevel(lv, L){
 
   function update(){
     const now=performance.now();
+    if(cyclopsShakeUntil && now<cyclopsShakeUntil){ screenShake=Math.max(screenShake,6); }
     // Buff 過期
     for(const key of Object.keys(GAME_CONFIG.powers)){
       if(key==='LONG' || key==='FLIP') continue;
