@@ -645,8 +645,10 @@ select optgroup { color: #0b1022; }
 
 
   function menusOpen(){
-    return !!document.querySelector('#soundMenu.show, #optMenu.show') ||
-           (galleryPage && galleryPage.style.display && galleryPage.style.display !== 'none');
+    return !!(
+      document.querySelector('#soundMenu.show, #optMenu.show') ||
+      (galleryPage && galleryPage.style.display && galleryPage.style.display !== 'none')
+    );
   }
 
   // 關閉視窗按鈕（關閉後立即倒數、繼續遊戲）
