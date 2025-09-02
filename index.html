@@ -635,7 +635,8 @@ select optgroup { color: #0b1022; }
 
 
   function menusOpen(){
-    return !!document.querySelector('#soundMenu.show, #optMenu.show');
+    return !!document.querySelector('#soundMenu.show, #optMenu.show') ||
+           (galleryPage && galleryPage.style.display !== 'none');
   }
 
   // 關閉視窗按鈕（關閉後立即倒數、繼續遊戲）
@@ -1175,7 +1176,6 @@ select optgroup { color: #0b1022; }
       if(imageChoice[idx]<0){ imageChoice[idx]=0; } // 保底
       img = imageChoice[idx]===0? imgs.cg : imgs.bg;
     }
-    if(img===imgs.bg) markImageUnlocked('bg', idx); else markImageUnlocked('cg', idx);
     return img;
   }
 
@@ -1923,7 +1923,7 @@ function generateLevel(lv, L){
         btn.setAttribute('aria-expanded', 'true');
       }
       // Pause game when any menu is open; resume when none open
-      const anyOpen = soundMenu.classList.contains('show') || optMenu.classList.contains('show');
+      const anyOpen = menusOpen();
       if (typeof window.__setMenuPause === 'function') window.__setMenuPause(anyOpen);
       schedule();
     }
@@ -1934,7 +1934,7 @@ function generateLevel(lv, L){
         const anyOpen = soundMenu.classList.contains('show') || optMenu.classList.contains('show');
         if(anyOpen){
           [soundMenu, optMenu].forEach(m => m.classList.remove('show'));
-          if (typeof window.__setMenuPause === 'function') window.__setMenuPause(false);
+          if(!menusOpen() && typeof window.__setMenuPause === 'function') window.__setMenuPause(false);
           schedule();
         }
       }
@@ -2822,6 +2822,9 @@ function generateLevel(lv, L){
 
     // 清關（進入畫廊或通關）
     if(!hasBreakables()){
+      const idx=((level-1)%10);
+      const type = (level<=10 ? (imageChoice[idx]===0?'bg':'cg') : (imageChoice[idx]===0?'cg':'bg'));
+      markImageUnlocked(type, idx);
       paused=true; running=false;
       if(level>=GAME_CONFIG.totalLevels){
         finalScore.textContent=String(score);
@@ -2866,7 +2869,7 @@ function generateLevel(lv, L){
     };
     // 保護性：若 UI 在小尺寸下重排導致狀態不同步，定時校正
     setInterval(()=>{
-      const anyOpen = !!(document.querySelector('#soundMenu.show') || document.querySelector('#optMenu.show'));
+      const anyOpen = menusOpen();
       if(anyOpen !== menuPaused){ window.__setMenuPause(anyOpen); }
     }, 400);
   })();
