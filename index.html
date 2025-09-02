@@ -571,14 +571,13 @@ select optgroup { color: #0b1022; }
   function closeGalleryPage(){
     galleryPage.style.display='none';
     galleryViewer.style.display='none';
-    window.__setMenuPause?.(false);
+    if(!menusOpen()) window.__setMenuPause?.(false);
   }
   galleryClose?.addEventListener('click', closeGalleryPage, {passive:true});
   galleryPrev?.addEventListener('click', ()=>{ if(galleryPageIdx>0){galleryPageIdx--; renderGalleryPage();}}, {passive:true});
   galleryNext?.addEventListener('click', ()=>{ if(galleryPageIdx<1){galleryPageIdx++; renderGalleryPage();}}, {passive:true});
   galleryViewer?.addEventListener('click', ()=>{ galleryViewer.style.display='none'; }, {passive:true});
   galleryBtn?.addEventListener('click', ()=>{
-    document.getElementById('optMenu')?.classList.remove('show');
     openGalleryPage();
   }, {passive:true});
 
@@ -632,14 +631,19 @@ select optgroup { color: #0b1022; }
    * 為了沿用既有的聲音邏輯，我們用複選框控制隱藏的舊按鈕 soundBtn / bgmBtn。
    * 由於 soundsOn 與 bgmOn 在稍後才宣告（使用 let），這段初始化邏輯會在
    * 狀態宣告之後重新插入。這裡僅預留說明文字，實際邏輯見後方的插入區塊。
-   */
+  */
 
+
+  function menusOpen(){
+    return !!document.querySelector('#soundMenu.show, #optMenu.show');
+  }
 
   // 關閉視窗按鈕（關閉後立即倒數、繼續遊戲）
   const noteClose = document.getElementById('noteClose');
   function closeNoteAndResume(){
     hideCenter();
     // 在關閉說明視窗後恢復遊戲：先調整所有計時，再透過倒數繼續
+    if(menusOpen()) return;
     if(running){ onResumeFromPause(); startCountdown(); } else { startGameWithCountdown(); }
   }
   noteClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeNoteAndResume(); });
@@ -1820,6 +1824,7 @@ function generateLevel(lv, L){
       // 關閉說明，恢復遊戲
       helpMode=null;
       hideCenter();
+      if(menusOpen()) return;
       if(running){
         onResumeFromPause();
         startCountdown();
