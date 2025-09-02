@@ -106,11 +106,15 @@
       overflow:hidden;
     }
     #promptsDock .prompt{
-      flex:1 1 auto;
-      min-width:80px;height:48px;
+      flex:0 0 calc(33.333% - 8px);
+      max-width:33.333%;
+      min-width:0;height:48px;
       padding:8px 10px;border:1px solid var(--stroke);border-radius:12px;
-      background:rgba(14,22,40,.92);box-shadow:0 10px 26px rgba(0,0,0,.34);
+      background:linear-gradient(180deg,var(--glass-1),var(--glass-2));
+      backdrop-filter:blur(6px);
+      box-shadow:0 8px 20px rgba(0,0,0,.3);
       font-size:12px;line-height:1.45;color:#eaf2ff;white-space:normal;
+      word-break:break-word;overflow-wrap:anywhere;
       display:flex;align-items:center;justify-content:center;text-align:center;
       opacity:1;transition:opacity .4s
     }
@@ -134,7 +138,7 @@
     /* Hearts and Nine-cat history */
     .hearts{filter:drop-shadow(0 0 10px var(--heartGlow));display:inline-block}
     .hearts.compact .life-icon{width:14px;height:14px}
-    .cats{display:inline-block;margin-left:4px}
+    .cats{display:flex;margin-left:auto;gap:4px}
     .cats .cat-icon{width:14px;height:14px;display:inline-block}
     /* Gallery and overlay (retain original styles) */
     .overlay{position:fixed;inset:0;z-index:40;pointer-events:none}
@@ -350,7 +354,7 @@ select optgroup { color: #0b1022; }
             </select></div>
           </div>
         </div>
-        <div class="pill wide">生命 <b id="lives">3</b> <span class="hearts" id="hearts">❤️❤️❤️</span> <span class="cats" id="cats"></span></div>
+        <div class="pill wide">生命 <b id="lives">3</b> <span class="hearts" id="hearts">❤️❤️❤️</span> <span class="cats" id="cats" style="display:none"></span></div>
       </div>
     </section>
     <div class="hud-sentinel" style="height:0"></div>
@@ -1395,8 +1399,8 @@ function generateLevel(lv, L){
   function canDestroyBrick(b){ const now=performance.now(); if(b.unbreakable) return false; if(b.lockedUntil && now < b.lockedUntil) return false; return true; }
   function damageOrDestroy(i, amount=1){
     const b=bricks[i]; if(!b) return; if(b.unbreakable) return;
-    if(b.elite && !b.prompted){ showPrompt('遇到菁英磚'); b.prompted=true; }
-    if(b.boss && !b.prompted){ showPrompt('遇到Boss'); b.prompted=true; }
+    if(b.elite && !b.prompted){ showPrompt('菁英磚'); b.prompted=true; }
+    if(b.boss && !b.prompted){ showPrompt('Boss！'); b.prompted=true; }
     const now=performance.now();
     if(b.lockedUntil && now < b.lockedUntil) return;
     b.hp = (b.hp||1) - amount;
@@ -1407,8 +1411,8 @@ function generateLevel(lv, L){
   }
   function destroyBrick(i){
     const b=bricks[i]; if(!b) return; if(!canDestroyBrick(b)) return;
-    if(b.elite && !b.prompted){ showPrompt('遇到菁英磚'); b.prompted=true; }
-    if(b.boss && !b.prompted){ showPrompt('遇到Boss'); b.prompted=true; }
+    if(b.elite && !b.prompted){ showPrompt('菁英磚'); b.prompted=true; }
+    if(b.boss && !b.prompted){ showPrompt('Boss！'); b.prompted=true; }
     if(b.boss){
       b.hp-=1;
       if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; stats.bossKills++; updateHUD(); }
@@ -1572,10 +1576,14 @@ function generateLevel(lv, L){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type) stats.buffs++; }
     const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
     let promptText='';
-    if(def.type==='buff') promptText=`獲得增益：${def.label}`;
-    else if(def.type==='debuff') promptText=`減益道具：${def.label}`;
-    else if(def.type==='special' || def.type==='rare') promptText=`特殊增益：${def.label}`;
-    if(promptText) showPrompt(promptText);
+    if(def.type==='buff') promptText=`增益：${def.label}`;
+    else if(def.type==='debuff') promptText=`減益：${def.label}`;
+    else if(def.type==='special' || def.type==='rare') promptText=`特殊：${def.label}`;
+    const exist=buffs[type];
+    let active=false;
+    if(type==='LONG'){ active = exist && exist.stacks && exist.stacks.some(t=>t>now); }
+    else active = exist && exist.active && exist.until && exist.until>now;
+    if(promptText && !active) showPrompt(promptText);
     // 更新最近取得增益的時間：非減益類型（含特殊/稀有）皆視為增益
     if(def.type !== 'debuff'){
       lastBeneficialPickupAt = now;
@@ -1672,6 +1680,7 @@ function generateLevel(lv, L){
         span.className = 'cat-icon';
         catsEl.appendChild(span);
       }
+      catsEl.style.display = nineCatEaten ? 'flex' : 'none';
     }
   }
   function showCenter(t, txt){
