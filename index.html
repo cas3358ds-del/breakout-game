@@ -489,6 +489,10 @@ select optgroup { color: #0b1022; }
       ,FIRE:{label:'火焰球(碰撞蓄能10秒爆炸)',type:'buff',durationMs:10000,badge:'🔥'}
       ,POISON:{label:'劇毒球(命中磚每2秒扣血)',type:'buff',durationMs:12000,poison:{tickMs:2000},badge:'☠️'}
       ,BLINK:{label:'瞬移球(彈後1秒頂部落下)',type:'buff',durationMs:10000,blink:{delayMs:1000},badge:'🌀'}
+      ,SWORD:{label:'劍芒裂空',type:'special',durationMs:20000,specialWeight:0.1,badge:'🗡️'}
+      ,STORM:{label:'雷射風暴',type:'special',durationMs:5000,specialWeight:0.1,storm:{},badge:'🌩️'}
+      ,BLACKHOLE:{label:'黑洞吞噬',type:'special',durationMs:20000,specialWeight:0.1,badge:'⚫'}
+      ,ANNIHIL:{label:'萬物銷毀',type:'special',specialWeight:0.1,annihil:{speedMul:3},badge:'💥'}
 
     },
     powerCapsule:{width:24,height:16,fallVy:2.2},
@@ -823,6 +827,14 @@ select optgroup { color: #0b1022; }
   const laserImpacts=[]; // {x,y,t0,tEnd}
   const lockBoxes=[]; // {x,y,w,h,until,kind}
 
+  // 特殊增益相關容器
+  const swords=[]; // 劍芒裂空：{x,y,vx,vy,state,tx,ty}
+  let swordFireStart=0, nextSwordFire=0;
+
+  let stormTurret=null; // 雷射風暴：{x,y,chargeUntil,fireAt,shots,lastShot}
+
+  const annihilSparks=[]; // 萬物銷毀：天空灑落的金色光點 {x,y,v}
+
   // === Boss 投射物 ===
   const hostileBeams=[]; // 線性光束彈 {x,y,vx,vy,color,hit,onHit}
   const hostileArcs=[];  // 弧形劍氣 {x,y,vx,vy,phase,amp,color,onHit}
@@ -1142,7 +1154,7 @@ select optgroup { color: #0b1022; }
   }
 
   // === Buff 狀態 ===
-  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0},FIRE:{active:false,until:0},POISON:{active:false,until:0},BLINK:{active:false,until:0}};
+  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0},FIRE:{active:false,until:0},POISON:{active:false,until:0},BLINK:{active:false,until:0},SWORD:{active:false,until:0},STORM:{active:false,until:0},BLACKHOLE:{active:false,until:0,deaths:0},ANNIHIL:{active:false,until:0,start:0,next:0}};
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
@@ -1479,6 +1491,7 @@ function generateLevel(lv, L){
     if(b.elite){ stats.eliteKills++; }
     revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD();
   }
+  function damageBrick(i, dmg){ for(let k=0;k<dmg;k++){ if(!bricks[i]) break; destroyBrick(i); } }
   function destroyNeighbors(idx){ const b=bricks[idx]; if(!b) return; const L=layout(); const near=[]; for(let j=bricks.length-1;j>=0;j--){ if(j===idx) continue; const t=bricks[j]; const dx=Math.abs((t.x+t.w/2)-(b.x+b.w/2)); const dy=Math.abs((t.y+t.h/2)-(b.y+b.h/2)); const thx=brickW+L.pad+2, thy=brickH+L.pad+2; if(dx<=thx && dy<=thy){ // 鄰近一格
         if(canDestroyBrick(t)){ if(t.boss){ t.hp-=1; if(t.hp<=0){ revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); score+=50; } } else { revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); score+=10; } }
       }
@@ -1726,6 +1739,10 @@ function generateLevel(lv, L){
     }
     if(type==='GODSPEED'){ buffs.GODSPEED.active=true; buffs.GODSPEED.until=now+def.durationMs; }
     if(type==='LASER'){ buffs.LASER.active=true; buffs.LASER.until=now+def.durationMs; buffs.LASER.lastShot=0; }
+    if(type==='SWORD'){ buffs.SWORD.active=true; buffs.SWORD.until=now+def.durationMs; swordFireStart=0; }
+    if(type==='STORM'){ buffs.STORM.active=true; buffs.STORM.until=now+def.durationMs; const pr=paddleRect(); stormTurret={x:pr.x+pr.w/2,y:pr.y,chargeUntil:now+3000,fireAt:now+4000,shots:Math.max(0,21-lives),lastShot:0}; }
+    if(type==='BLACKHOLE'){ buffs.BLACKHOLE.active=true; buffs.BLACKHOLE.until=now+def.durationMs; buffs.BLACKHOLE.deaths=0; }
+    if(type==='ANNIHIL'){ buffs.ANNIHIL.active=true; buffs.ANNIHIL.start=now; buffs.ANNIHIL.next=now+1000; buffs.ANNIHIL.until=0; }
 
     updateBuffBadges();
   }
@@ -2083,7 +2100,7 @@ function generateLevel(lv, L){
   }
 
 
-  function speedMultiplier(now){ let mul=1.0; if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul??1.0);} if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul??1.0);} if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); } return mul; }
+  function speedMultiplier(now){ let mul=1.0; if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul??1.0);} if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul??1.0);} if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); } if(buffs.ANNIHIL.active){ const t=Math.min(1,(now-buffs.ANNIHIL.start)/10000); const maxMul=GAME_CONFIG.powers.ANNIHIL.annihil.speedMul||3; mul*=1+t*(maxMul-1); } return mul; }
 
   // === 背景裝飾 & LED 燈條 ===
   function ledColor(){
@@ -2358,6 +2375,7 @@ function generateLevel(lv, L){
     if(screenShake>0){ const s=screenShake*0.6; ctx.save(); ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); screenShake*=0.9; }
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawBGDecor();
+    if(buffs.ANNIHIL.active){ if(Math.random()<0.5) annihilSparks.push({x:Math.random()*1100,y:0,v:1+Math.random()*1.5}); for(let i=annihilSparks.length-1;i>=0;i--){ const sp=annihilSparks[i]; sp.y+=sp.v; ctx.fillStyle='rgba(255,220,150,0.8)'; ctx.fillRect(sp.x*scaleX, sp.y*scaleY,2*scaleX,2*scaleY); if(sp.y>700) annihilSparks.splice(i,1); } }
     drawRevealTiles();
 
     // 磚塊
@@ -2393,7 +2411,7 @@ function generateLevel(lv, L){
       }
     }
 
-    drawPlasmas(); drawHoly(); drawPhoenix();
+    drawPlasmas(); drawHoly(); drawPhoenix(); drawSwords();
 
       // Boss wind-up glow
       if(bossChargeUntil && performance.now()<bossChargeUntil){
@@ -2421,6 +2439,7 @@ function generateLevel(lv, L){
     if(performance.now()<=paddleStunUntil){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle='rgba(255,230,160,0.35)'; drawRoundedRect(pr.x,pr.y,pr.w,pr.h,8); ctx.fill(); ctx.restore(); }
     // 雷射砲展示
     if(buffs.LASER.active){ ctx.fillStyle='rgba(120,255,120,0.8)'; if(!orientLeft){ ctx.fillRect((pr.x-6)*scaleX, (pr.y-4)*scaleY, 4*scaleX, (pr.h+8)*scaleY); ctx.fillRect((pr.x+pr.w+2)*scaleX, (pr.y-4)*scaleY, 4*scaleX, (pr.h+8)*scaleY); } else { ctx.fillRect((pr.x-4)*scaleX, (pr.y-6)*scaleY, (pr.w+8)*scaleX, 4*scaleY); ctx.fillRect((pr.x-4)*scaleX, (pr.y+pr.h+2)*scaleY, (pr.w+8)*scaleX, 4*scaleY); } }
+    if(stormTurret){ const t=stormTurret; ctx.save(); ctx.fillStyle='rgba(200,255,200,0.8)'; ctx.fillRect((t.x-10)*scaleX,(t.y-20)*scaleY,20*scaleX,20*scaleY); if(performance.now()<t.chargeUntil){ const prog=1-(t.chargeUntil-performance.now())/3000; ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(120,255,200,${0.3+0.7*prog})`; ctx.beginPath(); ctx.arc(t.x*scaleX,(t.y-20)*scaleY,30*prog*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); } ctx.restore(); }
 
     // 球與拖尾
     const nowT=performance.now();
@@ -2428,20 +2447,20 @@ function generateLevel(lv, L){
       b.trail.push({x:b.x,y:b.y,t:nowT}); while(b.trail.length>12) b.trail.shift();
       for(let i=b.trail.length-1;i>=0;i--){ const p=b.trail[i]; const age=(nowT-p.t)/200; if(age>1) continue; const alpha=(1-age)*0.6;
         let color=( (b.rampageUntil&&nowT<b.rampageUntil)||b.piercing )?`rgba(120,220,255,${alpha})`:(buffs.FAST.active?`rgba(255,140,90,${alpha})`:`rgba(255,255,255,${alpha*0.6})`);
-        if(buffs.PLASMA.active) color=`rgba(160,240,255,${alpha})`; if(buffs.FREEZE.active) color=`rgba(200,230,255,${alpha})`; if(buffs.HOLY.active) color=`rgba(255,240,180,${alpha})`; if(buffs.FIRE.active) color=`rgba(255,150,50,${alpha})`; if(buffs.POISON.active) color=`rgba(120,255,120,${alpha})`; if(buffs.BLINK.active) color=`rgba(180,200,255,${alpha})`;
+        if(buffs.PLASMA.active) color=`rgba(160,240,255,${alpha})`; if(buffs.FREEZE.active) color=`rgba(200,230,255,${alpha})`; if(buffs.HOLY.active) color=`rgba(255,240,180,${alpha})`; if(buffs.FIRE.active) color=`rgba(255,150,50,${alpha})`; if(buffs.POISON.active) color=`rgba(120,255,120,${alpha})`; if(buffs.BLINK.active) color=`rgba(180,200,255,${alpha})`; if(buffs.SWORD.active) color=`rgba(${150+100*Math.sin(nowT/80)},${120+60*Math.sin(nowT/60)},255,${alpha})`; if(buffs.BLACKHOLE.active) color=`rgba(80,80,120,${alpha})`; if(buffs.ANNIHIL.active) color=`rgba(255,200,80,${alpha})`;
         if(buffs.TRACK.active) color=`rgba(${Math.floor(128+127*Math.sin(nowT/80))},${Math.floor(128+127*Math.sin(nowT/95+2))},${Math.floor(128+127*Math.sin(nowT/110+4))},${alpha})`;
         if(buffs.GODSPEED.active) color=`rgba(255,224,102,${alpha})`;
         ctx.fillStyle=color; ctx.beginPath(); ctx.arc(p.x*scaleX,p.y*scaleY,(b.r*0.7)*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill();
       }
       const bx=b.x*scaleX, by=b.y*scaleY, br=b.r*((scaleX+scaleY)/2); const grad=ctx.createRadialGradient(bx-3,by-4,2,bx,by,br);
-      let edge=(b.piercing||(b.rampageUntil&&nowT<b.rampageUntil))?'#9ff':(buffs.FAST.active?'#ff9a66':'#cbd4ff'); if(buffs.PLASMA.active) edge='#aff'; if(buffs.FREEZE.active) edge='#e8f8ff'; if(buffs.HOLY.active) edge='#fff0a0'; if(buffs.FIRE.active) edge='#ff6600'; if(buffs.POISON.active) edge='#55ff55'; if(buffs.BLINK.active) edge='#a0b0ff'; if(buffs.GODSPEED.active) edge='#ffe066';
+      let edge=(b.piercing||(b.rampageUntil&&nowT<b.rampageUntil))?'#9ff':(buffs.FAST.active?'#ff9a66':'#cbd4ff'); if(buffs.PLASMA.active) edge='#aff'; if(buffs.FREEZE.active) edge='#e8f8ff'; if(buffs.HOLY.active) edge='#fff0a0'; if(buffs.FIRE.active) edge='#ff6600'; if(buffs.POISON.active) edge='#55ff55'; if(buffs.BLINK.active) edge='#a0b0ff'; if(buffs.GODSPEED.active) edge='#ffe066'; if(buffs.SWORD.active) edge='#d0bbff'; if(buffs.BLACKHOLE.active) edge='#444'; if(buffs.ANNIHIL.active) edge='#ffb347';
       grad.addColorStop(0,'#fff'); grad.addColorStop(1, edge); ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(bx,by,br,0,Math.PI*2); ctx.fill();
       if(buffs.WAVY.active){ ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1; const r1=br+2+2*Math.sin((nowT/100)+b.x*0.02); ctx.beginPath(); ctx.arc(bx,by,r1,0,Math.PI*2); ctx.stroke(); }
       if(b.stuck && !orientLeft){ ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.fillRect((paddle.x+paddle.w/2-12)*scaleX,(paddle.y-6)*scaleY,24*scaleX,4*scaleY); }
     }
 
     // 黑洞特效
-    for(let i=blackHoles.length-1;i>=0;i--){ const h=blackHoles[i]; if(performance.now()>h.until){ blackHoles.splice(i,1); continue; } const age=(h.until-performance.now())/2000; const r=40*((scaleX+scaleY)/2)*(0.8+0.2*Math.sin(performance.now()/120)); const x=h.x*scaleX, y=h.y*scaleY; const g=ctx.createRadialGradient(x,y,2,x,y,r); g.addColorStop(0,`rgba(0,0,0,${0.6})`); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+    for(let i=blackHoles.length-1;i>=0;i--){ const h=blackHoles[i]; if(performance.now()>h.until){ blackHoles.splice(i,1); continue; } const baseR=h.r||40; const r=baseR*((scaleX+scaleY)/2)*(0.8+0.2*Math.sin(performance.now()/120)); const x=h.x*scaleX, y=h.y*scaleY; const g=ctx.createRadialGradient(x,y,2,x,y,r); g.addColorStop(0,`rgba(0,0,0,${0.6})`); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
 
     
     // 雷射光束（強化質感）
@@ -2542,6 +2561,14 @@ function generateLevel(lv, L){
     if(screenShake>0){ ctx.restore(); }
   }
 
+  function drawSwords(){ const now=performance.now(); const pr=paddleRect(); for(let i=swords.length-1;i>=0;i--){ const s=swords[i]; if(s.state==='wander'){ s.x+=s.vx; s.y+=s.vy; if(s.x<20||s.x>1080) s.vx*=-1; if(s.y<500||s.y>680) s.vy*=-1; if(!buffs.SWORD.active){ s.state='gather'; s.t0=now; s.tx=pr.x+pr.w/2+ (i-swords.length/2)*20; s.ty=pr.y-40; } } else if(s.state==='gather'){ const prog=Math.min(1,(now-s.t0)/2000); s.x += (s.tx-s.x)*0.15; s.y += (s.ty-s.y)*0.15; if(prog>=1){ s.state='ready'; } } else if(s.state==='fire'){ s.x+=s.vx; s.y+=s.vy; const idx=s.target; const bk=bricks[idx]; if(bk && s.x>bk.x && s.x<bk.x+bk.w && s.y>bk.y && s.y<bk.y+bk.h){ damageBrick(idx,3); swords.splice(i,1); continue; } if(s.x<0||s.x>1100||s.y<0||s.y>700){ swords.splice(i,1); continue; } }
+      ctx.save(); ctx.translate(s.x*scaleX,s.y*scaleY); ctx.rotate(Math.atan2(s.vy||0.1,s.vx||0.1)); ctx.fillStyle='rgba(200,160,255,0.9)'; ctx.fillRect(-6,-2,12,4); ctx.restore(); }
+    if(!buffs.SWORD.active && swords.length && !swordFireStart){ swordFireStart=now+2000; nextSwordFire=swordFireStart; }
+    if(swordFireStart && now>=swordFireStart){ if(now>=nextSwordFire){ const s=swords.find(z=>z.state==='ready'); if(s){ const idx=randomBrick(); if(idx!=null){ const t=bricks[idx]; const ang=Math.atan2((t.y+t.h/2)-s.y,(t.x+t.w/2)-s.x); s.vx=Math.cos(ang)*8; s.vy=Math.sin(ang)*8; s.state='fire'; s.target=idx; } } nextSwordFire=now+300; if(!swords.some(z=>z.state==='ready')) swordFireStart=0; } }
+  }
+
+  function randomBrick(){ const arr=bricks.map((b,i)=>({b,i})).filter(x=>canDestroyBrick(x.b)); if(!arr.length) return null; const r=arr[Math.floor(Math.random()*arr.length)]; return r.i; }
+
   
   function speedForLevel(lv){
     // 更平滑的球速曲線：從 baseSpeed 緩慢增長到 +~3.2
@@ -2575,6 +2602,7 @@ function generateLevel(lv, L){
       if(key==='LONG' || key==='FLIP') continue;
       const b=buffs[key];
       if(b?.active && b.until && now>b.until){
+        if(key==='BLACKHOLE') continue;
         b.active=false;
         if(key==='PIERCE'){ for(const ball of balls) ball.piercing=false; }
         if(key==='STICKY'){ for(const ball of balls){ if(ball.stuck){ ball.stuck=false; ball.vy = -Math.abs(ball.vy||6); } } }
@@ -2691,6 +2719,12 @@ function generateLevel(lv, L){
         }
       }
     }
+
+    if(stormTurret){ if(now>=stormTurret.fireAt){ if(stormTurret.shots<=0){ stormTurret=null; buffs.STORM.active=false; } else if(now-stormTurret.lastShot>=200){ const idx=randomBrick(); if(idx!=null){ const t=bricks[idx]; const tx=t.x+t.w/2, ty=t.y+t.h/2; laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:tx,y2:ty,until:now+200}); laserImpacts.push({x:tx,y:ty,t0:now,tEnd:now+320}); destroyBrick(idx); stormTurret.shots--; stormTurret.lastShot=now; } } } }
+
+    if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ const d=Math.min(8,buffs.BLACKHOLE.deaths||0); const dmg=1+(d/8)*(40-1); const rad=200+(d/8)*(800-200); const pr=paddleRect(); const cx=pr.x+pr.w/2, cy=pr.y-rad; blackHoles.push({x:cx,y:cy,r:rad,until:now+2000}); for(let i=bricks.length-1;i>=0;i--){ const bk=bricks[i]; const bx=bk.x+bk.w/2, by=bk.y+bk.h/2; if(Math.hypot(bx-cx,by-cy)<=rad){ damageBrick(i,dmg); } } buffs.BLACKHOLE.active=false; }
+
+    if(buffs.ANNIHIL.active && now>=buffs.ANNIHIL.next){ let cand=bricks.filter(b=>canDestroyBrick(b)&&!b.boss); if(!cand.length) cand=bricks.filter(b=>canDestroyBrick(b)); if(cand.length){ const target=cand[Math.floor(Math.random()*cand.length)]; const idx=bricks.indexOf(target); destroyBrick(idx); } buffs.ANNIHIL.next+=1000; }
 
     // 全局速度倍率（GODSPEED 時忽略其它）
     function effectiveMul(){
@@ -2848,7 +2882,8 @@ function generateLevel(lv, L){
           const sp=Math.hypot(b.vx,b.vy); const ang=Math.atan2(ty-b.y, tx-b.x); b.vx=Math.cos(ang)*sp; b.vy=Math.sin(ang)*sp;
         
           if(best){ pushLockBox(best.t.x, best.t.y, best.t.w, best.t.h, 'target'); }
-}
+        }
+        if(buffs.SWORD.active){ swords.push({x:Math.random()*1100,y:650,vx:(Math.random()-0.5)*2,vy:(Math.random()-0.5)*0.5,state:'wander'}); }
       }
 
       // 碰磚
@@ -2874,7 +2909,7 @@ function generateLevel(lv, L){
           if(buffs.FREEZE.active && (b.freeze.state==='idle' || !b.freeze.state)){ const f=GAME_CONFIG.powers.FREEZE.freeze; b.freeze.state = 'delay'; b.freeze.t0 = now; b.freeze.delay = f.delayMs; b.freeze.stop = f.stopMs; b.freeze.oldVX = b.vx; b.freeze.oldVY = b.vy; }
           if(buffs.HOLY.active){ holyFlashes.push({x:bk.x+bk.w/2, y:bk.y+bk.h/2, until:now+350}); for(let i=bricks.length-1;i>=0;i--){ const t=bricks[i]; const sameRow=Math.abs(t.y-bk.y)<1; const sameCol=Math.abs(t.x-bk.x)<1; if(sameRow||sameCol){ destroyBrick(i); } } screenShake=Math.max(screenShake,4); }
           if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
-          if(buffs.HELL.active){ blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,until:now+GAME_CONFIG.powers.HELL.hell.haloMs}); destroyNeighbors(hit); destroyBrick(hit); }
+          if(buffs.HELL.active){ blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,r:40,until:now+GAME_CONFIG.powers.HELL.hell.haloMs}); destroyNeighbors(hit); destroyBrick(hit); }
           if(buffs.POISON.active){ bk.poisonUntil = now + (GAME_CONFIG.powers.POISON.durationMs||12000); bk.poisonTick = now + (GAME_CONFIG.powers.POISON.poison?.tickMs||2000); }
         }
 
@@ -2937,6 +2972,8 @@ function generateLevel(lv, L){
 
     // 球全沒了
     if(balls.length===0){ const nowL=performance.now(); if(stats.lifeStart){ const dur=(nowL-stats.lifeStart)/1000; if(dur<stats.fastestDeath) stats.fastestDeath=dur; if(dur>stats.longestLife) stats.longestLife=dur; } stats.livesUsed++;
+      if(buffs.BLACKHOLE.active){ buffs.BLACKHOLE.deaths=Math.min(8,(buffs.BLACKHOLE.deaths||0)+1); }
+      if(buffs.ANNIHIL.active){ buffs.ANNIHIL.active=false; }
       lives--; updateHUD();
       if(lives<=0){ running=false; paused=true; showGameOver(); return; }
       else { resetBalls(false); startCountdown(); return; }
