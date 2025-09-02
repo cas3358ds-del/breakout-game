@@ -814,6 +814,7 @@ select optgroup { color: #0b1022; }
   const holyFlashes=[]; // {x,y,until}
   let phoenixAnim=null; // {x, tEnd}
   const fireBursts=[];  // 火焰片段 {x,y,life}
+  const fireExplosions=[]; // 火焰球爆炸效果 {x,y,r,t0,life}
 
   // 新增容器：飛彈、黑洞特效、雷射光束
   const missiles=[]; // {x,y,vx,vy,targetId,lifeUntil,trail:[]}
@@ -1514,10 +1515,14 @@ function generateLevel(lv, L){
           if(b.boss){ b.hp-=1; if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; } }
           else { revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; }
         }
-        spawnParticles(bx,by,'#ffdd99',14,1.7,2.6,3);
+        spawnParticles(bx,by,'#ffdd99',20,1.8,2.8,3.5);
       }
     }
-    spawnParticles(cx,cy,'#ff5500',40,2.5,3.5,4); screenShake=Math.max(screenShake,6); updateHUD();
+    fireExplosions.push({x:cx,y:cy,r:radius,t0:performance.now(),life:400});
+    spawnParticles(cx,cy,'#ff5500',60,2.6,3.8,4.5);
+    spawnParticles(cx,cy,'#ffaa33',40,2.8,4.0,3.8);
+    spawnParticles(cx,cy,'#fff4cc',20,3.0,4.2,3.0);
+    screenShake=Math.max(screenShake,6); updateHUD();
   }
 
   function fireCollide(){ if(buffs.FIRE.active){ fireEnergy++; updateFireEnergy(); } }
@@ -2166,6 +2171,30 @@ function generateLevel(lv, L){
     // 鳳凰火焰殘留
     for(let i=fireBursts.length-1;i>=0;i--){ const f=fireBursts[i]; f.life-=16; if(f.life<=0){ fireBursts.splice(i,1); continue; } const a=Math.min(1, f.life/600); const rx= (f.x*scaleX), ry=(f.y*scaleY); const r=60*((scaleX+scaleY)/2); const g=ctx.createRadialGradient(rx,ry,1,rx,ry,r); g.addColorStop(0,`rgba(255,180,0,${0.6*a})`); g.addColorStop(1,'rgba(255,100,0,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(rx,ry,r,0,Math.PI*2); ctx.fill(); }
 
+    // 火焰球爆炸範圍特效
+    for(let i=fireExplosions.length-1;i>=0;i--){
+      const ex = fireExplosions[i];
+      const age = performance.now() - ex.t0;
+      const prog = age / ex.life;
+      if(prog>=1){ fireExplosions.splice(i,1); continue; }
+      const alpha = 1 - prog;
+      const x = ex.x * scaleX;
+      const y = ex.y * scaleY;
+      const r = ex.r * ((scaleX+scaleY)/2);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = `rgba(255,80,0,${0.25*alpha})`;
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255,200,50,${alpha})`;
+      ctx.lineWidth = 4 + 6*(1-prog);
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
 
     // LED 燈條框（多風格，落球區域無燈條）
     const c=ledColor();
@@ -2554,7 +2583,7 @@ function generateLevel(lv, L){
           if(fireEnergy>0 && balls.length){
             const b0=balls[0];
             const e=fireEnergy;
-            const radius = e<=3?300:e<=8?600:e<=14?900:1200;
+            const radius = e<=3?100:e<=8?150:e<=14?200:300;
             fireExplosionAt(b0.x,b0.y,radius);
           }
           fireEnergy=0; updateFireEnergy();
