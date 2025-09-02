@@ -145,6 +145,21 @@
     .gallery.show .backdrop{opacity:1;}
     .gallery.show img{opacity:1;transform:translateY(0) scale(1);} 
     .gallery.show .hint{opacity:.9;}
+
+    /* Gallery page overlay */
+    .gallery-page{position:fixed;inset:0;display:none;z-index:70;align-items:center;justify-content:center;pointer-events:auto}
+    .gallery-page .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.8)}
+    .gallery-page .content{position:relative;z-index:2;width:min(96vw,1080px);max-height:92vh;display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(10,14,30,.95),rgba(10,14,30,.88));border:1px solid var(--glass-stroke);border-radius:16px;padding:12px;box-shadow:0 20px 90px rgba(0,0,0,.5)}
+    .gallery-page .close{align-self:flex-end;cursor:pointer;font-size:24px;line-height:1}
+    .gallery-page .thumbs{flex:1 1 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;overflow:auto;padding:4px}
+    .gallery-page .thumb{position:relative;border:1px solid var(--stroke);border-radius:10px;overflow:hidden;cursor:pointer;aspect-ratio:1/1}
+    .gallery-page .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .gallery-page .thumb.locked{cursor:default;filter:grayscale(1) brightness(.3)}
+    .gallery-page .thumb.locked::after{content:'\1F512';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:32px;background:rgba(0,0,0,.6)}
+    .gallery-page .nav{display:flex;gap:12px;justify-content:center;padding-top:8px}
+    .gallery-page .viewer{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.85);z-index:3}
+    .gallery-page .viewer img{max-width:94vw;max-height:88vh;border-radius:16px;box-shadow:0 30px 120px rgba(0,0,0,.6)}
+
     /* Win and Game Over overlays */
     .win{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:6;pointer-events:auto}
     .win.show{display:flex;}
@@ -368,6 +383,22 @@ select optgroup { color: #0b1022; }
         <div class="hint">點一下進入下一關 ▶</div>
       </div>
 
+      <div class="gallery-page" id="galleryPage">
+        <div class="backdrop"></div>
+        <div class="content">
+          <div class="close" id="galleryClose">❌</div>
+          <div class="thumbs" id="galleryThumbs"></div>
+          <div class="nav">
+            <button class="btn" id="galleryPrev">前一頁</button>
+            <span id="galleryPageInfo">1 / 2</span>
+            <button class="btn" id="galleryNext">下一頁</button>
+          </div>
+        </div>
+        <div class="viewer" id="galleryViewer">
+          <img id="galleryViewerImg" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="畫廊大圖" />
+        </div>
+      </div>
+
       <div class="win" id="win">
         <div class="backdrop"></div>
         <div class="thumb-ring" id="ring"></div>
@@ -482,7 +513,7 @@ select optgroup { color: #0b1022; }
   const scoreEl=document.getElementById('score'), levelEl=document.getElementById('level'), livesEl=document.getElementById('lives');
   const pauseBtn=document.getElementById('pauseBtn'), resetBtn=document.getElementById('resetBtn'), fsBtn=document.getElementById('fsBtn');
   const soundBtn=document.getElementById('soundBtn'), saveBtn=document.getElementById('saveBtn'), loadBtn=document.getElementById('loadBtn'), clearSaveBtn=document.getElementById('clearSaveBtn');
-  const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn');
+  const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn'), galleryBtn=document.getElementById('galleryBtn');
   const centerNote=document.getElementById('centerNote'), noteTitle=document.getElementById('noteTitle'), noteText=document.getElementById('noteText'), noteBox=document.getElementById('noteBox');
   const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs'), promptsDock=document.getElementById('promptsDock');
   const ledStyleSel=document.getElementById('ledStyle');
@@ -501,6 +532,55 @@ select optgroup { color: #0b1022; }
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
   const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2');
   const retryBtn=document.getElementById('retryBtn');
+
+  // Gallery page elements
+  const galleryPage=document.getElementById('galleryPage'), galleryThumbs=document.getElementById('galleryThumbs'), galleryClose=document.getElementById('galleryClose'), galleryPrev=document.getElementById('galleryPrev'), galleryNext=document.getElementById('galleryNext'), galleryPageInfo=document.getElementById('galleryPageInfo'), galleryViewer=document.getElementById('galleryViewer'), galleryViewerImg=document.getElementById('galleryViewerImg');
+
+  // === Gallery page logic ===
+  let galleryPageIdx = 0;
+  function renderGalleryPage(){
+    const type = galleryPageIdx===0?'bg':'cg';
+    galleryThumbs.innerHTML='';
+    for(let i=1;i<=10;i++){
+      const key = `${type}${i}`;
+      const div=document.createElement('div');
+      div.className='thumb';
+      const im=document.createElement('img');
+      im.src=`images/${key}.png`;
+      div.appendChild(im);
+      if(!galleryUnlocks[key]){
+        div.classList.add('locked');
+      }else{
+        div.addEventListener('click',()=>{
+          galleryViewerImg.src=`images/${key}.png`;
+          galleryViewer.style.display='flex';
+        },{passive:true});
+      }
+      galleryThumbs.appendChild(div);
+    }
+    galleryPageInfo.textContent=`${galleryPageIdx+1} / 2`;
+    galleryPrev.disabled = galleryPageIdx===0;
+    galleryNext.disabled = galleryPageIdx===1;
+  }
+  function openGalleryPage(){
+    galleryPageIdx=0;
+    renderGalleryPage();
+    galleryPage.style.display='flex';
+    window.__setMenuPause?.(true);
+  }
+  function closeGalleryPage(){
+    galleryPage.style.display='none';
+    galleryViewer.style.display='none';
+    window.__setMenuPause?.(false);
+  }
+  galleryClose?.addEventListener('click', closeGalleryPage, {passive:true});
+  galleryPrev?.addEventListener('click', ()=>{ if(galleryPageIdx>0){galleryPageIdx--; renderGalleryPage();}}, {passive:true});
+  galleryNext?.addEventListener('click', ()=>{ if(galleryPageIdx<1){galleryPageIdx++; renderGalleryPage();}}, {passive:true});
+  galleryViewer?.addEventListener('click', ()=>{ galleryViewer.style.display='none'; }, {passive:true});
+  galleryBtn?.addEventListener('click', ()=>{
+    document.getElementById('optMenu')?.classList.remove('show');
+    openGalleryPage();
+  }, {passive:true});
 
   // === Skin initialization ===
   // Populate the skin dropdown and set up the current skin.  Skins are
@@ -660,6 +740,15 @@ select optgroup { color: #0b1022; }
   let nextAutoBeneficialDropAt = 0;
   // 影像選擇：1~10 隨機 bg/cg，11~20 用對應未用者
   let imageChoice = new Array(10).fill(-1); // 0=bg,1=cg; -1: 未決
+  let galleryUnlocks = {};
+  try{ galleryUnlocks = JSON.parse(localStorage.getItem('gallery_unlocks')||'{}'); }catch(e){ galleryUnlocks={}; }
+  function markImageUnlocked(type, idx){
+    const key = `${type}${idx+1}`;
+    if(!galleryUnlocks[key]){
+      galleryUnlocks[key]=true;
+      try{ localStorage.setItem('gallery_unlocks', JSON.stringify(galleryUnlocks)); }catch(e){}
+    }
+  }
   // BGM
   let audioCtx=null, bgmGain=null, bgmOn=false, bgmStarted=false;
   let bgmNodes=[]; // 便於停播
@@ -1074,13 +1163,16 @@ select optgroup { color: #0b1022; }
   function getLevelImage(levelNum){
     const idx=((levelNum-1)%10);
     const imgs = loadImagePair(idx);
+    let img;
     if(levelNum<=10){
       if(imageChoice[idx]<0){ imageChoice[idx]= Math.random()<0.5 ? 0:1; }
-      return imageChoice[idx]===0? imgs.bg : imgs.cg;
+      img = imageChoice[idx]===0? imgs.bg : imgs.cg;
     }else{
       if(imageChoice[idx]<0){ imageChoice[idx]=0; } // 保底
-      return imageChoice[idx]===0? imgs.cg : imgs.bg;
+      img = imageChoice[idx]===0? imgs.cg : imgs.bg;
     }
+    if(img===imgs.bg) markImageUnlocked('bg', idx); else markImageUnlocked('cg', idx);
+    return img;
   }
 
   // 特殊磚模板
@@ -1633,7 +1725,7 @@ function generateLevel(lv, L){
       soundsOn=!!data.soundsOn; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
       if(typeof data.bgmOn==='boolean'){ bgmOn=data.bgmOn; } if(typeof data.bgmVol==='number'){ bgmVol.value=String(data.bgmVol); if(bgmGain) bgmGain.gain.value=data.bgmVol; localStorage.setItem('bgm_vol', data.bgmVol); }
       resetGame(true); updateHUD(); alert(`已讀檔：等級 ${level}，分數 ${score}，生命 ${lives}`);}catch(e){ alert('讀檔失敗：'+e); } }
-  function clearSave(){ localStorage.removeItem('breakout_save_v_final_cfg'); alert('已清除存檔'); }
+  function clearSave(){ localStorage.removeItem('breakout_save_v_final_cfg'); localStorage.removeItem('gallery_unlocks'); alert('已清除存檔'); }
 
   // === 輸入（含觸控） ===
   let keyL=false, keyR=false; let touchActive=false;
