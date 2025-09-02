@@ -2457,7 +2457,7 @@ function generateLevel(lv, L){
     const tick=()=>{
       if(countdownShow<=0){ resumePending=false; paused=false; stats.lifeStart=performance.now(); return; }
       beep(600 + (3-countdownShow)*100, 0.07, 0.05);
-      setTimeout(()=>{ countdownShow--; if(countdownShow===0){ paused=false; } else { tick(); } }, 450);
+      setTimeout(()=>{ countdownShow--; tick(); }, 450);
     };
     tick();
   }
