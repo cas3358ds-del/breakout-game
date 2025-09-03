@@ -122,31 +122,25 @@
       desc: '極光絲緞：冰藍呼吸＋輕雪＋低對比極光束；2.2s。'
     },
 
-    solarFlare: {
-      label: '烈陽．炙金幻焰',
-      selectLabel: '烈陽．炙金幻焰',
-      cssSkin: '烈陽．炙金幻焰',
-      lifeIcon: '☀️',
-      cssVars: {
-        '--fxViz': '1',
-        '--panelPattern':
-          'radial-gradient(150px 110px at 80% 20%, rgba(255,170,40,.08), transparent 60%), radial-gradient(130px 90px at 20% 80%, rgba(255,120,30,.06), transparent 60%)'
-      },
-      canvas: {
-        base: [255, 140, 40],
-        hi: [255, 255, 240],
-        period: 2000,
-        effects: {
-          embers: { count: 200, omega: 0.0018, center: [0.5, 0.55] },
-          sparks: { count: 80 },
-          prism: { beams: 10, speed: 0.0004, alpha: 0.08, spread: 0.78, hueShift: 24 },
-          pulse: { color: [255, 180, 60], thickness: 6, intervalMul: 1.1 }
+      solarFlare: {
+        label: '烈陽．炙金幻焰',
+        selectLabel: '烈陽．炙金幻焰',
+        cssSkin: '烈陽．炙金幻焰',
+        lifeIcon: '☀️',
+        cssVars: { '--fxViz': '1', '--panelPattern': 'none' },
+        canvas: {
+          base: [255, 180, 80],
+          hi: [255, 255, 240],
+          period: 2000,
+          effects: {
+            flames: { count: 60, baseY: 0.82, sizeMin: 3, sizeMax: 8, speedMin: 0.25, speedMax: 0.6 },
+            sun: { rotationPeriodMs: 30000, scalePeriodMs: 120000, sizeMin: 0.05, sizeMax: 0.5, alpha: 0.6 }
+          },
+          bg: ['#3a1000', '#200600', '#120200']
         },
-        bg: ['#3a1000', '#200600', '#120200']
-      },
-      desc: '炙金幻焰：金橙呼吸＋旋轉熾燼與脈衝光束，2s 週期。'
-    }
-  };
+        desc: '炙金幻焰：金色呼吸＋底部金焰與緩旋太陽背景，2s 週期。'
+      }
+    };
 
   // 對外暴露
   window.SKINS = SKINS;
