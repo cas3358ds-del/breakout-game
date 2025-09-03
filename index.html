@@ -287,6 +287,22 @@ select optgroup { color: #0b1022; }
       --btnGlow:0 0 22px rgba(255,160,80,.28);
     }
 
+    /* === 蜘蛛．銀絲陷阱 === */
+    body[data-skin="蜘蛛．銀絲陷阱"]{
+      --ink:#f5f5f5;
+      --muted:#d5d5d5;
+      --stroke:rgba(220,220,230,.34);
+      --bg1:#1a1a1a;
+      --bg2:#000000;
+      --hudGrad1:rgba(240,240,245,.60);
+      --hudGrad2:rgba(220,220,230,.44);
+      --glass-1:rgba(255,255,255,.14);
+      --glass-2:rgba(255,255,255,.10);
+      --stageGlass:linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+      --panelPattern:repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.08) 0 1px, transparent 1px 12px),repeating-conic-gradient(rgba(255,255,255,.04) 0deg 10deg, transparent 10deg 20deg);
+      --btnGlow:0 0 20px rgba(220,220,240,.26);
+    }
+
 
 
 /* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */
@@ -3195,7 +3211,7 @@ function boot(){
   let rafId = 0, ctx = null, cvs = null;
   let t0 = 0;
   let stars=[], snows=[], clouds=[], embers=[], sparks=[], shards=[], slicers=[], flames=[];
-  let hexagram=null, scriptRing=null, pulse=null, sunOpt=null, flameOpt=null, ruins=[];
+  let hexagram=null, scriptRing=null, pulse=null, sunOpt=null, flameOpt=null, ruins=[], webOpt=null;
   let nukeAt=0, nukeEnd=0, diffusePhase=0;
 
   function resize(){
@@ -3221,8 +3237,9 @@ function boot(){
   function initEffects(eff){
     const w=cvs.width, h=cvs.height;
     stars=[]; snows=[]; clouds=[]; embers=[]; sparks=[]; shards=[]; slicers=[]; flames=[]; ruins=[];
-    hexagram=scriptRing=pulse=null; sunOpt=null; flameOpt=null; nukeAt=0; nukeEnd=0; diffusePhase=0;
+    hexagram=scriptRing=pulse=null; sunOpt=null; flameOpt=null; nukeAt=0; nukeEnd=0; diffusePhase=0; webOpt=null;
     if(!eff) return;
+    if(eff.web) webOpt=eff.web;
     if(eff.stars){
       const count = Math.round( (eff.stars.countScale||1) * 140 );
       for(let i=0;i<count;i++) stars.push({x:Math.random()*w,y:Math.random()*h,r:(eff.stars.sizeMin||1)+Math.random()*((eff.stars.sizeMax||3)-(eff.stars.sizeMin||1)),ph:Math.random()*Math.PI*2});
@@ -3281,6 +3298,36 @@ function boot(){
       grad.addColorStop(0,`hsla(${hue},95%,65%,0)`);grad.addColorStop(0.15,`hsla(${hue},95%,65%,${alpha})`);grad.addColorStop(spread,`hsla(${hue},95%,65%,0)`);
       ctx.strokeStyle=grad;ctx.lineWidth=Math.max(1,r*0.012);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x2,y2);ctx.stroke();
     }
+  }
+
+  function drawCobweb(w,h,time,opt){
+    const period = opt.period || 30000;
+    const phase = (time % period) / period;
+    const rMax = Math.hypot(w,h)*0.6;
+    const r = phase * rMax;
+    const shimmer = 0.5 + 0.5*Math.sin(time*0.0004);
+    const alpha = (opt.alpha || 0.05) * shimmer * (1 - phase);
+    ctx.save();
+    ctx.translate(w/2, h/2);
+    ctx.strokeStyle = opt.color || '#e0e0e0';
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = opt.lineWidth || 1;
+    const radials = opt.radials || 12;
+    for(let i=0;i<radials;i++){
+      const ang = i*(2*Math.PI/radials);
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.lineTo(Math.cos(ang)*r, Math.sin(ang)*r);
+      ctx.stroke();
+    }
+    const rings = opt.rings || 6;
+    for(let j=1;j<=rings;j++){
+      const rr = r*(j/rings);
+      ctx.beginPath();
+      ctx.arc(0,0,rr,0,Math.PI*2);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawSun(w,h,time,opt){
@@ -3365,6 +3412,7 @@ function boot(){
     drawRainbowWash(w,h,t);
     if(eff){
       ctx.globalCompositeOperation='screen';
+      if(webOpt) drawCobweb(w,h,t,webOpt);
       if(eff.prism) drawPrismBeams(w,h,t,eff.prism);
       if(stars.length){for(const s of stars){const tw=eff.stars&&eff.stars.twinkle?0.5+0.5*Math.sin(t*0.002+s.ph):1;ctx.fillStyle=`rgba(255,255,255,${0.6*tw})`;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();}}
       if(snows.length){for(const f of snows){f.y+=f.vy;f.x+=f.vx;f.x+=Math.sin(f.ph+t*0.001)*(eff.snow.sway||0.5);if(f.y>h)f.y=-10;if(f.x>w)f.x=0;if(f.x<0)f.x=w;ctx.fillStyle='rgba(255,255,255,0.8)';ctx.beginPath();ctx.arc(f.x,f.y,2,0,Math.PI*2);ctx.fill();}}

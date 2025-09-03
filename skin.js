@@ -147,6 +147,27 @@
           bg: ['#3a1000', '#200600', '#120200']
         },
         desc: '炙金幻焰：金色呼吸＋底部金焰、淡淡散射光束與緩旋太陽背景，2s 週期。'
+      },
+      spiderSilkTrap: {
+        label: '蜘蛛．銀絲陷阱',
+        selectLabel: '蜘蛛．銀絲陷阱',
+        cssSkin: '蜘蛛．銀絲陷阱',
+        lifeIcon: '🕷️',
+        cssVars: {
+          '--fxViz': '0',
+          '--panelPattern': 'repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08) 0 1px, transparent 1px 12px),repeating-conic-gradient(rgba(255,255,255,0.04) 0deg 10deg, transparent 10deg 20deg)'
+        },
+        canvas: {
+          base: [210, 210, 210],
+          hi: [255, 255, 255],
+          period: 3200,
+          effects: {
+            ledStrip: { lo: [60, 60, 60], hi: [240, 240, 240], period: 3200 },
+            web: { period: 30000, alpha: 0.05 }
+          },
+          bg: ['#1a1a1a', '#0f0f0f', '#000000']
+        },
+        desc: '銀絲陷阱：銀白 HUD 與慢速呼吸 LED；淡淡蛛網背景徐徐展開。'
       }
     };
 
