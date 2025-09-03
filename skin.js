@@ -140,12 +140,13 @@
               sizeMin: 0.05,
               sizeMax: 0.3,
               centerY: 0.6,
-              alpha: 0.4
+              alpha: 0.4,
+              scatter: { count: 24, widthNear: 0.02, widthFar: 0.15, alpha: 0.05 }
             }
           },
           bg: ['#3a1000', '#200600', '#120200']
         },
-        desc: '炙金幻焰：金色呼吸＋底部金焰與緩旋太陽背景，2s 週期。'
+        desc: '炙金幻焰：金色呼吸＋底部金焰、淡淡散射光束與緩旋太陽背景，2s 週期。'
       }
     };
 
