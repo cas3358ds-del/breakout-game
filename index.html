@@ -1489,6 +1489,10 @@ function generateLevel(lv, L){
       return;
     }
     if(b.elite){ stats.eliteKills++; }
+    const bx=b.x+b.w/2, by=b.y+b.h/2;
+    const color=b.boss?'#ff4d6d':b.unbreakable?'#888':b.strong?'#bb7aff':b.moving?'#6ec6ff':b.explosive?getVar('--expl'):brickColor(b.colorIdx);
+    spawnParticles(bx,by,color,30,2.0,3.2,3.5);
+    beep(420,0.06,0.08); setTimeout(()=>beep(620,0.05,0.06),40);
     revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD();
   }
   function damageBrick(i, dmg){ for(let k=0;k<dmg;k++){ if(!bricks[i]) break; destroyBrick(i); } }
@@ -2460,7 +2464,30 @@ function generateLevel(lv, L){
     }
 
     // 黑洞特效
-    for(let i=blackHoles.length-1;i>=0;i--){ const h=blackHoles[i]; if(performance.now()>h.until){ blackHoles.splice(i,1); continue; } const baseR=h.r||40; const r=baseR*((scaleX+scaleY)/2)*(0.8+0.2*Math.sin(performance.now()/120)); const x=h.x*scaleX, y=h.y*scaleY; const g=ctx.createRadialGradient(x,y,2,x,y,r); g.addColorStop(0,`rgba(0,0,0,${0.6})`); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+    for(let i=blackHoles.length-1;i>=0;i--){
+      const h=blackHoles[i];
+      const nowH=performance.now();
+      if(nowH>h.until){ blackHoles.splice(i,1); continue; }
+      const baseR=h.r||40;
+      const r=baseR*((scaleX+scaleY)/2)*(0.8+0.2*Math.sin(nowH/120));
+      const x=h.x*scaleX, y=h.y*scaleY;
+      const grad=ctx.createRadialGradient(x,y,0,x,y,r);
+      grad.addColorStop(0,'rgba(0,0,0,0.9)');
+      grad.addColorStop(0.5,'rgba(40,0,60,0.8)');
+      grad.addColorStop(0.8,'rgba(80,0,120,0.2)');
+      grad.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fill();
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.rotate(nowH/500);
+      ctx.strokeStyle='rgba(120,80,200,0.6)';
+      ctx.lineWidth=2;
+      for(let ring=0; ring<3; ring++){ const rr=r*(0.3+0.2*ring); ctx.beginPath(); ctx.arc(0,0,rr,0,Math.PI*1.5); ctx.stroke(); }
+      ctx.restore();
+    }
 
     
     // 雷射光束（強化質感）
@@ -2562,7 +2589,24 @@ function generateLevel(lv, L){
   }
 
   function drawSwords(){ const now=performance.now(); const pr=paddleRect(); for(let i=swords.length-1;i>=0;i--){ const s=swords[i]; if(s.state==='wander'){ s.x+=s.vx; s.y+=s.vy; if(s.x<20||s.x>1080) s.vx*=-1; if(s.y<500||s.y>680) s.vy*=-1; if(!buffs.SWORD.active){ s.state='gather'; s.t0=now; s.tx=pr.x+pr.w/2+ (i-swords.length/2)*20; s.ty=pr.y-40; } } else if(s.state==='gather'){ const prog=Math.min(1,(now-s.t0)/2000); s.x += (s.tx-s.x)*0.15; s.y += (s.ty-s.y)*0.15; if(prog>=1){ s.state='ready'; } } else if(s.state==='fire'){ s.x+=s.vx; s.y+=s.vy; const idx=s.target; const bk=bricks[idx]; if(bk && s.x>bk.x && s.x<bk.x+bk.w && s.y>bk.y && s.y<bk.y+bk.h){ damageBrick(idx,3); swords.splice(i,1); continue; } if(s.x<0||s.x>1100||s.y<0||s.y>700){ swords.splice(i,1); continue; } }
-      ctx.save(); ctx.translate(s.x*scaleX,s.y*scaleY); ctx.rotate(Math.atan2(s.vy||0.1,s.vx||0.1)); ctx.fillStyle='rgba(200,160,255,0.9)'; ctx.fillRect(-6,-2,12,4); ctx.restore(); }
+      ctx.save();
+      ctx.translate(s.x*scaleX, s.y*scaleY);
+      ctx.rotate(Math.atan2(s.vy||0.1, s.vx||0.1));
+      const bladeGrad = ctx.createLinearGradient(-12, 0, 14, 0);
+      bladeGrad.addColorStop(0, '#fdfbff');
+      bladeGrad.addColorStop(1, '#c8a8ff');
+      ctx.fillStyle = bladeGrad;
+      ctx.beginPath();
+      ctx.moveTo(-12, -2);
+      ctx.lineTo(14, 0);
+      ctx.lineTo(-12, 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#b090ff';
+      ctx.fillRect(-14, -3, 4, 6); // guard
+      ctx.fillStyle = '#6c4bb3';
+      ctx.fillRect(-18, -1, 4, 2); // handle
+      ctx.restore(); }
     if(!buffs.SWORD.active && swords.length && !swordFireStart){ swordFireStart=now+2000; nextSwordFire=swordFireStart; }
     if(swordFireStart && now>=swordFireStart){ if(now>=nextSwordFire){ const s=swords.find(z=>z.state==='ready'); if(s){ const idx=randomBrick(); if(idx!=null){ const t=bricks[idx]; const ang=Math.atan2((t.y+t.h/2)-s.y,(t.x+t.w/2)-s.x); s.vx=Math.cos(ang)*8; s.vy=Math.sin(ang)*8; s.state='fire'; s.target=idx; } } nextSwordFire=now+300; if(!swords.some(z=>z.state==='ready')) swordFireStart=0; } }
   }
@@ -2722,7 +2766,7 @@ function generateLevel(lv, L){
 
     if(stormTurret){ if(now>=stormTurret.fireAt){ if(stormTurret.shots<=0){ stormTurret=null; buffs.STORM.active=false; } else if(now-stormTurret.lastShot>=200){ const idx=randomBrick(); if(idx!=null){ const t=bricks[idx]; const tx=t.x+t.w/2, ty=t.y+t.h/2; laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:tx,y2:ty,until:now+200}); laserImpacts.push({x:tx,y:ty,t0:now,tEnd:now+320}); destroyBrick(idx); stormTurret.shots--; stormTurret.lastShot=now; } } } }
 
-    if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ const d=Math.min(8,buffs.BLACKHOLE.deaths||0); const dmg=1+(d/8)*(40-1); const rad=200+(d/8)*(800-200); const pr=paddleRect(); const cx=pr.x+pr.w/2, cy=pr.y-rad; blackHoles.push({x:cx,y:cy,r:rad,until:now+2000}); for(let i=bricks.length-1;i>=0;i--){ const bk=bricks[i]; const bx=bk.x+bk.w/2, by=bk.y+bk.h/2; if(Math.hypot(bx-cx,by-cy)<=rad){ damageBrick(i,dmg); } } buffs.BLACKHOLE.active=false; }
+    if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ const d=Math.min(8,buffs.BLACKHOLE.deaths||0); const dmg=1+(d/8)*(40-1); const rad=200+(d/8)*(800-200); const pr=paddleRect(); const cx=pr.x+pr.w/2, cy=pr.y-rad; blackHoles.push({x:cx,y:cy,r:rad,until:now+3000}); for(let i=bricks.length-1;i>=0;i--){ const bk=bricks[i]; const bx=bk.x+bk.w/2, by=bk.y+bk.h/2; if(Math.hypot(bx-cx,by-cy)<=rad){ damageBrick(i,dmg); } } buffs.BLACKHOLE.active=false; }
 
     if(buffs.ANNIHIL.active && now>=buffs.ANNIHIL.next){ let cand=bricks.filter(b=>canDestroyBrick(b)&&!b.boss); if(!cand.length) cand=bricks.filter(b=>canDestroyBrick(b)); if(cand.length){ const target=cand[Math.floor(Math.random()*cand.length)]; const idx=bricks.indexOf(target); destroyBrick(idx); } buffs.ANNIHIL.next+=1000; }
 
