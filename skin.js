@@ -134,7 +134,14 @@
           period: 2000,
           effects: {
             flames: { count: 60, baseY: 0.82, sizeMin: 3, sizeMax: 8, speedMin: 0.25, speedMax: 0.6 },
-            sun: { rotationPeriodMs: 30000, scalePeriodMs: 120000, sizeMin: 0.05, sizeMax: 0.5, alpha: 0.6 }
+            sun: {
+              rotationPeriodMs: 30000,
+              scalePeriodMs: 120000,
+              sizeMin: 0.05,
+              sizeMax: 0.3,
+              centerY: 0.55,
+              alpha: 0.6
+            }
           },
           bg: ['#3a1000', '#200600', '#120200']
         },

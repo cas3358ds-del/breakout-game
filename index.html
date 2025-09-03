@@ -3288,15 +3288,36 @@ function boot(){
     const scalePeriod=opt.scalePeriodMs||120000;
     const frac=(time%scalePeriod)/scalePeriod;
     const prog=frac<0.5?frac*2:(1-frac)*2;
-    const r=Math.min(w,h)*((opt.sizeMin||0.05)+prog*((opt.sizeMax||0.5)-(opt.sizeMin||0.05)));
-    const cx=w/2,cy=h/2;
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(rot);ctx.globalAlpha=opt.alpha||0.6;
-    const g=ctx.createRadialGradient(0,0,0,0,0,r);
-    g.addColorStop(0,'rgba(255,245,210,0.8)');
+    const r=Math.min(w,h)*((opt.sizeMin||0.05)+prog*((opt.sizeMax||0.3)-(opt.sizeMin||0.05)));
+    const cx=w/2,cy=h*(opt.centerY||0.55);
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(rot);
+    ctx.globalAlpha=opt.alpha||0.6;
+
+    const rayCount=opt.rayCount||20;
+    const inner=r*0.6;
+    const outer=r;
+    ctx.fillStyle='rgba(255,200,80,0.5)';
+    ctx.beginPath();
+    for(let i=0;i<rayCount*2;i++){
+      const ang=i*Math.PI/rayCount;
+      const rad=i%2===0?outer:inner;
+      const x=Math.cos(ang)*rad;
+      const y=Math.sin(ang)*rad;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    const g=ctx.createRadialGradient(0,0,0,0,0,inner);
+    g.addColorStop(0,'rgba(255,245,210,0.9)');
     g.addColorStop(1,'rgba(255,200,80,0)');
-    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='rgba(255,220,120,0.35)';ctx.lineWidth=r*0.05;
-    for(let i=0;i<12;i++){const a=i*Math.PI/6;ctx.beginPath();ctx.moveTo(Math.cos(a)*r*0.7,Math.sin(a)*r*0.7);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);ctx.stroke();}
+    ctx.fillStyle=g;
+    ctx.beginPath();
+    ctx.arc(0,0,inner,0,Math.PI*2);
+    ctx.fill();
+
     ctx.restore();
   }
 
