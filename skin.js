@@ -64,6 +64,7 @@
       label: '宇宙．星辰絮語',
       selectLabel: '宇宙．星辰絮語',
       cssSkin: '宇宙．星辰絮語',
+      lifeIcon: '🛸',
       canvas: {
         base: [150, 120, 255],
         hi: [255, 255, 255],
@@ -88,6 +89,7 @@
       label: '冰雪．極光絲綢',
       selectLabel: '冰雪．極光絲綢',
       cssSkin: '冰雪．極光絲綢',
+      lifeIcon: '🧊',
       canvas: {
         base: [170, 210, 255],
         hi: [255, 255, 255],
@@ -152,5 +154,6 @@
     } catch(e) { console.warn('fx hook err', e); }
 
     if (typeof window.updateSkinUI === 'function') window.updateSkinUI(skin);
+    if (typeof window.updateHUD === 'function') window.updateHUD();
   };
 })();

@@ -1778,7 +1778,8 @@ function generateLevel(lv, L){
       // 依據生命數量新增愛心圖示
       for (let i = 0; i < lives; i++) {
         const span = document.createElement('span');
-        span.textContent = '❤️';
+        const icon = (window.currentSkin && window.currentSkin.lifeIcon) || '❤️';
+        span.textContent = icon;
         span.className = 'life-icon';
         heartsEl.appendChild(span);
       }
