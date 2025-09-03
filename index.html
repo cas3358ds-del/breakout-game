@@ -2241,10 +2241,6 @@ function generateLevel(lv, L){
       return {x:x, y:Math.max(0, Math.min(700-len, paddle.y)), w:thick, h:len};
     }
   }
-
-
-  function speedMultiplier(now){ let mul=1.0; if(buffs.SLOW.active){ mul*=(GAME_CONFIG.powers.SLOW.speedMul??1.0);} if(buffs.FAST.active){ mul*=(GAME_CONFIG.powers.FAST.globalSpeedMul??1.0);} if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); } if(buffs.ANNIHIL.active){ const t=Math.min(1,(now-buffs.ANNIHIL.start)/10000); const maxMul=GAME_CONFIG.powers.ANNIHIL.annihil.speedMul||3; mul*=1+t*(maxMul-1); } return mul; }
-
   // === 背景裝飾 & LED 燈條 ===
   function ledColor(){
     if(buffs.GODSPEED.active) return '#ffe066';
@@ -2924,6 +2920,11 @@ function generateLevel(lv, L){
       if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); }
       if(buffs.HELL.active){ mul*=(GAME_CONFIG.powers.HELL.hell.speedMul); }
       if(buffs.MEGA.active){ mul*=(GAME_CONFIG.powers.MEGA.mega.speedMul); }
+      if(buffs.ANNIHIL.active){
+        const t=Math.min(1,(now-buffs.ANNIHIL.start)/10000);
+        const maxMul=GAME_CONFIG.powers.ANNIHIL.annihil.speedMul||3;
+        mul*=1+t*(maxMul-1);
+      }
 
       // 天地翻轉：啟動前 2 秒與結束前 2 秒期間略微減速（降低不適感）
       const f = buffs.FLIP;
