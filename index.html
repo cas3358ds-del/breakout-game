@@ -2711,13 +2711,19 @@ function generateLevel(lv, L){
   function resetBalls(center=true){ balls=[makeBall(false)]; const base=getDiff().baseSpeed; const speed=speedForLevel(level); const angle=(-60-Math.random()*60)*Math.PI/180;
     balls[0].x=center?1100/2:paddle.x+paddle.w/2; balls[0].y=700-70; balls[0].vx=Math.cos(angle)*speed; balls[0].vy=Math.sin(angle)*speed; balls[0].piercing=buffs.PIERCE.active; }
 
-  function startCountdown(){
-    paused=true; countdownShow=3; showCenter('', ''); centerNote.style.display='none'; // 用畫面倒數
+  function startCountdown(restart=true){
+    // 清除先前的倒數計時以避免在選單開啟時仍繼續倒數
+    if(countdownTimer){ clearTimeout(countdownTimer); countdownTimer=null; }
+    paused=true;
+    if(restart || countdownShow<=0){ countdownShow=3; }
+    showCenter('', ''); centerNote.style.display='none'; // 用畫面倒數
     resumePending=true;
     const tick=()=>{
-      if(countdownShow<=0){ resumePending=false; paused=false; stats.lifeStart=performance.now(); return; }
+      if(countdownShow<=0){
+        resumePending=false; paused=false; stats.lifeStart=performance.now(); countdownTimer=null; return;
+      }
       beep(600 + (3-countdownShow)*100, 0.07, 0.05);
-      setTimeout(()=>{ countdownShow--; tick(); }, 450);
+      countdownTimer = setTimeout(()=>{ countdownShow--; tick(); }, 450);
     };
     tick();
   }
@@ -3190,6 +3196,8 @@ function generateLevel(lv, L){
       if(menuPaused){
         // 開啟選單：立即暫停遊戲並記錄暫停開始時間
         paused = true;
+        // 若正在倒數，停止計時以免在選單開啟期間自動恢復
+        if(countdownTimer){ clearTimeout(countdownTimer); countdownTimer=null; }
         onPauseStart();
       } else {
         // 關閉選單：只要遊戲尚在進行且未 Game Over，立即修正計時並重新倒數
@@ -3197,7 +3205,8 @@ function generateLevel(lv, L){
           // 確保即便先前已有倒數排程也能正確恢復
           resumePending = false;
           onResumeFromPause();
-          startCountdown();
+          // 繼續先前的倒數而非重置
+          startCountdown(false);
         }
       }
     };
