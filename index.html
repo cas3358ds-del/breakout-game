@@ -774,7 +774,8 @@ select optgroup { color: #0b1022; }
   }
   // BGM
   let audioCtx=null, bgmGain=null, bgmOn=false, bgmStarted=false;
-  let bgmNodes=[]; // 便於停播
+  // 追蹤目前作用中的 BGM node，便於停止與清除
+  let bgmNodes=new Set();
 
   // === 初始化新 UI 的聲音/BGM 控制 ===
   // 連結複選框至原有的 soundBtn/bgmBtn 按鈕，並同步本地儲存值
@@ -1234,7 +1235,10 @@ select optgroup { color: #0b1022; }
       o.type=type; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(bgmGain);
       o.start(start); g.gain.setTargetAtTime(gain,start,0.015);
       g.gain.setTargetAtTime(0.0001,start+dur-0.03,0.02);
-      o.stop(start+dur+0.1); bgmNodes.push(o,g);
+      o.stop(start+dur+0.1);
+      // 將 node 記錄於集合中，並在播放結束後移除以避免累積
+      bgmNodes.add(o); bgmNodes.add(g);
+      o.onended = () => { try{o.disconnect();}catch{} try{g.disconnect();}catch{} bgmNodes.delete(o); bgmNodes.delete(g); };
     }
     function scheduleLoop(){
       if(!bgmOn || !bgmStarted) return;
@@ -1350,7 +1354,11 @@ select optgroup { color: #0b1022; }
     if(!audioCtx) ensureAudio();
     if(!audioCtx || bgmStarted) return; audioCtx.resume?.(); bgmStarted=true; applyBGMThemeForLevel();
   }
-  function stopBGM(){ bgmStarted=false; bgmNodes.forEach(n=>{try{n.disconnect?.()}catch{} }); bgmNodes.length=0; }
+  function stopBGM(){
+    bgmStarted=false;
+    bgmNodes.forEach(n=>{try{n.disconnect?.();}catch{}});
+    bgmNodes.clear();
+  }
 
   // === 磚塊與揭示 ===
   let bricks=[]; let brickW=0, brickH=GAME_CONFIG.bricks.brickHeight; let revealRects=[];
