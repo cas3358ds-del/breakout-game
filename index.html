@@ -684,6 +684,11 @@ select optgroup { color: #0b1022; }
         if(key === 'LONG' && Array.isArray(b.stacks)){
           for(let i=0;i<b.stacks.length;i++){ b.stacks[i] += delta; }
         }
+        // 萬物銷毀：調整起始與下次計時
+        if(key === 'ANNIHIL'){
+          if(b.start){ b.start += delta; }
+          if(b.next){ b.next += delta; }
+        }
       }
       // 調整天地翻轉特效的起止時間
       if(buffs.FLIP){
