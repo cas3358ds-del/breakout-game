@@ -1222,9 +1222,12 @@ select optgroup { color: #0b1022; }
   };
 
   let currentBGMTheme=null;
+  let bgmTimer=null;
   function startBGMTheme(theme){
     if(!audioCtx) ensureAudio();
     if(!audioCtx || !bgmOn) return;
+    clearTimeout(bgmTimer);
+    bgmTimer=null;
     stopBGM();
     bgmStarted=true;
     currentBGMTheme=theme;
@@ -1246,7 +1249,7 @@ select optgroup { color: #0b1022; }
       const base=audioCtx.currentTime+0.05;
       const loopDur=data.patterns[variant](base, tone);
       variant=(variant+1)%data.patterns.length;
-      setTimeout(scheduleLoop, loopDur*1000-100);
+      bgmTimer=setTimeout(scheduleLoop, loopDur*1000-100);
     }
     scheduleLoop();
   }
@@ -1355,6 +1358,8 @@ select optgroup { color: #0b1022; }
     if(!audioCtx || bgmStarted) return; audioCtx.resume?.(); bgmStarted=true; applyBGMThemeForLevel();
   }
   function stopBGM(){
+    clearTimeout(bgmTimer);
+    bgmTimer=null;
     bgmStarted=false;
     bgmNodes.forEach(n=>{try{n.disconnect?.();}catch{}});
     bgmNodes.clear();
