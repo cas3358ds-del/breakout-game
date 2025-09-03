@@ -158,16 +158,17 @@
           '--panelPattern': 'none'
         },
         canvas: {
-          base: [210, 210, 210],
-          hi: [255, 255, 255],
-          period: 3200,
+          base: [120, 60, 150],
+          hi: [220, 200, 255],
+          period: 3000,
           effects: {
-            ledStrip: { lo: [60, 60, 60], hi: [240, 240, 240], period: 3200 },
-            web: { period: 30000, alpha: 0.02 }
+            ledStrip: { lo: [40, 0, 60], hi: [160, 255, 230], period: 3000 },
+            web: { period: 25000, alpha: 0.06, color: '#9ff6f3', lineWidth: 1.2, radials: 16, rings: 8, dew: { count: 40, radius: 1.6, color: '#c8f8ff', alpha: 0.9, spin: 0.0003 } },
+            diffuse: { color: [120, 0, 180], alpha: 0.04 }
           },
-          bg: ['#1a1a1a', '#0f0f0f', '#000000']
+          bg: ['#0d001a', '#100022', '#000000']
         },
-        desc: '銀絲陷阱：純白 HUD 與慢速呼吸 LED；蛛網特效緩慢展開。'
+        desc: '幽藍幻網：深紫 HUD、青藍呼吸 LED 與綻放霧光的幻彩蛛網。'
       }
     };
 

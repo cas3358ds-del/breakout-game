@@ -289,18 +289,18 @@ select optgroup { color: #0b1022; }
 
     /* === 蜘蛛．銀絲陷阱 === */
     body[data-skin="蜘蛛．銀絲陷阱"]{
-      --ink:#000000;
-      --muted:#444444;
-      --stroke:rgba(0,0,0,.85);
-      --bg1:#1a1a1a;
+      --ink:#f0eaff;
+      --muted:#8a6fb5;
+      --stroke:rgba(50,0,80,.85);
+      --bg1:#0d001a;
       --bg2:#000000;
-      --hudGrad1:#ffffff;
-      --hudGrad2:#ffffff;
-      --glass-1:#ffffff;
-      --glass-2:#ffffff;
-      --stageGlass:linear-gradient(180deg, rgba(0,0,0,.02), transparent);
+      --hudGrad1:#9ff6f3;
+      --hudGrad2:#dca0ff;
+      --glass-1:#9ff6f3;
+      --glass-2:#dca0ff;
+      --stageGlass:linear-gradient(180deg, rgba(120,40,160,.25), transparent);
       --panelPattern:none;
-      --btnGlow:0 0 20px rgba(0,0,0,.26);
+      --btnGlow:0 0 20px rgba(140,0,220,.4);
     }
     body[data-skin="蜘蛛．銀絲陷阱"] .hud,
     body[data-skin="蜘蛛．銀絲陷阱"] .pill,
@@ -308,11 +308,11 @@ select optgroup { color: #0b1022; }
     body[data-skin="蜘蛛．銀絲陷阱"] .btn,
     body[data-skin="蜘蛛．銀絲陷阱"] #buffs .badge,
     body[data-skin="蜘蛛．銀絲陷阱"] #promptsDock .prompt{
-      background:#ffffff;
-      color:#000000;
-      border-color:#000000;
+      background:#2b103e;
+      color:#f0eaff;
+      border-color:#9ff6f3;
     }
-    body[data-skin="蜘蛛．銀絲陷阱"] .ic-btn .ico{color:#000000;}
+    body[data-skin="蜘蛛．銀絲陷阱"] .ic-btn .ico{color:#f0eaff;}
 
 /* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */
 
@@ -3321,7 +3321,7 @@ function boot(){
     ctx.translate(w/2, h/2);
     ctx.strokeStyle = opt.color || '#e0e0e0';
     ctx.globalAlpha = alpha;
-    ctx.lineWidth = opt.lineWidth || 1;
+    ctx.lineWidth = opt.lineWidth || 1.2;
     const radials = opt.radials || 12;
     for(let i=0;i<radials;i++){
       const ang = i*(2*Math.PI/radials);
@@ -3336,6 +3336,24 @@ function boot(){
       ctx.beginPath();
       ctx.arc(0,0,rr,0,Math.PI*2);
       ctx.stroke();
+    }
+    if(opt.dew){
+      const count = opt.dew.count || 20;
+      const radius = opt.dew.radius || 2;
+      const dewColor = opt.dew.color || '#ffffff';
+      const spin = opt.dew.spin || 0.0004;
+      for(let i=0;i<count;i++){
+        const ang = i*(2*Math.PI/count) + time*spin;
+        const rr = r*((i%rings)+1)/(rings+1);
+        ctx.save();
+        const a = (0.4+0.6*Math.sin(time*0.002+i))*(opt.dew.alpha||0.8)*(1-phase);
+        ctx.globalAlpha = a;
+        ctx.fillStyle = dewColor;
+        ctx.beginPath();
+        ctx.arc(Math.cos(ang)*rr, Math.sin(ang)*rr, radius, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
     }
     ctx.restore();
   }
@@ -3437,7 +3455,17 @@ function boot(){
       if(pulse){const cx=w/2,cy=h*0.48;const r=(t%(pulse.intervalMul?skin.canvas.period*(pulse.intervalMul):skin.canvas.period))/ (skin.canvas.period||2000);const rad=r*Math.min(w,h);ctx.strokeStyle=`rgba(${pulse.color.join(',')},0.3)`;ctx.lineWidth=pulse.thickness||4;ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.stroke();}
       if(ruins.length){ctx.fillStyle='rgba(0,0,0,'+(eff.ruins.haze||0.2)+')';for(const r0 of ruins){ctx.fillRect((r0.off+t*0.01)%w - w,h*0.6,w,h*0.4);}}
       if(eff.nuke){const now=performance.now(); if(now>nukeAt){nukeEnd=now+(eff.nuke.flashMs||200); nukeAt=now+(eff.nuke.intervalMs||12000);} if(now<nukeEnd){ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fillRect(0,0,w,h);} }
-      if(eff.diffuse){diffusePhase=(diffusePhase+0.001)%1; const rr=Math.max(w,h)*diffusePhase; const g=ctx.createRadialGradient(w/2,h/2,rr*0.2,w/2,h/2,rr); g.addColorStop(0,'rgba(255,69,0,0.05)'); g.addColorStop(1,'rgba(255,69,0,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,w,h); }
+      if(eff.diffuse){
+        diffusePhase=(diffusePhase+0.001)%1;
+        const rr=Math.max(w,h)*diffusePhase;
+        const col=eff.diffuse.color||[255,69,0];
+        const alpha=eff.diffuse.alpha||0.05;
+        const g=ctx.createRadialGradient(w/2,h/2,rr*0.2,w/2,h/2,rr);
+        g.addColorStop(0,`rgba(${col[0]},${col[1]},${col[2]},${alpha})`);
+        g.addColorStop(1,`rgba(${col[0]},${col[1]},${col[2]},0)`);
+        ctx.fillStyle=g;
+        ctx.fillRect(0,0,w,h);
+      }
       if(eff.slicer){const now=performance.now(); if(!slicers.length||now-slicers[slicers.length-1].t>(eff.slicer.intervalMs||3000)){slicers.push({t:now,x:Math.random()*w});}
         ctx.strokeStyle=eff.slicer.color||'rgba(190,0,30,0.35)';ctx.lineWidth=(eff.slicer.widthMul||0.3)*10; for(let i=slicers.length-1;i>=0;i--){const s=slicers[i]; const age=now-s.t; if(age>(eff.slicer.lifeMs||500)){slicers.splice(i,1);continue;} const y=age*0.5; ctx.beginPath(); ctx.moveTo(s.x,y); ctx.lineTo(s.x+w,y+h); ctx.stroke();}}
       ctx.globalCompositeOperation='source-over';
