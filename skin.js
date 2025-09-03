@@ -120,6 +120,30 @@
         bg: ['#0b1626', '#0a1a2f', '#081628']
       },
       desc: '極光絲緞：冰藍呼吸＋輕雪＋低對比極光束；2.2s。'
+    },
+
+    firePhoenix: {
+      label: '火焰．鳳羽流光',
+      selectLabel: '火焰．鳳羽流光',
+      cssSkin: '火焰．鳳羽流光',
+      lifeIcon: '🔥',
+      cssVars: {
+        '--fxViz': '1',
+        '--panelPattern':
+          'radial-gradient(140px 100px at 80% 20%, rgba(255,80,20,.08), transparent 60%), radial-gradient(120px 80px at 20% 80%, rgba(255,160,60,.06), transparent 60%)'
+      },
+      canvas: {
+        base: [255, 90, 20],
+        hi: [255, 240, 200],
+        period: 1800,
+        effects: {
+          embers: { count: 220, omega: 0.0023, center: [0.5, 0.6] },
+          prism: { beams: 8, speed: 0.0005, alpha: 0.08, spread: 0.8, hueShift: 20 },
+          diffuse: {}
+        },
+        bg: ['#2a0b0b', '#1a0703', '#100201']
+      },
+      desc: '鳳羽流光：暖橘呼吸＋旋渦炭火與金色光束，1.8s 呼吸。'
     }
   };
 
