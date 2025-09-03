@@ -1226,11 +1226,12 @@ select optgroup { color: #0b1022; }
   function startBGMTheme(theme){
     if(!audioCtx) ensureAudio();
     if(!audioCtx || !bgmOn) return;
-    clearTimeout(bgmTimer);
+    clearInterval(bgmTimer);
     bgmTimer=null;
     stopBGM();
     bgmStarted=true;
     currentBGMTheme=theme;
+    const data=BGM_PATTERNS[theme];
     let variant=0;
     function tone(freq,type,start,dur,gain=0.045){
       const o=audioCtx.createOscillator();
@@ -1243,15 +1244,17 @@ select optgroup { color: #0b1022; }
       bgmNodes.add(o); bgmNodes.add(g);
       o.onended = () => { try{o.disconnect();}catch{} try{g.disconnect();}catch{} bgmNodes.delete(o); bgmNodes.delete(g); };
     }
-    function scheduleLoop(){
+    function playVariant(){
       if(!bgmOn || !bgmStarted) return;
-      const data=BGM_PATTERNS[theme];
       const base=audioCtx.currentTime+0.05;
-      const loopDur=data.patterns[variant](base, tone);
+      data.patterns[variant](base, tone);
       variant=(variant+1)%data.patterns.length;
-      bgmTimer=setTimeout(scheduleLoop, loopDur*1000-100);
     }
-    scheduleLoop();
+    playVariant();
+    const beat=60/data.tempo;
+    const patternDur=32*beat;
+    const scheduleAhead=0.1;
+    bgmTimer=setInterval(playVariant, Math.max(0,(patternDur-scheduleAhead))*1000);
   }
   function applyBGMThemeForLevel(){
     const theme = bgmThemeForLevel(level);
@@ -1358,7 +1361,7 @@ select optgroup { color: #0b1022; }
     if(!audioCtx || bgmStarted) return; audioCtx.resume?.(); bgmStarted=true; applyBGMThemeForLevel();
   }
   function stopBGM(){
-    clearTimeout(bgmTimer);
+    clearInterval(bgmTimer);
     bgmTimer=null;
     bgmStarted=false;
     bgmNodes.forEach(n=>{try{n.disconnect?.();}catch{}});
