@@ -1226,7 +1226,7 @@ select optgroup { color: #0b1022; }
   function startBGMTheme(theme){
     if(!audioCtx) ensureAudio();
     if(!audioCtx || !bgmOn) return;
-    clearTimeout(bgmTimer);
+    clearInterval(bgmTimer);
     bgmTimer=null;
     stopBGM();
     bgmStarted=true;
@@ -1252,10 +1252,10 @@ select optgroup { color: #0b1022; }
       const base=audioCtx.currentTime+0.05;
       data.patterns[variant](base, tone);
       variant=(variant+1)%data.patterns.length;
-      // 於所有變奏播放完後，自動回到第一種變奏
-      bgmTimer=setTimeout(playVariant, Math.max(0,(patternDur-scheduleAhead))*1000);
     }
+    // 於所有變奏播放完後，自動回到第一種變奏，並持續循環
     playVariant();
+    bgmTimer=setInterval(playVariant, Math.max(0,(patternDur-scheduleAhead))*1000);
   }
   function applyBGMThemeForLevel(){
     const theme = bgmThemeForLevel(level);
@@ -1362,7 +1362,7 @@ select optgroup { color: #0b1022; }
     if(!audioCtx || bgmStarted) return; audioCtx.resume?.(); bgmStarted=true; applyBGMThemeForLevel();
   }
   function stopBGM(){
-    clearTimeout(bgmTimer);
+    clearInterval(bgmTimer);
     bgmTimer=null;
     bgmStarted=false;
     bgmNodes.forEach(n=>{try{n.disconnect?.();}catch{}});
