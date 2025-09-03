@@ -283,11 +283,18 @@ select optgroup { color: #0b1022; }
       --glass-1:rgba(255,170,80,.12);
       --glass-2:rgba(255,130,40,.09);
       --stageGlass:linear-gradient(180deg, rgba(255,160,40,.05), transparent);
-      --panelPattern:radial-gradient(150px 110px at 80% 20%, rgba(255,170,40,.08), transparent 60%), radial-gradient(130px 90px at 20% 80%, rgba(255,120,30,.06), transparent 60%);
+      --panelPattern:none;
       --btnGlow:0 0 22px rgba(255,160,80,.28);
     }
     body[data-skin="烈陽．炙金幻焰"] .stage::before{
-      background: conic-gradient(from 0deg, #ff8800, #ffd34d, #fff2b6, #ffd34d, #ff8800);
+      background: conic-gradient(
+        from 0deg,
+        rgba(255,215,150,0) 0deg,
+        rgba(255,215,150,0.55) 90deg,
+        rgba(255,235,185,0.6) 180deg,
+        rgba(255,215,150,0.55) 270deg,
+        rgba(255,215,150,0) 360deg
+      );
     }
 
 
@@ -3221,8 +3228,8 @@ function boot(){
 (function(){
   let rafId = 0, ctx = null, cvs = null;
   let t0 = 0;
-  let stars=[], snows=[], clouds=[], embers=[], sparks=[], shards=[], slicers=[];
-  let hexagram=null, scriptRing=null, pulse=null, ruins=[];
+  let stars=[], snows=[], clouds=[], embers=[], sparks=[], shards=[], slicers=[], flames=[];
+  let hexagram=null, scriptRing=null, pulse=null, sunOpt=null, flameOpt=null, ruins=[];
   let nukeAt=0, nukeEnd=0, diffusePhase=0;
 
   function resize(){
@@ -3247,8 +3254,8 @@ function boot(){
 
   function initEffects(eff){
     const w=cvs.width, h=cvs.height;
-    stars=[]; snows=[]; clouds=[]; embers=[]; sparks=[]; shards=[]; slicers=[]; ruins=[];
-    hexagram=scriptRing=pulse=null; nukeAt=0; nukeEnd=0; diffusePhase=0;
+    stars=[]; snows=[]; clouds=[]; embers=[]; sparks=[]; shards=[]; slicers=[]; flames=[]; ruins=[];
+    hexagram=scriptRing=pulse=null; sunOpt=null; flameOpt=null; nukeAt=0; nukeEnd=0; diffusePhase=0;
     if(!eff) return;
     if(eff.stars){
       const count = Math.round( (eff.stars.countScale||1) * 140 );
@@ -3271,6 +3278,21 @@ function boot(){
     if(eff.sparks){
       for(let i=0;i<eff.sparks.count;i++) sparks.push({x:Math.random()*w,y:Math.random()*h});
     }
+    if(eff.flames){
+      flameOpt=eff.flames;
+      const N=flameOpt.count||40;
+      for(let i=0;i<N;i++){
+        flames.push({
+          x:Math.random()*w,
+          y:h*(flameOpt.baseY||0.8)+Math.random()*h*0.2,
+          size:(flameOpt.sizeMin||2)+Math.random()*((flameOpt.sizeMax||6)-(flameOpt.sizeMin||2)),
+          alpha:0.5+Math.random()*0.5,
+          speed:(flameOpt.speedMin||0.3)+Math.random()*((flameOpt.speedMax||0.8)-(flameOpt.speedMin||0.3)),
+          ph:Math.random()*Math.PI*2
+        });
+      }
+    }
+    if(eff.sun) sunOpt=eff.sun;
     if(eff.hexagram) hexagram=eff.hexagram;
     if(eff.scriptRing) scriptRing=eff.scriptRing;
     if(eff.pulse) pulse=eff.pulse;
@@ -3295,6 +3317,23 @@ function boot(){
     }
   }
 
+  function drawSun(w,h,time,opt){
+    const rot=(time%(opt.rotationPeriodMs||30000))/(opt.rotationPeriodMs||30000)*2*Math.PI;
+    const scalePeriod=opt.scalePeriodMs||120000;
+    const frac=(time%scalePeriod)/scalePeriod;
+    const prog=frac<0.5?frac*2:(1-frac)*2;
+    const r=Math.min(w,h)*((opt.sizeMin||0.05)+prog*((opt.sizeMax||0.5)-(opt.sizeMin||0.05)));
+    const cx=w/2,cy=h/2;
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(rot);ctx.globalAlpha=opt.alpha||0.6;
+    const g=ctx.createRadialGradient(0,0,0,0,0,r);
+    g.addColorStop(0,'rgba(255,245,210,0.8)');
+    g.addColorStop(1,'rgba(255,200,80,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(255,220,120,0.35)';ctx.lineWidth=r*0.05;
+    for(let i=0;i<12;i++){const a=i*Math.PI/6;ctx.beginPath();ctx.moveTo(Math.cos(a)*r*0.7,Math.sin(a)*r*0.7);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);ctx.stroke();}
+    ctx.restore();
+  }
+
   function loop(ts){
     if(!ctx||!cvs)return; if(!t0) t0=ts; const t=ts-t0; const w=cvs.width,h=cvs.height; ctx.clearRect(0,0,w,h);
     const eff=window.currentSkin&&window.currentSkin.canvas&&window.currentSkin.canvas.effects;
@@ -3308,6 +3347,8 @@ function boot(){
       if(embers.length){const cx=w*(eff.embers.center?eff.embers.center[0]:0.5), cy=h*(eff.embers.center?eff.embers.center[1]:0.5);for(const p of embers){p.ph+=eff.embers.omega||0.002;const r=Math.hypot(p.x-cx,p.y-cy);const ang=Math.atan2(p.y-cy,p.x-cx)+ (eff.embers.omega||0.002);p.x=cx+Math.cos(ang)*r; p.y=cy+Math.sin(ang)*r; ctx.fillStyle='rgba(255,120,40,0.8)';ctx.beginPath();ctx.arc(p.x,p.y,2,0,Math.PI*2);ctx.fill();}}
       if(shards.length){ctx.strokeStyle='rgba(220,245,255,0.5)';ctx.lineWidth=1;for(const s of shards){s.x+=Math.cos(s.ang)*2; s.y+=Math.sin(s.ang)*2; if(s.x<-50||s.x>w+50||s.y<-50||s.y>h+50){s.x=Math.random()*w;s.y=-10;}ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+Math.cos(s.ang)*40,s.y+Math.sin(s.ang)*40);ctx.stroke();}}
       if(sparks.length){for(const sp of sparks){ctx.fillStyle='rgba(255,210,122,0.8)';ctx.fillRect(sp.x,sp.y,2,2);}}
+      if(flames.length){for(const f of flames){f.y-=f.speed;f.x+=Math.sin(t*0.002+f.ph)*(flameOpt?.drift||0.3);f.alpha-=0.004;f.size*=0.98;if(f.alpha<=0||f.y<h*(flameOpt?.dieY||0.55)){f.x=Math.random()*w;f.y=h*(flameOpt?.baseY||0.8)+Math.random()*h*0.2;f.size=(flameOpt?.sizeMin||2)+Math.random()*((flameOpt?.sizeMax||6)-(flameOpt?.sizeMin||2));f.alpha=0.5+Math.random()*0.5;f.speed=(flameOpt?.speedMin||0.3)+Math.random()*((flameOpt?.speedMax||0.8)-(flameOpt?.speedMin||0.3));f.ph=Math.random()*Math.PI*2;}ctx.fillStyle=`rgba(255,220,150,${f.alpha})`;ctx.beginPath();ctx.arc(f.x,f.y,f.size,0,Math.PI*2);ctx.fill();}}
+      if(sunOpt) drawSun(w,h,t,sunOpt);
       if(hexagram){const R=Math.min(w,h)*(hexagram.radiusMul||0.44);const rot=(t%(hexagram.rotationPeriodMs||24000))/(hexagram.rotationPeriodMs||24000)*2*Math.PI;ctx.save();ctx.translate(w/2,h*0.48);ctx.rotate(rot);ctx.strokeStyle=hexagram.color||'#FFD27A';ctx.lineWidth=(hexagram.strokePx||2);ctx.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI/3;ctx.lineTo(Math.cos(a)*R,Math.sin(a)*R);}ctx.closePath();ctx.stroke();ctx.restore();}
       if(scriptRing){const R=Math.min(w,h)*(scriptRing.radiusMul||0.58);const rot=-(t%(scriptRing.rotationPeriodMs||24000))/(scriptRing.rotationPeriodMs||24000)*2*Math.PI;ctx.save();ctx.translate(w/2,h*0.48);ctx.rotate(rot);ctx.strokeStyle=scriptRing.strokeColor||'#FFD27A';ctx.lineWidth=(scriptRing.strokePx||1.6);ctx.globalAlpha=scriptRing.alpha||0.7;ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.stroke();ctx.restore();}
       if(pulse){const cx=w/2,cy=h*0.48;const r=(t%(pulse.intervalMul?skin.canvas.period*(pulse.intervalMul):skin.canvas.period))/ (skin.canvas.period||2000);const rad=r*Math.min(w,h);ctx.strokeStyle=`rgba(${pulse.color.join(',')},0.3)`;ctx.lineWidth=pulse.thickness||4;ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.stroke();}
