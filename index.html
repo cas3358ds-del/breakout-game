@@ -1645,9 +1645,17 @@ function generateLevel(lv, L){
   function scheduleNextSkyDrop(){ nextSkyDropAt = performance.now() + skyDropIntervalMs(level); }
   function spawnBeneficialAtTop(){
     // 從所有非減益的道具中隨機挑選一種作為隨機掉落增益
-    // 此處不考慮強制重複計次（自動掉落每隔 N 秒觸發）
+    // 若畫面已有特殊道具掉落，暫時排除特殊/稀有道具
     const goodTypes = ALL_TYPES.filter(k => GAME_CONFIG.powers[k].type !== 'debuff');
-    const type = goodTypes[Math.floor(Math.random()*goodTypes.length)];
+    let pool = goodTypes;
+    if(powerups.some(p=>p.isSpecial)){
+      pool = pool.filter(k => {
+        const t = GAME_CONFIG.powers[k].type;
+        return t !== 'special' && t !== 'rare';
+      });
+    }
+    if(!pool.length) return;
+    const type = pool[Math.floor(Math.random()*pool.length)];
     const def = GAME_CONFIG.powers[type];
     if(!def) return;
     const isSpecial = (def.type === 'special' || def.type === 'rare');
@@ -1683,6 +1691,20 @@ function generateLevel(lv, L){
 
   // 道具掉落率抑制
   let burstStart=0, burstCount=0;
+  function activePowerCount(){
+    const now=performance.now();
+    let cnt=0;
+    for(const k in buffs){
+      const b=buffs[k];
+      if(!b) continue;
+      if(Array.isArray(b.stacks)){
+        if(b.stacks.some(t=>t>now)) cnt++;
+      }else if(b.active && (!b.until || b.until>now)){
+        cnt++;
+      }
+    }
+    return cnt;
+  }
   function maybeDropFromBrick(b){
     if(!b || b.unbreakable) return;
     // Boss不會掉落一般增益（保持平衡）
@@ -1693,11 +1715,18 @@ function generateLevel(lv, L){
     }else{
       burstCount++;
     }
+    const actives=activePowerCount();
+    if(actives===0){
+      spawnPower(b.x + b.w/2 - 12, b.y + b.h/2, {forceGood:true});
+      return;
+    }
     let rate=dropRateForLevel(level);
+    if(actives>=5) rate*=0.3;
     if(burstCount>=3){
-      const n=Math.min(burstCount,6);
-      let factor=1-0.2*(n-2);
-      if(factor<0.2) factor=0.2;
+      let factor;
+      if(burstCount===3) factor=0.7;
+      else if(burstCount===4) factor=0.4;
+      else factor=0.1;
       rate*=factor;
     }
     if(Math.random()<rate) spawnPower(b.x + b.w/2 - 12, b.y + b.h/2);
@@ -1716,11 +1745,31 @@ function generateLevel(lv, L){
     return Math.min(max, base + inc);
   }
 
-  function spawnPower(x,y){
+  function spawnPower(x,y,opts={}){
     // 隨機挑選一種道具類型（普通或稀有），並根據類型設定掉落速度與顏色標記
-    const rareChance = (GAME_CONFIG.powers.PHOENIX?.rareFactor) || 0.1;
-    const pickRare = RARE_TYPES.length && Math.random() < rareChance;
-    const pool = pickRare ? RARE_TYPES.filter(t=>t!=='NINE'||nineCatEaten<2) : NORMAL_TYPES;
+    const {forceGood=false} = opts;
+    const existingSpecial = powerups.some(p=>p.isSpecial);
+    let pool;
+    if(forceGood){
+      pool = ALL_TYPES.filter(k => GAME_CONFIG.powers[k].type !== 'debuff');
+      if(existingSpecial){
+        pool = pool.filter(k => {
+          const t = GAME_CONFIG.powers[k].type;
+          return t !== 'special' && t !== 'rare';
+        });
+      }
+    }else{
+      const rareChance = (GAME_CONFIG.powers.PHOENIX?.rareFactor) || 0.1;
+      let pickRare = RARE_TYPES.length && Math.random() < rareChance;
+      if(existingSpecial) pickRare = false;
+      pool = pickRare ? RARE_TYPES.filter(t=>t!=='NINE'||nineCatEaten<2) : NORMAL_TYPES;
+      if(existingSpecial){
+        pool = pool.filter(k => {
+          const t = GAME_CONFIG.powers[k].type;
+          return t !== 'special' && t !== 'rare';
+        });
+      }
+    }
     if(!pool.length) return;
     const type = pool[Math.floor(Math.random()*pool.length)];
     const def = GAME_CONFIG.powers[type];
@@ -3062,7 +3111,7 @@ function generateLevel(lv, L){
               const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
               revealBrickArea(bk);
               if(inRampage || b.piercing) playSFX('pierce');
-              if(Math.random()<dropRateForLevel(level)) spawnPower(cx-12,cy);
+              maybeDropFromBrick(bk);
               if(bk.explosive){ explodeAt(cx,cy); } else { bricks.splice(hit,1); }
             }
           }
