@@ -122,28 +122,29 @@
       desc: '極光絲緞：冰藍呼吸＋輕雪＋低對比極光束；2.2s。'
     },
 
-    firePhoenix: {
-      label: '火焰．鳳羽流光',
-      selectLabel: '火焰．鳳羽流光',
-      cssSkin: '火焰．鳳羽流光',
-      lifeIcon: '🔥',
+    solarFlare: {
+      label: '烈陽．炙金幻焰',
+      selectLabel: '烈陽．炙金幻焰',
+      cssSkin: '烈陽．炙金幻焰',
+      lifeIcon: '☀️',
       cssVars: {
         '--fxViz': '1',
         '--panelPattern':
-          'radial-gradient(140px 100px at 80% 20%, rgba(255,80,20,.08), transparent 60%), radial-gradient(120px 80px at 20% 80%, rgba(255,160,60,.06), transparent 60%)'
+          'radial-gradient(150px 110px at 80% 20%, rgba(255,170,40,.08), transparent 60%), radial-gradient(130px 90px at 20% 80%, rgba(255,120,30,.06), transparent 60%)'
       },
       canvas: {
-        base: [255, 90, 20],
-        hi: [255, 240, 200],
-        period: 1800,
+        base: [255, 140, 40],
+        hi: [255, 255, 240],
+        period: 2000,
         effects: {
-          embers: { count: 220, omega: 0.0023, center: [0.5, 0.6] },
-          prism: { beams: 8, speed: 0.0005, alpha: 0.08, spread: 0.8, hueShift: 20 },
-          diffuse: {}
+          embers: { count: 200, omega: 0.0018, center: [0.5, 0.55] },
+          sparks: { count: 80 },
+          prism: { beams: 10, speed: 0.0004, alpha: 0.08, spread: 0.78, hueShift: 24 },
+          pulse: { color: [255, 180, 60], thickness: 6, intervalMul: 1.1 }
         },
-        bg: ['#2a0b0b', '#1a0703', '#100201']
+        bg: ['#3a1000', '#200600', '#120200']
       },
-      desc: '鳳羽流光：暖橘呼吸＋旋渦炭火與金色光束，1.8s 呼吸。'
+      desc: '炙金幻焰：金橙呼吸＋旋轉熾燼與脈衝光束，2s 週期。'
     }
   };
 
