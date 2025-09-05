@@ -170,6 +170,14 @@
     .gallery-page .viewer{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.85);z-index:3}
     .gallery-page .viewer img{max-width:94vw;max-height:88vh;border-radius:16px;box-shadow:0 30px 120px rgba(0,0,0,.6)}
 
+    /* Leaderboard overlay */
+    .rank-page{position:fixed;inset:0;display:none;z-index:75;align-items:center;justify-content:center;pointer-events:auto}
+    .rank-page .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.8)}
+    .rank-page .content{position:relative;z-index:2;width:min(96vw,960px);max-height:92vh;display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(10,14,30,.95),rgba(10,14,30,.88));border:1px solid var(--glass-stroke);border-radius:16px;padding:12px;box-shadow:0 20px 90px rgba(0,0,0,.5)}
+    .rank-page .close{align-self:flex-end;cursor:pointer;font-size:24px;line-height:1}
+    .rank-page table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
+    .rank-page th,.rank-page td{border:1px solid var(--stroke);padding:4px 6px;text-align:center}
+
     /* Win and Game Over overlays */
     .win{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:6;pointer-events:auto}
     .win.show{display:flex;}
@@ -400,6 +408,32 @@ select optgroup { color: #0b1022; }
         </div>
       </div>
 
+      <div class="rank-page" id="rankPage">
+        <div class="backdrop"></div>
+        <div class="content">
+          <div class="close" id="rankClose">❌</div>
+          <h2 style="text-align:center;margin:4px 0 8px;">排行榜</h2>
+          <table id="rankTable">
+            <thead>
+              <tr>
+                <th>名次</th>
+                <th>玩家</th>
+                <th>分數</th>
+                <th>消耗生命</th>
+                <th>接球數</th>
+                <th>增益次數</th>
+                <th>減益次數</th>
+                <th>殺敵數</th>
+                <th>殺Boss數</th>
+                <th>最快死亡</th>
+                <th>最久存活</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="win" id="win">
         <div class="backdrop"></div>
         <div class="thumb-ring" id="ring"></div>
@@ -408,7 +442,7 @@ select optgroup { color: #0b1022; }
           <div style="font-size:28px;margin:6px 0;">總分數：<span id="finalScore">0</span></div>
           <div id="statsWin" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:360px"></div>
           <div class="small">作者： ChatGPT　／　指導者： Rock</div>
-          <div class="again"><button class="btn" id="againBtn">再玩一次</button></div>
+          <div class="again"><button class="btn" id="uploadWin">上傳排行榜</button> <button class="btn" id="againBtn">再玩一次</button></div>
         </div>
       </div>
 
@@ -418,7 +452,7 @@ select optgroup { color: #0b1022; }
           <h2>遊戲結束</h2>
           <div style="font-size:28px;margin:6px 0;">最終分數：<span id="finalScore2">0</span></div>
           <div id="statsOver" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:320px"></div>
-          <div class="again"><button class="btn" id="retryBtn">再次遊戲</button></div>
+          <div class="again"><button class="btn" id="uploadOver">上傳排行榜</button> <button class="btn" id="retryBtn">再次遊戲</button></div>
         </div>
       </div>
       
@@ -439,6 +473,7 @@ select optgroup { color: #0b1022; }
 <script src="skin.js"></script>
 <script>
 (() => {
+  const RANK_API = 'https://script.google.com/macros/s/AKfycbxGZBXeKhFiyEggVD26NO-jLp5sAR7YrPiIM_O3XG95wADsNLKRszFLi8k2EOVLUBUC/exec';
   // === 設定 ===
   const GAME_CONFIG = {
     totalLevels: 20,
@@ -521,7 +556,7 @@ select optgroup { color: #0b1022; }
   const scoreEl=document.getElementById('score'), levelEl=document.getElementById('level'), livesEl=document.getElementById('lives');
   const pauseBtn=document.getElementById('pauseBtn'), resetBtn=document.getElementById('resetBtn'), fsBtn=document.getElementById('fsBtn');
   const soundBtn=document.getElementById('soundBtn'), saveBtn=document.getElementById('saveBtn'), loadBtn=document.getElementById('loadBtn'), clearSaveBtn=document.getElementById('clearSaveBtn');
-  const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn'), galleryBtn=document.getElementById('galleryBtn');
+  const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn'), galleryBtn=document.getElementById('galleryBtn'), rankBtn=document.getElementById('rankBtn');
   const centerNote=document.getElementById('centerNote'), noteTitle=document.getElementById('noteTitle'), noteText=document.getElementById('noteText'), noteBox=document.getElementById('noteBox');
   const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs'), promptsDock=document.getElementById('promptsDock');
   const ledStyleSel=document.getElementById('ledStyle');
@@ -544,6 +579,10 @@ select optgroup { color: #0b1022; }
 
   // Gallery page elements
   const galleryPage=document.getElementById('galleryPage'), galleryThumbs=document.getElementById('galleryThumbs'), galleryClose=document.getElementById('galleryClose'), galleryPrev=document.getElementById('galleryPrev'), galleryNext=document.getElementById('galleryNext'), galleryPageInfo=document.getElementById('galleryPageInfo'), galleryViewer=document.getElementById('galleryViewer'), galleryViewerImg=document.getElementById('galleryViewerImg');
+
+  // Rank page elements
+  const rankPage=document.getElementById('rankPage'), rankClose=document.getElementById('rankClose'), rankTableBody=document.querySelector('#rankTable tbody');
+  const uploadWin=document.getElementById('uploadWin'), uploadOver=document.getElementById('uploadOver');
 
   // === Gallery page logic ===
   let galleryPageIdx = 0;
@@ -589,6 +628,69 @@ select optgroup { color: #0b1022; }
   galleryBtn?.addEventListener('click', ()=>{
     openGalleryPage();
   }, {passive:true});
+
+  // === Rank page logic ===
+  async function fetchLeaderboard(){
+    const res = await fetch(RANK_API);
+    if(!res.ok) throw new Error('Network response was not ok');
+    return await res.json();
+  }
+  function renderLeaderboard(data){
+    rankTableBody.innerHTML='';
+    data.sort((a,b)=>b[2]-a[2]);
+    data.slice(0,20).forEach((row,i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${i+1}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td><td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td><td>${row[8]}</td><td>${row[9]}</td><td>${row[10]}</td>`;
+      rankTableBody.appendChild(tr);
+    });
+  }
+  async function openRankPage(){
+    document.getElementById('optMenu')?.classList.remove('show');
+    rankPage.style.display='flex';
+    rankTableBody.innerHTML='<tr><td colspan="11">載入中...</td></tr>';
+    window.__setMenuPause?.(true);
+    try{
+      const data = await fetchLeaderboard();
+      renderLeaderboard(data);
+    }catch(e){
+      rankTableBody.innerHTML='<tr><td colspan="11">載入失敗</td></tr>';
+    }
+  }
+  function closeRankPage(){
+    rankPage.style.display='none';
+    if(!menusOpen()) window.__setMenuPause?.(false);
+  }
+  rankClose?.addEventListener('click', closeRankPage, {passive:true});
+  rankBtn?.addEventListener('click', openRankPage, {passive:true});
+
+  async function uploadScore(){
+    const name = prompt('請輸入玩家名稱：');
+    if(!name) return;
+    const payload = {
+      name,
+      score,
+      lives: stats.livesUsed,
+      catches: stats.catches,
+      powerUps: stats.buffs,
+      powerDowns: stats.debuffs,
+      enemiesKilled: stats.eliteKills,
+      bossKilled: stats.bossKills,
+      fastestDeath: stats.fastestDeath===Infinity?0:stats.fastestDeath,
+      longestSurvival: stats.longestLife
+    };
+    try{
+      const res = await fetch(RANK_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      if(res.ok){
+        alert('上傳成功');
+      }else{
+        alert('上傳失敗');
+      }
+    }catch(e){
+      alert('上傳失敗');
+    }
+  }
+  uploadWin?.addEventListener('click', uploadScore, {passive:true});
+  uploadOver?.addEventListener('click', uploadScore, {passive:true});
 
   // === Skin initialization ===
   // Populate the skin dropdown and set up the current skin.  Skins are
@@ -646,7 +748,8 @@ select optgroup { color: #0b1022; }
   function menusOpen(){
     return !!(
       document.querySelector('#soundMenu.show, #optMenu.show') ||
-      (galleryPage && galleryPage.style.display && galleryPage.style.display !== 'none')
+      (galleryPage && galleryPage.style.display && galleryPage.style.display !== 'none') ||
+      (rankPage && rankPage.style.display && rankPage.style.display !== 'none')
     );
   }
 
