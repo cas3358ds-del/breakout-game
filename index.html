@@ -169,9 +169,6 @@
     .gallery-page .nav{display:flex;gap:12px;justify-content:center;padding-top:8px}
     .gallery-page .viewer{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.85);z-index:3}
     .gallery-page .viewer img{max-width:94vw;max-height:88vh;border-radius:16px;box-shadow:0 30px 120px rgba(0,0,0,.6)}
-    #rankTable{width:100%;border-collapse:collapse;text-align:left}
-    #rankTable th,#rankTable td{padding:4px 8px;border-bottom:1px solid var(--stroke)}
-    #rankTable th:first-child,#rankTable td:first-child{text-align:center;width:2em}
 
     /* Win and Game Over overlays */
     .win{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:6;pointer-events:auto}
@@ -403,19 +400,6 @@ select optgroup { color: #0b1022; }
         </div>
       </div>
 
-      <div class="gallery-page" id="rankPage">
-        <div class="backdrop"></div>
-        <div class="content">
-          <div class="close" id="rankClose">❌</div>
-          <table id="rankTable">
-            <thead>
-              <tr><th>#</th><th>玩家</th><th>分數</th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-
       <div class="win" id="win">
         <div class="backdrop"></div>
         <div class="thumb-ring" id="ring"></div>
@@ -424,7 +408,7 @@ select optgroup { color: #0b1022; }
           <div style="font-size:28px;margin:6px 0;">總分數：<span id="finalScore">0</span></div>
           <div id="statsWin" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:360px"></div>
           <div class="small">作者： ChatGPT　／　指導者： Rock</div>
-          <div class="again"><button class="btn" id="uploadWinBtn">上傳排行榜</button> <button class="btn" id="againBtn">再玩一次</button></div>
+          <div class="again"><button class="btn" id="againBtn">再玩一次</button></div>
         </div>
       </div>
 
@@ -434,7 +418,7 @@ select optgroup { color: #0b1022; }
           <h2>遊戲結束</h2>
           <div style="font-size:28px;margin:6px 0;">最終分數：<span id="finalScore2">0</span></div>
           <div id="statsOver" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:320px"></div>
-          <div class="again"><button class="btn" id="uploadOverBtn">上傳排行榜</button> <button class="btn" id="retryBtn">再次遊戲</button></div>
+          <div class="again"><button class="btn" id="retryBtn">再次遊戲</button></div>
         </div>
       </div>
       
@@ -537,11 +521,10 @@ select optgroup { color: #0b1022; }
   const scoreEl=document.getElementById('score'), levelEl=document.getElementById('level'), livesEl=document.getElementById('lives');
   const pauseBtn=document.getElementById('pauseBtn'), resetBtn=document.getElementById('resetBtn'), fsBtn=document.getElementById('fsBtn');
   const soundBtn=document.getElementById('soundBtn'), saveBtn=document.getElementById('saveBtn'), loadBtn=document.getElementById('loadBtn'), clearSaveBtn=document.getElementById('clearSaveBtn');
-  const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn'), galleryBtn=document.getElementById('galleryBtn'), rankBtn=document.getElementById('rankBtn');
+  const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn'), galleryBtn=document.getElementById('galleryBtn');
   const centerNote=document.getElementById('centerNote'), noteTitle=document.getElementById('noteTitle'), noteText=document.getElementById('noteText'), noteBox=document.getElementById('noteBox');
   const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs'), promptsDock=document.getElementById('promptsDock');
   const ledStyleSel=document.getElementById('ledStyle');
-  const RANK_URL = 'https://script.google.com/macros/s/AKfycbxKUsTQid-zRd2pW2XR1llU6n_D6Wh_eONBHQudqNXjmQ8WJMxZbWCeOmZwxBYW8vhV/exec';
 
   // 新增元素參考
   const heartsEl = document.getElementById('hearts');
@@ -552,16 +535,15 @@ select optgroup { color: #0b1022; }
   const bgmOnEl = document.getElementById('bgmOn');
   const skinSel = document.getElementById('skinSel');
   const gallery=document.getElementById('gallery'), galleryImg=document.getElementById('galleryImg');
-  const win=document.getElementById('win'), ring=document.getElementById('ring'), finalScore=document.getElementById('finalScore'), againBtn=document.getElementById('againBtn'), uploadWinBtn=document.getElementById('uploadWinBtn');
+  const win=document.getElementById('win'), ring=document.getElementById('ring'), finalScore=document.getElementById('finalScore'), againBtn=document.getElementById('againBtn');
   document.getElementById('retryBtn')?.addEventListener('click', ()=>{ gameover.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });
 
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
   const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2');
-  const retryBtn=document.getElementById('retryBtn'), uploadOverBtn=document.getElementById('uploadOverBtn');
+  const retryBtn=document.getElementById('retryBtn');
 
   // Gallery page elements
   const galleryPage=document.getElementById('galleryPage'), galleryThumbs=document.getElementById('galleryThumbs'), galleryClose=document.getElementById('galleryClose'), galleryPrev=document.getElementById('galleryPrev'), galleryNext=document.getElementById('galleryNext'), galleryPageInfo=document.getElementById('galleryPageInfo'), galleryViewer=document.getElementById('galleryViewer'), galleryViewerImg=document.getElementById('galleryViewerImg');
-  const rankPage=document.getElementById('rankPage'), rankClose=document.getElementById('rankClose'), rankTableBody=document.querySelector('#rankTable tbody');
 
   // === Gallery page logic ===
   let galleryPageIdx = 0;
@@ -607,38 +589,6 @@ select optgroup { color: #0b1022; }
   galleryBtn?.addEventListener('click', ()=>{
     openGalleryPage();
   }, {passive:true});
-
-  // === Leaderboard logic ===
-  function renderRankTable(list){
-    rankTableBody.innerHTML='';
-    list.forEach((row,i)=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${i+1}</td><td>${row[1]}</td><td>${row[2]}</td>`;
-      rankTableBody.appendChild(tr);
-    });
-  }
-  function openRankPage(){
-    fetch(`${RANK_URL}?top=1`).then(r=>r.json()).then(d=>{
-      renderRankTable(d);
-      rankPage.style.display='flex';
-      window.__setMenuPause?.(true);
-    }).catch(()=>{
-      rankTableBody.innerHTML='<tr><td colspan="3">無法取得資料</td></tr>';
-      rankPage.style.display='flex';
-      window.__setMenuPause?.(true);
-    });
-  }
-  function closeRankPage(){
-    rankPage.style.display='none';
-    if(!menusOpen()) window.__setMenuPause?.(false);
-  }
-  rankClose?.addEventListener('click', closeRankPage, {passive:true});
-  rankBtn?.addEventListener('click', ()=>{
-    document.getElementById('optMenu')?.classList.remove('show');
-    openRankPage();
-  }, {passive:true});
-  uploadWinBtn?.addEventListener('click', uploadScore, {passive:true});
-  uploadOverBtn?.addEventListener('click', uploadScore, {passive:true});
 
   // === Skin initialization ===
   // Populate the skin dropdown and set up the current skin.  Skins are
@@ -696,26 +646,8 @@ select optgroup { color: #0b1022; }
   function menusOpen(){
     return !!(
       document.querySelector('#soundMenu.show, #optMenu.show') ||
-      (galleryPage && galleryPage.style.display && galleryPage.style.display !== 'none') ||
-      (rankPage && rankPage.style.display && rankPage.style.display !== 'none')
+      (galleryPage && galleryPage.style.display && galleryPage.style.display !== 'none')
     );
-  }
-
-  function uploadScore(){
-    const name = prompt('輸入玩家名稱：');
-    if(!name) return;
-    const payload={
-      name,
-      score,
-      lives,
-      kills: stats.eliteKills,
-      bossKills: stats.bossKills,
-      bestKillTime: stats.fastestDeath===Infinity?0:Number(stats.fastestDeath.toFixed(2)),
-      longestLife: Number(stats.longestLife.toFixed(2))
-    };
-    fetch(RANK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-      .then(r=>r.json()).then(()=>{alert('上傳成功');})
-      .catch(()=>{alert('上傳失敗');});
   }
 
   // 關閉視窗按鈕（關閉後立即倒數、繼續遊戲）
