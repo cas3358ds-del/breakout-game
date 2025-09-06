@@ -3594,14 +3594,27 @@ function boot(){
       }
     }
     if(eff.gears){
-      for(let i=0;i<eff.gears.count;i++){
-        const r=(eff.gears.sizeMin||40)+Math.random()*((eff.gears.sizeMax||120)-(eff.gears.sizeMin||40));
-        const period=eff.gears.rotationMs||30000;
-        const omega=(Math.random()<0.5?-1:1)*2*Math.PI/period;
-        const x=Math.random()*w;
-        const y=h*0.55 + Math.random()*h*0.45; // avoid upper brick area
-        const inner=0.55+Math.random()*0.2;
-        gears.push({x,y,r,teeth:8+Math.floor(Math.random()*5),inner,rot:Math.random()*Math.PI*2,omega});
+      const period=eff.gears.rotationMs||30000;
+      if(eff.gears.layout){
+        const minDim=Math.min(w,h);
+        gears=eff.gears.layout.map((g,i)=>{
+          const r=g.r*minDim;
+          const x=g.x*w;
+          const y=g.y*h;
+          const inner=g.inner||0.6;
+          const dir=g.dir!=null?g.dir:(i%2? -1:1);
+          const teeth=g.teeth||12;
+          return {x,y,r,teeth,inner,rot:0,omega:dir*2*Math.PI/period};
+        });
+      }else{
+        for(let i=0;i<eff.gears.count;i++){
+          const r=(eff.gears.sizeMin||40)+Math.random()*((eff.gears.sizeMax||120)-(eff.gears.sizeMin||40));
+          const omega=(Math.random()<0.5?-1:1)*2*Math.PI/period;
+          const x=Math.random()*w;
+          const y=h*0.55 + Math.random()*h*0.45; // avoid upper brick area
+          const inner=0.55+Math.random()*0.2;
+          gears.push({x,y,r,teeth:8+Math.floor(Math.random()*5),inner,rot:Math.random()*Math.PI*2,omega});
+        }
       }
     }
     if(eff.sun) sunOpt=eff.sun;
@@ -3787,11 +3800,11 @@ function boot(){
           }
           ctx.closePath();
           const grad=ctx.createRadialGradient(0,0,g.r*0.1,0,0,g.r);
-          grad.addColorStop(0,'rgba(255,255,255,0.12)');
-          grad.addColorStop(1,'rgba(160,120,60,0.02)');
+          grad.addColorStop(0,'rgba(255,255,255,0.06)');
+          grad.addColorStop(1,'rgba(160,120,60,0.01)');
           ctx.fillStyle=grad;
           ctx.fill();
-          ctx.strokeStyle='rgba(220,180,120,0.15)';
+          ctx.strokeStyle='rgba(220,180,120,0.05)';
           ctx.lineWidth=g.r*0.06;
           ctx.stroke();
           ctx.beginPath();
