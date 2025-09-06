@@ -165,7 +165,8 @@
       hi: [255, 230, 180],
       period: 2100,
       effects: {
-        gears: { count: 6, sizeMin: 40, sizeMax: 100, speedMin: 0.0004, speedMax: 0.0012 },
+        // 背景齒輪：大小不一、30 秒轉一圈
+        gears: { count: 8, sizeMin: 40, sizeMax: 120, rotationMs: 30000 },
         sparks: { count: 40 }
       },
       bg: ['#3d2b1f', '#22160e', '#0e0b08']
