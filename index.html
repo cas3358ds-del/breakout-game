@@ -3527,7 +3527,7 @@ function boot(){
 // === Prism / Rainbow FX 引擎 ===
 (function(){
   let rafId = 0, ctx = null, cvs = null;
-  let t0 = 0;
+  let t0 = 0, prevTs = 0;
   let stars=[], snows=[], clouds=[], embers=[], sparks=[], shards=[], slicers=[], flames=[], gears=[];
   let hexagram=null, scriptRing=null, pulse=null, sunOpt=null, flameOpt=null, ruins=[], webOpt=null;
   let nukeAt=0, nukeEnd=0, diffusePhase=0;
@@ -3595,11 +3595,13 @@ function boot(){
     }
     if(eff.gears){
       for(let i=0;i<eff.gears.count;i++){
-        const r=(eff.gears.sizeMin||40)+Math.random()*((eff.gears.sizeMax||100)-(eff.gears.sizeMin||40));
-        const speed=(eff.gears.speedMin||0.0005)+Math.random()*((eff.gears.speedMax||0.0015)-(eff.gears.speedMin||0.0005));
+        const r=(eff.gears.sizeMin||40)+Math.random()*((eff.gears.sizeMax||120)-(eff.gears.sizeMin||40));
+        const period=eff.gears.rotationMs||30000;
+        const omega=(Math.random()<0.5?-1:1)*2*Math.PI/period;
         const x=Math.random()*w;
         const y=h*0.55 + Math.random()*h*0.45; // avoid upper brick area
-        gears.push({x,y,r,teeth:8+Math.floor(Math.random()*5),rot:Math.random()*Math.PI*2,speed});
+        const inner=0.55+Math.random()*0.2;
+        gears.push({x,y,r,teeth:8+Math.floor(Math.random()*5),inner,rot:Math.random()*Math.PI*2,omega});
       }
     }
     if(eff.sun) sunOpt=eff.sun;
@@ -3753,7 +3755,11 @@ function boot(){
   }
 
   function loop(ts){
-    if(!ctx||!cvs)return; if(!t0) t0=ts; const t=ts-t0; const w=cvs.width,h=cvs.height; ctx.clearRect(0,0,w,h);
+    if(!ctx||!cvs)return;
+    if(!t0){ t0=ts; prevTs=ts; }
+    const t=ts-t0;
+    const dt=ts-prevTs; prevTs=ts;
+    const w=cvs.width,h=cvs.height; ctx.clearRect(0,0,w,h);
     const eff=window.currentSkin&&window.currentSkin.canvas&&window.currentSkin.canvas.effects;
     drawRainbowWash(w,h,t);
     if(eff){
@@ -3767,7 +3773,7 @@ function boot(){
       if(shards.length){ctx.strokeStyle='rgba(220,245,255,0.5)';ctx.lineWidth=1;for(const s of shards){s.x+=Math.cos(s.ang)*2; s.y+=Math.sin(s.ang)*2; if(s.x<-50||s.x>w+50||s.y<-50||s.y>h+50){s.x=Math.random()*w;s.y=-10;}ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+Math.cos(s.ang)*40,s.y+Math.sin(s.ang)*40);ctx.stroke();}}
       if(gears.length){
         for(const g of gears){
-          g.rot+=g.speed;
+          g.rot+=g.omega*dt;
           ctx.save();
           ctx.translate(g.x,g.y);
           ctx.rotate(g.rot);
@@ -3781,18 +3787,18 @@ function boot(){
           }
           ctx.closePath();
           const grad=ctx.createRadialGradient(0,0,g.r*0.1,0,0,g.r);
-          grad.addColorStop(0,'rgba(255,255,255,0.25)');
-          grad.addColorStop(1,'rgba(160,120,60,0.05)');
+          grad.addColorStop(0,'rgba(255,255,255,0.12)');
+          grad.addColorStop(1,'rgba(160,120,60,0.02)');
           ctx.fillStyle=grad;
           ctx.fill();
-          ctx.strokeStyle='rgba(220,180,120,0.3)';
-          ctx.lineWidth=g.r*0.08;
+          ctx.strokeStyle='rgba(220,180,120,0.15)';
+          ctx.lineWidth=g.r*0.06;
           ctx.stroke();
           ctx.beginPath();
-          ctx.arc(0,0,g.r*0.4,0,Math.PI*2);
-          const hub=ctx.createRadialGradient(0,0,g.r*0.05,0,0,g.r*0.4);
-          hub.addColorStop(0,'rgba(80,60,40,0.4)');
-          hub.addColorStop(1,'rgba(60,40,20,0.2)');
+          ctx.arc(0,0,g.r*g.inner,0,Math.PI*2);
+          const hub=ctx.createRadialGradient(0,0,g.r*0.05,0,0,g.r*g.inner);
+          hub.addColorStop(0,'rgba(80,60,40,0.15)');
+          hub.addColorStop(1,'rgba(60,40,20,0.05)');
           ctx.fillStyle=hub;
           ctx.fill();
           ctx.restore();
