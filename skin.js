@@ -122,11 +122,11 @@
       desc: '極光絲緞：冰藍呼吸＋輕雪＋低對比極光束；2.2s。'
     },
 
-      solarFlare: {
-        label: '烈陽．炙金幻焰',
-        selectLabel: '烈陽．炙金幻焰',
-        cssSkin: '烈陽．炙金幻焰',
-        lifeIcon: '☀️',
+  solarFlare: {
+    label: '烈陽．炙金幻焰',
+    selectLabel: '烈陽．炙金幻焰',
+    cssSkin: '烈陽．炙金幻焰',
+    lifeIcon: '☀️',
         cssVars: { '--fxViz': '1', '--panelPattern': 'none' },
         canvas: {
           base: [255, 180, 80],
@@ -146,9 +146,33 @@
           },
           bg: ['#3a1000', '#200600', '#120200']
         },
-        desc: '炙金幻焰：金色呼吸＋底部金焰、淡淡散射光束與緩旋太陽背景，2s 週期。'
-      }
-    };
+    desc: '炙金幻焰：金色呼吸＋底部金焰、淡淡散射光束與緩旋太陽背景，2s 週期。'
+  },
+
+  /**
+   * 機械．蒸汽騎士：蒸汽龐克齒輪與木板質感
+   * 銅黃與黃銅色搭配深木背景，LED 以琥珀色呼吸。
+   * 背景由多組齒輪轉動並伴有火花，HUD 具齒輪紋理。
+   */
+  steamKnight: {
+    label: '機械．蒸汽騎士',
+    selectLabel: '機械．蒸汽騎士',
+    cssSkin: '機械．蒸汽騎士',
+    lifeIcon: '⚙️',
+    cssVars: { '--fxViz': '1' },
+    canvas: {
+      base: [200, 140, 70],
+      hi: [255, 230, 180],
+      period: 2100,
+      effects: {
+        gears: { cluster: true, alpha: 0.32, speed: 0.00025 },
+        sparks: { count: 40 }
+      },
+      bg: ['#3d2b1f', '#22160e', '#0e0b08']
+    },
+    desc: '銅黃齒輪搭深木板，蒸汽管環繞；琥珀 LED 呼吸，工廠齒輪背景。'
+  }
+};
 
   // 對外暴露
   window.SKINS = SKINS;
