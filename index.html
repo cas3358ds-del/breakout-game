@@ -3796,7 +3796,8 @@ function boot(){
           ctx.rotate(g.rot);
           ctx.globalAlpha=0.6;
           const step=2*Math.PI/g.teeth;
-          const tooth=step*0.3;
+          // 讓齒槽寬度與輪齒寬度一致，因此每齒佔一半角度
+          const tooth=step*0.5;
           const root=g.r*0.75;
           ctx.beginPath();
           ctx.moveTo(root,0);
