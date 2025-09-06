@@ -3790,28 +3790,34 @@ function boot(){
           ctx.save();
           ctx.translate(g.x,g.y);
           ctx.rotate(g.rot);
+          const step=2*Math.PI/g.teeth;
+          const tooth=step*0.6;
+          const root=g.r*0.72;
           ctx.beginPath();
-          for(let i=0;i<g.teeth*2;i++){
-            const ang=i*Math.PI/g.teeth;
-            const rad=(i%2===0)?g.r:g.r*0.75;
-            const x=Math.cos(ang)*rad;
-            const y=Math.sin(ang)*rad;
-            if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+          ctx.moveTo(root,0);
+          for(let i=0;i<g.teeth;i++){
+            const a=i*step;
+            ctx.lineTo(root*Math.cos(a), root*Math.sin(a));
+            ctx.lineTo(g.r*Math.cos(a), g.r*Math.sin(a));
+            ctx.lineTo(g.r*Math.cos(a+tooth), g.r*Math.sin(a+tooth));
+            ctx.lineTo(root*Math.cos(a+tooth), root*Math.sin(a+tooth));
           }
           ctx.closePath();
           const grad=ctx.createRadialGradient(0,0,g.r*0.1,0,0,g.r);
-          grad.addColorStop(0,'rgba(255,255,255,0.06)');
+          grad.addColorStop(0,'rgba(255,255,255,0.02)');
           grad.addColorStop(1,'rgba(160,120,60,0.01)');
           ctx.fillStyle=grad;
+          ctx.globalAlpha=0.1;
           ctx.fill();
-          ctx.strokeStyle='rgba(220,180,120,0.05)';
-          ctx.lineWidth=g.r*0.06;
+          ctx.globalAlpha=1;
+          ctx.strokeStyle='rgba(220,180,120,0.02)';
+          ctx.lineWidth=g.r*0.04;
           ctx.stroke();
           ctx.beginPath();
           ctx.arc(0,0,g.r*g.inner,0,Math.PI*2);
           const hub=ctx.createRadialGradient(0,0,g.r*0.05,0,0,g.r*g.inner);
-          hub.addColorStop(0,'rgba(80,60,40,0.15)');
-          hub.addColorStop(1,'rgba(60,40,20,0.05)');
+          hub.addColorStop(0,'rgba(80,60,40,0.08)');
+          hub.addColorStop(1,'rgba(60,40,20,0.03)');
           ctx.fillStyle=hub;
           ctx.fill();
           ctx.restore();
