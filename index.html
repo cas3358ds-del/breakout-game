@@ -295,6 +295,23 @@ select optgroup { color: #0b1022; }
       --btnGlow:0 0 22px rgba(255,160,80,.28);
     }
 
+    /* === 機械．蒸汽騎士 === */
+    body[data-skin="機械．蒸汽騎士"]{
+      --ink:#fff4e6;
+      --muted:#e6cfa6;
+      --stroke:rgba(200,150,80,.4);
+      --bg1:#3d2b1f;
+      --bg2:#1b120b;
+      --hudGrad1:rgba(80,60,40,.6);
+      --hudGrad2:rgba(50,40,30,.44);
+      --glass-1:rgba(255,200,120,.12);
+      --glass-2:rgba(200,150,90,.08);
+      --stageGlass:linear-gradient(180deg, rgba(120,80,40,.05), transparent);
+      --panelPattern:radial-gradient(40px 40px at 20% 30%, rgba(120,80,40,.1), transparent 60%),
+                      radial-gradient(50px 50px at 80% 60%, rgba(160,110,50,.1), transparent 60%);
+      --btnGlow:0 0 18px rgba(255,190,90,.25);
+    }
+
 /* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */
 
 
@@ -1430,6 +1447,13 @@ select optgroup { color: #0b1022; }
         g.gain.setValueAtTime(0.05, now);
         g.gain.exponentialRampToValueAtTime(0.001, now+0.3);
         o.start(now); o.stop(now+0.3); break;
+      case 'steam':
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(800, now);
+        o.frequency.exponentialRampToValueAtTime(200, now+0.4);
+        g.gain.setValueAtTime(0.05, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.4);
+        o.start(now); o.stop(now+0.4); break;
       case 'win':
         o.type='triangle';
         g.gain.setValueAtTime(0.04, now);
@@ -1451,9 +1475,16 @@ select optgroup { color: #0b1022; }
         o.frequency.setValueAtTime(600, now);
         g.gain.setValueAtTime(0.06, now);
         g.gain.exponentialRampToValueAtTime(0.001, now+0.1);
-        o.start(now); o.stop(now+0.1); break;
+    o.start(now); o.stop(now+0.1); break;
     }
   }
+
+  // 專屬蒸汽騎士的按鍵蒸汽音效
+  document.addEventListener('click', (e) => {
+    if(window.currentSkin && window.currentSkin.cssSkin === '機械．蒸汽騎士' && e.target.closest('button')){
+      playSFX('steam');
+    }
+  }, {passive:true});
 
   function startBGM(){
     if(!audioCtx) ensureAudio();
@@ -3497,7 +3528,7 @@ function boot(){
 (function(){
   let rafId = 0, ctx = null, cvs = null;
   let t0 = 0;
-  let stars=[], snows=[], clouds=[], embers=[], sparks=[], shards=[], slicers=[], flames=[];
+  let stars=[], snows=[], clouds=[], embers=[], sparks=[], shards=[], slicers=[], flames=[], gears=[];
   let hexagram=null, scriptRing=null, pulse=null, sunOpt=null, flameOpt=null, ruins=[], webOpt=null;
   let nukeAt=0, nukeEnd=0, diffusePhase=0;
 
@@ -3523,7 +3554,7 @@ function boot(){
 
   function initEffects(eff){
     const w=cvs.width, h=cvs.height;
-    stars=[]; snows=[]; clouds=[]; embers=[]; sparks=[]; shards=[]; slicers=[]; flames=[]; ruins=[];
+    stars=[]; snows=[]; clouds=[]; embers=[]; sparks=[]; shards=[]; slicers=[]; flames=[]; ruins=[]; gears=[];
     hexagram=scriptRing=pulse=null; sunOpt=null; flameOpt=null; nukeAt=0; nukeEnd=0; diffusePhase=0; webOpt=null;
     if(!eff) return;
     if(eff.web) webOpt=eff.web;
@@ -3560,6 +3591,13 @@ function boot(){
           speed:(flameOpt.speedMin||0.3)+Math.random()*((flameOpt.speedMax||0.8)-(flameOpt.speedMin||0.3)),
           ph:Math.random()*Math.PI*2
         });
+      }
+    }
+    if(eff.gears){
+      for(let i=0;i<eff.gears.count;i++){
+        const r=(eff.gears.sizeMin||40)+Math.random()*((eff.gears.sizeMax||100)-(eff.gears.sizeMin||40));
+        const speed=(eff.gears.speedMin||0.0005)+Math.random()*((eff.gears.speedMax||0.0015)-(eff.gears.speedMin||0.0005));
+        gears.push({x:Math.random()*w,y:Math.random()*h,r,teeth:8+Math.floor(Math.random()*5),rot:Math.random()*Math.PI*2,speed});
       }
     }
     if(eff.sun) sunOpt=eff.sun;
@@ -3725,6 +3763,7 @@ function boot(){
       if(clouds.length){ctx.globalAlpha=eff.clouds.alpha||0.15;for(const c of clouds){c.x+=Math.sin(t*0.00005+c.ph)*(eff.clouds.speed||0.002)*50; if(c.x>w+200)c.x=-200;ctx.beginPath();ctx.fillStyle='#ffffff';ctx.arc(c.x,c.y,c.sz,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
       if(embers.length){const cx=w*(eff.embers.center?eff.embers.center[0]:0.5), cy=h*(eff.embers.center?eff.embers.center[1]:0.5);for(const p of embers){p.ph+=eff.embers.omega||0.002;const r=Math.hypot(p.x-cx,p.y-cy);const ang=Math.atan2(p.y-cy,p.x-cx)+ (eff.embers.omega||0.002);p.x=cx+Math.cos(ang)*r; p.y=cy+Math.sin(ang)*r; ctx.fillStyle='rgba(255,120,40,0.8)';ctx.beginPath();ctx.arc(p.x,p.y,2,0,Math.PI*2);ctx.fill();}}
       if(shards.length){ctx.strokeStyle='rgba(220,245,255,0.5)';ctx.lineWidth=1;for(const s of shards){s.x+=Math.cos(s.ang)*2; s.y+=Math.sin(s.ang)*2; if(s.x<-50||s.x>w+50||s.y<-50||s.y>h+50){s.x=Math.random()*w;s.y=-10;}ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+Math.cos(s.ang)*40,s.y+Math.sin(s.ang)*40);ctx.stroke();}}
+      if(gears.length){for(const g of gears){g.rot+=g.speed;ctx.save();ctx.translate(g.x,g.y);ctx.rotate(g.rot);ctx.beginPath();for(let i=0;i<g.teeth*2;i++){const ang=i*Math.PI/g.teeth;const rad=(i%2===0)?g.r:g.r*0.75;const x=Math.cos(ang)*rad;const y=Math.sin(ang)*rad;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();ctx.fillStyle='rgba(160,120,60,0.3)';ctx.fill();ctx.strokeStyle='rgba(255,220,150,0.5)';ctx.lineWidth=g.r*0.1;ctx.stroke();ctx.beginPath();ctx.arc(0,0,g.r*0.4,0,Math.PI*2);ctx.fillStyle='rgba(60,40,20,0.6)';ctx.fill();ctx.restore();}}
       if(sparks.length){for(const sp of sparks){ctx.fillStyle='rgba(255,210,122,0.8)';ctx.fillRect(sp.x,sp.y,2,2);}}
       if(flames.length){for(const f of flames){f.y-=f.speed;f.x+=Math.sin(t*0.002+f.ph)*(flameOpt?.drift||0.3);f.alpha-=0.004;f.size*=0.98;if(f.alpha<=0||f.y<h*(flameOpt?.dieY||0.55)){f.x=Math.random()*w;f.y=h*(flameOpt?.baseY||0.8)+Math.random()*h*0.2;f.size=(flameOpt?.sizeMin||2)+Math.random()*((flameOpt?.sizeMax||6)-(flameOpt?.sizeMin||2));f.alpha=0.5+Math.random()*0.5;f.speed=(flameOpt?.speedMin||0.3)+Math.random()*((flameOpt?.speedMax||0.8)-(flameOpt?.speedMin||0.3));f.ph=Math.random()*Math.PI*2;}ctx.fillStyle=`rgba(255,220,150,${f.alpha})`;ctx.beginPath();ctx.arc(f.x,f.y,f.size,0,Math.PI*2);ctx.fill();}}
       if(sunOpt) drawSun(w,h,t,sunOpt);
