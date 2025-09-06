@@ -3803,13 +3803,25 @@ function boot(){
             ctx.lineTo(root*Math.cos(a+tooth), root*Math.sin(a+tooth));
           }
           ctx.closePath();
-          ctx.fillStyle='rgba(220,225,230,0.05)';
+          const grad=ctx.createRadialGradient(0,0,g.r*0.2,0,0,g.r);
+          grad.addColorStop(0,'rgba(255,240,220,0.15)');
+          grad.addColorStop(0.6,'rgba(200,170,120,0.1)');
+          grad.addColorStop(1,'rgba(90,70,50,0.08)');
+          ctx.fillStyle=grad;
           ctx.fill();
+          ctx.lineWidth=g.r*0.05;
+          ctx.strokeStyle='rgba(255,220,170,0.25)';
+          ctx.stroke();
           ctx.globalCompositeOperation='destination-out';
           ctx.beginPath();
           ctx.arc(0,0,g.r*0.4,0,Math.PI*2);
           ctx.fill();
           ctx.globalCompositeOperation='source-over';
+          ctx.beginPath();
+          ctx.arc(0,0,g.r*0.4,0,Math.PI*2);
+          ctx.lineWidth=g.r*0.03;
+          ctx.strokeStyle='rgba(255,220,170,0.15)';
+          ctx.stroke();
           ctx.restore();
         }
       }
