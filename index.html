@@ -531,10 +531,10 @@ select optgroup { color: #0b1022; }
       ,FIRE:{label:'火焰球(碰撞蓄能10秒爆炸)',type:'buff',durationMs:10000,badge:'🔥'}
       ,POISON:{label:'劇毒球(命中磚每2秒扣血)',type:'buff',durationMs:12000,poison:{tickMs:2000},badge:'☠️'}
       ,BLINK:{label:'瞬移球(彈後1秒頂部落下)',type:'buff',durationMs:10000,blink:{delayMs:1000},badge:'🌀'}
-      ,SWORD:{label:'劍芒裂空',type:'special',durationMs:20000,specialWeight:0.1,badge:'🗡️'}
-      ,STORM:{label:'雷射風暴',type:'special',durationMs:5000,specialWeight:0.1,storm:{},badge:'🌩️'}
-      ,BLACKHOLE:{label:'黑洞吞噬',type:'special',durationMs:20000,specialWeight:0.1,badge:'⚫'}
-      ,ANNIHIL:{label:'萬物銷毀',type:'special',specialWeight:0.1,annihil:{speedMul:3},badge:'💥'}
+      ,SWORD:{label:'劍芒裂空',desc:'飛劍掃場',type:'special',durationMs:20000,specialWeight:0.1,badge:'🗡️'}
+      ,STORM:{label:'雷射風暴',desc:'全場掃射',type:'special',durationMs:5000,specialWeight:0.1,storm:{},badge:'🌩️'}
+      ,BLACKHOLE:{label:'黑洞吞噬',desc:'黑洞吞場',type:'special',durationMs:20000,specialWeight:0.1,badge:'⚫'}
+      ,ANNIHIL:{label:'萬物銷毀',desc:'隨機毀磚',type:'special',specialWeight:0.1,annihil:{speedMul:3},badge:'💥'}
 
     },
     powerCapsule:{width:24,height:16,fallVy:2.2},
@@ -1985,10 +1985,11 @@ function generateLevel(lv, L){
   function applyPower(type){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type) stats.buffs++; }
     const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
+    const fullLabel = def.label + (def.desc ? `(${def.desc})` : '');
     let promptText='';
-    if(def.type==='buff') promptText=`增益：${def.label}`;
-    else if(def.type==='debuff') promptText=`減益：${def.label}`;
-    else if(def.type==='special' || def.type==='rare') promptText=`特殊：${def.label}`;
+    if(def.type==='buff') promptText=`增益：${fullLabel}`;
+    else if(def.type==='debuff') promptText=`減益：${fullLabel}`;
+    else if(def.type==='special' || def.type==='rare') promptText=`特殊：${fullLabel}`;
     const exist=buffs[type];
     let active=false;
     if(type==='LONG'){ active = exist && exist.stacks && exist.stacks.some(t=>t>now); }
@@ -2305,7 +2306,8 @@ function generateLevel(lv, L){
       for(const k of Object.keys(GAME_CONFIG.powers)){
         const p = GAME_CONFIG.powers[k];
         if(p.type === 'buff'){
-          html += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
+          const label = p.label + (p.desc ? `(${p.desc})` : '');
+          html += `${badgeIcon(k)} <em>${k}</em>：${label}<br>`;
         }
       }
       html += '</div>';
@@ -2314,7 +2316,8 @@ function generateLevel(lv, L){
       for(const k of Object.keys(GAME_CONFIG.powers)){
         const p = GAME_CONFIG.powers[k];
         if(p.type === 'special' || p.type === 'rare'){
-          html += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
+          const label = p.label + (p.desc ? `(${p.desc})` : '');
+          html += `${badgeIcon(k)} <em>${k}</em>：${label}<br>`;
         }
       }
       html += '</div>';
@@ -2323,7 +2326,8 @@ function generateLevel(lv, L){
       for(const k of Object.keys(GAME_CONFIG.powers)){
         const p = GAME_CONFIG.powers[k];
         if(p.type === 'debuff'){
-          html += `${badgeIcon(k)} <em>${k}</em>：${p.label}<br>`;
+          const label = p.label + (p.desc ? `(${p.desc})` : '');
+          html += `${badgeIcon(k)} <em>${k}</em>：${label}<br>`;
         }
       }
       html += '</div>';
