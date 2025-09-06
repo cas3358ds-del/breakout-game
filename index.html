@@ -295,8 +295,8 @@ select optgroup { color: #0b1022; }
       --btnGlow:0 0 22px rgba(255,160,80,.28);
     }
 
-    /* === 機械．蒸汽騎士 === */
-    body[data-skin="機械．蒸汽騎士"]{
+    /* === 機械．齒輪騎士 === */
+    body[data-skin="機械．齒輪騎士"]{
       --ink:#fff4e6;
       --muted:#e6cfa6;
       --stroke:rgba(200,150,80,.4);
@@ -1479,9 +1479,9 @@ select optgroup { color: #0b1022; }
     }
   }
 
-  // 專屬蒸汽騎士的按鍵蒸汽音效
+  // 專屬齒輪騎士的按鍵蒸汽音效
   document.addEventListener('click', (e) => {
-    if(window.currentSkin && window.currentSkin.cssSkin === '機械．蒸汽騎士' && e.target.closest('button')){
+    if(window.currentSkin && window.currentSkin.cssSkin === '機械．齒輪騎士' && e.target.closest('button')){
       playSFX('steam');
     }
   }, {passive:true});
@@ -3794,9 +3794,10 @@ function boot(){
           ctx.save();
           ctx.translate(g.x,g.y);
           ctx.rotate(g.rot);
+          ctx.globalAlpha=0.6;
           const step=2*Math.PI/g.teeth;
-          const tooth=step*0.5;
-          const root=g.r*0.6;
+          const tooth=step*0.3;
+          const root=g.r*0.75;
           ctx.beginPath();
           ctx.moveTo(root,0);
           for(let i=0;i<g.teeth;i++){
@@ -3808,13 +3809,13 @@ function boot(){
           }
           ctx.closePath();
           const grad=ctx.createRadialGradient(0,0,g.r*0.2,0,0,g.r);
-          grad.addColorStop(0,'rgba(255,240,220,0.15)');
-          grad.addColorStop(0.6,'rgba(200,170,120,0.1)');
-          grad.addColorStop(1,'rgba(90,70,50,0.08)');
+          grad.addColorStop(0,'rgba(255,240,220,0.1)');
+          grad.addColorStop(0.6,'rgba(200,170,120,0.05)');
+          grad.addColorStop(1,'rgba(90,70,50,0.03)');
           ctx.fillStyle=grad;
           ctx.fill();
-          ctx.lineWidth=g.r*0.05;
-          ctx.strokeStyle='rgba(255,220,170,0.25)';
+          ctx.lineWidth=g.r*0.04;
+          ctx.strokeStyle='rgba(255,220,170,0.15)';
           ctx.stroke();
           ctx.globalCompositeOperation='destination-out';
           ctx.beginPath();
@@ -3823,8 +3824,8 @@ function boot(){
           ctx.globalCompositeOperation='source-over';
           ctx.beginPath();
           ctx.arc(0,0,g.r*0.4,0,Math.PI*2);
-          ctx.lineWidth=g.r*0.03;
-          ctx.strokeStyle='rgba(255,220,170,0.15)';
+          ctx.lineWidth=g.r*0.025;
+          ctx.strokeStyle='rgba(255,220,170,0.1)';
           ctx.stroke();
           ctx.restore();
         }
