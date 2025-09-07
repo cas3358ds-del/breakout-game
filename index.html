@@ -525,6 +525,8 @@ select optgroup { color: #0b1022; }
       ,CHAIN:{label:'鎖鏈球(命中磚鎖10秒)',type:'debuff',durationMs:5000,chain:{lockMs:10000},badge:'⛓️'}
       ,NARROW:{label:'平台縮小(寬度減半)',type:'debuff',durationMs:5000,narrow:true,badge:'📉'}
       ,HOLE:{label:'平台空洞(中間1/3無效)',type:'debuff',durationMs:5000,hole:true,badge:'🕳'}
+      ,PADSPIN:{label:'平台翻轉',desc:'平台旋轉8秒',type:'debuff',durationMs:8000,spin:{periodMs:8000},badge:'🌀'}
+      ,PADBOOM:{label:'平台爆炸',desc:'閃爍後消失3秒',type:'debuff',explosion:{flashMs:3000,goneMs:3000},badge:'💣'}
       ,FLIP:{label:'天地翻轉(改為左側擋板)',type:'special',durationMs:15000,specialWeight:0.1,badge:'🔄'}
       ,GODSPEED:{label:'神速流轉(不落地/忽略效果/滿速)',type:'special',durationMs:10000,specialWeight:0.1,badge:'☄️'}
       ,LASER:{label:'自動雷射(每2秒兩端發射)',type:'special',durationMs:10000,specialWeight:0.1,laser:{intervalMs:2000},badge:'🔫'}
@@ -1144,6 +1146,7 @@ select optgroup { color: #0b1022; }
   // 天地翻轉狀態
   let orientLeft=false; // true 時改為左側擋板模式
   let paddleStunUntil=0;
+  let paddleGoneUntil=0;
 
 
   function spawnParticles(x,y,color,count=10,spread=1.6,speed=3,size=3){
@@ -1265,7 +1268,7 @@ select optgroup { color: #0b1022; }
   }
 
   // === Buff 狀態 ===
-  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0},FIRE:{active:false,until:0},POISON:{active:false,until:0},BLINK:{active:false,until:0},SWORD:{active:false,until:0},STORM:{active:false,until:0},BLACKHOLE:{active:false,until:0,deaths:0},ANNIHIL:{active:false,until:0,start:0,next:0}};
+  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},PADSPIN:{active:false,until:0,start:0},PADBOOM:{active:false,until:0,explodeAt:0,returnAt:0,exploded:false},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0},FIRE:{active:false,until:0},POISON:{active:false,until:0},BLINK:{active:false,until:0},SWORD:{active:false,until:0},STORM:{active:false,until:0},BLACKHOLE:{active:false,until:0,deaths:0},ANNIHIL:{active:false,until:0,start:0,next:0}};
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
@@ -1780,7 +1783,7 @@ function generateLevel(lv, L){
           b.hp -= 1;
           if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; }
         }else{
-          revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10;
+          revealBrickArea(b); maybeDropFromBrick(b,0.3); bricks.splice(i,1); score+=10;
         }
         spawnParticles(bx,by,'#ffdd99',14,1.7,2.6,3);
       }
@@ -1882,7 +1885,7 @@ function generateLevel(lv, L){
     }
     return cnt;
   }
-  function maybeDropFromBrick(b){
+  function maybeDropFromBrick(b, rateMul=1){
     if(!b || b.unbreakable) return;
     // Boss不會掉落一般增益（保持平衡）
     if(b.boss) return;
@@ -1906,6 +1909,7 @@ function generateLevel(lv, L){
       else factor=0.1;
       rate*=factor;
     }
+    rate *= rateMul;
     if(Math.random()<rate) spawnPower(b.x + b.w/2 - 12, b.y + b.h/2);
   }
 
@@ -2042,6 +2046,8 @@ function generateLevel(lv, L){
     if(type==='CHAIN'){ buffs.CHAIN.active=true; buffs.CHAIN.until=now+def.durationMs; }
     if(type==='NARROW'){ buffs.NARROW.active=true; buffs.NARROW.until=now+def.durationMs; }
     if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+def.durationMs; }
+    if(type==='PADSPIN'){ buffs.PADSPIN.active=true; buffs.PADSPIN.until=now+def.durationMs; buffs.PADSPIN.start=now; }
+    if(type==='PADBOOM'){ buffs.PADBOOM.active=true; buffs.PADBOOM.explodeAt=now+(def.explosion?.flashMs||3000); buffs.PADBOOM.returnAt=buffs.PADBOOM.explodeAt+(def.explosion?.goneMs||3000); buffs.PADBOOM.until=buffs.PADBOOM.returnAt; buffs.PADBOOM.exploded=false; }
     if(type==='FLIP'){
       // 天地翻轉：延遲啟用並紀錄起止時間。啟用及結束均由 update 中判斷。
       const delay = 2000;
@@ -2411,6 +2417,8 @@ function generateLevel(lv, L){
 
   // 擋板在不同朝向下的實際矩形
   function paddleRect(){
+    const now = performance.now();
+    if(now < paddleGoneUntil){ return {x:-1000,y:-1000,w:0,h:0}; }
     // 橫向：x,y,w,h；縱向：以 h 為厚度、w 為長度
     if(!orientLeft){
       return {x:paddle.x, y:paddle.y, w:paddle.w, h:paddle.h};
@@ -2742,21 +2750,36 @@ function generateLevel(lv, L){
 
     // 擋板
     const pr=paddleRect();
-    const padGlow=buffs.STICKY.active?'rgba(120,230,220,.6)':((buffs.WIDE.active||buffs.LONG.stacks.length)?'rgba(120,170,255,.6)':'rgba(200,210,255,.4)'); ctx.shadowColor=padGlow; ctx.shadowBlur=20;
-    ctx.fillStyle='#9aaeff';
-    if(!orientLeft){
-      // 水平
-      drawRoundedRect(pr.x,pr.y,pr.w,pr.h,8); ctx.fill();
-      // 空洞
-      if(buffs.HOLE.active){ const gapW=pr.w/3; ctx.clearRect((pr.x+pr.w/3)*scaleX, pr.y*scaleY, gapW*scaleX, pr.h*scaleY); }
-    }else{
-      // 左側垂直
-      drawRoundedRect(pr.x,pr.y,pr.w,pr.h,8); ctx.fill();
-      if(buffs.HOLE.active){ const gapH=pr.h/3; ctx.clearRect(pr.x*scaleX, (pr.y+pr.h/3)*scaleY, pr.w*scaleX, gapH*scaleY); }
+    const nowPad=performance.now();
+    if(nowPad>=paddleGoneUntil){
+      const padGlow=buffs.STICKY.active?'rgba(120,230,220,.6)':((buffs.WIDE.active||buffs.LONG.stacks.length)?'rgba(120,170,255,.6)':'rgba(200,210,255,.4)');
+      ctx.shadowColor=padGlow; ctx.shadowBlur=20;
+      const padW=pr.w*scaleX, padH=pr.h*scaleY;
+      ctx.save();
+      ctx.translate((pr.x+pr.w/2)*scaleX,(pr.y+pr.h/2)*scaleY);
+      let ang=0;
+      if(buffs.PADSPIN.active){ const period=GAME_CONFIG.powers.PADSPIN.spin.periodMs||8000; ang=((nowPad-(buffs.PADSPIN.start||nowPad))%period)/period*2*Math.PI; }
+      ctx.rotate(ang);
+      ctx.fillStyle='#9aaeff';
+      if(buffs.PADBOOM.active && !buffs.PADBOOM.exploded){ ctx.globalAlpha=0.5+0.5*Math.sin(nowPad/100); }
+      const r=8*Math.min(scaleX,scaleY);
+      ctx.beginPath();
+      ctx.moveTo(-padW/2 + r, -padH/2);
+      ctx.arcTo(padW/2, -padH/2, padW/2, padH/2, r);
+      ctx.arcTo(padW/2, padH/2, -padW/2, padH/2, r);
+      ctx.arcTo(-padW/2, padH/2, -padW/2, -padH/2, r);
+      ctx.arcTo(-padW/2, -padH/2, padW/2, -padH/2, r);
+      ctx.closePath();
+      ctx.fill();
+      if(buffs.HOLE.active){
+        if(!orientLeft){ const gapW=padW/3; ctx.clearRect(-padW/2+padW/3, -padH/2, gapW, padH); }
+        else { const gapH=padH/3; ctx.clearRect(-padW/2, -padH/2+padH/3, padW, gapH); }
+      }
+      ctx.restore();
+      ctx.shadowBlur=0;
+      if(buffs.SHIELD.active && !orientLeft){ const g=ctx.createLinearGradient(0,(700-10)*scaleY,0,700*scaleY); g.addColorStop(0,'rgba(120,220,255,0.35)'); g.addColorStop(1,'rgba(120,220,255,0.05)'); ctx.fillStyle=g; ctx.fillRect(0,(700-10)*scaleY,canvas.width,10*scaleY); }
+      if(nowPad<=paddleStunUntil){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle='rgba(255,230,160,0.35)'; drawRoundedRect(pr.x,pr.y,pr.w,pr.h,8); ctx.fill(); ctx.restore(); }
     }
-    ctx.shadowBlur=0;
-    if(buffs.SHIELD.active && !orientLeft){ const g=ctx.createLinearGradient(0,(700-10)*scaleY,0,700*scaleY); g.addColorStop(0,'rgba(120,220,255,0.35)'); g.addColorStop(1,'rgba(120,220,255,0.05)'); ctx.fillStyle=g; ctx.fillRect(0,(700-10)*scaleY,canvas.width,10*scaleY); }
-    if(performance.now()<=paddleStunUntil){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle='rgba(255,230,160,0.35)'; drawRoundedRect(pr.x,pr.y,pr.w,pr.h,8); ctx.fill(); ctx.restore(); }
     // 雷射砲展示
     if(buffs.LASER.active){ ctx.fillStyle='rgba(120,255,120,0.8)'; if(!orientLeft){ ctx.fillRect((pr.x-6)*scaleX, (pr.y-4)*scaleY, 4*scaleX, (pr.h+8)*scaleY); ctx.fillRect((pr.x+pr.w+2)*scaleX, (pr.y-4)*scaleY, 4*scaleX, (pr.h+8)*scaleY); } else { ctx.fillRect((pr.x-4)*scaleX, (pr.y-6)*scaleY, (pr.w+8)*scaleX, 4*scaleY); ctx.fillRect((pr.x-4)*scaleX, (pr.y+pr.h+2)*scaleY, (pr.w+8)*scaleX, 4*scaleY); } }
     if(stormTurret){ const t=stormTurret; ctx.save(); ctx.fillStyle='rgba(200,255,200,0.8)'; ctx.fillRect((t.x-10)*scaleX,(t.y-20)*scaleY,20*scaleX,20*scaleY); if(performance.now()<t.chargeUntil){ const prog=1-(t.chargeUntil-performance.now())/3000; ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(120,255,200,${0.3+0.7*prog})`; ctx.beginPath(); ctx.arc(t.x*scaleX,(t.y-20)*scaleY,30*prog*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); } ctx.restore(); }
@@ -3058,7 +3081,23 @@ function generateLevel(lv, L){
       }
     }
 
-    
+
+    if(buffs.PADBOOM.active){
+      if(!buffs.PADBOOM.exploded && now >= buffs.PADBOOM.explodeAt){
+        const pr = paddleRect();
+        spawnParticles(pr.x+pr.w/2, pr.y+pr.h/2, '#ffdd99', 40, 2.8, 4.0, 4);
+        screenShake = Math.max(screenShake,6);
+        playSFX('explosion');
+        paddleGoneUntil = buffs.PADBOOM.returnAt;
+        buffs.PADBOOM.exploded = true;
+      }
+      if(buffs.PADBOOM.exploded && now >= buffs.PADBOOM.returnAt){
+        buffs.PADBOOM.active = false;
+        buffs.PADBOOM.until = 0;
+        paddleGoneUntil = 0;
+      }
+    }
+
     // 菁英磚技能：每30秒發射，發射前聚氣2秒
     for(const b of bricks){ if(!b.elite) continue; if(b.eliteChargeUntil && now<b.eliteChargeUntil){ /* charging */ } else { if(!b.eliteNext) b.eliteNext = now+30000; if(now>=b.eliteNext){ b.eliteChargeUntil = now+2000; b.eliteNext = now+30000; setTimeout(()=>{ const idx = bricks.indexOf(b); if(idx!==-1){ spawnLionBeamFrom(b.x+b.w/2, b.y+b.h/2); } }, 2000); } } }
 // 鍵盤移動：天地翻轉時改為上下移動（仍使用左右鍵）
