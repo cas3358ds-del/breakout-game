@@ -181,6 +181,38 @@
       bg: ['#3d2b1f', '#22160e', '#0e0b08']
     },
     desc: '銅黃齒輪搭深木板，齒輪鏈轉動；琥珀 LED 呼吸，工廠齒輪背景。'
+  },
+
+  bunnyCream: {
+    label: '兔兔·奶油雲朵',
+    selectLabel: '兔兔·奶油雲朵',
+    cssSkin: '兔兔·奶油雲朵',
+    lifeIcon: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <g fill="#fff" stroke="#000" stroke-linejoin="round" stroke-linecap="round" stroke-width="3">
+        <path d="M20 6c-5 0-8 4-8 9s3 9 8 9 8-4 8-9-3-9-8-9zm24 0c-5 0-8 4-8 9s3 9 8 9 8-4 8-9-3-9-8-9z"/>
+        <path d="M12 34c0 11 9 20 20 20s20-9 20-20-9-20-20-20-20 9-20 20z"/>
+      </g>
+      <g fill="#000">
+        <circle cx="26" cy="34" r="6"/>
+        <circle cx="38" cy="34" r="6"/>
+      </g>
+      <g fill="#fff">
+        <circle cx="24" cy="32" r="2"/>
+        <circle cx="36" cy="32" r="2"/>
+      </g>
+    </svg>`,
+    canvas: {
+      base: [255, 240, 220],
+      hi: [255, 255, 255],
+      period: 3000,
+      effects: {
+        clouds: { count: 8, sizePx: 180, speed: 0.002, alpha: 0.25 },
+        balloons: { intervalMs: 10000, lifeMs: 40000, colors: ['#ff8aa0','#ffd966','#9ad0f5','#cfa0ff','#ffe599'] },
+        ledStrip: { hi: [255,255,255], lo: [255,240,200], period: 3000 }
+      },
+      bg: ['#aee1ff', '#fdfbff', '#ffffff']
+    },
+    desc: '童話兔兔：奶油 HUD、草莓蛋糕按鈕、柔黃白 LED，棉花雲與氣球飄浮，3s 週期。'
   }
 };
 
