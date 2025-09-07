@@ -140,6 +140,17 @@
     .legend{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:12px;color:#cfe0ff;margin-top:6px}
     .legend .item{padding:4px 8px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--stroke);display:flex;align-items:center;gap:4px}
     .legend .box{width:14px;height:14px;border-radius:3px;display:inline-block;vertical-align:middle}
+    #combo{position:absolute;top:8px;right:12px;font-size:32px;font-weight:700;pointer-events:none;opacity:0;transform-origin:top right;transition:opacity .4s,transform .2s;}
+    #combo.show{opacity:1}
+    #combo.tier1{color:#00bfff}
+    #combo.tier2{color:#00ff7f}
+    #combo.tier3{color:#ffa500}
+    #combo.tier4{color:#ff3366}
+    #combo.glow{animation:goldBlink 1s infinite}
+    #combo.pop{animation:comboPop .3s}
+    #combo.glow.pop{animation:goldBlink 1s infinite,comboPop .3s}
+    @keyframes comboPop{0%{transform:scale(.6);}80%{transform:scale(1.2);}100%{transform:scale(1);}}
+    @keyframes goldBlink{0%{text-shadow:0 0 6px rgba(255,215,0,.7);}50%{text-shadow:0 0 18px rgba(255,215,0,1);}100%{text-shadow:0 0 6px rgba(255,215,0,.7);}}
     /* Hearts and Nine-cat history */
     .hearts{filter:drop-shadow(0 0 10px var(--heartGlow));display:inline-block}
     .hearts.compact .life-icon{width:14px;height:14px}
@@ -388,6 +399,7 @@ select optgroup { color: #0b1022; }
       <div class="stage">
         <canvas id="fx"></canvas>
 <canvas id="game" width="1100" height="700"></canvas>
+        <div id="combo" class="combo"></div>
         <div class="legend">
         <span class="item"><span class="box" style="background:var(--expl)"></span>爆炸磚</span>
         <span class="item"><span class="box" style="background:var(--brick2)"></span>一般磚</span>
@@ -839,6 +851,7 @@ select optgroup { color: #0b1022; }
         if(fr && fr.t0){ fr.t0 += delta; }
         if(fr && fr.until){ fr.until += delta; }
       }
+      if(combo>0 && comboLastTime){ comboLastTime += delta; }
     }
   }
 
@@ -852,8 +865,35 @@ select optgroup { color: #0b1022; }
   let nineCatEaten=0;
   let fireEnergy=0;
   let gameOver=false;
+  let combo=0;
+  let comboLastTime=0;
+  const comboEl=document.getElementById('combo');
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0};
   let ledStyle = (localStorage.getItem('led_style')||'classic');
+  function resetCombo(){
+    combo=0; comboLastTime=0;
+    if(comboEl){ comboEl.textContent=''; comboEl.className='combo'; comboEl.style.opacity=0; }
+  }
+  function incrementCombo(){
+    combo++; comboLastTime=performance.now();
+    if(!comboEl) return;
+    comboEl.textContent=combo;
+    comboEl.className='combo show';
+    if(combo>=100){ comboEl.classList.add('tier4','glow'); }
+    else if(combo>=50){ comboEl.classList.add('tier3','glow'); }
+    else if(combo>=30){ comboEl.classList.add('tier2'); }
+    else if(combo>=10){ comboEl.classList.add('tier1'); }
+    comboEl.classList.add('pop'); setTimeout(()=>comboEl.classList.remove('pop'),300);
+    comboEl.style.opacity=1;
+  }
+  function getComboMultiplier(){
+    if(combo>=100) return 3;
+    if(combo>=50) return 2;
+    if(combo>=30) return 1.5;
+    if(combo>=10) return 1.2;
+    return 1;
+  }
+  function addScore(base){ score += Math.round(base * getComboMultiplier()); }
   function renderStatsHtml(){
     const fd = (stats.fastestDeath===Infinity)? '-' : stats.fastestDeath.toFixed(2);
     const ld = (stats.longestLife===0)? '-' : stats.longestLife.toFixed(2);
@@ -1743,7 +1783,7 @@ function generateLevel(lv, L){
     b.hp = (b.hp||1) - amount;
     if(b.hp<=0){
       if(b.elite){ stats.eliteKills++; }
-      revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD();
+      revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(10); updateHUD();
     }
   }
   function destroyBrick(i, sfx='default'){
@@ -1752,7 +1792,7 @@ function generateLevel(lv, L){
     if(b.boss && !b.prompted){ showPrompt('Boss！'); b.prompted=true; }
     if(b.boss){
       b.hp-=1;
-      if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; stats.bossKills++; updateHUD(); }
+      if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(50); stats.bossKills++; updateHUD(); }
       return;
     }
     if(b.elite){ stats.eliteKills++; }
@@ -1761,11 +1801,11 @@ function generateLevel(lv, L){
     spawnParticles(bx,by,color,30,2.0,3.2,3.5);
     if(sfx==='default'){ beep(420,0.06,0.08); setTimeout(()=>beep(620,0.05,0.06),40); }
     else if(sfx!=='none'){ playSFX(sfx); }
-    revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; updateHUD();
+    revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(10); updateHUD();
   }
   function damageBrick(i, dmg, sfx='default'){ for(let k=0;k<dmg;k++){ if(!bricks[i]) break; destroyBrick(i, sfx); } }
   function destroyNeighbors(idx){ const b=bricks[idx]; if(!b) return; const L=layout(); const near=[]; for(let j=bricks.length-1;j>=0;j--){ if(j===idx) continue; const t=bricks[j]; const dx=Math.abs((t.x+t.w/2)-(b.x+b.w/2)); const dy=Math.abs((t.y+t.h/2)-(b.y+b.h/2)); const thx=brickW+L.pad+2, thy=brickH+L.pad+2; if(dx<=thx && dy<=thy){ // 鄰近一格
-        if(canDestroyBrick(t)){ if(t.boss){ t.hp-=1; if(t.hp<=0){ revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); score+=50; } } else { revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); score+=10; } }
+        if(canDestroyBrick(t)){ if(t.boss){ t.hp-=1; if(t.hp<=0){ revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(50); } } else { revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(10); } }
       }
     }
     updateHUD();
@@ -1781,9 +1821,9 @@ function generateLevel(lv, L){
         // Boss：只扣血，不秒殺
         if(b.boss){
           b.hp -= 1;
-          if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; }
+          if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(50); }
         }else{
-          revealBrickArea(b); maybeDropFromBrick(b,0.3); bricks.splice(i,1); score+=10;
+          revealBrickArea(b); maybeDropFromBrick(b,0.3); bricks.splice(i,1); incrementCombo(); addScore(10);
         }
         spawnParticles(bx,by,'#ffdd99',14,1.7,2.6,3);
       }
@@ -1797,8 +1837,8 @@ function generateLevel(lv, L){
       const bx=b.x+b.w/2, by=b.y+b.h/2; const d=Math.hypot(bx-cx,by-cy);
       if(d<=radius){
         if(canDestroyBrick(b)){
-          if(b.boss){ b.hp-=1; if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); score+=50; } }
-          else { revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); score+=10; }
+          if(b.boss){ b.hp-=1; if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(50); updateHUD(); } }
+          else { revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(10); updateHUD(); }
         }
         spawnParticles(bx,by,'#ffdd99',20,1.8,2.8,3.5);
       }
@@ -2011,12 +2051,12 @@ function generateLevel(lv, L){
         const keep=[]; for(const b of bricks){
           if(Math.random()<0.5){
             if(b.unbreakable){ keep.push(b); continue; }
-            if(b.boss){ b.hp -= 1; if(b.hp>0){ keep.push(b);} else { revealBrickArea(b); score+=50; } }
-            else { revealBrickArea(b); maybeDropFromBrick(b); score+=10; }
+            if(b.boss){ b.hp -= 1; if(b.hp>0){ keep.push(b);} else { revealBrickArea(b); incrementCombo(); addScore(50); } }
+            else { revealBrickArea(b); maybeDropFromBrick(b); incrementCombo(); addScore(10); }
             fireBursts.push({x:b.x+b.w/2,y:b.y+b.h/2,life:400+Math.random()*400});
           } else keep.push(b);
         }
-        bricks=keep; screenShake=6; playSFX('phoenix');
+        bricks=keep; screenShake=6; playSFX('phoenix'); updateHUD();
       } else if(type==='NINE'){ if(nineCatEaten>=2) return; lives=9; nineCatEaten++; updateHUD(); spawnParticles(550,350,'#ffd',40,2.2,3.5,4); beep(880,0.1,0.06); }
       return;
     }
@@ -2127,6 +2167,7 @@ function generateLevel(lv, L){
   function showGameOver(){
     paused = true; running = false; gameOver = true;
     hideCenter();
+    resetCombo();
     const fs2 = document.getElementById('finalScore2'); if(fs2) fs2.textContent = String(Math.max(0|score,0));
     const so  = document.getElementById('statsOver'); if(so)  so.innerHTML = renderStatsHtml();
     gameover?.classList.add('show');
@@ -2134,7 +2175,7 @@ function generateLevel(lv, L){
   }
   function hideCenter(){ centerNote.style.display='none'; }
 
-  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; nineCatEaten=load?nineCatEaten:0; updateHUD(); initBricks(); resetBalls(); paused=true; running=false;
+  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; nineCatEaten=load?nineCatEaten:0; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
     for(const k of Object.keys(buffs)){
       if(k!=='LONG'){
         buffs[k].active=false;
@@ -2246,6 +2287,7 @@ function generateLevel(lv, L){
   }
 
   function startGameWithCountdown(){
+    onResumeFromPause();
     running=true; paused=true; hideCenter();
     ensureAudio(); audioCtx?.resume?.();
     // 音效與BGM設定載入
@@ -2680,8 +2722,8 @@ function generateLevel(lv, L){
       // 沿途清除磚塊（Boss/不可破壞豁免）
       for(let j=bricks.length-1;j>=0;j--){ const b=bricks[j]; const bx=b.x+b.w/2, by=b.y+b.h/2; if(Math.hypot(P.x-bx,P.y-by)<=P.radius){
           if(b.unbreakable) continue;
-          if(b.boss){ b.hp-=1; if(b.hp<=0){ revealBrickArea(b); bricks.splice(j,1); score+=50; } }
-          else { revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(j,1); score+=10; }
+          if(b.boss){ b.hp-=1; if(b.hp<=0){ revealBrickArea(b); bricks.splice(j,1); incrementCombo(); addScore(50); updateHUD(); } }
+          else { revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(j,1); incrementCombo(); addScore(10); updateHUD(); }
         }
       }
     } ctx.restore(); }
@@ -2986,6 +3028,12 @@ function generateLevel(lv, L){
   function update(){
     const now=performance.now();
     if(cyclopsShakeUntil && now<cyclopsShakeUntil){ screenShake=Math.max(screenShake,6); }
+    if(combo>0){
+      const elapsed=now-comboLastTime;
+      if(elapsed>3000 && elapsed<5000){ comboEl.style.opacity=1-((elapsed-3000)/2000); }
+      else if(elapsed>=5000){ resetCombo(); }
+      else { comboEl.style.opacity=1; }
+    }
     // Buff 過期
     for(const key of Object.keys(GAME_CONFIG.powers)){
       if(key==='LONG' || key==='FLIP') continue;
@@ -3018,8 +3066,8 @@ function generateLevel(lv, L){
       if(now >= bk.poisonTick){
         bk.poisonTick += (GAME_CONFIG.powers.POISON.poison.tickMs||2000);
         if(canDestroyBrick(bk)){
-          if(bk.boss){ bk.hp-=1; if(bk.hp<=0){ revealBrickArea(bk); bricks.splice(i,1); score+=50; updateHUD(); } }
-          else { bk.hp=(bk.hp||1)-1; if(bk.hp<=0){ revealBrickArea(bk); maybeDropFromBrick(bk); bricks.splice(i,1); score+=10; updateHUD(); } }
+          if(bk.boss){ bk.hp-=1; if(bk.hp<=0){ revealBrickArea(bk); bricks.splice(i,1); incrementCombo(); addScore(50); updateHUD(); } }
+          else { bk.hp=(bk.hp||1)-1; if(bk.hp<=0){ revealBrickArea(bk); maybeDropFromBrick(bk); bricks.splice(i,1); incrementCombo(); addScore(10); updateHUD(); } }
           spawnParticles(bk.x+bk.w/2,bk.y+bk.h/2,'rgba(120,255,120,0.9)',10,1.5,2.4,2);
         }
       }
@@ -3327,7 +3375,7 @@ function generateLevel(lv, L){
         if(!buffs.HELL.active && !buffs.HOLY.active){
           // 鎖鏈中不受傷害
           if(!(bk.lockedUntil && now<bk.lockedUntil)){
-            bk.hp=(bk.hp||1)-1; score+=10; updateHUD();
+            bk.hp=(bk.hp||1)-1; incrementCombo(); addScore(10); updateHUD();
             if(bk.hp<=0){
               const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
               revealBrickArea(bk);
@@ -3440,7 +3488,7 @@ function generateLevel(lv, L){
       const idx=((level-1)%10);
       const type = (level<=10 ? (imageChoice[idx]===0?'bg':'cg') : (imageChoice[idx]===0?'cg':'bg'));
       markImageUnlocked(type, idx);
-      paused=true; running=false;
+      paused=true; running=false; onPauseStart();
       if(level>=GAME_CONFIG.totalLevels){
         finalScore.textContent=String(score);
           const el=document.getElementById('statsWin'); if(el) el.innerHTML = renderStatsHtml();
@@ -3451,6 +3499,7 @@ function generateLevel(lv, L){
         }
         win.classList.add('show');
         playSFX('win');
+        resetCombo();
       }else{
         galleryImg.src=getLevelImage(level).src;
         gallery.style.display='flex'; requestAnimationFrame(()=>gallery.classList.add('show'));
