@@ -2249,6 +2249,7 @@ function generateLevel(lv, L){
     }
     updateFireEnergy();
   }
+  window.updateHUD = updateHUD;
   function showCenter(t, txt){
     noteTitle.textContent = t;
     noteText.innerHTML = txt || '';
@@ -3736,7 +3737,7 @@ function boot(){
 
   function initEffects(eff){
     const w=cvs.width, h=cvs.height;
-    stars=[]; snows=[]; clouds=[]; embers=[]; sparks=[]; shards=[]; slicers=[]; flames=[]; balloons=[]; ruins=[]; gears[];
+    stars=[]; snows=[]; clouds=[]; embers=[]; sparks=[]; shards=[]; slicers=[]; flames=[]; balloons=[]; ruins=[]; gears=[];
     hexagram=scriptRing=pulse=null; sunOpt=null; flameOpt=null; balloonOpt=null; nukeAt=0; nukeEnd=0; diffusePhase=0; webOpt=null;
     if(!eff) return;
     if(eff.web) webOpt=eff.web;
