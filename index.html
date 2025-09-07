@@ -762,7 +762,11 @@ select optgroup { color: #0b1022; }
       longestSurvival: stats.longestLife
     };
     try{
-      await fetch(RANK_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      await fetch(RANK_API, {
+        method: 'POST',
+        headers: {'Content-Type': 'text/plain;charset=utf-8'},
+        body: JSON.stringify(payload)
+      });
       alert('上傳成功');
     }catch(e){
       alert('上傳失敗');
