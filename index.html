@@ -899,15 +899,15 @@ select optgroup { color: #0b1022; }
   let combo=0;
   let comboLastTime=0;
   const comboEl=document.getElementById('combo');
-  let comboNoticeTriggered={50:false,100:false,200:false};
+  let comboNoticeTriggered={50:false,100:false,200:false,300:false,400:false,500:false,800:false,1000:false};
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0};
   let ledStyle = (localStorage.getItem('led_style')||'classic');
   function resetCombo(){
     combo=0; comboLastTime=0;
-    comboNoticeTriggered={50:false,100:false,200:false};
+    comboNoticeTriggered={50:false,100:false,200:false,300:false,400:false,500:false,800:false,1000:false};
     if(comboEl){ comboEl.textContent=''; comboEl.className='combo'; comboEl.style.opacity=0; }
   }
-  function showComboNotice(text){
+  function showComboNotice(text,showMs=5000,fadeMs=3000){
     let notice=document.getElementById('comboNotice');
     if(!notice){
       notice=document.createElement('div');
@@ -919,11 +919,13 @@ select optgroup { color: #0b1022; }
     const span=document.createElement('span');
     span.className='marqueeText';
     span.textContent=text;
+    span.style.animation=`comboMarquee ${showMs}ms linear`;
     notice.appendChild(span);
+    notice.style.transition=`opacity ${fadeMs/1000}s`;
     void notice.offsetWidth;
     notice.className='show';
-    setTimeout(()=>notice.classList.add('fade'),5000);
-    setTimeout(()=>{notice.className=''; notice.innerHTML='';},8000);
+    setTimeout(()=>notice.classList.add('fade'),showMs);
+    setTimeout(()=>{notice.className=''; notice.innerHTML=''; notice.style.transition='';},showMs+fadeMs);
   }
   function incrementCombo(){
     combo++; comboLastTime=performance.now();
@@ -941,6 +943,11 @@ select optgroup { color: #0b1022; }
     if(combo===50 && !comboNoticeTriggered[50]){ comboNoticeTriggered[50]=true; showComboNotice('看來是個高手呢！'); }
     else if(combo===100 && !comboNoticeTriggered[100]){ comboNoticeTriggered[100]=true; showComboNotice('真是驚人！ 你……是怪物嗎？'); }
     else if(combo===200 && !comboNoticeTriggered[200]){ comboNoticeTriggered[200]=true; showComboNotice('難以置信！ 你……是神嗎？'); }
+    else if(combo===300 && !comboNoticeTriggered[300]){ comboNoticeTriggered[300]=true; showComboNotice('你是還想突破天際到哪裡去呀？異次元嗎？'); }
+    else if(combo===400 && !comboNoticeTriggered[400]){ comboNoticeTriggered[400]=true; showComboNotice('你這已經破碎虛空了吧？'); }
+    else if(combo===500 && !comboNoticeTriggered[500]){ comboNoticeTriggered[500]=true; showComboNotice('算你狠！有種Combo 1000看看呀！'); }
+    else if(combo===800 && !comboNoticeTriggered[800]){ comboNoticeTriggered[800]=true; showComboNotice('我看你是到不了Combo 1000的啦！是不是開始感覺手滑啦？'); }
+    else if(combo===1000 && !comboNoticeTriggered[1000]){ comboNoticeTriggered[1000]=true; showComboNotice('快截圖給同事看吧！你是真正的連擊之神！',10000,5000); }
   }
   function getComboMultiplier(){
     if(combo>=200) return 4;
