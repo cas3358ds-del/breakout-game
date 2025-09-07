@@ -356,20 +356,25 @@ select optgroup { color: #0b1022; }
 
     /* === 兔兔·奶油雲朵 === */
     body[data-skin="兔兔·奶油雲朵"]{
-      --ink:#fff9f5;
-      --muted:#f4d9ff;
-      --stroke:rgba(255,220,235,.38);
-      --bg1:#aee1ff;
-      --bg2:#fffaff;
-      --hudGrad1:rgba(255,245,235,.62);
-      --hudGrad2:rgba(255,235,245,.44);
-      --glass-1:rgba(255,255,255,.12);
-      --glass-2:rgba(255,255,255,.09);
-      --stageGlass:linear-gradient(180deg, rgba(255,240,250,.05), transparent);
-      --panelPattern:radial-gradient(80px 80px at 20% 20%, rgba(190,150,255,.12), transparent 60%),
-                      radial-gradient(60px 60px at 80% 30%, rgba(255,255,255,.12), transparent 40%);
-      --btnGlow:0 0 20px rgba(255,150,170,.3);
+      --ink:#d4a017;
+      --muted:#b88f3a;
+      --stroke:rgba(255,255,255,.9);
+      --bg1:#ffe4f2;
+      --bg2:#fff5fa;
+      --hudGrad1:rgba(255,240,245,.86);
+      --hudGrad2:rgba(255,225,235,.72);
+      --glass-1:rgba(255,255,255,.18);
+      --glass-2:rgba(255,213,232,.45);
+      --stageGlass:linear-gradient(180deg, rgba(255,240,245,.1), transparent);
+      --panelPattern:radial-gradient(80px 80px at 20% 20%, rgba(255,200,220,.2), transparent 60%),
+                      radial-gradient(60px 60px at 80% 30%, rgba(255,255,255,.15), transparent 40%);
+      --btnGlow:0 0 20px rgba(255,200,220,.4);
     }
+
+    body[data-skin="兔兔·奶油雲朵"] canvas#game{position:relative;z-index:1;background:transparent;}
+    body[data-skin="兔兔·奶油雲朵"] .hearts .life-icon{width:32px;height:32px;}
+    body[data-skin="兔兔·奶油雲朵"] .hearts .life-icon svg{width:32px;height:32px;}
+    body[data-skin="兔兔·奶油雲朵"] .btn{background:#ffd5e8;color:#d4a017;border:2px solid #fff;}
 
 /* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */
 
@@ -2221,7 +2226,11 @@ function generateLevel(lv, L){
       for (let i = 0; i < lives; i++) {
         const span = document.createElement('span');
         const icon = (window.currentSkin && window.currentSkin.lifeIcon) || '❤️';
-        span.textContent = icon;
+        if (typeof icon === 'string' && icon.trim().startsWith('<')) {
+          span.innerHTML = icon;
+        } else {
+          span.textContent = icon;
+        }
         span.className = 'life-icon';
         heartsEl.appendChild(span);
       }
@@ -3957,7 +3966,23 @@ function boot(){
       if(eff.prism) drawPrismBeams(w,h,t,eff.prism);
       if(stars.length){for(const s of stars){const tw=eff.stars&&eff.stars.twinkle?0.5+0.5*Math.sin(t*0.002+s.ph):1;ctx.fillStyle=`rgba(255,255,255,${0.6*tw})`;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();}}
       if(snows.length){for(const f of snows){f.y+=f.vy;f.x+=f.vx;f.x+=Math.sin(f.ph+t*0.001)*(eff.snow.sway||0.5);if(f.y>h)f.y=-10;if(f.x>w)f.x=0;if(f.x<0)f.x=w;ctx.fillStyle='rgba(255,255,255,0.8)';ctx.beginPath();ctx.arc(f.x,f.y,2,0,Math.PI*2);ctx.fill();}}
-      if(clouds.length){ctx.globalAlpha=eff.clouds.alpha||0.15;for(const c of clouds){c.x+=Math.sin(t*0.00005+c.ph)*(eff.clouds.speed||0.002)*50; if(c.x>w+200)c.x=-200;ctx.beginPath();ctx.fillStyle='#ffffff';ctx.arc(c.x,c.y,c.sz,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
+      if(clouds.length){
+        ctx.globalAlpha = eff.clouds.alpha || 0.25;
+        for(const c of clouds){
+          c.x += Math.sin(t*0.00005 + c.ph) * (eff.clouds.speed || 0.002) * 50;
+          if(c.x > w + c.sz) c.x = -c.sz;
+          const grad = ctx.createRadialGradient(c.x, c.y, c.sz*0.2, c.x, c.y, c.sz);
+          grad.addColorStop(0,'#ffffff');
+          grad.addColorStop(1,'#ffe6f5');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(c.x - c.sz*0.4, c.y, c.sz*0.6, 0, Math.PI*2);
+          ctx.arc(c.x, c.y - c.sz*0.2, c.sz*0.7, 0, Math.PI*2);
+          ctx.arc(c.x + c.sz*0.4, c.y, c.sz*0.6, 0, Math.PI*2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
         if(balloonOpt){
           const interval = balloonOpt.intervalMs || 10000;
           if(t - balloonOpt.last >= interval){
