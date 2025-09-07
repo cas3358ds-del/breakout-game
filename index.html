@@ -140,23 +140,31 @@
     .legend{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:12px;color:#cfe0ff;margin-top:6px}
     .legend .item{padding:4px 8px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--stroke);display:flex;align-items:center;gap:4px}
     .legend .box{width:14px;height:14px;border-radius:3px;display:inline-block;vertical-align:middle}
-    #combo{position:absolute;top:8px;right:12px;font-size:19px;font-weight:700;pointer-events:none;opacity:0;transform-origin:top right;transition:opacity .4s,transform .2s;}
+    #combo{
+      position:absolute;
+      top:8px;
+      right:12px;
+      font-size:24px;
+      font-family:'Trebuchet MS','Segoe UI',sans-serif;
+      font-weight:900;
+      pointer-events:none;
+      opacity:0;
+      transform-origin:top right;
+      transition:opacity .4s,transform .2s;
+      text-shadow:0 2px 0 rgba(0,0,0,.3),0 4px 4px rgba(0,0,0,.5);
+    }
     #combo.show{opacity:1}
-    #combo.tier1{color:#00bfff}
+    #combo.tier1{color:#ffffff}
     #combo.tier2{color:#00ff7f}
-    #combo.tier3{color:#ffa500}
-    #combo.tier4{color:#ff3366}
+    #combo.tier3{color:#00bfff}
+    #combo.tier4{color:#8a2be2}
+    #combo.tier5{color:#ff69b4}
+    #combo.tier6{color:#ffd700}
     #combo.glow{animation:goldBlink 1s infinite}
     #combo.pop{animation:comboPop .5s}
     #combo.glow.pop{animation:goldBlink 1s infinite,comboPop .5s}
-    /* Keep combo text absolutely positioned even in sparkle state */
-    #combo.sparkle{animation:silverSparkle 1s infinite}
-    #combo.sparkle.pop{animation:silverSparkle 1s infinite,comboPop .5s}
-    #combo.sparkle::after{content:'';position:absolute;top:-20%;left:-20%;width:140%;height:140%;background-image:radial-gradient(circle,rgba(255,255,255,.9)0%,rgba(255,255,255,0)60%),radial-gradient(circle,rgba(255,255,255,.9)0%,rgba(255,255,255,0)60%),radial-gradient(circle,rgba(255,255,255,.9)0%,rgba(255,255,255,0)60%);background-size:8px 8px,6px 6px,10px 10px;background-position:20% 40%,50% 10%,80% 60%;animation:sparkleDots 1.2s infinite;pointer-events:none}
     @keyframes comboPop{0%{transform:scale(.3) rotate(-15deg);}60%{transform:scale(1.4) rotate(10deg);}80%{transform:scale(.9) rotate(-5deg);}100%{transform:scale(1) rotate(0);}}
     @keyframes goldBlink{0%{text-shadow:0 0 6px rgba(255,215,0,.7);}50%{text-shadow:0 0 18px rgba(255,215,0,1);}100%{text-shadow:0 0 6px rgba(255,215,0,.7);}}
-    @keyframes silverSparkle{0%,100%{text-shadow:0 0 6px rgba(255,255,255,.7),0 0 12px rgba(200,200,255,.8);}50%{text-shadow:0 0 12px rgba(255,255,255,1),0 0 24px rgba(220,220,255,1);}}
-    @keyframes sparkleDots{0%{opacity:0;}50%{opacity:1;}100%{opacity:0;}}
     /* Hearts and Nine-cat history */
     .hearts{filter:drop-shadow(0 0 10px var(--heartGlow));display:inline-block}
     .hearts.compact .life-icon{width:14px;height:14px}
@@ -885,14 +893,17 @@ select optgroup { color: #0b1022; }
     if(!comboEl) return;
     comboEl.textContent='Combo '+combo;
     comboEl.className='combo show';
-    if(combo>=100){ comboEl.classList.add('tier4','sparkle'); }
-    else if(combo>=50){ comboEl.classList.add('tier3','glow'); }
-    else if(combo>=30){ comboEl.classList.add('tier2'); }
-    else if(combo>=10){ comboEl.classList.add('tier1'); }
+    if(combo>=200){ comboEl.classList.add('tier6','glow'); }
+    else if(combo>=100){ comboEl.classList.add('tier5'); }
+    else if(combo>=50){ comboEl.classList.add('tier4'); }
+    else if(combo>=30){ comboEl.classList.add('tier3'); }
+    else if(combo>=10){ comboEl.classList.add('tier2'); }
+    else { comboEl.classList.add('tier1'); }
     comboEl.classList.add('pop'); setTimeout(()=>comboEl.classList.remove('pop'),500);
     comboEl.style.opacity=1;
   }
   function getComboMultiplier(){
+    if(combo>=200) return 4;
     if(combo>=100) return 3;
     if(combo>=50) return 2;
     if(combo>=30) return 1.5;
