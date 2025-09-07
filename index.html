@@ -354,6 +354,28 @@ select optgroup { color: #0b1022; }
       --btnGlow:0 0 18px rgba(255,190,90,.25);
     }
 
+    /* === 兔兔·奶油雲朵 === */
+    body[data-skin="兔兔·奶油雲朵"]{
+      --ink:#d4a017;
+      --muted:#b88f3a;
+      --stroke:rgba(255,255,255,.9);
+      --bg1:#ffe4f2;
+      --bg2:#fff5fa;
+      --hudGrad1:rgba(255,240,245,.86);
+      --hudGrad2:rgba(255,225,235,.72);
+      --glass-1:rgba(255,255,255,.18);
+      --glass-2:rgba(255,213,232,.45);
+      --stageGlass:linear-gradient(180deg, rgba(255,240,245,.1), transparent);
+      --panelPattern:radial-gradient(80px 80px at 20% 20%, rgba(255,200,220,.2), transparent 60%),
+                      radial-gradient(60px 60px at 80% 30%, rgba(255,255,255,.15), transparent 40%);
+      --btnGlow:0 0 20px rgba(255,200,220,.4);
+    }
+
+    body[data-skin="兔兔·奶油雲朵"] canvas#game{position:relative;z-index:1;background:transparent;}
+    body[data-skin="兔兔·奶油雲朵"] .hearts .life-icon{width:32px;height:32px;}
+    body[data-skin="兔兔·奶油雲朵"] .hearts .life-icon svg{width:32px;height:32px;}
+    body[data-skin="兔兔·奶油雲朵"] .btn{background:#ffd5e8;color:#d4a017;border:2px solid #fff;}
+
 /* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */
 
 
