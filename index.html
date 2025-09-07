@@ -149,7 +149,8 @@
     #combo.glow{animation:goldBlink 1s infinite}
     #combo.pop{animation:comboPop .5s}
     #combo.glow.pop{animation:goldBlink 1s infinite,comboPop .5s}
-    #combo.sparkle{position:relative;animation:silverSparkle 1s infinite}
+    /* Keep combo text absolutely positioned even in sparkle state */
+    #combo.sparkle{animation:silverSparkle 1s infinite}
     #combo.sparkle.pop{animation:silverSparkle 1s infinite,comboPop .5s}
     #combo.sparkle::after{content:'';position:absolute;top:-20%;left:-20%;width:140%;height:140%;background-image:radial-gradient(circle,rgba(255,255,255,.9)0%,rgba(255,255,255,0)60%),radial-gradient(circle,rgba(255,255,255,.9)0%,rgba(255,255,255,0)60%),radial-gradient(circle,rgba(255,255,255,.9)0%,rgba(255,255,255,0)60%);background-size:8px 8px,6px 6px,10px 10px;background-position:20% 40%,50% 10%,80% 60%;animation:sparkleDots 1.2s infinite;pointer-events:none}
     @keyframes comboPop{0%{transform:scale(.3) rotate(-15deg);}60%{transform:scale(1.4) rotate(10deg);}80%{transform:scale(.9) rotate(-5deg);}100%{transform:scale(1) rotate(0);}}
