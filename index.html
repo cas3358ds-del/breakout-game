@@ -4,6 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Rock打磚塊 Breakout（最終增強版）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
   <style>
     /* 全面換用全新 UI 風格（取自 index_skin.html） */
     :root{
@@ -144,14 +147,14 @@
       position:absolute;
       top:8px;
       right:12px;
-      font-size:24px;
-      font-family:'Trebuchet MS','Segoe UI',sans-serif;
-      font-weight:900;
+      font-size:19px;
+      font-family:'Playfair Display',serif;
+      font-weight:700;
       pointer-events:none;
       opacity:0;
       transform-origin:top right;
       transition:opacity .4s,transform .2s;
-      text-shadow:0 2px 0 rgba(0,0,0,.3),0 4px 4px rgba(0,0,0,.5);
+      text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 0 rgba(0,0,0,.6),0 3px 0 rgba(0,0,0,.5),0 4px 3px rgba(0,0,0,.7);
     }
     #combo.show{opacity:1}
     #combo.tier1{color:#ffffff}
@@ -163,8 +166,20 @@
     #combo.glow{animation:goldBlink 1s infinite}
     #combo.pop{animation:comboPop .5s}
     #combo.glow.pop{animation:goldBlink 1s infinite,comboPop .5s}
+    #comboNotice{
+      position:absolute;left:0;right:0;top:0;z-index:30;
+      overflow:hidden;pointer-events:none;
+      font-family:'Playfair Display',serif;font-weight:700;font-size:24px;
+      color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.6);
+      opacity:0;transition:opacity 3s;
+      display:flex;align-items:center;justify-content:center;
+    }
+    #comboNotice.show{opacity:1}
+    #comboNotice.fade{opacity:0}
+    #comboNotice .marqueeText{white-space:nowrap;display:inline-block;animation:comboMarquee 5s linear;}
     @keyframes comboPop{0%{transform:scale(.3) rotate(-15deg);}60%{transform:scale(1.4) rotate(10deg);}80%{transform:scale(.9) rotate(-5deg);}100%{transform:scale(1) rotate(0);}}
     @keyframes goldBlink{0%{text-shadow:0 0 6px rgba(255,215,0,.7);}50%{text-shadow:0 0 18px rgba(255,215,0,1);}100%{text-shadow:0 0 6px rgba(255,215,0,.7);}}
+    @keyframes comboMarquee{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
     /* Hearts and Nine-cat history */
     .hearts{filter:drop-shadow(0 0 10px var(--heartGlow));display:inline-block}
     .hearts.compact .life-icon{width:14px;height:14px}
@@ -882,11 +897,31 @@ select optgroup { color: #0b1022; }
   let combo=0;
   let comboLastTime=0;
   const comboEl=document.getElementById('combo');
+  let comboNoticeTriggered={50:false,100:false,200:false};
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0};
   let ledStyle = (localStorage.getItem('led_style')||'classic');
   function resetCombo(){
     combo=0; comboLastTime=0;
+    comboNoticeTriggered={50:false,100:false,200:false};
     if(comboEl){ comboEl.textContent=''; comboEl.className='combo'; comboEl.style.opacity=0; }
+  }
+  function showComboNotice(text){
+    let notice=document.getElementById('comboNotice');
+    if(!notice){
+      notice=document.createElement('div');
+      notice.id='comboNotice';
+      document.getElementById('playArea').appendChild(notice);
+    }
+    notice.className='';
+    notice.innerHTML='';
+    const span=document.createElement('span');
+    span.className='marqueeText';
+    span.textContent=text;
+    notice.appendChild(span);
+    void notice.offsetWidth;
+    notice.className='show';
+    setTimeout(()=>notice.classList.add('fade'),5000);
+    setTimeout(()=>{notice.className=''; notice.innerHTML='';},8000);
   }
   function incrementCombo(){
     combo++; comboLastTime=performance.now();
@@ -901,6 +936,9 @@ select optgroup { color: #0b1022; }
     else { comboEl.classList.add('tier1'); }
     comboEl.classList.add('pop'); setTimeout(()=>comboEl.classList.remove('pop'),500);
     comboEl.style.opacity=1;
+    if(combo===50 && !comboNoticeTriggered[50]){ comboNoticeTriggered[50]=true; showComboNotice('看來是個高手呢！'); }
+    else if(combo===100 && !comboNoticeTriggered[100]){ comboNoticeTriggered[100]=true; showComboNotice('真是驚人！ 你……是怪物嗎？'); }
+    else if(combo===200 && !comboNoticeTriggered[200]){ comboNoticeTriggered[200]=true; showComboNotice('難以置信！ 你……是神嗎？'); }
   }
   function getComboMultiplier(){
     if(combo>=200) return 4;
