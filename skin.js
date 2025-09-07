@@ -187,7 +187,7 @@
     label: '兔兔·奶油雲朵',
     selectLabel: '兔兔·奶油雲朵',
     cssSkin: '兔兔·奶油雲朵',
-    lifeIcon: '🐰',
+    lifeIcon: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><g fill="#fff" stroke="#e0e0e0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="32" cy="40" rx="20" ry="16"/><ellipse cx="20" cy="18" rx="10" ry="20"/><ellipse cx="44" cy="18" rx="10" ry="20"/><circle cx="24" cy="36" r="6" fill="#000"/><circle cx="40" cy="36" r="6" fill="#000"/><circle cx="24" cy="34" r="2" fill="#fff"/><circle cx="40" cy="34" r="2" fill="#fff"/><circle cx="32" cy="44" r="3" fill="#ffb6c1"/><path d="M28 48Q32 52 36 48" stroke="#000" fill="none"/></g></svg>`,
     canvas: {
       base: [255, 240, 220],
       hi: [255, 255, 255],
