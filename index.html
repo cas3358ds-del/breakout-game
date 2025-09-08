@@ -718,7 +718,12 @@ select optgroup { color: #0b1022; }
   async function fetchLeaderboard(){
     const res = await fetch(RANK_API, {cache:'no-store'});
     if(!res.ok) throw new Error('fetch failed');
-    return await res.json();
+    const text = await res.text();
+    try{
+      return JSON.parse(text);
+    }catch(err){
+      throw new Error('invalid json');
+    }
   }
   function renderLeaderboard(data){
     rankTableBody.innerHTML='';
