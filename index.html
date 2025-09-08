@@ -555,7 +555,7 @@ select optgroup { color: #0b1022; }
 <script src="skin.js"></script>
 <script>
 (() => {
-  const RANK_API = 'https://script.google.com/macros/s/AKfycbz558uLNtZWVG9a6c9W7xHZfNnEnsyrPmMPpuNPc3GSDgqEhIlMhCqceE9BQAzAWv77/exec';
+  const RANK_API = 'https://script.google.com/macros/s/AKfycbzDK26obkpWP3-6EhMGEipg0vgz2xfhfTNyZRMqOWt5c9-Cn_ptPn9zMoeuvEBS7xTq/exec';
   // === 設定 ===
   const GAME_CONFIG = {
     totalLevels: 20,
@@ -715,7 +715,8 @@ select optgroup { color: #0b1022; }
 
   // === Rank page logic ===
   async function fetchLeaderboard(){
-    const res = await fetch(RANK_API);
+    const res = await fetch(RANK_API, {cache:'no-store'});
+    if(!res.ok) throw new Error('fetch failed');
     return await res.json();
   }
   function renderLeaderboard(data){
@@ -762,12 +763,17 @@ select optgroup { color: #0b1022; }
       longestSurvival: stats.longestLife
     };
     try{
-      await fetch(RANK_API, {
+      const res = await fetch(RANK_API, {
         method: 'POST',
-        headers: {'Content-Type': 'text/plain;charset=utf-8'},
+        headers: {'Content-Type': 'text/plain'},
         body: JSON.stringify(payload)
       });
-      alert('上傳成功');
+      const text = await res.text();
+      if(res.ok && text.trim()==='OK'){
+        alert('上傳成功');
+      }else{
+        throw new Error('bad response');
+      }
     }catch(e){
       alert('上傳失敗');
     }
