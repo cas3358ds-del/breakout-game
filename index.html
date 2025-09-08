@@ -715,7 +715,8 @@ select optgroup { color: #0b1022; }
 
   // === Rank page logic ===
   async function fetchLeaderboard(){
-    const res = await fetch(RANK_API);
+    const res = await fetch(RANK_API, {cache:'no-store'});
+    if(!res.ok) throw new Error('fetch failed');
     return await res.json();
   }
   function renderLeaderboard(data){
@@ -762,11 +763,13 @@ select optgroup { color: #0b1022; }
       longestSurvival: stats.longestLife
     };
     try{
-      await fetch(RANK_API, {
+      const res = await fetch(RANK_API, {
         method: 'POST',
-        headers: {'Content-Type': 'text/plain;charset=utf-8'},
+        headers: {'Content-Type': 'text/plain'},
         body: JSON.stringify(payload)
       });
+      const text = await res.text();
+      if(!res.ok || text.trim() !== 'OK') throw new Error('bad response');
       alert('上傳成功');
     }catch(e){
       alert('上傳失敗');
