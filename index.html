@@ -771,8 +771,8 @@ select optgroup { color: #0b1022; }
         body: JSON.stringify(payload)
       });
       const text = await res.text();
-      if(!res.ok || text.trim() !== 'OK') throw new Error('bad response');
-      alert('上傳成功');
+      if(res.ok && text.trim()==='OK') alert('上傳成功');
+      else throw new Error('Bad response');
     }catch(e){
       alert('上傳失敗');
     }
