@@ -557,7 +557,8 @@ select optgroup { color: #0b1022; }
 (() => {
 
   const RANK_API = 'https://script.google.com/macros/s/AKfycbxfonXG50htMNtP-XNBzkq5Sf8jUG3qzXfLRxJygP0xJIv0ifwvM8V63WpGt4gJ4Vtd/exec';
-  const CORS = (url) => 'https://corsproxy.io/?' + encodeURIComponent(url);
+  // 後端已支援 CORS，直接回傳原始 URL
+  const CORS = (url) => url;
   // === 設定 ===
   const GAME_CONFIG = {
     totalLevels: 20,
