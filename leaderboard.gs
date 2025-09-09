@@ -1,31 +1,101 @@
 const SHEET_NAME = 'Leaderboard';
-const MAX_ROWS = 20;
+const MAX_ROWS = 20;  // 只顯示前 20 名，不刪除資料
+
+function setCors(output) {
+  output.setHeader('Access-Control-Allow-Origin', '*');
+  output.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+  output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  output.setHeader('Cache-Control', 'no-store');
+  return output;
+}
 
 function doPost(e) {
-  const data  = JSON.parse(e.postData.contents);
-  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
+  try {
+    if (!e || !e.postData) throw new Error('No post data');
 
-  sheet.appendRow([
-    new Date(), data.name, data.score, data.lives, data.catches,
-    data.powerUps, data.powerDowns, data.enemiesKilled,
-    data.bossKilled, data.fastestDeath, data.longestSurvival
-  ]);
+    // 兼容 text/plain、application/json、x-www-form-urlencoded
+    const type = (e.postData.type || '').toLowerCase();
+    const raw = e.postData.contents || '';
+    let data;
 
-  sheet.sort({column: 3, ascending: false});
-  const lastRow = sheet.getLastRow();
-  if (lastRow > MAX_ROWS + 1) {
-    sheet.deleteRows(MAX_ROWS + 2, lastRow - (MAX_ROWS + 1));
+    if (type.includes('application/json')) {
+      data = JSON.parse(raw);
+    } else if (type.includes('application/x-www-form-urlencoded')) {
+      data = Object.fromEntries(
+        raw.split('&').map(p => {
+          const [k, v=''] = p.split('=');
+          return [decodeURIComponent(k), decodeURIComponent(v.replace(/\+/g,' '))];
+        })
+      );
+    } else {
+      // text/plain 當 JSON 字串嘗試解析
+      try { data = JSON.parse(raw); }
+      catch (_) { throw new Error('Unsupported payload, expect JSON string'); }
+    }
+
+    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
+    if (!sheet) throw new Error('Sheet not found: ' + SHEET_NAME);
+
+    sheet.appendRow([
+      new Date(),
+      data.name || '',
+      Number(data.score || 0),
+      Number(data.lives || 0),
+      Number(data.catches || 0),
+      Number(data.powerUps || 0),
+      Number(data.powerDowns || 0),
+      Number(data.enemiesKilled || 0),
+      Number(data.bossKilled || 0),
+      Number(data.fastestDeath || 0),
+      Number(data.longestSurvival || 0)
+    ]);
+
+    const out = ContentService.createTextOutput('OK')
+      .setMimeType(ContentService.MimeType.TEXT);
+    return setCors(out);
+
+  } catch (err) {
+    const out = ContentService.createTextOutput(JSON.stringify({ error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+    return setCors(out);
   }
-  // Apps Script automatically sets CORS headers for web apps.
-  return ContentService.createTextOutput('OK');
 }
 
 function doGet(e) {
-  const sheet    = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
-  const rowCount = sheet.getLastRow() - 1;
-  const data     = rowCount > 0
-      ? sheet.getRange(2, 1, Math.min(rowCount, MAX_ROWS), sheet.getLastColumn()).getValues()
-      : [];
-  return ContentService.createTextOutput(JSON.stringify(data))
+  try {
+    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
+    if (!sheet) throw new Error('Sheet not found: ' + SHEET_NAME);
+
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow < 2) {
+      return setCors(ContentService.createTextOutput('[]')
+        .setMimeType(ContentService.MimeType.JSON));
+    }
+
+    const values = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    values.sort((a, b) => Number(b[2] || 0) - Number(a[2] || 0));
+    const top = values.slice(0, MAX_ROWS).map(r => ({
+      timestamp: r[0],
+      name: r[1],
+      score: Number(r[2] || 0),
+      lives: Number(r[3] || 0),
+      catches: Number(r[4] || 0),
+      powerUps: Number(r[5] || 0),
+      powerDowns: Number(r[6] || 0),
+      enemiesKilled: Number(r[7] || 0),
+      bossKilled: Number(r[8] || 0),
+      fastestDeath: Number(r[9] || 0),
+      longestSurvival: Number(r[10] || 0)
+    }));
+
+    const out = ContentService.createTextOutput(JSON.stringify(top))
       .setMimeType(ContentService.MimeType.JSON);
+    return setCors(out);
+
+  } catch (err) {
+    const out = ContentService.createTextOutput(JSON.stringify({ error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+    return setCors(out);
+  }
 }

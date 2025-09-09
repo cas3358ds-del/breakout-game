@@ -1469,7 +1469,7 @@ select optgroup { color: #0b1022; }
 
   // === BGM 變奏資料 ===
   function midi(n){ return 440*Math.pow(2,(n-69)/12); }
-  const transposeSeq=(seq,s)=>seq.map(ch=>Array.isArray(ch)?ch.map(n=>n+s):n+s);
+  const transposeSeq=(seq,s)=>seq.map(ch=>Array.isArray(ch)?ch.map(n=>n+s):ch+s);
   const rotateSeq=(arr,k)=>arr.slice(k).concat(arr.slice(0,k));
 
   function buildTheme(tempo, chords, melody){
