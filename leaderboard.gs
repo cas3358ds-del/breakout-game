@@ -1,5 +1,10 @@
+const SHEET_ID = '1slI1OamjO_xd23y5dfkwus9srQeq_k_qpn6GRaOTTg';
 const SHEET_NAME = 'Leaderboard';
 const MAX_ROWS = 20;  // 只顯示前 20 名，不刪除資料
+
+function getSheet() {
+  return SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+}
 
 function setCors(output) {
   // Apps Script 的 TextOutput 沒有 setHeader，需一次設定所有標頭
@@ -36,7 +41,7 @@ function doPost(e) {
       catch (_) { throw new Error('Unsupported payload, expect JSON string'); }
     }
 
-    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
+    const sheet = getSheet();
     if (!sheet) throw new Error('Sheet not found: ' + SHEET_NAME);
 
     sheet.appendRow([
@@ -66,7 +71,7 @@ function doPost(e) {
 
 function doGet(e) {
   try {
-    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
+    const sheet = getSheet();
     if (!sheet) throw new Error('Sheet not found: ' + SHEET_NAME);
 
     const lastRow = sheet.getLastRow();
