@@ -741,8 +741,7 @@ select optgroup { color: #0b1022; }
       ]);
     }
     if (!Array.isArray(data)) throw new Error('unexpected data');
-    return data;
-  }
+  return data;
   }
   function renderLeaderboard(data){
     rankTableBody.innerHTML='';
@@ -782,7 +781,6 @@ select optgroup { color: #0b1022; }
       rankTableBody.innerHTML='<tr><td colspan="11">載入失敗</td></tr>';
     }
   }
-  }
   function closeRankPage(){
     rankPage.style.display='none';
     if(!menusOpen()) window.__setMenuPause?.(false);
@@ -820,10 +818,6 @@ select optgroup { color: #0b1022; }
       }
     }catch(e){
       console.error(e);
-      alert('上傳失敗');
-    }
-  }
-    }catch(e){
       alert('上傳失敗');
     }
   }
