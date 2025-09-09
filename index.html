@@ -716,23 +716,58 @@ select optgroup { color: #0b1022; }
 
   // === Rank page logic ===
   async function fetchLeaderboard(){
-    const res = await fetch(RANK_API, {cache:'no-store'});
-    if(!res.ok) throw new Error('fetch failed');
+    // GET leaderboard as JSON (supports both array-of-arrays and array-of-objects)
+    const res = await fetch(RANK_API + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('fetch failed: ' + res.status);
     const text = await res.text();
-    try{
-      return JSON.parse(text);
-    }catch(err){
-      throw new Error('invalid json');
+    let data;
+    try { data = JSON.parse(text); }
+    catch { throw new Error('invalid json'); }
+    // Normalize to array-of-arrays: [timestamp,name,score,lives,catches,powerUps,powerDowns,enemiesKilled,bossKilled,fastestDeath,longestSurvival]
+    if (Array.isArray(data) && data.length && !Array.isArray(data[0]) && typeof data[0] === 'object') {
+      // array of objects
+      data = data.map(o => [
+        o.timestamp ?? '',
+        o.name ?? '',
+        Number(o.score ?? 0),
+        Number(o.lives ?? 0),
+        Number(o.catches ?? 0),
+        Number(o.powerUps ?? 0),
+        Number(o.powerDowns ?? 0),
+        Number(o.enemiesKilled ?? 0),
+        Number(o.bossKilled ?? 0),
+        Number(o.fastestDeath ?? 0),
+        Number(o.longestSurvival ?? 0),
+      ]);
     }
+    if (!Array.isArray(data)) throw new Error('unexpected data');
+    return data;
+  }
   }
   function renderLeaderboard(data){
     rankTableBody.innerHTML='';
-    data.sort((a,b)=>b[2]-a[2]);
-    data.slice(0,20).forEach((row,i)=>{
+    try{
+      data.sort((a,b)=>Number(b[2]||0)-Number(a[2]||0));
+    }catch{}
+    (data||[]).slice(0,20).forEach((row,i)=>{
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${i+1}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td><td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td><td>${row[8]}</td><td>${row[9]}</td><td>${row[10]}</td>`;
+      const safe = (v)=> (v===null||v===undefined)?'':String(v);
+      tr.innerHTML = `<td>${i+1}</td>
+        <td>${safe(row[1])}</td>
+        <td>${Number(row[2]||0)}</td>
+        <td>${Number(row[3]||0)}</td>
+        <td>${Number(row[4]||0)}</td>
+        <td>${Number(row[5]||0)}</td>
+        <td>${Number(row[6]||0)}</td>
+        <td>${Number(row[7]||0)}</td>
+        <td>${Number(row[8]||0)}</td>
+        <td>${Number(row[9]||0)}</td>
+        <td>${Number(row[10]||0)}</td>`;
       rankTableBody.appendChild(tr);
     });
+    if(!rankTableBody.children.length){
+      rankTableBody.innerHTML='<tr><td colspan="11">暫無資料</td></tr>';
+    }
   }
   async function openRankPage(){
     document.getElementById('optMenu')?.classList.remove('show');
@@ -743,8 +778,10 @@ select optgroup { color: #0b1022; }
       const data = await fetchLeaderboard();
       renderLeaderboard(data);
     }catch(e){
+      console.error(e);
       rankTableBody.innerHTML='<tr><td colspan="11">載入失敗</td></tr>';
     }
+  }
   }
   function closeRankPage(){
     rankPage.style.display='none';
@@ -757,7 +794,7 @@ select optgroup { color: #0b1022; }
     const name = prompt('請輸入玩家名稱：');
     if(!name) return;
     const payload = {
-      name,
+      name: (name||'').trim(),
       score,
       lives: stats.livesUsed,
       catches: stats.catches,
@@ -771,15 +808,21 @@ select optgroup { color: #0b1022; }
     try{
       const res = await fetch(RANK_API, {
         method: 'POST',
-        headers: {'Content-Type': 'text/plain'},
+        headers: { 'Content-Type': 'text/plain; charset=UTF-8' }, // simple request to avoid preflight
         body: JSON.stringify(payload)
       });
-      const text = await res.text();
-      if(res.ok && text.trim()==='OK'){
+      const text = await res.text().catch(()=>'');
+      if (res.ok && /ok/i.test(text.trim())) {
         alert('上傳成功');
-      }else{
-        throw new Error('bad response');
+      } else {
+        // 若後端尚未佈署 CORS，這裡可能會失敗；提示用戶稍後開啟排行榜確認
+        alert('上傳失敗');
       }
+    }catch(e){
+      console.error(e);
+      alert('上傳失敗');
+    }
+  }
     }catch(e){
       alert('上傳失敗');
     }
