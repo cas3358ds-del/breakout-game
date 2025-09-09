@@ -557,6 +557,7 @@ select optgroup { color: #0b1022; }
 (() => {
 
   const RANK_API = 'https://script.google.com/macros/s/AKfycbxfonXG50htMNtP-XNBzkq5Sf8jUG3qzXfLRxJygP0xJIv0ifwvM8V63WpGt4gJ4Vtd/exec';
+  const CORS = (url) => 'https://corsproxy.io/?' + encodeURIComponent(url);
   // === 設定 ===
   const GAME_CONFIG = {
     totalLevels: 20,
@@ -717,7 +718,7 @@ select optgroup { color: #0b1022; }
   // === Rank page logic ===
   async function fetchLeaderboard(){
     // GET leaderboard as JSON (supports both array-of-arrays and array-of-objects)
-    const res = await fetch(RANK_API + '?t=' + Date.now(), { cache: 'no-store' });
+    const res = await fetch(CORS(RANK_API + '?t=' + Date.now()), { cache: 'no-store' });
     if (!res.ok) throw new Error('fetch failed: ' + res.status);
     const text = await res.text();
     let data;
@@ -804,7 +805,7 @@ select optgroup { color: #0b1022; }
       longestSurvival: stats.longestLife
     };
     try{
-      const res = await fetch(RANK_API, {
+      const res = await fetch(CORS(RANK_API), {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain; charset=UTF-8' }, // simple request to avoid preflight
         body: JSON.stringify(payload)
