@@ -557,13 +557,7 @@ select optgroup { color: #0b1022; }
 (() => {
 
   const RANK_API = 'https://script.google.com/macros/s/AKfycbz3-sdGL3pCPUs3_dMjJdpL9GxbEkHux3Vf4CN-ehGNYnybrnxfmQpkhGrlv9VbmJbx/exec';
-  // 使用 Apps Script 做排行榜時其回應缺少 CORS 標頭；
-  // 若從 GitHub Pages 等網域載入，需要透過代理補上 CORS。
-  const CORS = (url) => (
-    location.hostname.endsWith('.github.io')
-      ? 'https://cors.isomorphic-git.org/' + url
-      : url
-  );
+  // Apps Script backend 已回應 CORS 標頭，直接存取即可。
   // === 設定 ===
   const GAME_CONFIG = {
     totalLevels: 20,
@@ -724,7 +718,7 @@ select optgroup { color: #0b1022; }
   // === Rank page logic ===
   async function fetchLeaderboard(){
     // GET leaderboard as JSON (supports both array-of-arrays and array-of-objects)
-    const res = await fetch(CORS(RANK_API + '?t=' + Date.now()), { cache: 'no-store' });
+    const res = await fetch(RANK_API + '?t=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('fetch failed: ' + res.status);
     const text = await res.text();
     let data;
@@ -811,7 +805,7 @@ select optgroup { color: #0b1022; }
       longestSurvival: stats.longestLife
     };
     try{
-      const res = await fetch(CORS(RANK_API), {
+      const res = await fetch(RANK_API, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain; charset=UTF-8' }, // simple request to avoid preflight
         body: JSON.stringify(payload)

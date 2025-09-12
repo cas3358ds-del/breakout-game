@@ -8,12 +8,10 @@ function getSheet() {
 
 function setCors(output) {
   // Apps Script 的 TextOutput 沒有 setHeader，需一次設定所有標頭
-  output.setHeaders({
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Cache-Control': 'no-store',
-  });
+  output.setHeader('Access-Control-Allow-Origin', '*');
+  output.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+  output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  output.setHeader('Cache-Control', 'no-store');
   return output;
 }
 
