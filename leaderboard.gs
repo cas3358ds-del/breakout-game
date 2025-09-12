@@ -105,3 +105,9 @@ function doGet(e) {
     return setCors(out);
   }
 }
+
+function doOptions(e) {
+  const out = ContentService.createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT);
+  return setCors(out);
+}
