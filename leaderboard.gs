@@ -7,7 +7,7 @@ function getSheet() {
 }
 
 function setCors(output) {
-  // Apps Script 的 TextOutput 沒有 setHeader，需一次設定所有標頭
+  // TextOutput 支援 setHeader，CORS 標頭逐一設定
   output.setHeader('Access-Control-Allow-Origin', '*');
   output.setHeader('Access-Control-Allow-Methods', 'GET, POST');
   output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
