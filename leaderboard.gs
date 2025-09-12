@@ -9,7 +9,7 @@ function getSheet() {
 function setCors(output) {
   // TextOutput 支援 setHeader，CORS 標頭逐一設定
   output.setHeader('Access-Control-Allow-Origin', '*');
-  output.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+  output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   output.setHeader('Cache-Control', 'no-store');
   return output;
@@ -107,7 +107,9 @@ function doGet(e) {
 }
 
 function doOptions(e) {
-  const out = ContentService.createTextOutput('')
-    .setMimeType(ContentService.MimeType.TEXT);
-  return setCors(out);
+  // 預檢請求需回傳 CORS 標頭
+  return setCors(
+    ContentService.createTextOutput('')
+      .setMimeType(ContentService.MimeType.TEXT)
+  );
 }
