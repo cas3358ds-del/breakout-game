@@ -580,28 +580,28 @@ select optgroup { color: #0b1022; }
       PLASMA:{label:'電漿球(擊中放出電漿圈清列)',type:'buff',durationMs:10000,plasma:{drift:1.2,radius:38,lifeMs:3000},badge:'⚡️'},
       FREEZE:{label:'凍結球(延遲停頓一下)',type:'buff',durationMs:10000,freeze:{delayMs:300,stopMs:2000},badge:'❄️'},
       HOLY:{label:'神聖球(十字清線)',type:'buff',durationMs:5000,holy:{},badge:'✝️'},
-      ,TRACK:{label:'追蹤球(自動修正軌跡)',type:'buff',durationMs:10000,track:{},badge:'🧭'}
-      ,MISSILE:{label:'飛彈球(擋板反彈時發射3枚)',type:'buff',durationMs:5000,missile:{speed:7,turn:0.08,lifeMs:4000},badge:'🚀'}
-      ,HELL:{label:'地獄球(黑洞吞鄰近格)',type:'buff',durationMs:5000,hell:{speedMul:1.2,haloMs:2000},badge:'🕳️'}
-      ,MEGA:{label:'特大球(半徑×3, 速度×0.8)',type:'buff',durationMs:5000,mega:{sizeMul:3,speedMul:0.8},badge:'🟢'}
-      ,CHAIN:{label:'鎖鏈球(命中磚鎖10秒)',type:'debuff',durationMs:5000,chain:{lockMs:10000},badge:'⛓️'}
-      ,NARROW:{label:'平台縮小(寬度減半)',type:'debuff',durationMs:5000,narrow:true,badge:'📉'}
-      ,HOLE:{label:'平台空洞(中間1/3無效)',type:'debuff',durationMs:5000,hole:true,badge:'🕳'}
-      ,PADSPIN:{label:'平台翻轉',desc:'平台旋轉8秒',type:'debuff',durationMs:8000,spin:{periodMs:8000},badge:'🌀'}
-      ,PADBOOM:{label:'平台爆炸',desc:'閃爍後消失3秒',type:'debuff',explosion:{flashMs:3000,goneMs:3000},badge:'💣'}
-      ,FIRE:{label:'火焰球(碰撞蓄能10秒爆炸)',type:'buff',durationMs:10000,badge:'🔥'}
-      ,POISON:{label:'劇毒球(命中磚每2秒扣血)',type:'buff',durationMs:12000,poison:{tickMs:2000},badge:'☠️'}
-      ,BLINK:{label:'瞬移球(彈後1秒頂部落下)',type:'buff',durationMs:10000,blink:{delayMs:1000},badge:'🌀'}
-      ,LASER:{label:'自動雷射(每2秒兩端發射)',type:'special',durationMs:10000,specialWeight:0.1,laser:{intervalMs:2000},badge:'🔫'}
-      ,FLIP:{label:'天地翻轉(改為左側擋板)',type:'special',durationMs:15000,specialWeight:0.1,badge:'🔄'}
-      ,NINE:{label:'9命怪貓(生命變9)',type:'special',instant:true,badge:'🐱'}
-      ,PHOENIX:{label:'鳳凰審判(消半場/不秒殺Boss)',type:'special',instant:true,badge:'🪽'}
-      ,GATLING:{label:'火力壓制',desc:'平台機槍掃射8秒',type:'special',durationMs:11000,specialWeight:0.1,gatling:{chargeMs:3000,fireMs:8000,intervalMs:100,bulletSpeed:10},badge:'🔫'}
-      ,SWORD:{label:'劍芒裂空',desc:'飛劍掃場',type:'special',durationMs:20000,specialWeight:0.1,badge:'🗡️'}
-      ,GODSPEED:{label:'神速流轉(不落地/忽略效果/滿速)',type:'special',durationMs:10000,specialWeight:0.1,badge:'☄️'}
-      ,STORM:{label:'雷射風暴',desc:'全場掃射',type:'special',durationMs:5000,specialWeight:0.1,storm:{},badge:'🌩️'}
-      ,BLACKHOLE:{label:'黑洞吞噬',desc:'黑洞吞場',type:'special',durationMs:20000,specialWeight:0.1,badge:'⚫'}
-      ,ANNIHIL:{label:'萬物銷毀',desc:'隨機毀磚',type:'special',specialWeight:0.1,annihil:{speedMul:3},badge:'💥'}
+      TRACK:{label:'追蹤球(自動修正軌跡)',type:'buff',durationMs:10000,track:{},badge:'🧭'},
+      MISSILE:{label:'飛彈球(擋板反彈時發射3枚)',type:'buff',durationMs:5000,missile:{speed:7,turn:0.08,lifeMs:4000},badge:'🚀'},
+      HELL:{label:'地獄球(黑洞吞鄰近格)',type:'buff',durationMs:5000,hell:{speedMul:1.2,haloMs:2000},badge:'🕳️'},
+      MEGA:{label:'特大球(半徑×3, 速度×0.8)',type:'buff',durationMs:5000,mega:{sizeMul:3,speedMul:0.8},badge:'🟢'},
+      CHAIN:{label:'鎖鏈球(命中磚鎖10秒)',type:'debuff',durationMs:5000,chain:{lockMs:10000},badge:'⛓️'},
+      NARROW:{label:'平台縮小(寬度減半)',type:'debuff',durationMs:5000,narrow:true,badge:'📉'},
+      HOLE:{label:'平台空洞(中間1/3無效)',type:'debuff',durationMs:5000,hole:true,badge:'🕳'},
+      PADSPIN:{label:'平台翻轉',desc:'平台旋轉8秒',type:'debuff',durationMs:8000,spin:{periodMs:8000},badge:'🌀'},
+      PADBOOM:{label:'平台爆炸',desc:'閃爍後消失3秒',type:'debuff',explosion:{flashMs:3000,goneMs:3000},badge:'💣'},
+      FIRE:{label:'火焰球(碰撞蓄能10秒爆炸)',type:'buff',durationMs:10000,badge:'🔥'},
+      POISON:{label:'劇毒球(命中磚每2秒扣血)',type:'buff',durationMs:12000,poison:{tickMs:2000},badge:'☠️'},
+      BLINK:{label:'瞬移球(彈後1秒頂部落下)',type:'buff',durationMs:10000,blink:{delayMs:1000},badge:'🌀'},
+      LASER:{label:'自動雷射(每2秒兩端發射)',type:'special',durationMs:10000,specialWeight:0.1,laser:{intervalMs:2000},badge:'🔫'},
+      FLIP:{label:'天地翻轉(改為左側擋板)',type:'special',durationMs:15000,specialWeight:0.1,badge:'🔄'},
+      NINE:{label:'9命怪貓(生命變9)',type:'special',instant:true,badge:'🐱'},
+      PHOENIX:{label:'鳳凰審判(消半場/不秒殺Boss)',type:'special',instant:true,badge:'🪽'},
+      GATLING:{label:'火力壓制',desc:'平台機槍掃射8秒',type:'special',durationMs:11000,specialWeight:0.1,gatling:{chargeMs:3000,fireMs:8000,intervalMs:100,bulletSpeed:10},badge:'🔫'},
+      SWORD:{label:'劍芒裂空',desc:'飛劍掃場',type:'special',durationMs:20000,specialWeight:0.1,badge:'🗡️'},
+      GODSPEED:{label:'神速流轉(不落地/忽略效果/滿速)',type:'special',durationMs:10000,specialWeight:0.1,badge:'☄️'},
+      STORM:{label:'雷射風暴',desc:'全場掃射',type:'special',durationMs:5000,specialWeight:0.1,storm:{},badge:'🌩️'},
+      BLACKHOLE:{label:'黑洞吞噬',desc:'黑洞吞場',type:'special',durationMs:20000,specialWeight:0.1,badge:'⚫'},
+      ANNIHIL:{label:'萬物銷毀',desc:'隨機毀磚',type:'special',specialWeight:0.1,annihil:{speedMul:3},badge:'💥'}
 
     },
     powerCapsule:{width:24,height:16,fallVy:2.2},
