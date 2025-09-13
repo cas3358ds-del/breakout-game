@@ -503,6 +503,7 @@ select optgroup { color: #0b1022; }
                 <th>殺Boss數</th>
                 <th>最快死亡</th>
                 <th>最久存活</th>
+                <th>最高Combo數</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -763,7 +764,7 @@ select optgroup { color: #0b1022; }
     let data;
     try { data = JSON.parse(text); }
     catch { throw new Error('invalid json'); }
-    // Normalize to array-of-arrays: [timestamp,name,score,lives,catches,powerUps,powerDowns,enemiesKilled,bossKilled,fastestDeath,longestSurvival]
+    // Normalize to array-of-arrays: [timestamp,name,score,lives,catches,powerUps,powerDowns,enemiesKilled,bossKilled,fastestDeath,longestSurvival,maxCombo]
     if (Array.isArray(data) && data.length && !Array.isArray(data[0]) && typeof data[0] === 'object') {
       // array of objects
       data = data.map(o => [
@@ -778,6 +779,7 @@ select optgroup { color: #0b1022; }
         Number(o.bossKilled ?? 0),
         Number(o.fastestDeath ?? 0),
         Number(o.longestSurvival ?? 0),
+        Number(o.maxCombo ?? o.comboMax ?? 0),
       ]);
     }
     if (!Array.isArray(data)) throw new Error('unexpected data');
@@ -795,6 +797,7 @@ select optgroup { color: #0b1022; }
       const tr=document.createElement('tr');
       const fd = Number(row[9]||0).toFixed(1);
       const ld = Number(row[10]||0).toFixed(1);
+      const mc = Number(row[11]||0);
       tr.innerHTML = `<td>${i+1}</td>
         <td>${escapeHtml(row[1]??'')}</td>
         <td>${Number(row[2]||0)}</td>
@@ -805,24 +808,25 @@ select optgroup { color: #0b1022; }
         <td>${Number(row[7]||0)}</td>
         <td>${Number(row[8]||0)}</td>
         <td>${fd}</td>
-        <td>${ld}</td>`;
+        <td>${ld}</td>
+        <td>${mc}</td>`;
       rankTableBody.appendChild(tr);
     });
     if(!rankTableBody.children.length){
-      rankTableBody.innerHTML='<tr><td colspan="11">暫無資料</td></tr>';
+      rankTableBody.innerHTML='<tr><td colspan="12">暫無資料</td></tr>';
     }
   }
   async function openRankPage(){
     document.getElementById('optMenu')?.classList.remove('show');
     rankPage.style.display='flex';
-    rankTableBody.innerHTML='<tr><td colspan="11">載入中...</td></tr>';
+    rankTableBody.innerHTML='<tr><td colspan="12">載入中...</td></tr>';
     window.__setMenuPause?.(true);
     try{
       const data = await fetchLeaderboard();
       renderLeaderboard(data);
     }catch(e){
       console.error(e);
-      rankTableBody.innerHTML='<tr><td colspan="11">載入失敗</td></tr>';
+      rankTableBody.innerHTML='<tr><td colspan="12">載入失敗</td></tr>';
     }
   }
   function closeRankPage(){
@@ -849,7 +853,8 @@ select optgroup { color: #0b1022; }
       enemiesKilled: stats.eliteKills,
       bossKilled: stats.bossKills,
       fastestDeath: stats.fastestDeath===Infinity?0:stats.fastestDeath,
-      longestSurvival: stats.longestLife
+      longestSurvival: stats.longestLife,
+      maxCombo: stats.maxCombo
     };
     const controller = new AbortController();
     const to = setTimeout(()=>controller.abort(), FETCH_TIMEOUT);
@@ -1028,7 +1033,7 @@ select optgroup { color: #0b1022; }
   let comboLastTime=0;
   const comboEl=document.getElementById('combo');
   let comboNoticeTriggered={50:false,100:false,200:false,300:false,400:false,500:false,800:false,1000:false};
-  let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0};
+  let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
   let scoreUploaded=false;
   let ledStyle = (localStorage.getItem('led_style')||'classic');
   function resetCombo(){
@@ -1058,6 +1063,7 @@ select optgroup { color: #0b1022; }
   }
   function incrementCombo(){
     combo++; comboLastTime=performance.now();
+    if(combo>stats.maxCombo) stats.maxCombo=combo;
     if(!comboEl) return;
     comboEl.textContent='Combo '+combo;
     comboEl.className='combo show';
@@ -1103,6 +1109,7 @@ select optgroup { color: #0b1022; }
       <div>減益次數：<strong>${stats.debuffs}</strong></div>
       <div>殺菁英數：<strong>${stats.eliteKills}</strong></div>
       <div>殺Boss數：<strong>${stats.bossKills}</strong></div>
+      <div>最高Combo數：<strong>${stats.maxCombo}</strong></div>
       <div>最快死亡：<strong>${fd}</strong> s</div>
       <div>最久存活：<strong>${ld}</strong> s</div>
     </div>`;
@@ -2413,6 +2420,7 @@ function generateLevel(lv, L){
   function hideCenter(){ centerNote.style.display='none'; }
 
   function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
+    stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
     for(const k of Object.keys(buffs)){
       if(k!=='LONG'){
         buffs[k].active=false;
