@@ -2087,6 +2087,7 @@ function generateLevel(lv, L){
 
   // 道具掉落率抑制
   let burstStart=0, burstCount=0;
+  let pendingGoodDrop=null;
   function activePowerCount(){
     const now=performance.now();
     let cnt=0;
@@ -2113,8 +2114,18 @@ function generateLevel(lv, L){
     }
     const actives=activePowerCount();
     if(actives===0){
-      spawnPower(b.x + b.w/2 - 12, b.y + b.h/2, {forceGood:true});
-      return;
+      if(!pendingGoodDrop){
+        const px=b.x+b.w/2-12, py=b.y+b.h/2;
+        pendingGoodDrop={x:px,y:py};
+        setTimeout(()=>{
+          if(pendingGoodDrop && burstCount===1){
+            spawnPower(pendingGoodDrop.x, pendingGoodDrop.y, {forceGood:true});
+          }
+          pendingGoodDrop=null;
+        },0);
+        return;
+      }
+      // 已有保底掉落等待確認，後續磚塊走一般掉落計算
     }
     let rate=dropRateForLevel(level);
     if(actives>=5) rate*=0.3;
