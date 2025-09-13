@@ -189,19 +189,19 @@
     label: '兔兔·奶油雲朵',
     selectLabel: '兔兔·奶油雲朵',
     cssSkin: '兔兔·奶油雲朵',
-    lifeIcon: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><g fill="#fff" stroke="#e0e0e0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="32" cy="40" rx="20" ry="16"/><ellipse cx="20" cy="18" rx="10" ry="20"/><ellipse cx="44" cy="18" rx="10" ry="20"/><circle cx="24" cy="36" r="6" fill="#000"/><circle cx="40" cy="36" r="6" fill="#000"/><circle cx="24" cy="34" r="2" fill="#fff"/><circle cx="40" cy="34" r="2" fill="#fff"/><circle cx="32" cy="44" r="3" fill="#ffb6c1"/><path d="M28 48Q32 52 36 48" stroke="#000" fill="none"/></g></svg>`,
+    lifeIcon: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><g fill="#fff" stroke="#f7d7e7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="32" cy="40" rx="20" ry="16"/><ellipse cx="20" cy="18" rx="10" ry="20"/><ellipse cx="44" cy="18" rx="10" ry="20"/><circle cx="24" cy="36" r="6" fill="#000"/><circle cx="40" cy="36" r="6" fill="#000"/><circle cx="24" cy="34" r="2" fill="#fff"/><circle cx="40" cy="34" r="2" fill="#fff"/><circle cx="32" cy="44" r="3" fill="#ffb6c1"/><path d="M28 48Q32 52 36 48" stroke="#000" fill="none"/></g></svg>`,
     canvas: {
-      base: [255, 240, 220],
+      base: [255, 248, 245],
       hi: [255, 255, 255],
-      period: 3000,
+      period: 3500,
       effects: {
-        clouds: { count: 8, sizePx: 180, speed: 0.002, alpha: 0.25 },
-        balloons: { intervalMs: 10000, lifeMs: 40000, colors: ['#ff8aa0','#ffd966','#9ad0f5','#cfa0ff','#ffe599'] },
-        ledStrip: { hi: [255,255,255], lo: [255,240,200], period: 3000 }
+        clouds: { count: 10, sizePx: 160, speed: 0.003, alpha: 0.2 },
+        balloons: { intervalMs: 8000, lifeMs: 40000, colors: ['#ffb3d9','#ffe6a1','#cce6ff','#e5d0ff','#fff2b5'] },
+        ledStrip: { hi: [255,255,255], lo: [255,230,240], period: 3500 }
       },
-      bg: ['#aee1ff', '#fdfbff', '#ffffff']
+      bg: ['#ffe8f5', '#fffefc', '#ffffff']
     },
-    desc: '童話兔兔：奶油 HUD、草莓蛋糕按鈕、柔黃白 LED，棉花雲與氣球飄浮，3s 週期。'
+    desc: '奶油夢境：粉霜 HUD、棉花糖按鈕、柔粉白 LED，柔雲與氣球輕飄，3.5s 週期。'
   }
 };
 
