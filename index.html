@@ -168,6 +168,14 @@
     #combo.glow{animation:goldBlink 1s infinite}
     #combo.pop{animation:comboPop .5s}
     #combo.glow.pop{animation:goldBlink 1s infinite,comboPop .5s}
+    #combo.star{animation:comboStarGlow 1s linear infinite}
+    @keyframes comboStarGlow{
+      0%{color:#ff4d6d;text-shadow:0 0 6px #ff4d6d}
+      25%{color:#ffd166;text-shadow:0 0 6px #ffd166}
+      50%{color:#06d6a0;text-shadow:0 0 6px #06d6a0}
+      75%{color:#4cc9f0;text-shadow:0 0 6px #4cc9f0}
+      100%{color:#ff4d6d;text-shadow:0 0 6px #ff4d6d}
+    }
     #comboNotice{
       position:absolute;left:0;right:0;top:0;z-index:30;
       overflow:hidden;pointer-events:none;
@@ -566,6 +574,7 @@ select optgroup { color: #0b1022; }
       RAMPAGE:{label:'暴走球(短暫強穿)',type:'buff',durationMs:5000,forcePiercing:true,rampageMs:5000,badge:'🔥'},
       FAST:{label:'快速球',type:'debuff',durationMs:5000,globalSpeedMul:1.5,screenShakeOnApply:6,badge:'⚡'},
       WAVY:{label:'變速球',type:'debuff',durationMs:5000,wavy:{amp:0.6,base:1.2,periodMs:200},badge:'〰️'},
+      COMBO:{label:'連擊之星',desc:'連擊時間延長、得分×1.5',type:'buff',durationMs:30000,combo:{timeMul:1.5,scoreMul:1.5},badge:'🌟'},
       // 新增
       PLASMA:{label:'電漿球(擊中放出電漿圈清列)',type:'buff',durationMs:10000,plasma:{drift:1.2,radius:38,lifeMs:3000},badge:'⚡️'},
       FREEZE:{label:'凍結球(延遲停頓一下)',type:'buff',durationMs:10000,freeze:{delayMs:300,stopMs:2000},badge:'❄️'},
@@ -587,6 +596,7 @@ select optgroup { color: #0b1022; }
       ,FIRE:{label:'火焰球(碰撞蓄能10秒爆炸)',type:'buff',durationMs:10000,badge:'🔥'}
       ,POISON:{label:'劇毒球(命中磚每2秒扣血)',type:'buff',durationMs:12000,poison:{tickMs:2000},badge:'☠️'}
       ,BLINK:{label:'瞬移球(彈後1秒頂部落下)',type:'buff',durationMs:10000,blink:{delayMs:1000},badge:'🌀'}
+      ,GATLING:{label:'火力壓制',desc:'平台機槍掃射8秒',type:'special',durationMs:11000,specialWeight:0.1,gatling:{chargeMs:3000,fireMs:8000,intervalMs:100,bulletSpeed:10},badge:'🔫'}
       ,SWORD:{label:'劍芒裂空',desc:'飛劍掃場',type:'special',durationMs:20000,specialWeight:0.1,badge:'🗡️'}
       ,STORM:{label:'雷射風暴',desc:'全場掃射',type:'special',durationMs:5000,specialWeight:0.1,storm:{},badge:'🌩️'}
       ,BLACKHOLE:{label:'黑洞吞噬',desc:'黑洞吞場',type:'special',durationMs:20000,specialWeight:0.1,badge:'⚫'}
@@ -942,6 +952,7 @@ select optgroup { color: #0b1022; }
       if(typeof nextBossAtkB !== 'undefined' && nextBossAtkB){ nextBossAtkB += delta; }
       if(typeof bossChargeUntil !== 'undefined' && bossChargeUntil){ bossChargeUntil += delta; }
       if(typeof cyclopsShakeUntil !== 'undefined' && cyclopsShakeUntil){ cyclopsShakeUntil += delta; }
+      if(gatling){ gatling.chargeUntil+=delta; gatling.fireStart+=delta; gatling.fireUntil+=delta; if(gatling.lastShot) gatling.lastShot+=delta; }
       // 調整各種特效物件（粒子、雷射、黑洞等）的 till/until 終止時間
       const lists = [plasmas, holyFlashes, blackHoles, laserBeams, laserImpacts, missiles, hostileBeams, hostileArcs, hostileColumns, hazardClouds];
       for(const arr of lists){
@@ -1017,6 +1028,7 @@ select optgroup { color: #0b1022; }
     else if(combo>=30){ comboEl.classList.add('tier3'); }
     else if(combo>=10){ comboEl.classList.add('tier2'); }
     else { comboEl.classList.add('tier1'); }
+    if(buffs.COMBO?.active){ comboEl.classList.add('star'); }
     comboEl.classList.add('pop'); setTimeout(()=>comboEl.classList.remove('pop'),500);
     comboEl.style.opacity=1;
     if(combo===50 && !comboNoticeTriggered[50]){ comboNoticeTriggered[50]=true; showComboNotice('看來是個高手呢！'); }
@@ -1036,7 +1048,11 @@ select optgroup { color: #0b1022; }
     if(combo>=10) return 1.2;
     return 1;
   }
-  function addScore(base){ score += Math.round(base * getComboMultiplier()); }
+  function addScore(base){
+    let mul=getComboMultiplier();
+    if(buffs.COMBO?.active){ mul*=GAME_CONFIG.powers.COMBO.combo.scoreMul; }
+    score += Math.round(base * mul);
+  }
   function scoreForBrick(b){ return b.boss ? 3000 : (b.elite ? 100 : 10); }
   function renderStatsHtml(){
     const fd = (stats.fastestDeath===Infinity)? '-' : stats.fastestDeath.toFixed(1);
@@ -1122,6 +1138,7 @@ select optgroup { color: #0b1022; }
   const blackHoles=[]; // {x,y,until}
   const laserBeams=[]; // {x1,y1,x2,y2,until}
   const laserImpacts=[]; // {x,y,t0,tEnd}
+  const gatlingBullets=[]; // 火力壓制子彈 {x,y,vx,vy}
   const lockBoxes=[]; // {x,y,w,h,until,kind}
 
   // 特殊增益相關容器
@@ -1129,6 +1146,7 @@ select optgroup { color: #0b1022; }
   let swordFireStart=0, nextSwordFire=0;
 
   let stormTurret=null; // 雷射風暴：{x,y,chargeUntil,fireAt,shots,lastShot}
+  let gatling=null; // 火力壓制：{x,y,chargeUntil,fireStart,fireUntil,lastShot,angle}
 
   const annihilSparks=[]; // 萬物銷毀：天空灑落的金色光點 {x,y,v}
 
@@ -1452,7 +1470,7 @@ select optgroup { color: #0b1022; }
   }
 
   // === Buff 狀態 ===
-  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},PADSPIN:{active:false,until:0,start:0},PADBOOM:{active:false,until:0,explodeAt:0,returnAt:0,exploded:false},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0},FIRE:{active:false,until:0},POISON:{active:false,until:0},BLINK:{active:false,until:0},SWORD:{active:false,until:0},STORM:{active:false,until:0},BLACKHOLE:{active:false,until:0,deaths:0},ANNIHIL:{active:false,until:0,start:0,next:0}};
+  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},COMBO:{active:false,until:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},PADSPIN:{active:false,until:0,start:0},PADBOOM:{active:false,until:0,explodeAt:0,returnAt:0,exploded:false},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0},GATLING:{active:false,until:0},FIRE:{active:false,until:0},POISON:{active:false,until:0},BLINK:{active:false,until:0},SWORD:{active:false,until:0},STORM:{active:false,until:0},BLACKHOLE:{active:false,until:0,deaths:0},ANNIHIL:{active:false,until:0,start:0,next:0}};
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
@@ -2243,6 +2261,7 @@ function generateLevel(lv, L){
     if(type==='FIRE'){ buffs.FIRE.active=true; buffs.FIRE.until=now+def.durationMs; fireEnergy=0; updateFireEnergy(); }
     if(type==='POISON'){ buffs.POISON.active=true; buffs.POISON.until=now+def.durationMs; }
     if(type==='BLINK'){ buffs.BLINK.active=true; buffs.BLINK.until=now+def.durationMs; }
+    if(type==='COMBO'){ buffs.COMBO.active=true; buffs.COMBO.until=now+def.durationMs; }
 
     if(type==='TRACK'){ buffs.TRACK.active=true; buffs.TRACK.until=now+def.durationMs; }
     if(type==='MISSILE'){ buffs.MISSILE.active=true; buffs.MISSILE.until=now+def.durationMs; }
@@ -2253,6 +2272,7 @@ function generateLevel(lv, L){
     if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+def.durationMs; showComboNotice('注意看! 你破洞啦!',5000,3000); }
     if(type==='PADSPIN'){ buffs.PADSPIN.active=true; buffs.PADSPIN.until=now+def.durationMs; buffs.PADSPIN.start=now; }
     if(type==='PADBOOM'){ buffs.PADBOOM.active=true; buffs.PADBOOM.explodeAt=now+(def.explosion?.flashMs||3000); buffs.PADBOOM.returnAt=buffs.PADBOOM.explodeAt+(def.explosion?.goneMs||3000); buffs.PADBOOM.until=buffs.PADBOOM.returnAt; buffs.PADBOOM.exploded=false; }
+    if(type==='GATLING'){ buffs.GATLING.active=true; buffs.GATLING.until=now+def.durationMs; const g=GAME_CONFIG.powers.GATLING.gatling; const pr=paddleRect(); gatling={x:pr.x+pr.w/2,y:pr.y,chargeUntil:now+(g.chargeMs||3000),fireStart:now+(g.chargeMs||3000),fireUntil:now+(g.chargeMs||3000)+(g.fireMs||8000),lastShot:0,angle:0}; }
     if(type==='FLIP'){
       // 天地翻轉：延遲啟用並紀錄起止時間。啟用及結束均由 update 中判斷。
       const delay = 2000;
@@ -3000,6 +3020,7 @@ function generateLevel(lv, L){
     // 雷射砲展示
     if(buffs.LASER.active){ ctx.fillStyle='rgba(120,255,120,0.8)'; if(!orientLeft){ ctx.fillRect((pr.x-6)*scaleX, (pr.y-4)*scaleY, 4*scaleX, (pr.h+8)*scaleY); ctx.fillRect((pr.x+pr.w+2)*scaleX, (pr.y-4)*scaleY, 4*scaleX, (pr.h+8)*scaleY); } else { ctx.fillRect((pr.x-4)*scaleX, (pr.y-6)*scaleY, (pr.w+8)*scaleX, 4*scaleY); ctx.fillRect((pr.x-4)*scaleX, (pr.y+pr.h+2)*scaleY, (pr.w+8)*scaleX, 4*scaleY); } }
     if(stormTurret){ const t=stormTurret; ctx.save(); ctx.fillStyle='rgba(200,255,200,0.8)'; ctx.fillRect((t.x-10)*scaleX,(t.y-20)*scaleY,20*scaleX,20*scaleY); if(performance.now()<t.chargeUntil){ const prog=1-(t.chargeUntil-performance.now())/3000; ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(120,255,200,${0.3+0.7*prog})`; ctx.beginPath(); ctx.arc(t.x*scaleX,(t.y-20)*scaleY,30*prog*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); } ctx.restore(); }
+    if(gatling){ const t=gatling; ctx.save(); ctx.fillStyle='rgba(200,200,200,0.9)'; ctx.fillRect((t.x-6)*scaleX,(t.y-20)*scaleY,12*scaleX,20*scaleY); if(performance.now()<t.chargeUntil){ const prog=1-(t.chargeUntil-performance.now())/(GAME_CONFIG.powers.GATLING.gatling.chargeMs||3000); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(255,200,100,${0.3+0.7*prog})`; ctx.beginPath(); ctx.arc(t.x*scaleX,(t.y-20)*scaleY,20*prog*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); } ctx.restore(); }
 
     // 球與拖尾
     const nowT=performance.now();
@@ -3094,6 +3115,9 @@ function generateLevel(lv, L){
         ctx.stroke(); ctx.restore();
       }
     }
+    // 火力壓制子彈
+    ctx.fillStyle='rgba(255,200,120,0.9)';
+    for(const b of gatlingBullets){ ctx.beginPath(); ctx.arc(b.x*scaleX,b.y*scaleY,3*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); }
     // 飛彈
     for(const m of missiles){ for(const tr of (m.trail||[])){ const a=Math.max(0,1-(performance.now()-tr.t)/300); ctx.fillStyle=`rgba(255,180,90,${0.6*a})`; ctx.beginPath(); ctx.arc(tr.x*scaleX,tr.y*scaleY,2*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); } ctx.fillStyle='#ddd'; ctx.beginPath(); ctx.arc(m.x*scaleX,m.y*scaleY,4*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); }
 
@@ -3203,10 +3227,13 @@ function generateLevel(lv, L){
   function update(){
     const now=performance.now();
     if(cyclopsShakeUntil && now<cyclopsShakeUntil){ screenShake=Math.max(screenShake,6); }
+    if(comboEl) comboEl.classList.toggle('star', buffs.COMBO.active);
     if(combo>0){
       const elapsed=now-comboLastTime;
-      if(elapsed>3000 && elapsed<5000){ comboEl.style.opacity=1-((elapsed-3000)/2000); }
-      else if(elapsed>=5000){ resetCombo(); }
+      const mul=buffs.COMBO.active?GAME_CONFIG.powers.COMBO.combo.timeMul:1;
+      const fadeStart=3000*mul, resetTime=5000*mul;
+      if(elapsed>fadeStart && elapsed<resetTime){ comboEl.style.opacity=1-((elapsed-fadeStart)/(resetTime-fadeStart)); }
+      else if(elapsed>=resetTime){ resetCombo(); }
       else { comboEl.style.opacity=1; }
     }
     // Buff 過期
@@ -3228,6 +3255,8 @@ function generateLevel(lv, L){
           }
           fireEnergy=0; updateFireEnergy();
         }
+        if(key==='COMBO' && comboEl){ comboEl.classList.remove('star'); }
+        if(key==='GATLING'){ gatling=null; gatlingBullets.length=0; }
       }
     }
     computePaddleWidth(); updateBuffBadges();
@@ -3354,6 +3383,43 @@ function generateLevel(lv, L){
             spawnParticles(tx,ty,'rgba(160,255,200,0.9)',10,1.8,2.2,2.6);
             destroyBrick(targetIdx,'laser');
           }
+        }
+      }
+    }
+
+    if(gatling){
+      const pr=paddleRect();
+      gatling.x=pr.x+pr.w/2; gatling.y=pr.y;
+      if(now>=gatling.fireStart){
+        if(now>=gatling.fireUntil){ gatling=null; buffs.GATLING.active=false; }
+        else if(now-gatling.lastShot>=(GAME_CONFIG.powers.GATLING.gatling.intervalMs||100)){
+          gatling.lastShot=now;
+          gatling.angle=(gatling.angle||0)+0.3;
+          const cfg=GAME_CONFIG.powers.GATLING.gatling;
+          const x=gatling.x+Math.cos(gatling.angle)*5;
+          const vx=Math.cos(gatling.angle)*0.5;
+          gatlingBullets.push({x:x,y:gatling.y-10,vx:vx,vy:-(cfg.bulletSpeed||10)});
+        }
+      }
+    }
+    for(let i=gatlingBullets.length-1;i>=0;i--){
+      const bl=gatlingBullets[i];
+      bl.x+=bl.vx; bl.y+=bl.vy;
+      if(bl.y<0){ gatlingBullets.splice(i,1); continue; }
+      for(let j=bricks.length-1;j>=0;j--){
+        const bk=bricks[j];
+        if(bl.x>bk.x && bl.x<bk.x+bk.w && bl.y>bk.y && bl.y<bk.y+bk.h){
+          if(canDestroyBrick(bk) && !(bk.lockedUntil && now<bk.lockedUntil)){
+            bk.hp=(bk.hp||1)-1; incrementCombo();
+            if(bk.hp<=0){
+              addScore(scoreForBrick(bk)); updateHUD();
+              const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
+              revealBrickArea(bk); maybeDropFromBrick(bk);
+              if(bk.explosive){ explodeAt(cx,cy); } else { bricks.splice(j,1); }
+            } else updateHUD();
+          }
+          gatlingBullets.splice(i,1);
+          break;
         }
       }
     }
