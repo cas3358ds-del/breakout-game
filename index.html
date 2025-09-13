@@ -576,7 +576,7 @@ select optgroup { color: #0b1022; }
       LONG:{label:'平台變長(可疊)',type:'buff',durationMs:30000,longPerStackAdd:40,stacksMax:2,badge:'📏'},
       STICKY:{label:'黏性平台(上彈可暫黏)',type:'buff',durationMs:5000,sticky:true,badge:'🧲'},
       MULTI:{label:'多球',type:'buff',multiDuplicate:true,maxBalls:4,badge:'✨'},
-      SLOW:{label:'全局慢速',type:'buff',durationMs:15000,speedMul:0.6,badge:'🐢'},
+      SLOW:{label:'全局慢速',type:'buff',durationMs:15000,speedMul:0.8,badge:'🐢'},
       PIERCE:{label:'穿透球',type:'buff',durationMs:12000,piercing:true,badge:'🎯'},
       SHIELD:{label:'護盾(掉球擋一次)',type:'buff',oneShotShield:true,badge:'🛡'},
       RAMPAGE:{label:'暴走球(短暫強穿)',type:'buff',durationMs:5000,forcePiercing:true,rampageMs:5000,badge:'🔥'},
@@ -1471,7 +1471,7 @@ select optgroup { color: #0b1022; }
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
-  let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0},blinkAt:0}; }
+let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0},blinkAt:0,loopBrick:null,loopHits:0}; }
 
   // === 聲音與BGM ===
 
@@ -2244,7 +2244,7 @@ function generateLevel(lv, L){
     if(type==='MEGA'){ if(!buffs.MEGA.active){ for(const ball of balls){ ball.r*=GAME_CONFIG.powers.MEGA.mega.sizeMul; } buffs.MEGA.applied=true; } buffs.MEGA.active=true; buffs.MEGA.until=now+def.durationMs; }
     if(type==='CHAIN'){ buffs.CHAIN.active=true; buffs.CHAIN.until=now+def.durationMs; }
     if(type==='NARROW'){ buffs.NARROW.active=true; buffs.NARROW.until=now+def.durationMs; }
-    if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+def.durationMs; }
+    if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+def.durationMs; showComboNotice('注意看! 你破洞啦!',5000,3000); }
     if(type==='PADSPIN'){ buffs.PADSPIN.active=true; buffs.PADSPIN.until=now+def.durationMs; buffs.PADSPIN.start=now; }
     if(type==='PADBOOM'){ buffs.PADBOOM.active=true; buffs.PADBOOM.explodeAt=now+(def.explosion?.flashMs||3000); buffs.PADBOOM.returnAt=buffs.PADBOOM.explodeAt+(def.explosion?.goneMs||3000); buffs.PADBOOM.until=buffs.PADBOOM.returnAt; buffs.PADBOOM.exploded=false; }
     if(type==='FLIP'){
@@ -2923,11 +2923,11 @@ function generateLevel(lv, L){
       // 繪製
       let base = b.boss ? '#ff4d6d' : b.unbreakable ? '#888' : b.strong ? '#bb7aff' : b.moving ? '#6ec6ff' : b.explosive ? getVar('--expl') : brickColor(b.colorIdx);
       const g=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x)*scaleX,(b.y+b.h)*scaleY); g.addColorStop(0,base); g.addColorStop(1,'#1a1f3a'); ctx.fillStyle=g; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.fill();
-      if(b.elite){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba(120,220,255,0.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo((b.x+6)*scaleX,(b.y+6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+6)*scaleY); ctx.stroke(); ctx.beginPath(); ctx.moveTo((b.x+6)*scaleX,(b.y+b.h-6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+b.h-6)*scaleY); ctx.stroke(); ctx.restore(); }
+      if(b.elite){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.shadowColor='rgba(120,220,255,0.7)'; ctx.shadowBlur=15; const eg=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x+b.w)*scaleX,(b.y+b.h)*scaleY); eg.addColorStop(0,'rgba(0,255,255,0.9)'); eg.addColorStop(1,'rgba(120,180,255,0.2)'); ctx.strokeStyle=eg; ctx.lineWidth=3; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.stroke(); ctx.shadowBlur=0; ctx.strokeStyle='rgba(120,220,255,0.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo((b.x+6)*scaleX,(b.y+6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+6)*scaleY); ctx.moveTo((b.x+6)*scaleX,(b.y+b.h-6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+b.h-6)*scaleY); ctx.stroke(); ctx.restore(); }
       if(b.poisonUntil && performance.now()<b.poisonUntil){ ctx.fillStyle='rgba(0,255,0,0.25)'; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.fill(); }
       // 鎖鏈覆蓋
       if(b.lockedUntil && performance.now() < b.lockedUntil){ ctx.fillStyle='rgba(90,0,120,0.35)'; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.fill();
-      if(b.elite){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba(120,220,255,0.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo((b.x+6)*scaleX,(b.y+6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+6)*scaleY); ctx.stroke(); ctx.beginPath(); ctx.moveTo((b.x+6)*scaleX,(b.y+b.h-6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+b.h-6)*scaleY); ctx.stroke(); ctx.restore(); } }
+      if(b.elite){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.shadowColor='rgba(120,220,255,0.7)'; ctx.shadowBlur=15; const eg=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x+b.w)*scaleX,(b.y+b.h)*scaleY); eg.addColorStop(0,'rgba(0,255,255,0.9)'); eg.addColorStop(1,'rgba(120,180,255,0.2)'); ctx.strokeStyle=eg; ctx.lineWidth=3; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.stroke(); ctx.shadowBlur=0; ctx.strokeStyle='rgba(120,220,255,0.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo((b.x+6)*scaleX,(b.y+6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+6)*scaleY); ctx.moveTo((b.x+6)*scaleX,(b.y+b.h-6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+b.h-6)*scaleY); ctx.stroke(); ctx.restore(); } }
       // 菁英聚氣光
       if(b.elite && b.eliteChargeUntil && performance.now()<b.eliteChargeUntil){ const a=0.5+0.5*Math.sin(performance.now()/80); ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba(120,220,255,'+(0.6*a)+')'; ctx.lineWidth=3; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.stroke(); ctx.restore(); }
       // 血條 / 面孔
@@ -3297,9 +3297,13 @@ function generateLevel(lv, L){
     if(buffs.PADBOOM.active){
       if(!buffs.PADBOOM.exploded && now >= buffs.PADBOOM.explodeAt){
         const pr = paddleRect();
-        spawnParticles(pr.x+pr.w/2, pr.y+pr.h/2, '#ffdd99', 40, 2.8, 4.0, 4);
-        screenShake = Math.max(screenShake,6);
+        const cx = pr.x+pr.w/2, cy = pr.y+pr.h/2;
+        spawnParticles(cx, cy, '#ffdd99', 80, 3.5, 5.0, 5);
+        spawnParticles(cx, cy, '#ffeeaa', 60, 3.8, 4.8, 4.5);
+        spawnParticles(cx, cy, '#ffffff', 40, 3.2, 4.2, 3.5);
+        screenShake = Math.max(screenShake,10);
         playSFX('explosion');
+        showComboNotice('哈哈你爆掉啦? 道具不能亂吃呀!',5000,3000);
         paddleGoneUntil = buffs.PADBOOM.returnAt;
         buffs.PADBOOM.exploded = true;
       }
@@ -3513,6 +3517,10 @@ function generateLevel(lv, L){
       if(hit>=0){
         const bk=bricks[hit]; const inRampage=b.rampageUntil && now<b.rampageUntil;
         fireCollide();
+        if((inRampage || b.piercing) && bk.unbreakable){
+          if(b.loopBrick===bk){ b.loopHits++; } else { b.loopBrick=bk; b.loopHits=1; }
+          if(b.loopHits>=20){ b.piercing=false; b.rampageUntil=0; b.loopBrick=null; b.loopHits=0; }
+        }else{ b.loopBrick=null; b.loopHits=0; }
         // 反彈
         const oL=(b.x+r)-bk.x, oR=(bk.x+bk.w)-(b.x-r), oT=(b.y+r)-bk.y, oB=(bk.y+bk.h)-(b.y-r); const m=Math.min(oL,oR,oT,oB);
         if(!inRampage && !b.piercing){
