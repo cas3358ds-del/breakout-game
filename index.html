@@ -760,6 +760,8 @@ select optgroup { color: #0b1022; }
     }catch{}
     (data||[]).slice(0,20).forEach((row,i)=>{
       const tr=document.createElement('tr');
+      const fd = Number(row[9]||0).toFixed(1);
+      const ld = Number(row[10]||0).toFixed(1);
       tr.innerHTML = `<td>${i+1}</td>
         <td>${escapeHtml(row[1]??'')}</td>
         <td>${Number(row[2]||0)}</td>
@@ -769,8 +771,8 @@ select optgroup { color: #0b1022; }
         <td>${Number(row[6]||0)}</td>
         <td>${Number(row[7]||0)}</td>
         <td>${Number(row[8]||0)}</td>
-        <td>${Number(row[9]||0)}</td>
-        <td>${Number(row[10]||0)}</td>`;
+        <td>${fd}</td>
+        <td>${ld}</td>`;
       rankTableBody.appendChild(tr);
     });
     if(!rankTableBody.children.length){
@@ -798,6 +800,10 @@ select optgroup { color: #0b1022; }
   rankBtn?.addEventListener('click', openRankPage, {passive:true});
 
   async function uploadScore(){
+    if(scoreUploaded){
+      alert('已上傳過，請勿再次上傳');
+      return;
+    }
     const name = prompt('請輸入玩家名稱：');
     if(!name) return;
     const payload = {
@@ -825,6 +831,7 @@ select optgroup { color: #0b1022; }
       const text = await res.text().catch(()=> '');
       if (res.ok && /ok/i.test(text.trim())) {
         alert('上傳成功');
+        scoreUploaded = true;
       } else {
         alert('上傳失敗');
       }
@@ -988,6 +995,7 @@ select optgroup { color: #0b1022; }
   const comboEl=document.getElementById('combo');
   let comboNoticeTriggered={50:false,100:false,200:false,300:false,400:false,500:false,800:false,1000:false};
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0};
+  let scoreUploaded=false;
   let ledStyle = (localStorage.getItem('led_style')||'classic');
   function resetCombo(){
     combo=0; comboLastTime=0;
@@ -1046,8 +1054,8 @@ select optgroup { color: #0b1022; }
   }
   function addScore(base){ score += Math.round(base * getComboMultiplier()); }
   function renderStatsHtml(){
-    const fd = (stats.fastestDeath===Infinity)? '-' : stats.fastestDeath.toFixed(2);
-    const ld = (stats.longestLife===0)? '-' : stats.longestLife.toFixed(2);
+    const fd = (stats.fastestDeath===Infinity)? '-' : stats.fastestDeath.toFixed(1);
+    const ld = (stats.longestLife===0)? '-' : stats.longestLife.toFixed(1);
     return `<div class="grid">
       <div>消耗生命：<strong>${stats.livesUsed}</strong></div>
       <div>接球次數：<strong>${stats.catches}</strong></div>
@@ -2331,7 +2339,7 @@ function generateLevel(lv, L){
   }
   function hideCenter(){ centerNote.style.display='none'; }
 
-  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; nineCatEaten=load?nineCatEaten:0; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
+  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
     for(const k of Object.keys(buffs)){
       if(k!=='LONG'){
         buffs[k].active=false;
