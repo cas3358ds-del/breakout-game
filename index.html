@@ -219,6 +219,13 @@
     .rank-page .close{align-self:flex-end;cursor:pointer;font-size:24px;line-height:1}
     .rank-page table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
     .rank-page th,.rank-page td{border:1px solid var(--stroke);padding:4px 6px;text-align:center}
+    @media (max-width: 600px){
+      .rank-page table{font-size:12px;}
+      .rank-page th,.rank-page td{padding:2px 4px;}
+    }
+    @media (max-width: 420px){
+      .rank-page table{font-size:10px;}
+    }
 
     /* Win and Game Over overlays */
     .win{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:6;pointer-events:auto}
