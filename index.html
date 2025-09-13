@@ -556,8 +556,11 @@ select optgroup { color: #0b1022; }
 <script>
 (() => {
 
-  const RANK_API = 'https://script.google.com/macros/s/AKfycbzuXwKs6xxPgdcZdXtQmXNNFMQtk7fXeNVXdRvnxF7RqhkLOFscazypNgWslWx5Qi6I/exec';
-  // Apps Script backend 已回應 CORS 標頭，直接存取即可。
+  // Google Apps Script 部署後的 Web App URL，需替換為您自己的網址
+  const RANK_API = 'https://script.google.com/macros/s/REPLACE_WITH_WEB_APP_ID/exec';
+  // 逾時毫秒數：避免網路不穩或後端未回應導致 Promise 卡住
+  const FETCH_TIMEOUT = 8000;
+  // Apps Script backend 必須回應 CORS 標頭，才能跨網域存取
   // === 設定 ===
   const GAME_CONFIG = {
     totalLevels: 20,
@@ -717,8 +720,11 @@ select optgroup { color: #0b1022; }
 
   // === Rank page logic ===
   async function fetchLeaderboard(){
+    const controller = new AbortController();
+    const to = setTimeout(()=>controller.abort(), FETCH_TIMEOUT);
     // GET leaderboard as JSON (supports both array-of-arrays and array-of-objects)
-    const res = await fetch(RANK_API + '?t=' + Date.now(), { cache: 'no-store' });
+    const res = await fetch(RANK_API + '?t=' + Date.now(), { cache: 'no-store', signal: controller.signal });
+    clearTimeout(to);
     if (!res.ok) throw new Error('fetch failed: ' + res.status);
     const text = await res.text();
     let data;
@@ -744,6 +750,9 @@ select optgroup { color: #0b1022; }
     if (!Array.isArray(data)) throw new Error('unexpected data');
   return data;
   }
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  }
   function renderLeaderboard(data){
     rankTableBody.innerHTML='';
     try{
@@ -751,9 +760,8 @@ select optgroup { color: #0b1022; }
     }catch{}
     (data||[]).slice(0,20).forEach((row,i)=>{
       const tr=document.createElement('tr');
-      const safe = (v)=> (v===null||v===undefined)?'':String(v);
       tr.innerHTML = `<td>${i+1}</td>
-        <td>${safe(row[1])}</td>
+        <td>${escapeHtml(row[1]??'')}</td>
         <td>${Number(row[2]||0)}</td>
         <td>${Number(row[3]||0)}</td>
         <td>${Number(row[4]||0)}</td>
@@ -804,17 +812,20 @@ select optgroup { color: #0b1022; }
       fastestDeath: stats.fastestDeath===Infinity?0:stats.fastestDeath,
       longestSurvival: stats.longestLife
     };
+    const controller = new AbortController();
+    const to = setTimeout(()=>controller.abort(), FETCH_TIMEOUT);
     try{
       const res = await fetch(RANK_API, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain; charset=UTF-8' }, // simple request to avoid preflight
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
       });
-      const text = await res.text().catch(()=>'');
+      clearTimeout(to);
+      const text = await res.text().catch(()=> '');
       if (res.ok && /ok/i.test(text.trim())) {
         alert('上傳成功');
       } else {
-        // 若後端尚未佈署 CORS，這裡可能會失敗；提示用戶稍後開啟排行榜確認
         alert('上傳失敗');
       }
     }catch(e){
