@@ -1030,6 +1030,7 @@ select optgroup { color: #0b1022; }
     return 1;
   }
   function addScore(base){ score += Math.round(base * getComboMultiplier()); }
+  function scoreForBrick(b){ return b.boss ? 3000 : (b.elite ? 100 : 10); }
   function renderStatsHtml(){
     const fd = (stats.fastestDeath===Infinity)? '-' : stats.fastestDeath.toFixed(1);
     const ld = (stats.longestLife===0)? '-' : stats.longestLife.toFixed(1);
@@ -1919,7 +1920,7 @@ function generateLevel(lv, L){
     b.hp = (b.hp||1) - amount;
     if(b.hp<=0){
       if(b.elite){ stats.eliteKills++; }
-      revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(10); updateHUD();
+      revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); updateHUD();
     }
   }
   function destroyBrick(i, sfx='default'){
@@ -1928,7 +1929,7 @@ function generateLevel(lv, L){
     if(b.boss && !b.prompted){ showPrompt('Boss！'); b.prompted=true; }
     if(b.boss){
       b.hp-=1;
-      if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(50); stats.bossKills++; updateHUD(); }
+      if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
       return;
     }
     if(b.elite){ stats.eliteKills++; }
@@ -1937,11 +1938,19 @@ function generateLevel(lv, L){
     spawnParticles(bx,by,color,30,2.0,3.2,3.5);
     if(sfx==='default'){ beep(420,0.06,0.08); setTimeout(()=>beep(620,0.05,0.06),40); }
     else if(sfx!=='none'){ playSFX(sfx); }
-    revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(10); updateHUD();
+    revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); updateHUD();
   }
   function damageBrick(i, dmg, sfx='default'){ for(let k=0;k<dmg;k++){ if(!bricks[i]) break; destroyBrick(i, sfx); } }
   function destroyNeighbors(idx){ const b=bricks[idx]; if(!b) return; const L=layout(); const near=[]; for(let j=bricks.length-1;j>=0;j--){ if(j===idx) continue; const t=bricks[j]; const dx=Math.abs((t.x+t.w/2)-(b.x+b.w/2)); const dy=Math.abs((t.y+t.h/2)-(b.y+b.h/2)); const thx=brickW+L.pad+2, thy=brickH+L.pad+2; if(dx<=thx && dy<=thy){ // 鄰近一格
-        if(canDestroyBrick(t)){ if(t.boss){ t.hp-=1; if(t.hp<=0){ revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(50); } } else { revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(10); } }
+        if(canDestroyBrick(t)){
+          if(t.boss){
+            t.hp-=1;
+            if(t.hp<=0){
+              revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(t)); stats.bossKills++; }
+          } else {
+            revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(t)); if(t.elite) stats.eliteKills++;
+          }
+        }
       }
     }
     updateHUD();
@@ -1957,9 +1966,9 @@ function generateLevel(lv, L){
         // Boss：只扣血，不秒殺
         if(b.boss){
           b.hp -= 1;
-          if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(50); }
+          if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; }
         }else{
-          revealBrickArea(b); maybeDropFromBrick(b,0.3); bricks.splice(i,1); incrementCombo(); addScore(10);
+          revealBrickArea(b); maybeDropFromBrick(b,0.3); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++;
         }
         spawnParticles(bx,by,'#ffdd99',14,1.7,2.6,3);
       }
@@ -1973,8 +1982,13 @@ function generateLevel(lv, L){
       const bx=b.x+b.w/2, by=b.y+b.h/2; const d=Math.hypot(bx-cx,by-cy);
       if(d<=radius){
         if(canDestroyBrick(b)){
-          if(b.boss){ b.hp-=1; if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(50); updateHUD(); } }
-          else { revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(10); updateHUD(); }
+          if(b.boss){
+            b.hp-=1;
+            if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
+          }
+          else {
+            revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD();
+          }
         }
         spawnParticles(bx,by,'#ffdd99',20,1.8,2.8,3.5);
       }
@@ -2179,6 +2193,9 @@ function generateLevel(lv, L){
     if(def.type !== 'debuff'){
       lastBeneficialPickupAt = now;
       nextAutoBeneficialDropAt = now + 10000;
+      if(def.type === 'buff') addScore(10);
+      else if(def.type === 'special' || def.type === 'rare') addScore(50);
+      updateHUD();
     }
     // 罕見瞬發
     if(def.instant && def.type==='rare'){
@@ -2187,8 +2204,13 @@ function generateLevel(lv, L){
         const keep=[]; for(const b of bricks){
           if(Math.random()<0.5){
             if(b.unbreakable){ keep.push(b); continue; }
-            if(b.boss){ b.hp -= 1; if(b.hp>0){ keep.push(b);} else { revealBrickArea(b); incrementCombo(); addScore(50); } }
-            else { revealBrickArea(b); maybeDropFromBrick(b); incrementCombo(); addScore(10); }
+            if(b.boss){
+              b.hp -= 1;
+              if(b.hp>0){ keep.push(b);} else { revealBrickArea(b); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; }
+            }
+            else {
+              revealBrickArea(b); maybeDropFromBrick(b); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++;
+            }
             fireBursts.push({x:b.x+b.w/2,y:b.y+b.h/2,life:400+Math.random()*400});
           } else keep.push(b);
         }
@@ -2863,8 +2885,13 @@ function generateLevel(lv, L){
       // 沿途清除磚塊（Boss/不可破壞豁免）
       for(let j=bricks.length-1;j>=0;j--){ const b=bricks[j]; const bx=b.x+b.w/2, by=b.y+b.h/2; if(Math.hypot(P.x-bx,P.y-by)<=P.radius){
           if(b.unbreakable) continue;
-          if(b.boss){ b.hp-=1; if(b.hp<=0){ revealBrickArea(b); bricks.splice(j,1); incrementCombo(); addScore(50); updateHUD(); } }
-          else { revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(j,1); incrementCombo(); addScore(10); updateHUD(); }
+          if(b.boss){
+            b.hp-=1;
+            if(b.hp<=0){ revealBrickArea(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
+          }
+          else {
+            revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD();
+          }
         }
       }
     } ctx.restore(); }
@@ -3207,8 +3234,14 @@ function generateLevel(lv, L){
       if(now >= bk.poisonTick){
         bk.poisonTick += (GAME_CONFIG.powers.POISON.poison.tickMs||2000);
         if(canDestroyBrick(bk)){
-          if(bk.boss){ bk.hp-=1; if(bk.hp<=0){ revealBrickArea(bk); bricks.splice(i,1); incrementCombo(); addScore(50); updateHUD(); } }
-          else { bk.hp=(bk.hp||1)-1; if(bk.hp<=0){ revealBrickArea(bk); maybeDropFromBrick(bk); bricks.splice(i,1); incrementCombo(); addScore(10); updateHUD(); } }
+          if(bk.boss){
+            bk.hp-=1;
+            if(bk.hp<=0){ revealBrickArea(bk); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(bk)); stats.bossKills++; updateHUD(); }
+          }
+          else {
+            bk.hp=(bk.hp||1)-1;
+            if(bk.hp<=0){ revealBrickArea(bk); maybeDropFromBrick(bk); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(bk)); if(bk.elite) stats.eliteKills++; updateHUD(); }
+          }
           spawnParticles(bk.x+bk.w/2,bk.y+bk.h/2,'rgba(120,255,120,0.9)',10,1.5,2.4,2);
         }
       }
@@ -3524,14 +3557,15 @@ function generateLevel(lv, L){
         if(!buffs.HELL.active && !buffs.HOLY.active){
           // 鎖鏈中不受傷害
           if(!(bk.lockedUntil && now<bk.lockedUntil)){
-            bk.hp=(bk.hp||1)-1; incrementCombo(); addScore(10); updateHUD();
+            bk.hp=(bk.hp||1)-1; incrementCombo();
             if(bk.hp<=0){
+              addScore(scoreForBrick(bk)); updateHUD();
               const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
               revealBrickArea(bk);
               if(inRampage || b.piercing) playSFX('pierce');
               maybeDropFromBrick(bk);
               if(bk.explosive){ explodeAt(cx,cy); } else { bricks.splice(hit,1); }
-            }
+            } else updateHUD();
           }
         }
 
