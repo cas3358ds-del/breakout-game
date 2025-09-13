@@ -169,12 +169,13 @@
     #combo.pop{animation:comboPop .5s}
     #combo.glow.pop{animation:goldBlink 1s infinite,comboPop .5s}
     #combo.star{animation:comboStarGlow 1s linear infinite}
+    #combo.star.pop{animation:comboStarGlow 1s linear infinite,comboPop .5s}
     @keyframes comboStarGlow{
-      0%{color:#ff4d6d;text-shadow:0 0 6px #ff4d6d}
-      25%{color:#ffd166;text-shadow:0 0 6px #ffd166}
-      50%{color:#06d6a0;text-shadow:0 0 6px #06d6a0}
-      75%{color:#4cc9f0;text-shadow:0 0 6px #4cc9f0}
-      100%{color:#ff4d6d;text-shadow:0 0 6px #ff4d6d}
+      0%{color:#ff4d6d;text-shadow:0 0 8px #ff4d6d,0 0 16px #ff4d6d}
+      25%{color:#ffd166;text-shadow:0 0 8px #ffd166,0 0 16px #ffd166}
+      50%{color:#06d6a0;text-shadow:0 0 8px #06d6a0,0 0 16px #06d6a0}
+      75%{color:#4cc9f0;text-shadow:0 0 8px #4cc9f0,0 0 16px #4cc9f0}
+      100%{color:#ff4d6d;text-shadow:0 0 8px #ff4d6d,0 0 16px #ff4d6d}
     }
     #comboNotice{
       position:absolute;left:0;right:0;top:0;z-index:30;
@@ -574,7 +575,7 @@ select optgroup { color: #0b1022; }
       RAMPAGE:{label:'暴走球(短暫強穿)',type:'buff',durationMs:5000,forcePiercing:true,rampageMs:5000,badge:'🔥'},
       FAST:{label:'快速球',type:'debuff',durationMs:5000,globalSpeedMul:1.5,screenShakeOnApply:6,badge:'⚡'},
       WAVY:{label:'變速球',type:'debuff',durationMs:5000,wavy:{amp:0.6,base:1.2,periodMs:200},badge:'〰️'},
-      COMBO:{label:'連擊之星',desc:'連擊時間延長、得分×1.5',type:'buff',durationMs:30000,combo:{timeMul:1.5,scoreMul:1.5},badge:'🌟'},
+      COMBO:{label:'連擊之星',desc:'連擊時間延長2倍、得分×1.5',type:'buff',durationMs:30000,combo:{timeMul:2,scoreMul:1.5},badge:'🌟'},
       // 新增
       PLASMA:{label:'電漿球(擊中放出電漿圈清列)',type:'buff',durationMs:10000,plasma:{drift:1.2,radius:38,lifeMs:3000},badge:'⚡️'},
       FREEZE:{label:'凍結球(延遲停頓一下)',type:'buff',durationMs:10000,freeze:{delayMs:300,stopMs:2000},badge:'❄️'},
@@ -3020,7 +3021,27 @@ function generateLevel(lv, L){
     // 雷射砲展示
     if(buffs.LASER.active){ ctx.fillStyle='rgba(120,255,120,0.8)'; if(!orientLeft){ ctx.fillRect((pr.x-6)*scaleX, (pr.y-4)*scaleY, 4*scaleX, (pr.h+8)*scaleY); ctx.fillRect((pr.x+pr.w+2)*scaleX, (pr.y-4)*scaleY, 4*scaleX, (pr.h+8)*scaleY); } else { ctx.fillRect((pr.x-4)*scaleX, (pr.y-6)*scaleY, (pr.w+8)*scaleX, 4*scaleY); ctx.fillRect((pr.x-4)*scaleX, (pr.y+pr.h+2)*scaleY, (pr.w+8)*scaleX, 4*scaleY); } }
     if(stormTurret){ const t=stormTurret; ctx.save(); ctx.fillStyle='rgba(200,255,200,0.8)'; ctx.fillRect((t.x-10)*scaleX,(t.y-20)*scaleY,20*scaleX,20*scaleY); if(performance.now()<t.chargeUntil){ const prog=1-(t.chargeUntil-performance.now())/3000; ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(120,255,200,${0.3+0.7*prog})`; ctx.beginPath(); ctx.arc(t.x*scaleX,(t.y-20)*scaleY,30*prog*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); } ctx.restore(); }
-    if(gatling){ const t=gatling; ctx.save(); ctx.fillStyle='rgba(200,200,200,0.9)'; ctx.fillRect((t.x-6)*scaleX,(t.y-20)*scaleY,12*scaleX,20*scaleY); if(performance.now()<t.chargeUntil){ const prog=1-(t.chargeUntil-performance.now())/(GAME_CONFIG.powers.GATLING.gatling.chargeMs||3000); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(255,200,100,${0.3+0.7*prog})`; ctx.beginPath(); ctx.arc(t.x*scaleX,(t.y-20)*scaleY,20*prog*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); } ctx.restore(); }
+    if(gatling){
+      const t=gatling;
+      ctx.save();
+      const grad=ctx.createLinearGradient((t.x-8)*scaleX,(t.y-20)*scaleY,(t.x+8)*scaleX,t.y*scaleY);
+      grad.addColorStop(0,'#444');
+      grad.addColorStop(0.5,'#bbb');
+      grad.addColorStop(1,'#444');
+      ctx.fillStyle=grad;
+      ctx.fillRect((t.x-8)*scaleX,(t.y-20)*scaleY,16*scaleX,20*scaleY);
+      ctx.fillStyle='#333';
+      ctx.fillRect((t.x-3)*scaleX,(t.y-24)*scaleY,6*scaleX,4*scaleY);
+      if(performance.now()<t.chargeUntil){
+        const prog=1-(t.chargeUntil-performance.now())/(GAME_CONFIG.powers.GATLING.gatling.chargeMs||3000);
+        ctx.globalCompositeOperation='lighter';
+        ctx.fillStyle=`rgba(255,200,100,${0.3+0.7*prog})`;
+        ctx.beginPath();
+        ctx.arc(t.x*scaleX,(t.y-24)*scaleY,20*prog*((scaleX+scaleY)/2),0,Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
 
     // 球與拖尾
     const nowT=performance.now();
@@ -3116,8 +3137,19 @@ function generateLevel(lv, L){
       }
     }
     // 火力壓制子彈
-    ctx.fillStyle='rgba(255,200,120,0.9)';
-    for(const b of gatlingBullets){ ctx.beginPath(); ctx.arc(b.x*scaleX,b.y*scaleY,3*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); }
+    for(const b of gatlingBullets){
+      ctx.save();
+      const r=4*((scaleX+scaleY)/2);
+      const g=ctx.createRadialGradient(b.x*scaleX,b.y*scaleY,0,b.x*scaleX,b.y*scaleY,r);
+      g.addColorStop(0,'#fff');
+      g.addColorStop(0.3,'#ffec99');
+      g.addColorStop(1,'#ff8800');
+      ctx.fillStyle=g;
+      ctx.shadowBlur=8*((scaleX+scaleY)/2);
+      ctx.shadowColor='#ffb347';
+      ctx.beginPath(); ctx.arc(b.x*scaleX,b.y*scaleY,r,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
     // 飛彈
     for(const m of missiles){ for(const tr of (m.trail||[])){ const a=Math.max(0,1-(performance.now()-tr.t)/300); ctx.fillStyle=`rgba(255,180,90,${0.6*a})`; ctx.beginPath(); ctx.arc(tr.x*scaleX,tr.y*scaleY,2*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); } ctx.fillStyle='#ddd'; ctx.beginPath(); ctx.arc(m.x*scaleX,m.y*scaleY,4*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); }
 
@@ -3399,6 +3431,7 @@ function generateLevel(lv, L){
           const x=gatling.x+Math.cos(gatling.angle)*5;
           const vx=Math.cos(gatling.angle)*0.5;
           gatlingBullets.push({x:x,y:gatling.y-10,vx:vx,vy:-(cfg.bulletSpeed||10)});
+          spawnParticles(x, gatling.y-10, '#ffbb55', 8, 1.2, 2.5, 2);
         }
       }
     }
@@ -3409,12 +3442,14 @@ function generateLevel(lv, L){
       for(let j=bricks.length-1;j>=0;j--){
         const bk=bricks[j];
         if(bl.x>bk.x && bl.x<bk.x+bk.w && bl.y>bk.y && bl.y<bk.y+bk.h){
+          spawnParticles(bl.x, bl.y, '#ffdd77', 8, 1.6, 3.2, 2.5);
           if(canDestroyBrick(bk) && !(bk.lockedUntil && now<bk.lockedUntil)){
             bk.hp=(bk.hp||1)-1; incrementCombo();
             if(bk.hp<=0){
               addScore(scoreForBrick(bk)); updateHUD();
               const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
               revealBrickArea(bk); maybeDropFromBrick(bk);
+              spawnParticles(cx, cy, '#eeeeee', 24, 2.4, 4.0, 3.5);
               if(bk.explosive){ explodeAt(cx,cy); } else { bricks.splice(j,1); }
             } else updateHUD();
           }
