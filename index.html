@@ -580,8 +580,6 @@ select optgroup { color: #0b1022; }
       PLASMA:{label:'電漿球(擊中放出電漿圈清列)',type:'buff',durationMs:10000,plasma:{drift:1.2,radius:38,lifeMs:3000},badge:'⚡️'},
       FREEZE:{label:'凍結球(延遲停頓一下)',type:'buff',durationMs:10000,freeze:{delayMs:300,stopMs:2000},badge:'❄️'},
       HOLY:{label:'神聖球(十字清線)',type:'buff',durationMs:5000,holy:{},badge:'✝️'},
-      PHOENIX:{label:'鳳凰審判(消半場/不秒殺Boss)',type:'rare',rareFactor:0.08,instant:true,badge:'🪽'},
-      NINE:{label:'9命怪貓(生命變9)',type:'rare',rareFactor:0.08,instant:true,badge:'🐱'}
       ,TRACK:{label:'追蹤球(自動修正軌跡)',type:'buff',durationMs:10000,track:{},badge:'🧭'}
       ,MISSILE:{label:'飛彈球(擋板反彈時發射3枚)',type:'buff',durationMs:5000,missile:{speed:7,turn:0.08,lifeMs:4000},badge:'🚀'}
       ,HELL:{label:'地獄球(黑洞吞鄰近格)',type:'buff',durationMs:5000,hell:{speedMul:1.2,haloMs:2000},badge:'🕳️'}
@@ -591,14 +589,16 @@ select optgroup { color: #0b1022; }
       ,HOLE:{label:'平台空洞(中間1/3無效)',type:'debuff',durationMs:5000,hole:true,badge:'🕳'}
       ,PADSPIN:{label:'平台翻轉',desc:'平台旋轉8秒',type:'debuff',durationMs:8000,spin:{periodMs:8000},badge:'🌀'}
       ,PADBOOM:{label:'平台爆炸',desc:'閃爍後消失3秒',type:'debuff',explosion:{flashMs:3000,goneMs:3000},badge:'💣'}
-      ,FLIP:{label:'天地翻轉(改為左側擋板)',type:'special',durationMs:15000,specialWeight:0.1,badge:'🔄'}
-      ,GODSPEED:{label:'神速流轉(不落地/忽略效果/滿速)',type:'special',durationMs:10000,specialWeight:0.1,badge:'☄️'}
-      ,LASER:{label:'自動雷射(每2秒兩端發射)',type:'special',durationMs:10000,specialWeight:0.1,laser:{intervalMs:2000},badge:'🔫'}
       ,FIRE:{label:'火焰球(碰撞蓄能10秒爆炸)',type:'buff',durationMs:10000,badge:'🔥'}
       ,POISON:{label:'劇毒球(命中磚每2秒扣血)',type:'buff',durationMs:12000,poison:{tickMs:2000},badge:'☠️'}
       ,BLINK:{label:'瞬移球(彈後1秒頂部落下)',type:'buff',durationMs:10000,blink:{delayMs:1000},badge:'🌀'}
+      ,LASER:{label:'自動雷射(每2秒兩端發射)',type:'special',durationMs:10000,specialWeight:0.1,laser:{intervalMs:2000},badge:'🔫'}
+      ,FLIP:{label:'天地翻轉(改為左側擋板)',type:'special',durationMs:15000,specialWeight:0.1,badge:'🔄'}
+      ,NINE:{label:'9命怪貓(生命變9)',type:'special',instant:true,badge:'🐱'}
+      ,PHOENIX:{label:'鳳凰審判(消半場/不秒殺Boss)',type:'special',instant:true,badge:'🪽'}
       ,GATLING:{label:'火力壓制',desc:'平台機槍掃射8秒',type:'special',durationMs:11000,specialWeight:0.1,gatling:{chargeMs:3000,fireMs:8000,intervalMs:100,bulletSpeed:10},badge:'🔫'}
       ,SWORD:{label:'劍芒裂空',desc:'飛劍掃場',type:'special',durationMs:20000,specialWeight:0.1,badge:'🗡️'}
+      ,GODSPEED:{label:'神速流轉(不落地/忽略效果/滿速)',type:'special',durationMs:10000,specialWeight:0.1,badge:'☄️'}
       ,STORM:{label:'雷射風暴',desc:'全場掃射',type:'special',durationMs:5000,specialWeight:0.1,storm:{},badge:'🌩️'}
       ,BLACKHOLE:{label:'黑洞吞噬',desc:'黑洞吞場',type:'special',durationMs:20000,specialWeight:0.1,badge:'⚫'}
       ,ANNIHIL:{label:'萬物銷毀',desc:'隨機毀磚',type:'special',specialWeight:0.1,annihil:{speedMul:3},badge:'💥'}
@@ -2029,7 +2029,7 @@ function generateLevel(lv, L){
   function fireCollide(){ if(buffs.FIRE.active){ fireEnergy++; updateFireEnergy(); } }
 
   // === 掉落道具 ===
-  const powerups=[]; const ALL_TYPES=Object.keys(GAME_CONFIG.powers); const NORMAL_TYPES=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='rare'); const RARE_TYPES=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type==='rare');
+  const powerups=[]; const ALL_TYPES=Object.keys(GAME_CONFIG.powers); const NORMAL_TYPES=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k].type!=='special');
 
   // === 天空隨機增益掉落（第1關每25秒 → 第20關每6秒 線性遞減） ===
   let nextSkyDropAt = 0;
@@ -2041,20 +2041,20 @@ function generateLevel(lv, L){
   function scheduleNextSkyDrop(){ nextSkyDropAt = performance.now() + skyDropIntervalMs(level); }
   function spawnBeneficialAtTop(){
     // 從所有非減益的道具中隨機挑選一種作為隨機掉落增益
-    // 若畫面已有特殊道具掉落，暫時排除特殊/稀有道具
+    // 若畫面已有特殊道具掉落，暫時排除特殊道具
     const goodTypes = ALL_TYPES.filter(k => GAME_CONFIG.powers[k].type !== 'debuff');
     let pool = goodTypes;
     if(powerups.some(p=>p.isSpecial)){
       pool = pool.filter(k => {
         const t = GAME_CONFIG.powers[k].type;
-        return t !== 'special' && t !== 'rare';
+        return t !== 'special';
       });
     }
     if(!pool.length) return;
     const type = pool[Math.floor(Math.random()*pool.length)];
     const def = GAME_CONFIG.powers[type];
     if(!def) return;
-    const isSpecial = (def.type === 'special' || def.type === 'rare');
+    const isSpecial = (def.type === 'special');
     // 設定速度：特殊偏慢
     let speed = GAME_CONFIG.powerCapsule.fallVy;
     if(isSpecial) speed *= 0.75;
@@ -2154,7 +2154,7 @@ function generateLevel(lv, L){
   }
 
   function spawnPower(x,y,opts={}){
-    // 隨機挑選一種道具類型（普通或稀有），並根據類型設定掉落速度與顏色標記
+    // 隨機挑選一種道具類型（普通或特殊），並根據類型設定掉落速度與顏色標記
     const {forceGood=false} = opts;
     const existingSpecial = powerups.some(p=>p.isSpecial);
     let pool;
@@ -2163,18 +2163,15 @@ function generateLevel(lv, L){
       if(existingSpecial){
         pool = pool.filter(k => {
           const t = GAME_CONFIG.powers[k].type;
-          return t !== 'special' && t !== 'rare';
+          return t !== 'special';
         });
       }
     }else{
-      const rareChance = (GAME_CONFIG.powers.PHOENIX?.rareFactor) || 0.1;
-      let pickRare = RARE_TYPES.length && Math.random() < rareChance;
-      if(existingSpecial) pickRare = false;
-      pool = pickRare ? RARE_TYPES.filter(t=>t!=='NINE'||nineCatEaten<2) : NORMAL_TYPES;
+      pool = NORMAL_TYPES;
       if(existingSpecial){
         pool = pool.filter(k => {
           const t = GAME_CONFIG.powers[k].type;
-          return t !== 'special' && t !== 'rare';
+          return t !== 'special';
         });
       }
     }
@@ -2182,8 +2179,8 @@ function generateLevel(lv, L){
     const type = pool[Math.floor(Math.random()*pool.length)];
     const def = GAME_CONFIG.powers[type];
     if(!def) return;
-    // 判斷是否為特殊（special/rare）或減益
-    const isSpecial = (def.type === 'special' || def.type === 'rare');
+    // 判斷是否為特殊（special）或減益
+    const isSpecial = (def.type === 'special');
     const isDebuff = (def.type === 'debuff');
     // 設定基礎速度：特殊偏慢，減益偏快
     let speed = GAME_CONFIG.powerCapsule.fallVy;
@@ -2220,22 +2217,22 @@ function generateLevel(lv, L){
     let promptText='';
     if(def.type==='buff') promptText=`增益：${fullLabel}`;
     else if(def.type==='debuff') promptText=`減益：${fullLabel}`;
-    else if(def.type==='special' || def.type==='rare') promptText=`特殊：${fullLabel}`;
+    else if(def.type==='special') promptText=`特殊：${fullLabel}`;
     const exist=buffs[type];
     let active=false;
     if(type==='LONG'){ active = exist && exist.stacks && exist.stacks.some(t=>t>now); }
     else active = exist && exist.active && exist.until && exist.until>now;
     if(promptText && !active) showPrompt(promptText);
-    // 更新最近取得增益的時間：非減益類型（含特殊/稀有）皆視為增益
+    // 更新最近取得增益的時間：非減益類型（含特殊）皆視為增益
     if(def.type !== 'debuff'){
       lastBeneficialPickupAt = now;
       nextAutoBeneficialDropAt = now + 10000;
       if(def.type === 'buff') addScore(10);
-      else if(def.type === 'special' || def.type === 'rare') addScore(50);
+      else if(def.type === 'special') addScore(50);
       updateHUD();
     }
-    // 罕見瞬發
-    if(def.instant && def.type==='rare'){
+    // 瞬發特殊增益
+    if(def.instant){
       if(type==='PHOENIX'){ // 鳳凰飛過 + 火焰 + 隨機一半消除（Boss只扣1）
         phoenixAnim={x:canvas.width+220,tEnd:now+1200};
         const keep=[]; for(const b of bricks){
@@ -2561,11 +2558,11 @@ function generateLevel(lv, L){
         }
       }
       html += '</div>';
-      // 特殊增益（special 或 rare）
+      // 特殊增益
       html += '<div><strong>特殊增益</strong><br>';
       for(const k of Object.keys(GAME_CONFIG.powers)){
         const p = GAME_CONFIG.powers[k];
-        if(p.type === 'special' || p.type === 'rare'){
+        if(p.type === 'special'){
           const label = p.label + (p.desc ? `(${p.desc})` : '');
           html += `${badgeIcon(k)} <em>${k}</em>：${label}<br>`;
         }
