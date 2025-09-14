@@ -183,6 +183,23 @@
       bg: ['#3d2b1f', '#22160e', '#0e0b08']
     },
     desc: '銅黃齒輪搭深木板，齒輪鏈轉動；琥珀 LED 呼吸，工廠齒輪背景。'
+  },
+  infiniteCastle: {
+    label: '和風．無限之城',
+    selectLabel: '和風．無限之城',
+    cssSkin: '和風．無限之城',
+    lifeIcon: `<svg viewBox="0 0 32 32">
+      <path d="M2 4 L30 28 M2 4 l6-2 l2 6 M30 28 l-6 2 l-2-6"
+            stroke="#ffedc2" stroke-width="3" fill="none"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+    canvas: {
+      base: [210, 160, 70],
+      hi: [255, 235, 150],
+      period: 2400,
+      effects: {},
+      bg: null
+    }
   }
 };
 
