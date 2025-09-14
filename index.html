@@ -1221,6 +1221,11 @@ select optgroup { color: #0b1022; }
     else if(combo===1000 && !comboNoticeTriggered[1000]){ comboNoticeTriggered[1000]=true; showComboNotice('快截圖給同事看吧！你是真正的連擊之神！',10000,5000); }
   }
   function getComboMultiplier(){
+    if(combo>=1000) return 10;
+    if(combo>=800) return 8;
+    if(combo>=500) return 7;
+    if(combo>=400) return 6;
+    if(combo>=300) return 5;
     if(combo>=200) return 4;
     if(combo>=100) return 3;
     if(combo>=50) return 2;
@@ -1231,6 +1236,9 @@ select optgroup { color: #0b1022; }
   function addScore(base){
     let mul=getComboMultiplier();
     if(buffs.COMBO?.active){ mul*=GAME_CONFIG.powers.COMBO.combo.scoreMul; }
+    const d=difficultySel?.value;
+    if(d==='easy') mul*=0.5;
+    else if(d==='hard') mul*=1.2;
     score += Math.round(base * mul);
   }
   function scoreForBrick(b){ return b.boss ? 3000 : (b.elite ? 100 : 10); }
@@ -3516,6 +3524,13 @@ function generateLevel(lv, L){
     return base + extra;
   }
 
+  function paddleHitSpeedMul(lv){
+    const maxLevel=20;
+    const l=Math.min(Math.max(lv,1),maxLevel);
+    const t=(l-1)/(maxLevel-1);
+    return 1.04 + 0.06 * t; // 1.04 -> 1.10
+  }
+
   function resetBalls(center=true){ balls=[makeBall(false)]; const base=getDiff().baseSpeed; const speed=speedForLevel(level); const angle=(-60-Math.random()*60)*Math.PI/180;
     balls[0].x=center?1100/2:paddle.x+paddle.w/2; balls[0].y=700-70; balls[0].vx=Math.cos(angle)*speed; balls[0].vy=Math.sin(angle)*speed; balls[0].piercing=buffs.PIERCE.active; }
 
@@ -3872,10 +3887,10 @@ function generateLevel(lv, L){
       }
       if(hitPaddle){ stats.catches++;
         if(!orientLeft){
-          const hitPos=(b.x-(pr.x+pr.w/2))/(pr.w/2); const sp=Math.min(Math.hypot(b.vx,b.vy)*1.02, b.speedCap); const angle=hitPos*(Math.PI/3);
+          const hitPos=(b.x-(pr.x+pr.w/2))/(pr.w/2); const sp=Math.min(Math.hypot(b.vx,b.vy)*paddleHitSpeedMul(level), b.speedCap); const angle=hitPos*(Math.PI/3);
           b.vx=Math.sin(angle)*sp; b.vy=-Math.cos(angle)*sp; b.y=pr.y-b.r-0.1;
         }else{
-          const hitPos=(b.y-(pr.y+pr.h/2))/(pr.h/2); const sp=Math.min(Math.hypot(b.vx,b.vy)*1.02, b.speedCap); const angle=hitPos*(Math.PI/3);
+          const hitPos=(b.y-(pr.y+pr.h/2))/(pr.h/2); const sp=Math.min(Math.hypot(b.vx,b.vy)*paddleHitSpeedMul(level), b.speedCap); const angle=hitPos*(Math.PI/3);
           b.vx=Math.cos(angle)*sp; b.vy=Math.sin(angle)*sp; b.x=pr.x+pr.w+b.r+0.1;
         }
         beep(880,0.03); spawnParticles(b.x,b.y,'#caddff',8,1.3,1.5,2.5); fireCollide();
