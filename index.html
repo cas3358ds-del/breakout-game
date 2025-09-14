@@ -982,8 +982,7 @@ select optgroup { color: #0b1022; }
     if(!name) return;
     if([...(name||'')].length>8){
       alert('名字這麼長是想怎樣啦? 請重新輸入!');
-      setTimeout(uploadScore,3000);
-      return;
+      return uploadScore();
     }
     const payload = {
       name,
