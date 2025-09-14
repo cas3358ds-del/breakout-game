@@ -144,6 +144,7 @@
     .legend .item{padding:4px 8px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--stroke);display:flex;align-items:center;gap:4px}
     .legend .box{width:14px;height:14px;border-radius:3px;display:inline-block;vertical-align:middle}
     .sealed{opacity:0.4;filter:grayscale(100%)}
+    .unlockHint{font-size:0.8em;color:#f88;margin-left:4px;}
     #combo{
       position:absolute;
       top:8px;
@@ -607,7 +608,7 @@ select optgroup { color: #0b1022; }
       PHOENIX:{label:'鳳凰審判(消半場/不秒殺Boss)',type:'special',instant:true,badge:'🪽'},
       GATLING:{label:'火力壓制',desc:'平台機槍掃射8秒',type:'special',durationMs:11000,specialWeight:0.1,gatling:{chargeMs:3000,fireMs:8000,intervalMs:100,bulletSpeed:10},badge:'🔫'},
       SWORD:{label:'劍芒裂空',desc:'飛劍掃場',type:'special',durationMs:20000,specialWeight:0.1,badge:'🗡️'},
-      GODSPEED:{label:'神速流轉(不落地/忽略效果/滿速)',type:'special',durationMs:10000,specialWeight:0.1,badge:'☄️'},
+      GODSPEED:{label:'神速流轉(不落地/滿速)',type:'special',durationMs:10000,specialWeight:0.1,badge:'☄️'},
       STORM:{label:'雷射風暴',desc:'全場掃射',type:'special',durationMs:5000,specialWeight:0.1,storm:{},badge:'🌩️'},
       BLACKHOLE:{label:'黑洞吞噬',desc:'黑洞吞場',type:'special',durationMs:20000,specialWeight:0.1,badge:'⚫'},
       ANNIHIL:{label:'萬物銷毀',desc:'隨機毀磚',type:'special',specialWeight:0.1,annihil:{speedMul:3},badge:'💥'}
@@ -2850,7 +2851,9 @@ function generateLevel(lv, L){
           if(unlockedSpecials.has(k)){
             html += `${badgeIcon(k)} <em>${k}</em>：${label}<br>`;
           }else{
-            html += `<span class="sealed">${badgeIcon(k)} <em>${k}</em>：${label}</span><br>`;
+            const req = SPECIAL_UNLOCK_LEVELS[k];
+            const hint = req ? `<small class="unlockHint">第${req}關解鎖</small>` : '';
+            html += `<span class="sealed">${badgeIcon(k)} <em>${k}</em>：${label}${hint}</span><br>`;
           }
         }
       }
@@ -3577,6 +3580,14 @@ function generateLevel(lv, L){
       if(b?.active && b.until && now>b.until){
         if(key==='BLACKHOLE') continue;
         b.active=false;
+        if(key==='GODSPEED'){
+          for(const ball of balls){
+            const ang=Math.atan2(ball.vy,ball.vx);
+            const sp=ball.speedCap*0.5;
+            ball.vx=Math.cos(ang)*sp;
+            ball.vy=Math.sin(ang)*sp;
+          }
+        }
         if(key==='PIERCE'){ for(const ball of balls) ball.piercing=false; }
         if(key==='STICKY'){ for(const ball of balls){ if(ball.stuck){ ball.stuck=false; ball.vy = -Math.abs(ball.vy||6); } } }
         if(key==='MEGA' && buffs.MEGA.applied){ for(const ball of balls){ ball.r/=GAME_CONFIG.powers.MEGA.mega.sizeMul; } buffs.MEGA.applied=false; }
@@ -3955,15 +3966,13 @@ function generateLevel(lv, L){
         // 強反彈加速
         if(bk.strong){ const sp=Math.min(Math.hypot(b.vx,b.vy)*1.08, b.speedCap); const ang=Math.atan2(b.vy,b.vx); b.vx=Math.cos(ang)*sp; b.vy=Math.sin(ang)*sp; screenShake=Math.max(screenShake,3); }
 
-        // 特效觸發（GODSPEED 期間忽略）
-        if(!buffs.GODSPEED.active){
-          if(buffs.PLASMA.active){ const cfg=GAME_CONFIG.powers.PLASMA.plasma; const ang=Math.random()*Math.PI*2; plasmas.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,vx:Math.cos(ang)*cfg.drift,vy:Math.sin(ang)*cfg.drift,until:now+cfg.lifeMs,radius:cfg.radius,phase:Math.random()*Math.PI*2}); playSFX('plasma'); }
-          if(buffs.FREEZE.active && (b.freeze.state==='idle' || !b.freeze.state)){ const f=GAME_CONFIG.powers.FREEZE.freeze; b.freeze.state = 'delay'; b.freeze.t0 = now; b.freeze.delay = f.delayMs; b.freeze.stop = f.stopMs; b.freeze.oldVX = b.vx; b.freeze.oldVY = b.vy; }
-          if(buffs.HOLY.active){ playSFX('holy'); holyFlashes.push({x:bk.x+bk.w/2, y:bk.y+bk.h/2, until:now+350}); for(let i=bricks.length-1;i>=0;i--){ const t=bricks[i]; const sameRow=Math.abs(t.y-bk.y)<1; const sameCol=Math.abs(t.x-bk.x)<1; if(sameRow||sameCol){ destroyBrick(i,'none'); } } screenShake=Math.max(screenShake,4); }
-          if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
-          if(buffs.HELL.active){ blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,r:40,until:now+GAME_CONFIG.powers.HELL.hell.haloMs}); playSFX('blackhole'); destroyNeighbors(hit); destroyBrick(hit,'none'); }
-          if(buffs.POISON.active){ bk.poisonUntil = now + (GAME_CONFIG.powers.POISON.durationMs||12000); bk.poisonTick = now + (GAME_CONFIG.powers.POISON.poison?.tickMs||2000); }
-        }
+        // 特效觸發
+        if(buffs.PLASMA.active){ const cfg=GAME_CONFIG.powers.PLASMA.plasma; const ang=Math.random()*Math.PI*2; plasmas.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,vx:Math.cos(ang)*cfg.drift,vy:Math.sin(ang)*cfg.drift,until:now+cfg.lifeMs,radius:cfg.radius,phase:Math.random()*Math.PI*2}); playSFX('plasma'); }
+        if(buffs.FREEZE.active && (b.freeze.state==='idle' || !b.freeze.state)){ const f=GAME_CONFIG.powers.FREEZE.freeze; b.freeze.state = 'delay'; b.freeze.t0 = now; b.freeze.delay = f.delayMs; b.freeze.stop = f.stopMs; b.freeze.oldVX = b.vx; b.freeze.oldVY = b.vy; }
+        if(buffs.HOLY.active){ playSFX('holy'); holyFlashes.push({x:bk.x+bk.w/2, y:bk.y+bk.h/2, until:now+350}); for(let i=bricks.length-1;i>=0;i--){ const t=bricks[i]; const sameRow=Math.abs(t.y-bk.y)<1; const sameCol=Math.abs(t.x-bk.x)<1; if(sameRow||sameCol){ destroyBrick(i,'none'); } } screenShake=Math.max(screenShake,4); }
+        if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
+        if(buffs.HELL.active){ blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,r:40,until:now+GAME_CONFIG.powers.HELL.hell.haloMs}); playSFX('blackhole'); destroyNeighbors(hit); destroyBrick(hit,'none'); }
+        if(buffs.POISON.active){ bk.poisonUntil = now + (GAME_CONFIG.powers.POISON.durationMs||12000); bk.poisonTick = now + (GAME_CONFIG.powers.POISON.poison?.tickMs||2000); }
 
         // 當前磚扣血（若已在上面被處理則略過）
         if(!buffs.HELL.active && !buffs.HOLY.active){
