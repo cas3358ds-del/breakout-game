@@ -3895,12 +3895,19 @@ function generateLevel(lv, L){
           if(!(bk.lockedUntil && now<bk.lockedUntil)){
             bk.hp=(bk.hp||1)-1; incrementCombo();
             if(bk.hp<=0){
-              addScore(scoreForBrick(bk)); updateHUD();
               const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
+              if(!bk.explosive){
+                if(bk.boss) stats.bossKills++;
+                if(bk.elite) stats.eliteKills++;
+                addScore(scoreForBrick(bk));
+              } else {
+                addScore(scoreForBrick(bk));
+              }
               revealBrickArea(bk);
               if(inRampage || b.piercing) playSFX('pierce');
               maybeDropFromBrick(bk);
-              if(bk.explosive){ explodeAt(cx,cy); } else { bricks.splice(hit,1); }
+              if(bk.explosive){ explodeAt(cx,cy); }
+              else { bricks.splice(hit,1); updateHUD(); }
             } else updateHUD();
           }
         }
