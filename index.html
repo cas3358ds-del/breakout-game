@@ -1843,12 +1843,18 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         g.gain.exponentialRampToValueAtTime(0.001, now+0.6);
         o.start(now); o.stop(now+0.6); break;
       case 'phoenix':
-        o.type='triangle';
-        o.frequency.setValueAtTime(400, now);
-        o.frequency.linearRampToValueAtTime(1200, now+0.5);
-        g.gain.setValueAtTime(0.06, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now+0.5);
-        o.start(now); o.stop(now+0.5); break;
+        o.type='sine';
+        o.frequency.setValueAtTime(800, now);
+        o.frequency.linearRampToValueAtTime(1200, now+0.15);
+        o.frequency.linearRampToValueAtTime(600, now+0.3);
+        g.gain.setValueAtTime(0.07, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.4);
+        const oP=audioCtx.createOscillator(), gP=audioCtx.createGain();
+        oP.type='sine'; gP.gain.value=0.05; oP.connect(gP); gP.connect(audioCtx.destination);
+        oP.frequency.setValueAtTime(1200, now);
+        oP.frequency.linearRampToValueAtTime(2000, now+0.15);
+        oP.frequency.linearRampToValueAtTime(900, now+0.3);
+        o.start(now); o.stop(now+0.4); oP.start(now); oP.stop(now+0.4); break;
       case 'annihil':
         o.type='sawtooth';
         o.frequency.setValueAtTime(300, now);
@@ -1863,6 +1869,40 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         g.gain.setValueAtTime(0.05, now);
         g.gain.exponentialRampToValueAtTime(0.001, now+0.4);
         o.start(now); o.stop(now+0.4); break;
+      case 'gatlingShoot':
+        o.type='square';
+        o.frequency.setValueAtTime(900, now);
+        g.gain.setValueAtTime(0.04, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.07);
+        o.start(now); o.stop(now+0.07); break;
+      case 'gatlingHit':
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(300, now);
+        o.frequency.exponentialRampToValueAtTime(80, now+0.15);
+        g.gain.setValueAtTime(0.06, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.15);
+        o.start(now); o.stop(now+0.15); break;
+      case 'plasma':
+        o.type='square';
+        o.frequency.setValueAtTime(1200, now);
+        o.frequency.exponentialRampToValueAtTime(300, now+0.2);
+        g.gain.setValueAtTime(0.05, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.2);
+        o.start(now); o.stop(now+0.2); break;
+      case 'plasmaHit':
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(600, now);
+        o.frequency.exponentialRampToValueAtTime(120, now+0.2);
+        g.gain.setValueAtTime(0.07, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.2);
+        o.start(now); o.stop(now+0.2); break;
+      case 'fireExplosion':
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(400, now);
+        o.frequency.exponentialRampToValueAtTime(30, now+0.6);
+        g.gain.setValueAtTime(0.1, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.6);
+        o.start(now); o.stop(now+0.6); break;
       case 'win':
         o.type='triangle';
         g.gain.setValueAtTime(0.04, now);
@@ -2163,13 +2203,26 @@ function generateLevel(lv, L){
       revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); updateHUD();
     }
   }
+
+  function bossKillEffect(b){
+    const cx=b.x+b.w/2, cy=b.y+b.h/2;
+    spawnParticles(cx,cy,'#fff5c0',60,2.5,4.0,4.5);
+    spawnParticles(cx,cy,'#ff4d6d',40,2.0,3.5,3.5);
+    screenShake=Math.max(screenShake,6);
+    playSFX('fireExplosion');
+    showComboNotice(`成功擊殺第${level}關Boss!`,5000,3000);
+    if(Math.random()<0.5){ spawnPower(cx-12,cy,{forceType:'NINE'}); }
+  }
   function destroyBrick(i, sfx='default'){
     const b=bricks[i]; if(!b) return; if(!canDestroyBrick(b)) return;
     if(b.elite && !b.prompted){ showPrompt('菁英磚'); b.prompted=true; }
     if(b.boss && !b.prompted){ showPrompt('Boss！'); b.prompted=true; }
     if(b.boss){
       b.hp-=1;
-      if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
+      if(b.hp<=0){
+        bossKillEffect(b);
+        revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD();
+      }
       return;
     }
     if(b.elite){ stats.eliteKills++; }
@@ -2186,7 +2239,8 @@ function generateLevel(lv, L){
           if(t.boss){
             t.hp-=1;
             if(t.hp<=0){
-              revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(t)); stats.bossKills++; }
+              bossKillEffect(t);
+              revealBrickArea(t); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(t)); stats.bossKills++; }
           } else {
             revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(t)); if(t.elite) stats.eliteKills++;
           }
@@ -2206,7 +2260,7 @@ function generateLevel(lv, L){
         // Boss：只扣血，不秒殺
         if(b.boss){
           b.hp -= 1;
-          if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; }
+          if(b.hp<=0){ bossKillEffect(b); revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; }
         }else{
           revealBrickArea(b); maybeDropFromBrick(b,0.3); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++;
         }
@@ -2224,7 +2278,7 @@ function generateLevel(lv, L){
         if(canDestroyBrick(b)){
           if(b.boss){
             b.hp-=1;
-            if(b.hp<=0){ revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
+            if(b.hp<=0){ bossKillEffect(b); revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
           }
           else {
             revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD();
@@ -2237,7 +2291,7 @@ function generateLevel(lv, L){
     spawnParticles(cx,cy,'#ff5500',60,2.6,3.8,4.5);
     spawnParticles(cx,cy,'#ffaa33',40,2.8,4.0,3.8);
     spawnParticles(cx,cy,'#fff4cc',20,3.0,4.2,3.0);
-    screenShake=Math.max(screenShake,6); updateHUD(); playSFX('explosion');
+    screenShake=Math.max(screenShake,6); updateHUD(); playSFX('fireExplosion');
   }
 
   function fireCollide(){ if(buffs.FIRE.active){ fireEnergy++; updateFireEnergy(); } }
@@ -2369,28 +2423,27 @@ function generateLevel(lv, L){
 
   function spawnPower(x,y,opts={}){
     // 隨機挑選一種道具類型（普通或特殊），並根據類型設定掉落速度與顏色標記
-    const {forceGood=false} = opts;
+    const {forceGood=false, forceType=null} = opts;
     const existingSpecial = powerups.some(p=>p.isSpecial);
-    let pool;
-    if(forceGood){
-      pool = ALL_TYPES.filter(k => GAME_CONFIG.powers[k].type !== 'debuff');
-      if(existingSpecial){
-        pool = pool.filter(k => {
-          const t = GAME_CONFIG.powers[k].type;
-          return t !== 'special';
-        });
-      }
+    let pool, type;
+    if(forceType){
+      type = forceType;
     }else{
-      pool = NORMAL_TYPES;
-      if(existingSpecial){
-        pool = pool.filter(k => {
-          const t = GAME_CONFIG.powers[k].type;
-          return t !== 'special';
-        });
+      if(forceGood){
+        pool = ALL_TYPES.filter(k => GAME_CONFIG.powers[k].type !== 'debuff');
+        if(existingSpecial){
+          pool = pool.filter(k => { const t = GAME_CONFIG.powers[k].type; return t !== 'special'; });
+        }
+      }else{
+        pool = NORMAL_TYPES;
+        if(existingSpecial){
+          pool = pool.filter(k => { const t = GAME_CONFIG.powers[k].type; return t !== 'special'; });
+        }
       }
+      pool = pool.filter(k=>k!=='NINE');
+      if(!pool.length) return;
+      type = pool[Math.floor(Math.random()*pool.length)];
     }
-    if(!pool.length) return;
-    const type = pool[Math.floor(Math.random()*pool.length)];
     const def = GAME_CONFIG.powers[type];
     if(!def) return;
     // 判斷是否為特殊（special）或減益
@@ -2454,7 +2507,7 @@ function generateLevel(lv, L){
             if(b.unbreakable){ keep.push(b); continue; }
             if(b.boss){
               b.hp -= 1;
-              if(b.hp>0){ keep.push(b);} else { revealBrickArea(b); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; }
+              if(b.hp>0){ keep.push(b);} else { bossKillEffect(b); revealBrickArea(b); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; }
             }
             else {
               revealBrickArea(b); maybeDropFromBrick(b); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++;
@@ -3135,18 +3188,18 @@ function generateLevel(lv, L){
     ctx.restore();
   }
 
-  function drawPlasmas(){ const now=performance.now(); ctx.save(); for(let i=plasmas.length-1;i>=0;i--){ const P=plasmas[i]; P.x+=P.vx; P.y+=P.vy; P.vx*=0.995; P.vy*=0.995; if(now>P.until){ plasmas.splice(i,1); continue; }
-      const x=P.x*scaleX, y=P.y*scaleY, r=P.radius*((scaleX+scaleY)/2); const grd=ctx.createRadialGradient(x,y,2,x,y,r); grd.addColorStop(0,'rgba(150,230,255,0.9)'); grd.addColorStop(0.4,'rgba(120,200,255,0.35)'); grd.addColorStop(1,'rgba(120,200,255,0)'); ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle='rgba(180,240,255,0.5)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,r*0.7,0,Math.PI*2); ctx.stroke();
+  function drawPlasmas(){ const now=performance.now(); ctx.save(); for(let i=plasmas.length-1;i>=0;i--){ const P=plasmas[i]; P.x+=P.vx; P.y+=P.vy; P.vx*=0.995; P.vy*=0.995; P.phase=(P.phase||0)+0.2; if(now>P.until){ plasmas.splice(i,1); continue; }
+      const x=P.x*scaleX, y=P.y*scaleY, r=P.radius*((scaleX+scaleY)/2); const grd=ctx.createRadialGradient(x,y,0,x,y,r); grd.addColorStop(0,'rgba(200,255,255,0.9)'); grd.addColorStop(0.3,'rgba(150,200,255,0.6)'); grd.addColorStop(0.6,'rgba(120,150,255,0.3)'); grd.addColorStop(1,'rgba(120,150,255,0)'); ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      ctx.save(); ctx.globalCompositeOperation='lighter'; for(let k=0;k<3;k++){ const a=P.phase+k*Math.PI*2/3; ctx.strokeStyle='rgba(180,240,255,0.6)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,r*0.8,a,a+Math.PI/3); ctx.stroke(); } ctx.restore();
       // 沿途清除磚塊（Boss/不可破壞豁免）
       for(let j=bricks.length-1;j>=0;j--){ const b=bricks[j]; const bx=b.x+b.w/2, by=b.y+b.h/2; if(Math.hypot(P.x-bx,P.y-by)<=P.radius){
           if(b.unbreakable) continue;
           if(b.boss){
             b.hp-=1;
-            if(b.hp<=0){ revealBrickArea(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
+            if(b.hp<=0){ bossKillEffect(b); revealBrickArea(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
           }
           else {
-            revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD();
+            revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD(); playSFX('plasmaHit');
           }
         }
       }
@@ -3532,7 +3585,7 @@ function generateLevel(lv, L){
         if(canDestroyBrick(bk)){
           if(bk.boss){
             bk.hp-=1;
-            if(bk.hp<=0){ revealBrickArea(bk); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(bk)); stats.bossKills++; updateHUD(); }
+            if(bk.hp<=0){ bossKillEffect(bk); revealBrickArea(bk); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(bk)); stats.bossKills++; updateHUD(); }
           }
           else {
             bk.hp=(bk.hp||1)-1;
@@ -3660,6 +3713,7 @@ function generateLevel(lv, L){
           const vx=Math.cos(gatling.angle)*0.5;
           gatlingBullets.push({x:x,y:gatling.y-10,vx:vx,vy:-(cfg.bulletSpeed||10)});
           spawnParticles(x, gatling.y-10, '#ffbb55', 8, 1.2, 2.5, 2);
+          playSFX('gatlingShoot');
         }
       }
     }
@@ -3671,6 +3725,7 @@ function generateLevel(lv, L){
         const bk=bricks[j];
         if(bl.x>bk.x && bl.x<bk.x+bk.w && bl.y>bk.y && bl.y<bk.y+bk.h){
           spawnParticles(bl.x, bl.y, '#ffdd77', 8, 1.6, 3.2, 2.5);
+          playSFX('gatlingHit');
           if(canDestroyBrick(bk) && !(bk.lockedUntil && now<bk.lockedUntil)){
             bk.hp=(bk.hp||1)-1; incrementCombo();
             if(bk.hp<=0){
@@ -3881,7 +3936,7 @@ function generateLevel(lv, L){
 
         // 特效觸發（GODSPEED 期間忽略）
         if(!buffs.GODSPEED.active){
-          if(buffs.PLASMA.active){ const cfg=GAME_CONFIG.powers.PLASMA.plasma; const ang=Math.random()*Math.PI*2; plasmas.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,vx:Math.cos(ang)*cfg.drift,vy:Math.sin(ang)*cfg.drift,until:now+cfg.lifeMs,radius:cfg.radius}); }
+          if(buffs.PLASMA.active){ const cfg=GAME_CONFIG.powers.PLASMA.plasma; const ang=Math.random()*Math.PI*2; plasmas.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,vx:Math.cos(ang)*cfg.drift,vy:Math.sin(ang)*cfg.drift,until:now+cfg.lifeMs,radius:cfg.radius,phase:Math.random()*Math.PI*2}); playSFX('plasma'); }
           if(buffs.FREEZE.active && (b.freeze.state==='idle' || !b.freeze.state)){ const f=GAME_CONFIG.powers.FREEZE.freeze; b.freeze.state = 'delay'; b.freeze.t0 = now; b.freeze.delay = f.delayMs; b.freeze.stop = f.stopMs; b.freeze.oldVX = b.vx; b.freeze.oldVY = b.vy; }
           if(buffs.HOLY.active){ playSFX('holy'); holyFlashes.push({x:bk.x+bk.w/2, y:bk.y+bk.h/2, until:now+350}); for(let i=bricks.length-1;i>=0;i--){ const t=bricks[i]; const sameRow=Math.abs(t.y-bk.y)<1; const sameCol=Math.abs(t.x-bk.x)<1; if(sameRow||sameCol){ destroyBrick(i,'none'); } } screenShake=Math.max(screenShake,4); }
           if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
@@ -3897,15 +3952,14 @@ function generateLevel(lv, L){
             if(bk.hp<=0){
               const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
               if(!bk.explosive){
-                if(bk.boss) stats.bossKills++;
-                if(bk.elite) stats.eliteKills++;
-                addScore(scoreForBrick(bk));
+                if(bk.boss){ bossKillEffect(bk); stats.bossKills++; addScore(scoreForBrick(bk)); }
+                else { if(bk.elite) stats.eliteKills++; addScore(scoreForBrick(bk)); }
               } else {
                 addScore(scoreForBrick(bk));
               }
               revealBrickArea(bk);
               if(inRampage || b.piercing) playSFX('pierce');
-              maybeDropFromBrick(bk);
+              if(!bk.boss) maybeDropFromBrick(bk);
               if(bk.explosive){ explodeAt(cx,cy); }
               else { bricks.splice(hit,1); updateHUD(); }
             } else updateHUD();
