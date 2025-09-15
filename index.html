@@ -397,6 +397,43 @@ select optgroup { color: #0b1022; }
 
 /* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */
 
+    /* 上傳排行榜進度提示 */
+    #uploadOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    #uploadOverlay .box {
+      background: var(--bg1);
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      width: 260px;
+    }
+    #uploadOverlay .progress {
+      width: 100%;
+      height: 10px;
+      background: var(--glass-2);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+    #uploadOverlay .progress > div {
+      height: 100%;
+      width: 0%;
+      background: var(--ink);
+      transition: width 0.1s;
+    }
+    #uploadOverlay .percent {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
 
 /* === Mobile scaling & LED alignment tweaks (Game Director standard) === */
 @media (max-width: 430px) {
@@ -571,6 +608,13 @@ select optgroup { color: #0b1022; }
         </div>
       </div>
 </div>
+  </div>
+  <div id="uploadOverlay">
+    <div class="box">
+      <div>上傳中...</div>
+      <div class="progress"><div id="uploadBar"></div></div>
+      <div class="percent" id="uploadPercent">0%</div>
+    </div>
   </div>
 
 <!-- Load skin definitions before the game script.  This file defines
@@ -836,7 +880,9 @@ select optgroup { color: #0b1022; }
 
   // Rank page elements
   const rankPage=document.getElementById('rankPage'), rankClose=document.getElementById('rankClose'), rankTableBody=document.querySelector('#rankTable tbody');
-  const uploadWin=document.getElementById('uploadWin'), uploadOver=document.getElementById('uploadOver');
+  const uploadWin=document.getElementById('uploadWin'), uploadOver=document.getElementById('uploadOver'),
+        uploadOverlay=document.getElementById('uploadOverlay'), uploadBar=document.getElementById('uploadBar'),
+        uploadPercent=document.getElementById('uploadPercent');
 
   // === Gallery page logic ===
   let galleryPageIdx = 0;
@@ -992,12 +1038,16 @@ select optgroup { color: #0b1022; }
   rankClose?.addEventListener('click', closeRankPage, {passive:true});
   rankBtn?.addEventListener('click', openRankPage, {passive:true});
 
-  async function uploadScore(){
-    if(scoreUploaded){
-      alert('已上傳過，請勿再次上傳');
-      return;
-    }
-    const rawName = prompt('請輸入玩家名稱：\n注意: 姓名最多輸入8個字');
+    async function uploadScore(){
+      if(scoreUploaded){
+        alert('已上傳過，請勿再次上傳');
+        return;
+      }
+      if(uploading){
+        alert('上傳中，請勿再次點擊!');
+        return;
+      }
+      const rawName = prompt('請輸入玩家名稱：\n注意: 姓名最多輸入8個字');
     if(rawName==null) return;
     const name = (rawName||'').trim();
     if(!name) return;
@@ -1005,41 +1055,55 @@ select optgroup { color: #0b1022; }
       alert('名字這麼長是想怎樣啦? 請重新輸入!');
       return uploadScore();
     }
-    const payload = {
-      name,
-      score,
-      lives: stats.livesUsed,
-      catches: stats.catches,
-      powerUps: stats.buffs,
-      powerDowns: stats.debuffs,
-      enemiesKilled: stats.eliteKills,
-      bossKilled: stats.bossKills,
-      fastestDeath: stats.fastestDeath===Infinity?0:stats.fastestDeath,
-      longestSurvival: stats.longestLife,
-      maxCombo: stats.maxCombo
-    };
-    const controller = new AbortController();
-    const to = setTimeout(()=>controller.abort(), FETCH_TIMEOUT);
-    try{
-      const res = await fetch(RANK_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain; charset=UTF-8' }, // simple request to avoid preflight
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-      clearTimeout(to);
-      const text = await res.text().catch(()=> '');
-      if (res.ok && /ok/i.test(text.trim())) {
-        alert('上傳成功');
-        scoreUploaded = true;
-      } else {
+      const payload = {
+        name,
+        score,
+        lives: stats.livesUsed,
+        catches: stats.catches,
+        powerUps: stats.buffs,
+        powerDowns: stats.debuffs,
+        enemiesKilled: stats.eliteKills,
+        bossKilled: stats.bossKills,
+        fastestDeath: stats.fastestDeath===Infinity?0:stats.fastestDeath,
+        longestSurvival: stats.longestLife,
+        maxCombo: stats.maxCombo
+      };
+      uploading = true;
+      uploadOverlay.style.display='flex';
+      let prog=0;
+      const setProg=p=>{ uploadBar.style.width=p+'%'; uploadPercent.textContent=p+'%'; };
+      setProg(0);
+      const progTimer=setInterval(()=>{ if(prog<90){ prog+=5; setProg(prog); } },200);
+      const controller = new AbortController();
+      const to = setTimeout(()=>controller.abort(), FETCH_TIMEOUT);
+      try{
+        const res = await fetch(RANK_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain; charset=UTF-8' }, // simple request to avoid preflight
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        const text = await res.text().catch(()=> '');
+        clearTimeout(to);
+        clearInterval(progTimer);
+        setProg(100);
+        uploadOverlay.style.display='none';
+        if (res.ok && /ok/i.test(text.trim())) {
+          alert('上傳完成');
+          scoreUploaded = true;
+        } else {
+          alert('上傳失敗');
+        }
+      }catch(e){
+        clearTimeout(to);
+        clearInterval(progTimer);
+        uploadOverlay.style.display='none';
+        console.error(e);
         alert('上傳失敗');
+      }finally{
+        uploading = false;
       }
-    }catch(e){
-      console.error(e);
-      alert('上傳失敗');
     }
-  }
   uploadWin?.addEventListener('click', uploadScore, {passive:true});
   uploadOver?.addEventListener('click', uploadScore, {passive:true});
 
@@ -1197,7 +1261,8 @@ select optgroup { color: #0b1022; }
   const comboEl=document.getElementById('combo');
   let comboNoticeTriggered={50:false,100:false,200:false,300:false,400:false,500:false,800:false,1000:false};
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
-  let scoreUploaded=false;
+    let scoreUploaded=false;
+    let uploading=false;
   let ledStyle = (localStorage.getItem('led_style')||'classic');
   function resetCombo(){
     combo=0; comboLastTime=0;
