@@ -2363,7 +2363,7 @@ function generateLevel(lv, L){
           b.hp -= 1;
           if(b.hp<=0){ bossKillEffect(b); revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; }
         }else{
-          revealBrickArea(b); maybeDropFromBrick(b,0.3); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++;
+          revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++;
         }
         spawnParticles(bx,by,'#ffdd99',14,1.7,2.6,3);
       }
