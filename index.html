@@ -1108,6 +1108,7 @@ select optgroup { color: #0b1022; }
   const noteClose = document.getElementById('noteClose');
   function closeNoteAndResume(){
     hideCenter();
+    helpMode = null;
     // 在關閉說明視窗後恢復遊戲：先調整所有計時，再透過倒數繼續
     if(menusOpen()) return;
     if(running){ onResumeFromPause(); startCountdown(); } else { startGameWithCountdown(); }
