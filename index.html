@@ -1299,6 +1299,65 @@ select optgroup { color: #0b1022; }
   let spaceBossLastPaddleCenter=0;
   let spaceBossPrevPaddleCenter=0;
   let spaceBossSuppressLifeLossUntil=0;
+
+  function isSpaceBossActive(){
+    return level===5 && spaceBossPhase==='active' && !!spaceBoss;
+  }
+
+  function getSpaceBossBounds(){
+    if(!spaceBoss) return null;
+    return {
+      x: spaceBoss.x - spaceBoss.w/2,
+      y: spaceBoss.y - spaceBoss.h/2,
+      w: spaceBoss.w,
+      h: spaceBoss.h
+    };
+  }
+
+  function circleIntersectsSpaceBoss(cx, cy, radius){
+    const bounds=getSpaceBossBounds();
+    if(!bounds) return false;
+    const nearestX = Math.max(bounds.x, Math.min(cx, bounds.x + bounds.w));
+    const nearestY = Math.max(bounds.y, Math.min(cy, bounds.y + bounds.h));
+    const dx = cx - nearestX;
+    const dy = cy - nearestY;
+    return dx*dx + dy*dy <= radius*radius;
+  }
+
+  function spaceBossImpactPoint(fromX, fromY){
+    const bounds=getSpaceBossBounds();
+    if(!bounds) return {x:fromX, y:fromY};
+    const targetX = spaceBoss.x;
+    const targetY = spaceBoss.y;
+    const dx = targetX - fromX;
+    const dy = targetY - fromY;
+    let bestT = Infinity;
+    function test(t){
+      if(t<=0 || t>=1e6) return;
+      const ix = fromX + dx*t;
+      const iy = fromY + dy*t;
+      if(ix>=bounds.x-1e-6 && ix<=bounds.x+bounds.w+1e-6 && iy>=bounds.y-1e-6 && iy<=bounds.y+bounds.h+1e-6){
+        if(t<bestT) bestT=t;
+      }
+    }
+    if(Math.abs(dx)>1e-6){
+      test((bounds.x - fromX)/dx);
+      test((bounds.x + bounds.w - fromX)/dx);
+    }
+    if(Math.abs(dy)>1e-6){
+      test((bounds.y - fromY)/dy);
+      test((bounds.y + bounds.h - fromY)/dy);
+    }
+    if(bestT!==Infinity){
+      return {x: fromX + dx*bestT, y: fromY + dy*bestT};
+    }
+    return {x: targetX, y: targetY};
+  }
+
+  function highlightSpaceBossTarget(){
+    const bounds=getSpaceBossBounds();
+    if(bounds){ pushLockBox(bounds.x, bounds.y, bounds.w, bounds.h, 'target'); }
+  }
     let scoreUploaded=false;
     let uploading=false;
   let ledStyle = (localStorage.getItem('led_style')||'classic');
@@ -1477,7 +1536,7 @@ select optgroup { color: #0b1022; }
   const fireExplosions=[]; // 火焰球爆炸效果 {x,y,r,t0,life}
 
   // 新增容器：飛彈、黑洞特效、雷射光束
-  const missiles=[]; // {x,y,vx,vy,targetId,lifeUntil,trail:[]}
+  const missiles=[]; // {x,y,vx,vy,targetId,targetType,lifeUntil,trail:[]}
   const blackHoles=[]; // {x,y,until}
   const laserBeams=[]; // {x1,y1,x2,y2,until}
   const laserImpacts=[]; // {x,y,t0,tEnd}
@@ -1995,6 +2054,41 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         oP.frequency.linearRampToValueAtTime(2000, now+0.15);
         oP.frequency.linearRampToValueAtTime(900, now+0.3);
         o.start(now); o.stop(now+0.4); oP.start(now); oP.stop(now+0.4); break;
+      case 'spaceBossVolleyCharge':
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(260, now);
+        o.frequency.exponentialRampToValueAtTime(120, now+0.5);
+        g.gain.setValueAtTime(0.05, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.5);
+        o.start(now); o.stop(now+0.5); break;
+      case 'spaceBossVolleyShot':
+        o.type='triangle';
+        o.frequency.setValueAtTime(1400, now);
+        o.frequency.exponentialRampToValueAtTime(520, now+0.18);
+        g.gain.setValueAtTime(0.08, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.18);
+        o.start(now); o.stop(now+0.2); break;
+      case 'spaceBossLaserCharge':
+        o.type='sine';
+        o.frequency.setValueAtTime(320, now);
+        o.frequency.linearRampToValueAtTime(960, now+0.8);
+        g.gain.setValueAtTime(0.05, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.8);
+        const oCharge=audioCtx.createOscillator(), gCharge=audioCtx.createGain();
+        oCharge.type='sawtooth'; gCharge.gain.value=0.02; oCharge.connect(gCharge); gCharge.connect(audioCtx.destination);
+        oCharge.frequency.setValueAtTime(180, now);
+        oCharge.frequency.linearRampToValueAtTime(540, now+0.8);
+        o.start(now); o.stop(now+0.8); oCharge.start(now); oCharge.stop(now+0.8); break;
+      case 'spaceBossLaserSweep':
+        o.type='square';
+        o.frequency.setValueAtTime(900, now);
+        g.gain.setValueAtTime(0.07, now);
+        g.gain.linearRampToValueAtTime(0.02, now+0.5);
+        const oSweep=audioCtx.createOscillator(), gSweep=audioCtx.createGain();
+        oSweep.type='triangle'; gSweep.gain.value=0.03; oSweep.connect(gSweep); gSweep.connect(audioCtx.destination);
+        oSweep.frequency.setValueAtTime(400, now);
+        oSweep.frequency.exponentialRampToValueAtTime(1200, now+0.5);
+        o.start(now); o.stop(now+0.5); oSweep.start(now); oSweep.stop(now+0.5); break;
       case 'annihil':
         o.type='sawtooth';
         o.frequency.setValueAtTime(300, now);
@@ -2224,10 +2318,14 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
   // === 修正：過關判定改為只看「可破壞磚」是否清空 ===
   function hasBreakables(){
     if(level===5){
+      const now=performance.now();
       const breakables = bricks.some(b => !b.unbreakable);
       if(breakables) return true;
       if(spaceBossPhase==='awaiting'){ startSpaceBossReveal(); return true; }
       if(spaceBossPhase==='intro' || spaceBossPhase==='active' || spaceBossPhase==='dying') return true;
+      if(spaceBossPhase==='defeated' && spaceBossDefeatedAt && now < spaceBossDefeatedAt + 3000){
+        return true;
+      }
       return false;
     }
     return bricks.some(b => !b.unbreakable);
@@ -2313,20 +2411,38 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     spaceBossMarquee={text:'有趣！ 讓你見識我的真面目吧!', start:now, fadeStart:now+2600, end:now+3200, style:'alert'};
   }
 
-  function damageSpaceBoss(amount=1){
-    if(spaceBossPhase!=='active' || !spaceBoss) return;
+  function damageSpaceBoss(amount=1, source='generic', impact){
+    if(spaceBossPhase!=='active' || !spaceBoss) return false;
     const now=performance.now();
-    if(spaceBoss.hitCooldownUntil && now<spaceBoss.hitCooldownUntil) return;
+    if(spaceBoss.hitCooldownUntil && now<spaceBoss.hitCooldownUntil) return false;
+    const dmg = amount>0 ? 1 : 0;
+    if(!dmg) return false;
     spaceBoss.hitCooldownUntil = now + 140;
-    spaceBoss.hp = Math.max(0, spaceBoss.hp - amount);
+    spaceBoss.hp = Math.max(0, spaceBoss.hp - dmg);
     spaceBoss.hitFlashUntil = now + 220;
     const jitterX=(Math.random()-0.5)*spaceBoss.w*0.4;
     const jitterY=(Math.random()-0.5)*spaceBoss.h*0.3;
-    spaceBossBursts.push({type:'spark',x:spaceBoss.x+jitterX,y:spaceBoss.y+jitterY,r0:0,r1:120,t0:now,life:600,color:'160,220,255'});
+    const colorMap={
+      laser:'255,210,240',
+      missile:'255,215,180',
+      gatling:'255,220,180',
+      plasma:'190,240,255',
+      blackhole:'200,220,255',
+      phoenix:'255,210,200',
+      sword:'255,240,220'
+    };
+    const burstColor=colorMap[source]||'160,220,255';
+    spaceBossBursts.push({type:'spark',x:spaceBoss.x+jitterX,y:spaceBoss.y+jitterY,r0:0,r1:140,t0:now,life:600,color:burstColor});
+    if(impact && impact.x!=null && impact.y!=null){
+      spawnParticles(impact.x, impact.y, '#b8d6ff', 22, 1.6, 2.6, 2.4);
+    }
     spawnParticles(spaceBoss.x+jitterX, spaceBoss.y+jitterY, '#8fbaff', 18, 1.5, 2.6, 2.3);
     screenShake=Math.max(screenShake,5);
-    beep(760,0.04,0.04);
+    const toneMap={laser:820, missile:680, gatling:720, plasma:760, blackhole:640, phoenix:700, ball:780, sword:840};
+    const freq=toneMap[source]||760;
+    beep(freq,0.04,0.04);
     if(spaceBoss.hp<=0){ defeatSpaceBoss(); }
+    return true;
   }
 
   function defeatSpaceBoss(){
@@ -2334,7 +2450,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const now=performance.now();
     const sb=spaceBoss;
     const fake={x:sb.x-sb.w/2,y:sb.y-sb.h/2,w:sb.w,h:sb.h};
-    bossKillEffect(fake);
+    bossKillEffect(fake,{dropNineCat:'never'});
     addScore(scoreForBrick({boss:true}));
     stats.bossKills++;
     updateHUD();
@@ -2348,16 +2464,19 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     spaceBossAttack=null;
     spaceBossBullets.length=0;
     spaceBossNextAttackAt=0;
-    spaceBossMarquee={text:'成功擊殺Boss: 太空戰艦!', start:now, fadeStart:now+3000, end:now+3200, style:'alert'};
+    spaceBossMarquee={text:'成功擊殺Boss: 太空戰艦!', start:now, fadeStart:now+5000, end:now+5000, style:'victory'};
     spaceBossDeathAnim={
       start:now,
       startY:sb.y,
-      dropDistance:200,
+      dropDistance:220,
       fallDuration:3000,
       explosionAt:now+3000,
-      end:now+5000,
+      bigExplosionEnd:now+5000,
+      vanishAt:now+5000,
+      finishAt:now+8000,
       lastBurst:now,
-      bigBang:false
+      bigBang:false,
+      dropSpawned:false
     };
   }
 
@@ -2405,24 +2524,40 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(spaceBossPhase==='dying' && spaceBoss){
       const anim=spaceBossDeathAnim;
       if(anim){
-        const prog=Math.min(1, Math.max(0,(now-anim.start)/anim.fallDuration));
-        spaceBoss.y = anim.startY + prog*anim.dropDistance;
-        if(now-anim.lastBurst>120){
+        const fallProg=Math.min(1, Math.max(0,(now-anim.start)/anim.fallDuration));
+        spaceBoss.y = anim.startY + fallProg*anim.dropDistance;
+        const burstInterval = anim.bigBang ? 80 : 110;
+        if(now-anim.lastBurst>burstInterval){
           anim.lastBurst=now;
-          const jitterX=(Math.random()-0.5)*spaceBoss.w*0.8;
-          const jitterY=(Math.random()-0.3)*spaceBoss.h*0.8;
-          spawnParticles(spaceBoss.x+jitterX, spaceBoss.y+jitterY, '#ffe6b8', 30, 2.4, 3.6, 3.6);
-          spaceBossBursts.push({type:'spark',x:spaceBoss.x+jitterX,y:spaceBoss.y+jitterY,r0:0,r1:240,t0:now,life:800,color:'255,180,120'});
+          const jitterX=(Math.random()-0.5)*spaceBoss.w*0.9;
+          const jitterY=(Math.random()-0.3)*spaceBoss.h*0.9;
+          spawnParticles(spaceBoss.x+jitterX, spaceBoss.y+jitterY, '#ffe6b8', 34, 2.6, 3.8, 3.6);
+          spaceBossBursts.push({type:'spark',x:spaceBoss.x+jitterX,y:spaceBoss.y+jitterY,r0:0,r1:260,t0:now,life:850,color:'255,180,120'});
           screenShake=Math.max(screenShake,6);
         }
         if(!anim.bigBang && now>=anim.explosionAt){
           anim.bigBang=true;
-          screenShake=Math.max(screenShake,18);
-          spawnParticles(spaceBoss.x,spaceBoss.y,'#fff2d6',220,3.6,5.2,6);
-          spaceBossBursts.push({type:'ring',x:spaceBoss.x,y:spaceBoss.y,r0:80,r1:620,width:32,t0:now,life:2000,color:'255,220,180'});
-          spaceBossBursts.push({type:'flare',x:spaceBoss.x,y:spaceBoss.y,r0:0,r1:420,t0:now,life:2200,color:'255,240,210'});
+          anim.bigBangStart=now;
+          screenShake=Math.max(screenShake,22);
+          spawnParticles(spaceBoss.x,spaceBoss.y,'#fff2d6',260,3.8,5.6,6.4);
+          spawnParticles(spaceBoss.x,spaceBoss.y,'#ffddb8',160,3.4,5.0,5.2);
+          spaceBossBursts.push({type:'ring',x:spaceBoss.x,y:spaceBoss.y,r0:90,r1:660,width:36,t0:now,life:2200,color:'255,220,190'});
+          spaceBossBursts.push({type:'flare',x:spaceBoss.x,y:spaceBoss.y,r0:0,r1:460,t0:now,life:2400,color:'255,244,220'});
+          spaceBossBursts.push({type:'halo',x:spaceBoss.x,y:spaceBoss.y,r0:120,r1:720,t0:now,life:2600,color:'255,200,150'});
+          playSFX('explosion');
+          if(!anim.dropSpawned){
+            spawnPower(spaceBoss.x-12, spaceBoss.y, {forceType:'NINE'});
+            anim.dropSpawned=true;
+          }
         }
-        if(now>=anim.end){
+        if(anim.bigBang && anim.bigBangStart && now-anim.bigBangStart<anim.bigExplosionEnd-anim.explosionAt){
+          const theta=Math.random()*Math.PI*2;
+          const dist=spaceBoss.w*0.4+Math.random()*spaceBoss.w*0.3;
+          const px=spaceBoss.x+Math.cos(theta)*dist;
+          const py=spaceBoss.y+Math.sin(theta)*dist;
+          spaceBossBursts.push({type:'spark',x:px,y:py,r0:0,r1:320,t0:now,life:900,color:'255,210,180'});
+        }
+        if(now>=anim.vanishAt){
           spaceBossPhase='defeated';
           spaceBossDefeatedAt=now;
           spaceBoss=null;
@@ -2451,6 +2586,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         lastShot:0
       };
       spaceBossMarquee={text:'危險！ 太空戰艦即將進行火力壓制!', start:now, fadeStart:now+3000, end:now+3200, style:'alert', countdownDuration:3000};
+      playSFX('spaceBossVolleyCharge');
     }else{
       const baseTarget={x:pr.x+pr.w/2, y:pr.y+pr.h/2};
       const movement=spaceBossLastPaddleCenter-spaceBossPrevPaddleCenter;
@@ -2470,6 +2606,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         hitApplied:false
       };
       spaceBossMarquee={text:'危險！ 太空戰艦即將使出致命雷射!', start:now, fadeStart:now+3000, end:now+3200, style:'alert', countdownDuration:3000};
+      playSFX('spaceBossLaserCharge');
     }
   }
 
@@ -2495,6 +2632,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         }else{
           atk.state='sweeping';
           atk.currentTarget={...atk.baseTarget};
+          playSFX('spaceBossLaserSweep');
         }
         spaceBossMarquee=null;
       }
@@ -2523,7 +2661,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
           spaceBossBursts.push({type:'muzzle',x:originX,y:originY,r0:6,r1:60,t0:now,life:220,color:'255,210,120'});
         }
         atk.lastShot=now;
-        beep(820,0.04,0.04);
+        playSFX('spaceBossVolleyShot');
       }
     }else if(atk.mode===2){
       const sweepProg = Math.min(1, Math.max(0,(now-atk.sweepStart)/SPACE_BOSS_LASER_SWEEP_DURATION));
@@ -2889,9 +3027,10 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(!spaceBossMarquee) return;
     const now=performance.now();
     const {start, fadeStart, end, text} = spaceBossMarquee;
+    const style=spaceBossMarquee.style||'marquee';
     if(now>=end){ spaceBossMarquee=null; return; }
     let alpha=1;
-    if(now>fadeStart){ alpha = Math.max(0, 1 - (now - fadeStart)/(end - fadeStart)); }
+    if(style!=='victory' && now>fadeStart){ alpha = Math.max(0, 1 - (now - fadeStart)/(end - fadeStart||1)); }
     const areaHeight=52;
     const topBase=Math.max(12, layout().top - areaHeight - 14);
     const x=40;
@@ -2900,24 +3039,58 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.save();
     ctx.globalAlpha=alpha;
     drawRoundedRect(x, topBase, width, areaHeight, radius);
-    const grad=ctx.createLinearGradient(x*scaleX, topBase*scaleY, x*scaleX, (topBase+areaHeight)*scaleY);
-    grad.addColorStop(0,'rgba(32,48,92,0.9)');
-    grad.addColorStop(1,'rgba(16,28,60,0.92)');
-    ctx.fillStyle=grad;
-    ctx.fill();
-    ctx.strokeStyle='rgba(160,200,255,0.85)';
-    ctx.lineWidth=2;
-    drawRoundedRect(x, topBase, width, areaHeight, radius);
-    ctx.stroke();
-    const innerX=x+10;
-    const innerY=topBase+6;
-    const innerW=width-20;
-    const innerH=areaHeight-12;
-    drawRoundedRect(innerX, innerY, innerW, innerH, radius-6);
-    ctx.save();
-    ctx.clip();
-    const style=spaceBossMarquee.style||'marquee';
-    if(style==='alert'){
+    if(style==='victory'){
+      const grad=ctx.createLinearGradient(x*scaleX, topBase*scaleY, x*scaleX, (topBase+areaHeight)*scaleY);
+      grad.addColorStop(0,'rgba(40,56,104,0.95)');
+      grad.addColorStop(1,'rgba(18,28,70,0.95)');
+      ctx.fillStyle=grad;
+      ctx.fill();
+      ctx.strokeStyle='rgba(255,220,180,0.8)';
+      ctx.lineWidth=2.4;
+      drawRoundedRect(x, topBase, width, areaHeight, radius);
+      ctx.stroke();
+      const innerX=x+12;
+      const innerY=topBase+6;
+      const innerW=width-24;
+      const innerH=areaHeight-12;
+      drawRoundedRect(innerX, innerY, innerW, innerH, radius-8);
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle='rgba(255,235,210,0.18)';
+      ctx.fillRect(innerX*scaleX, innerY*scaleY, innerW*scaleX, innerH*scaleY);
+      ctx.restore();
+      ctx.fillStyle='#ffeede';
+      ctx.font=`${Math.round(28*((scaleX+scaleY)/2))}px 'Playfair Display', serif`;
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.shadowColor='rgba(255,220,170,0.6)';
+      ctx.shadowBlur=18*((scaleX+scaleY)/2);
+      ctx.fillText(text, (x+width/2)*scaleX, (topBase+areaHeight/2)*scaleY);
+      ctx.shadowBlur=0;
+      ctx.strokeStyle='rgba(255,220,170,0.45)';
+      ctx.lineWidth=1.2;
+      ctx.beginPath();
+      ctx.moveTo((x+32)*scaleX, (topBase+areaHeight-10)*scaleY);
+      ctx.lineTo((x+width-32)*scaleX, (topBase+areaHeight-10)*scaleY);
+      ctx.stroke();
+    }else{
+      const grad=ctx.createLinearGradient(x*scaleX, topBase*scaleY, x*scaleX, (topBase+areaHeight)*scaleY);
+      grad.addColorStop(0,'rgba(32,48,92,0.9)');
+      grad.addColorStop(1,'rgba(16,28,60,0.92)');
+      ctx.fillStyle=grad;
+      ctx.fill();
+      ctx.strokeStyle='rgba(160,200,255,0.85)';
+      ctx.lineWidth=2;
+      drawRoundedRect(x, topBase, width, areaHeight, radius);
+      ctx.stroke();
+      const innerX=x+10;
+      const innerY=topBase+6;
+      const innerW=width-20;
+      const innerH=areaHeight-12;
+      drawRoundedRect(innerX, innerY, innerW, innerH, radius-6);
+      ctx.save();
+      ctx.clip();
+      if(style==='alert'){
       const midY=(innerY+innerH/2)*scaleY;
       ctx.fillStyle='#f5f9ff';
       ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
@@ -2938,7 +3111,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
           ctx.fillText(String(num), (innerX+innerW-16)*scaleX, midY);
         }
       }
-    }else{
+    else{
       const pxSpeed=180;
       const baseX=(innerX+innerW)*scaleX;
       const midY=(innerY+innerH/2)*scaleY;
@@ -2960,71 +3133,73 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
   function drawSpaceBossHPBar(){
     if(spaceBossPhase!=='active' || !spaceBoss) return;
     const L=layout();
-    const barW=280;
-    const barH=28;
-    const x=1100 - barW - 40;
-    const y=Math.max(40, L.top - barH - 10);
+    const barW=32;
+    const maxH = 700 - (L.top + 80);
+    const barH=Math.max(180, Math.min(360, maxH));
+    const x=1100 - barW - 26;
+    const y=L.top + 30;
     const ratio=Math.max(0, Math.min(1, spaceBoss.hp/spaceBoss.maxHp));
 
     ctx.save();
-    ctx.globalAlpha=0.95;
-    drawRoundedRect(x, y, barW, barH, 14);
-    const frameGrad=ctx.createLinearGradient(x*scaleX, y*scaleY, (x+barW)*scaleX, y*scaleY);
-    frameGrad.addColorStop(0,'rgba(40,80,140,0.9)');
-    frameGrad.addColorStop(0.5,'rgba(20,36,72,0.95)');
-    frameGrad.addColorStop(1,'rgba(40,80,140,0.9)');
+    ctx.globalAlpha=0.96;
+    drawRoundedRect(x, y, barW, barH, 16);
+    const frameGrad=ctx.createLinearGradient(x*scaleX, y*scaleY, x*scaleX, (y+barH)*scaleY);
+    frameGrad.addColorStop(0,'rgba(34,56,104,0.95)');
+    frameGrad.addColorStop(1,'rgba(18,26,62,0.9)');
     ctx.fillStyle=frameGrad;
     ctx.fill();
-    ctx.strokeStyle='rgba(160,220,255,0.55)';
-    ctx.lineWidth=2.2;
-    drawRoundedRect(x, y, barW, barH, 14);
+    ctx.strokeStyle='rgba(170,210,255,0.55)';
+    ctx.lineWidth=2;
+    drawRoundedRect(x, y, barW, barH, 16);
     ctx.stroke();
 
-    const innerX=x+8;
-    const innerY=y+6;
-    const innerW=barW-16;
-    const innerH=barH-12;
-    drawRoundedRect(innerX, innerY, innerW, innerH, 10);
-    const bg=ctx.createLinearGradient(innerX*scaleX, innerY*scaleY, innerX*scaleX, (innerY+innerH)*scaleY);
-    bg.addColorStop(0,'rgba(8,22,46,0.95)');
-    bg.addColorStop(1,'rgba(12,30,58,0.85)');
+    const innerX=x+6;
+    const innerY=y+10;
+    const innerW=barW-12;
+    const innerH=barH-20;
+    drawRoundedRect(innerX, innerY, innerW, innerH, 12);
+    const bg=ctx.createLinearGradient(innerX*scaleX, (innerY+innerH)*scaleY, innerX*scaleX, innerY*scaleY);
+    bg.addColorStop(0,'rgba(10,18,42,0.92)');
+    bg.addColorStop(1,'rgba(20,30,60,0.88)');
     ctx.fillStyle=bg;
     ctx.fill();
 
     if(ratio>0){
+      const fillHeight=innerH*ratio;
       ctx.save();
       ctx.beginPath();
-      drawRoundedRect(innerX, innerY, innerW*ratio, innerH, 8);
+      drawRoundedRect(innerX, innerY, innerW, innerH, 10);
       ctx.clip();
-      const fillGrad=ctx.createLinearGradient(innerX*scaleX, innerY*scaleY, innerX*scaleX, (innerY+innerH)*scaleY);
-      fillGrad.addColorStop(0,'rgba(255,140,160,0.95)');
-      fillGrad.addColorStop(1,'rgba(255,230,240,0.85)');
+      const fillGrad=ctx.createLinearGradient(innerX*scaleX, (innerY+innerH)*scaleY, innerX*scaleX, (innerY+innerH-fillHeight)*scaleY);
+      fillGrad.addColorStop(0,'rgba(255,120,150,0.2)');
+      fillGrad.addColorStop(0.4,'rgba(255,140,160,0.55)');
+      fillGrad.addColorStop(1,'rgba(255,230,240,0.95)');
       ctx.fillStyle=fillGrad;
-      ctx.fillRect(innerX*scaleX, innerY*scaleY, innerW*ratio*scaleX, innerH*scaleY);
+      ctx.fillRect(innerX*scaleX, (innerY+innerH-fillHeight)*scaleY, innerW*scaleX, fillHeight*scaleY);
       ctx.restore();
     }
 
-    const segments=12;
-    ctx.strokeStyle='rgba(255,255,255,0.12)';
+    const segments=10;
+    ctx.strokeStyle='rgba(255,255,255,0.15)';
     ctx.lineWidth=1;
     for(let i=1;i<segments;i++){
-      const sx=(innerX + innerW*i/segments)*scaleX;
+      const sy=(innerY + innerH - innerH*i/segments)*scaleY;
       ctx.beginPath();
-      ctx.moveTo(sx, innerY*scaleY);
-      ctx.lineTo(sx, (innerY+innerH)*scaleY);
+      ctx.moveTo(innerX*scaleX, sy);
+      ctx.lineTo((innerX+innerW)*scaleX, sy);
       ctx.stroke();
     }
 
-    ctx.fillStyle='rgba(210,230,255,0.85)';
+    ctx.fillStyle='rgba(220,234,255,0.9)';
     ctx.font=`${Math.round(18*((scaleX+scaleY)/2))}px 'Playfair Display',sans-serif`;
-    ctx.textAlign='left';
-    ctx.textBaseline='bottom';
-    ctx.fillText('BOSS  太空戰艦', (x+4)*scaleX, (y-6)*scaleY);
-    ctx.fillStyle='rgba(240,244,255,0.85)';
-    ctx.font=`${Math.round(14*((scaleX+scaleY)/2))}px 'Noto Sans TC',sans-serif`;
     ctx.textAlign='right';
     ctx.textBaseline='top';
-    ctx.fillText(`${spaceBoss.hp}/${spaceBoss.maxHp}`, (x+barW-4)*scaleX, (y+barH+4)*scaleY);
+    ctx.fillText('BOSS 太空戰艦', (x-10)*scaleX, (y-8)*scaleY);
+    ctx.fillStyle='rgba(240,244,255,0.85)';
+    ctx.font=`${Math.round(14*((scaleX+scaleY)/2))}px 'Noto Sans TC',sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='bottom';
+    ctx.fillText(`${spaceBoss.hp}/${spaceBoss.maxHp}`, (x+barW/2)*scaleX, (y+barH+6)*scaleY);
     ctx.restore();
   }
 
@@ -3186,14 +3361,16 @@ function generateLevel(lv, L){
     }
   }
 
-  function bossKillEffect(b){
+  function bossKillEffect(b, opts={}){
     const cx=b.x+b.w/2, cy=b.y+b.h/2;
     spawnParticles(cx,cy,'#fff5c0',60,2.5,4.0,4.5);
     spawnParticles(cx,cy,'#ff4d6d',40,2.0,3.5,3.5);
     screenShake=Math.max(screenShake,6);
     playSFX('fireExplosion');
     showComboNotice(`成功擊殺第${level}關Boss!`,5000,3000);
-    if(Math.random()<0.5){ spawnPower(cx-12,cy,{forceType:'NINE'}); }
+    const dropMode=opts.dropNineCat||'default';
+    if(dropMode==='always'){ spawnPower(cx-12,cy,{forceType:'NINE'}); }
+    else if(dropMode!=='never' && Math.random()<0.5){ spawnPower(cx-12,cy,{forceType:'NINE'}); }
   }
   function destroyBrick(i, sfx='default'){
     const b=bricks[i]; if(!b) return; if(!canDestroyBrick(b)) return;
@@ -3249,6 +3426,9 @@ function generateLevel(lv, L){
         spawnParticles(bx,by,'#ffdd99',14,1.7,2.6,3);
       }
     }
+    if(isSpaceBossActive() && circleIntersectsSpaceBoss(cx,cy,radius)){
+      damageSpaceBoss(1,'fire',{x:spaceBoss.x,y:spaceBoss.y});
+    }
     spawnParticles(cx,cy,'#ffbb55',24,2.1,3.2,4); updateHUD(); playSFX('explosion');
   }
 
@@ -3268,6 +3448,9 @@ function generateLevel(lv, L){
         }
         spawnParticles(bx,by,'#ffdd99',20,1.8,2.8,3.5);
       }
+    }
+    if(isSpaceBossActive() && circleIntersectsSpaceBoss(cx,cy,radius)){
+      damageSpaceBoss(1,'fire',{x:spaceBoss.x,y:spaceBoss.y});
     }
     fireExplosions.push({x:cx,y:cy,r:radius,t0:performance.now(),life:400});
     spawnParticles(cx,cy,'#ff5500',60,2.6,3.8,4.5);
@@ -3498,6 +3681,7 @@ function generateLevel(lv, L){
           } else keep.push(b);
         }
         bricks=keep; screenShake=6; playSFX('phoenix'); updateHUD();
+        if(isSpaceBossActive()){ damageSpaceBoss(1,'phoenix',{x:spaceBoss.x,y:spaceBoss.y}); }
       } else if(type==='NINE'){ if(nineCatEaten>=2) return; lives=9; nineCatEaten++; updateHUD(); spawnParticles(550,350,'#ffd',40,2.2,3.5,4); beep(880,0.1,0.06); }
       return;
     }
@@ -4203,6 +4387,9 @@ function generateLevel(lv, L){
           }
         }
       }
+      if(isSpaceBossActive() && circleIntersectsSpaceBoss(P.x,P.y,P.radius)){
+        damageSpaceBoss(1,'plasma',{x:spaceBoss.x,y:spaceBoss.y});
+      }
     } ctx.restore(); }
 
   function drawHoly(){ const now=performance.now(); for(let i=holyFlashes.length-1;i>=0;i--){ const H=holyFlashes[i]; if(now>H.until){ holyFlashes.splice(i,1); continue; } const a=Math.max(0, (H.until-now)/300); ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle=`rgba(255,240,180,${0.6*a})`; ctx.lineWidth=4;
@@ -4494,7 +4681,7 @@ function generateLevel(lv, L){
     if(screenShake>0){ ctx.restore(); }
   }
 
-  function drawSwords(){ const now=performance.now(); const pr=paddleRect(); for(let i=swords.length-1;i>=0;i--){ const s=swords[i]; if(s.state==='wander'){ s.x+=s.vx; s.y+=s.vy; if(s.x<20||s.x>1080) s.vx*=-1; if(s.y<500||s.y>680) s.vy*=-1; if(!buffs.SWORD.active){ s.state='gather'; s.t0=now; s.tx=pr.x+pr.w/2+ (i-swords.length/2)*20; s.ty=pr.y-40; } } else if(s.state==='gather'){ const prog=Math.min(1,(now-s.t0)/2000); s.x += (s.tx-s.x)*0.15; s.y += (s.ty-s.y)*0.15; if(prog>=1){ s.state='ready'; } } else if(s.state==='fire'){ s.x+=s.vx; s.y+=s.vy; const idx=s.target; const bk=bricks[idx]; if(bk && s.x>bk.x && s.x<bk.x+bk.w && s.y>bk.y && s.y<bk.y+bk.h){ playSFX('sword'); damageBrick(idx,3,'none'); swords.splice(i,1); continue; } if(s.x<0||s.x>1100||s.y<0||s.y>700){ swords.splice(i,1); continue; } }
+  function drawSwords(){ const now=performance.now(); const pr=paddleRect(); for(let i=swords.length-1;i>=0;i--){ const s=swords[i]; if(s.state==='wander'){ s.x+=s.vx; s.y+=s.vy; if(s.x<20||s.x>1080) s.vx*=-1; if(s.y<500||s.y>680) s.vy*=-1; if(!buffs.SWORD.active){ s.state='gather'; s.t0=now; s.tx=pr.x+pr.w/2+ (i-swords.length/2)*20; s.ty=pr.y-40; } } else if(s.state==='gather'){ const prog=Math.min(1,(now-s.t0)/2000); s.x += (s.tx-s.x)*0.15; s.y += (s.ty-s.y)*0.15; if(prog>=1){ s.state='ready'; } } else if(s.state==='fire'){ s.x+=s.vx; s.y+=s.vy; const idx=s.target; if(idx==='boss'){ const bounds=getSpaceBossBounds(); if(!isSpaceBossActive() || !bounds){ swords.splice(i,1); continue; } if(s.x>bounds.x && s.x<bounds.x+bounds.w && s.y>bounds.y && s.y<bounds.y+bounds.h){ playSFX('sword'); damageSpaceBoss(1,'sword',{x:s.x,y:s.y}); swords.splice(i,1); continue; } } else { const bk=bricks[idx]; if(bk && s.x>bk.x && s.x<bk.x+bk.w && s.y>bk.y && s.y<bk.y+bk.h){ playSFX('sword'); damageBrick(idx,3,'none'); swords.splice(i,1); continue; } } if(s.x<0||s.x>1100||s.y<0||s.y>700){ swords.splice(i,1); continue; } }
       ctx.save();
       ctx.translate(s.x*scaleX, s.y*scaleY);
       ctx.rotate(Math.atan2(s.vy||0.1, s.vx||0.1));
@@ -4514,10 +4701,44 @@ function generateLevel(lv, L){
       ctx.fillRect(-18, -1, 4, 2); // handle
       ctx.restore(); }
     if(!buffs.SWORD.active && swords.length && !swordFireStart){ swordFireStart=now+2000; nextSwordFire=swordFireStart; }
-    if(swordFireStart && now>=swordFireStart){ if(now>=nextSwordFire){ const s=swords.find(z=>z.state==='ready'); if(s){ const idx=randomBrick(); if(idx!=null){ const t=bricks[idx]; const ang=Math.atan2((t.y+t.h/2)-s.y,(t.x+t.w/2)-s.x); s.vx=Math.cos(ang)*8; s.vy=Math.sin(ang)*8; s.state='fire'; s.target=idx; } } nextSwordFire=now+300; if(!swords.some(z=>z.state==='ready')) swordFireStart=0; } }
+    if(swordFireStart && now>=swordFireStart){
+      if(now>=nextSwordFire){
+        const s=swords.find(z=>z.state==='ready');
+        if(s){
+          const idx=randomBrick(true);
+          if(idx!=null){
+            let tx=null, ty=null;
+            if(idx==='boss'){
+              if(isSpaceBossActive()){
+                tx=spaceBoss.x; ty=spaceBoss.y;
+                highlightSpaceBossTarget();
+              }
+            }else{
+              const t=bricks[idx];
+              if(t){ tx=t.x+t.w/2; ty=t.y+t.h/2; }
+            }
+            if(tx!=null && ty!=null){
+              const ang=Math.atan2(ty-s.y,tx-s.x);
+              s.vx=Math.cos(ang)*8;
+              s.vy=Math.sin(ang)*8;
+              s.state='fire';
+              s.target=idx;
+            }
+          }
+        }
+        nextSwordFire=now+300;
+        if(!swords.some(z=>z.state==='ready')) swordFireStart=0;
+      }
+    }
   }
 
-  function randomBrick(){ const arr=bricks.map((b,i)=>({b,i})).filter(x=>canDestroyBrick(x.b)); if(!arr.length) return null; const r=arr[Math.floor(Math.random()*arr.length)]; return r.i; }
+  function randomBrick(includeBoss=false){
+    const arr=bricks.map((b,i)=>({b,i})).filter(x=>canDestroyBrick(x.b));
+    if(includeBoss && isSpaceBossActive()){ arr.push({boss:true}); }
+    if(!arr.length) return null;
+    const r=arr[Math.floor(Math.random()*arr.length)];
+    return r.boss ? 'boss' : r.i;
+  }
 
   
   function speedForLevel(lv){
@@ -4716,14 +4937,36 @@ function generateLevel(lv, L){
         const pr=paddleRect();
         const barrels = !orientLeft ? [{x:pr.x, y:pr.y+pr.h/2},{x:pr.x+pr.w, y:pr.y+pr.h/2}] : [{x:pr.x+pr.w/2, y:pr.y},{x:pr.x+pr.w/2, y:pr.y+pr.h}];
         for(const s of barrels){
-          // 鎖定最遠的磚塊
-          let targetIdx=-1, best=-1; for(let i=0;i<bricks.length;i++){ const bk=bricks[i]; if(!canDestroyBrick(bk)) continue; const dx=(bk.x+bk.w/2)-s.x; const dy=(bk.y+bk.h/2)-s.y; const d=dx*dx+dy*dy; if(d>best){ best=d; targetIdx=i; } }
-          if(targetIdx>=0){
-            const t=bricks[targetIdx]; const tx=t.x+t.w/2, ty=t.y+t.h/2;
-            laserBeams.push({x1:s.x,y1:s.y,x2:tx,y2:ty,until:now+200});
-            laserImpacts.push({x:tx, y:ty, t0:now, tEnd:now+320});
-            spawnParticles(tx,ty,'rgba(160,255,200,0.9)',10,1.8,2.2,2.6);
-            destroyBrick(targetIdx,'laser');
+          let target=null;
+          let best=-1;
+          for(let i=0;i<bricks.length;i++){
+            const bk=bricks[i];
+            if(!canDestroyBrick(bk)) continue;
+            const dx=(bk.x+bk.w/2)-s.x;
+            const dy=(bk.y+bk.h/2)-s.y;
+            const d=dx*dx+dy*dy;
+            if(d>best){ best=d; target={type:'brick', idx:i, x:bk.x+bk.w/2, y:bk.y+bk.h/2}; }
+          }
+          if(isSpaceBossActive()){
+            const dx=spaceBoss.x - s.x;
+            const dy=spaceBoss.y - s.y;
+            const d=dx*dx+dy*dy;
+            if(d>best){
+              best=d;
+              target={type:'boss', x:spaceBoss.x, y:spaceBoss.y};
+              highlightSpaceBossTarget();
+            }
+          }
+          if(target){
+            const impact = target.type==='boss' ? spaceBossImpactPoint(s.x,s.y) : {x:target.x, y:target.y};
+            laserBeams.push({x1:s.x,y1:s.y,x2:impact.x,y2:impact.y,until:now+200});
+            laserImpacts.push({x:impact.x, y:impact.y, t0:now, tEnd:now+320});
+            spawnParticles(impact.x,impact.y,'rgba(160,255,200,0.9)',10,1.8,2.2,2.6);
+            if(target.type==='boss'){
+              damageSpaceBoss(1,'laser',impact);
+            }else{
+              destroyBrick(target.idx,'laser');
+            }
           }
         }
       }
@@ -4750,6 +4993,7 @@ function generateLevel(lv, L){
       const bl=gatlingBullets[i];
       bl.x+=bl.vx; bl.y+=bl.vy;
       if(bl.y<0){ gatlingBullets.splice(i,1); continue; }
+      let removed=false;
       for(let j=bricks.length-1;j>=0;j--){
         const bk=bricks[j];
         if(bl.x>bk.x && bl.x<bk.x+bk.w && bl.y>bk.y && bl.y<bk.y+bk.h){
@@ -4766,16 +5010,26 @@ function generateLevel(lv, L){
             } else updateHUD();
           }
           gatlingBullets.splice(i,1);
+          removed=true;
           break;
+        }
+      }
+      if(!removed && isSpaceBossActive()){
+        const bounds=getSpaceBossBounds();
+        if(bounds && bl.x>bounds.x && bl.x<bounds.x+bounds.w && bl.y>bounds.y && bl.y<bounds.y+bounds.h){
+          spawnParticles(bl.x, bl.y, '#ffdd77', 8, 1.6, 3.2, 2.5);
+          playSFX('gatlingHit');
+          damageSpaceBoss(1,'gatling',{x:bl.x,y:bl.y});
+          gatlingBullets.splice(i,1);
         }
       }
     }
 
-    if(stormTurret){ if(now>=stormTurret.fireAt){ if(stormTurret.shots<=0){ stormTurret=null; buffs.STORM.active=false; } else if(now-stormTurret.lastShot>=200){ const idx=randomBrick(); if(idx!=null){ const t=bricks[idx]; const tx=t.x+t.w/2, ty=t.y+t.h/2; laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:tx,y2:ty,until:now+200}); laserImpacts.push({x:tx,y:ty,t0:now,tEnd:now+320}); destroyBrick(idx,'laser'); stormTurret.shots--; stormTurret.lastShot=now; } } } }
+    if(stormTurret){ if(now>=stormTurret.fireAt){ if(stormTurret.shots<=0){ stormTurret=null; buffs.STORM.active=false; } else if(now-stormTurret.lastShot>=200){ const idx=randomBrick(true); if(idx!=null){ if(idx==='boss' && isSpaceBossActive()){ const impact=spaceBossImpactPoint(stormTurret.x,stormTurret.y); highlightSpaceBossTarget(); laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:impact.x,y2:impact.y,until:now+200}); laserImpacts.push({x:impact.x,y:impact.y,t0:now,tEnd:now+320}); damageSpaceBoss(1,'laser',impact); } else { const t=bricks[idx]; if(t){ const tx=t.x+t.w/2, ty=t.y+t.h/2; laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:tx,y2:ty,until:now+200}); laserImpacts.push({x:tx,y:ty,t0:now,tEnd:now+320}); destroyBrick(idx,'laser'); } } stormTurret.shots--; stormTurret.lastShot=now; } } } }
 
-    if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ const d=Math.min(8,buffs.BLACKHOLE.deaths||0); const dmg=1+(d/8)*(40-1); const rad=200+(d/8)*(800-200); const pr=paddleRect(); const cx=pr.x+pr.w/2, cy=pr.y-rad; blackHoles.push({x:cx,y:cy,r:rad,until:now+3000}); for(let i=bricks.length-1;i>=0;i--){ const bk=bricks[i]; const bx=bk.x+bk.w/2, by=bk.y+bk.h/2; if(Math.hypot(bx-cx,by-cy)<=rad){ damageBrick(i,dmg,'none'); } } playSFX('blackhole'); buffs.BLACKHOLE.active=false; }
+    if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ const d=Math.min(8,buffs.BLACKHOLE.deaths||0); const dmg=1+(d/8)*(40-1); const rad=200+(d/8)*(800-200); const pr=paddleRect(); const cx=pr.x+pr.w/2, cy=pr.y-rad; blackHoles.push({x:cx,y:cy,r:rad,until:now+3000}); for(let i=bricks.length-1;i>=0;i--){ const bk=bricks[i]; const bx=bk.x+bk.w/2, by=bk.y+bk.h/2; if(Math.hypot(bx-cx,by-cy)<=rad){ damageBrick(i,dmg,'none'); } } if(isSpaceBossActive() && circleIntersectsSpaceBoss(cx,cy,rad)){ damageSpaceBoss(1,'blackhole',{x:spaceBoss.x,y:spaceBoss.y}); } playSFX('blackhole'); buffs.BLACKHOLE.active=false; }
 
-    if(buffs.ANNIHIL.active && now>=buffs.ANNIHIL.next){ let cand=bricks.filter(b=>canDestroyBrick(b)&&!b.boss); if(!cand.length) cand=bricks.filter(b=>canDestroyBrick(b)); if(cand.length){ const target=cand[Math.floor(Math.random()*cand.length)]; const idx=bricks.indexOf(target); destroyBrick(idx,'annihil'); } buffs.ANNIHIL.next+=1000; }
+    if(buffs.ANNIHIL.active && now>=buffs.ANNIHIL.next){ let cand=bricks.filter(b=>canDestroyBrick(b)&&!b.boss); if(!cand.length) cand=bricks.filter(b=>canDestroyBrick(b)); if(cand.length){ const target=cand[Math.floor(Math.random()*cand.length)]; const idx=bricks.indexOf(target); destroyBrick(idx,'annihil'); } else if(isSpaceBossActive()){ damageSpaceBoss(1,'annihil',{x:spaceBoss.x,y:spaceBoss.y}); } buffs.ANNIHIL.next+=1000; }
 
     // 全局速度倍率（GODSPEED 時忽略其它）
     function effectiveMul(){
@@ -4915,15 +5169,23 @@ function generateLevel(lv, L){
         if(buffs.MISSILE.active){
           // 取最近/中距離/最遠
           const src={x:b.x,y:b.y};
-          const candidates = bricks.map((bk,idx)=>({idx, d: (bk.x+bk.w/2-src.x)**2 + (bk.y+bk.h/2-src.y)**2 })).sort((a,b)=>a.d-b.d);
+          const candidates = bricks.map((bk,idx)=>({idx, type:'brick', d: (bk.x+bk.w/2-src.x)**2 + (bk.y+bk.h/2-src.y)**2 })).sort((a,b)=>a.d-b.d);
+          if(isSpaceBossActive()){
+            const d = (spaceBoss.x-src.x)**2 + (spaceBoss.y-src.y)**2;
+            candidates.push({idx:'boss', type:'boss', d});
+            candidates.sort((a,b)=>a.d-b.d);
+          }
           const pickIdxs = [0, Math.floor(candidates.length/2), candidates.length-1].filter(i=>i>=0 && i<candidates.length);
           for(const i of pickIdxs){
-            const targetId = candidates[i]?.idx;
-            if(targetId==null) continue;
+            const entry = candidates[i];
+            if(!entry) continue;
             const ang=Math.random()*Math.PI*2;
-            missiles.push({x:src.x,y:src.y,vx:Math.cos(ang)*2,vy:Math.sin(ang)*2,targetId,lifeUntil:now+GAME_CONFIG.powers.MISSILE.missile.lifeMs,trail:[]});
-            const ttt = bricks[targetId];
-            if(ttt){ pushLockBox(ttt.x, ttt.y, ttt.w, ttt.h, 'target'); }
+            missiles.push({x:src.x,y:src.y,vx:Math.cos(ang)*2,vy:Math.sin(ang)*2,targetId:entry.idx,targetType:entry.type||'brick',lifeUntil:now+GAME_CONFIG.powers.MISSILE.missile.lifeMs,trail:[]});
+            if(entry.type==='boss'){ highlightSpaceBossTarget(); }
+            else {
+              const ttt = bricks[entry.idx];
+              if(ttt){ pushLockBox(ttt.x, ttt.y, ttt.w, ttt.h, 'target'); }
+            }
           }
         }
 
@@ -4932,12 +5194,19 @@ function generateLevel(lv, L){
           function neighborCount(t){
             let cnt=0; const L=layout(); for(const o of bricks){ if(o===t) continue; const dx=Math.abs((o.x+o.w/2)-(t.x+t.w/2)); const dy=Math.abs((o.y+o.h/2)-(t.y+t.h/2)); const thx=brickW+L.pad+2, thy=brickH+L.pad+2; if(dx<=thx && dy<=thy) cnt++; } return cnt;
           }
-          let best=null; for(const t of bricks){ if(t.unbreakable) continue; const iso=neighborCount(t); const d=Math.hypot((t.x+t.w/2)-b.x,(t.y+t.h/2)-b.y); const score=iso*1000 + d; if(best==null || score<best.score) best={t,score}; }
-          const tx = best? (best.t.x+best.t.w/2) : (1100/2);
-          const ty = best? (best.t.y+best.t.h/2) : (layout().top);
-          const sp=Math.hypot(b.vx,b.vy); const ang=Math.atan2(ty-b.y, tx-b.x); b.vx=Math.cos(ang)*sp; b.vy=Math.sin(ang)*sp;
-        
-          if(best){ pushLockBox(best.t.x, best.t.y, best.t.w, best.t.h, 'target'); }
+          let best=null;
+          for(const t of bricks){ if(t.unbreakable) continue; const iso=neighborCount(t); const d=Math.hypot((t.x+t.w/2)-b.x,(t.y+t.h/2)-b.y); const score=iso*1000 + d; if(best==null || score<best.score) best={t,score,type:'brick'}; }
+          if(!best && isSpaceBossActive()){
+            best={type:'boss', score:-Infinity};
+          }
+          const targetX = best? (best.type==='boss'? spaceBoss.x : best.t.x+best.t.w/2) : (1100/2);
+          const targetY = best? (best.type==='boss'? spaceBoss.y : best.t.y+best.t.h/2) : (layout().top);
+          const sp=Math.hypot(b.vx,b.vy); const ang=Math.atan2(targetY-b.y, targetX-b.x); b.vx=Math.cos(ang)*sp; b.vy=Math.sin(ang)*sp;
+
+          if(best){
+            if(best.type==='boss'){ highlightSpaceBossTarget(); }
+            else { pushLockBox(best.t.x, best.t.y, best.t.w, best.t.h, 'target'); }
+          }
         }
         if(buffs.SWORD.active){ swords.push({x:Math.random()*1100,y:650,vx:(Math.random()-0.5)*2,vy:(Math.random()-0.5)*0.5,state:'wander'}); }
       }
@@ -4969,7 +5238,7 @@ function generateLevel(lv, L){
         // 特效觸發
         if(buffs.PLASMA.active){ const cfg=GAME_CONFIG.powers.PLASMA.plasma; const ang=Math.random()*Math.PI*2; plasmas.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,vx:Math.cos(ang)*cfg.drift,vy:Math.sin(ang)*cfg.drift,until:now+cfg.lifeMs,radius:cfg.radius,phase:Math.random()*Math.PI*2}); playSFX('plasma'); }
         if(buffs.FREEZE.active && (b.freeze.state==='idle' || !b.freeze.state)){ const f=GAME_CONFIG.powers.FREEZE.freeze; b.freeze.state = 'delay'; b.freeze.t0 = now; b.freeze.delay = f.delayMs; b.freeze.stop = f.stopMs; b.freeze.oldVX = b.vx; b.freeze.oldVY = b.vy; }
-        if(buffs.HOLY.active){ playSFX('holy'); holyFlashes.push({x:bk.x+bk.w/2, y:bk.y+bk.h/2, until:now+350}); for(let i=bricks.length-1;i>=0;i--){ const t=bricks[i]; const sameRow=Math.abs(t.y-bk.y)<1; const sameCol=Math.abs(t.x-bk.x)<1; if(sameRow||sameCol){ destroyBrick(i,'none'); } } screenShake=Math.max(screenShake,4); }
+        if(buffs.HOLY.active){ playSFX('holy'); holyFlashes.push({x:bk.x+bk.w/2, y:bk.y+bk.h/2, until:now+350}); for(let i=bricks.length-1;i>=0;i--){ const t=bricks[i]; const sameRow=Math.abs(t.y-bk.y)<1; const sameCol=Math.abs(t.x-bk.x)<1; if(sameRow||sameCol){ destroyBrick(i,'none'); } } if(isSpaceBossActive()){ const bounds=getSpaceBossBounds(); const rowY=bk.y+bk.h/2; const colX=bk.x+bk.w/2; let bossHit=false; if(bounds && rowY>=bounds.y && rowY<=bounds.y+bounds.h){ damageSpaceBoss(1,'holy',{x:spaceBoss.x,y:rowY}); bossHit=true; } if(bounds && !bossHit && colX>=bounds.x && colX<=bounds.x+bounds.w){ damageSpaceBoss(1,'holy',{x:colX,y:spaceBoss.y}); } } screenShake=Math.max(screenShake,4); }
         if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
         if(buffs.HELL.active){ blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,r:40,until:now+GAME_CONFIG.powers.HELL.hell.haloMs}); playSFX('blackhole'); destroyNeighbors(hit); destroyBrick(hit,'none'); }
         if(buffs.POISON.active){ bk.poisonUntil = now + (GAME_CONFIG.powers.POISON.durationMs||12000); bk.poisonTick = now + (GAME_CONFIG.powers.POISON.poison?.tickMs||2000); }
@@ -5030,7 +5299,7 @@ function generateLevel(lv, L){
           const impactY = Math.max(ry, Math.min(b.y, ry+sb.h));
           spawnParticles(impactX, impactY, '#b8d6ff', 20, 1.4, 2.4, 2.2);
           fireCollide();
-          damageSpaceBoss((inRampage||b.piercing)?2:1,'ball');
+          damageSpaceBoss(1,'ball',{x:impactX,y:impactY});
           collidedWithBrick=true;
         }
       }
@@ -5047,10 +5316,18 @@ function generateLevel(lv, L){
     for(let i=missiles.length-1;i>=0;i--){
       const m=missiles[i];
       if(now>m.lifeUntil){ missiles.splice(i,1); continue; }
-      // 目標位置
-      const t=bricks[m.targetId];
-      if(!t){ missiles.splice(i,1); continue; }
-      const tx=t.x+t.w/2, ty=t.y+t.h/2;
+      let tx,ty, rect=null;
+      if(m.targetType==='boss'){
+        if(!isSpaceBossActive()){ missiles.splice(i,1); continue; }
+        const bounds=getSpaceBossBounds();
+        rect=bounds;
+        tx=spaceBoss.x; ty=spaceBoss.y;
+      }else{
+        const t=bricks[m.targetId];
+        if(!t){ missiles.splice(i,1); continue; }
+        tx=t.x+t.w/2; ty=t.y+t.h/2;
+        rect={x:t.x,y:t.y,w:t.w,h:t.h};
+      }
       const ang=Math.atan2(ty-m.y, tx-m.x);
       const sp=GAME_CONFIG.powers.MISSILE.missile.speed;
       // 轉向
@@ -5062,8 +5339,10 @@ function generateLevel(lv, L){
       m.x+=m.vx; m.y+=m.vy;
       (m.trail||(m.trail=[])).push({x:m.x,y:m.y,t:now}); if(m.trail.length>20) m.trail.shift();
       // 命中判定
-      if(m.x>t.x && m.x<t.x+t.w && m.y>t.y && m.y<t.y+t.h){
-        destroyBrick(m.targetId,'missile'); missiles.splice(i,1); spawnParticles(m.x,m.y,'#ffbb66',12,1.8,2.2,3);
+      if(rect && m.x>rect.x && m.x<rect.x+rect.w && m.y>rect.y && m.y<rect.y+rect.h){
+        if(m.targetType==='boss'){ damageSpaceBoss(1,'missile',{x:m.x,y:m.y}); }
+        else { destroyBrick(m.targetId,'missile'); }
+        missiles.splice(i,1); spawnParticles(m.x,m.y,'#ffbb66',12,1.8,2.2,3);
       }
     }
 
