@@ -1224,6 +1224,21 @@ select optgroup { color: #0b1022; }
       if(typeof bossChargeUntil !== 'undefined' && bossChargeUntil){ bossChargeUntil += delta; }
       if(typeof cyclopsShakeUntil !== 'undefined' && cyclopsShakeUntil){ cyclopsShakeUntil += delta; }
       if(gatling){ gatling.chargeUntil+=delta; gatling.fireStart+=delta; gatling.fireUntil+=delta; if(gatling.lastShot) gatling.lastShot+=delta; }
+      if(spaceBossRevealScheduled) spaceBossRevealScheduled += delta;
+      if(spaceBossNextAttackAt) spaceBossNextAttackAt += delta;
+      if(spaceBossAttack){
+        if(spaceBossAttack.start) spaceBossAttack.start += delta;
+        if(spaceBossAttack.countdownEnd) spaceBossAttack.countdownEnd += delta;
+        if(spaceBossAttack.fireStart) spaceBossAttack.fireStart += delta;
+        if(spaceBossAttack.fireEnd) spaceBossAttack.fireEnd += delta;
+        if(spaceBossAttack.sweepStart) spaceBossAttack.sweepStart += delta;
+        if(spaceBossAttack.sweepEnd) spaceBossAttack.sweepEnd += delta;
+      }
+      if(spaceBossMarquee){ spaceBossMarquee.start+=delta; if(spaceBossMarquee.fadeStart) spaceBossMarquee.fadeStart+=delta; if(spaceBossMarquee.end) spaceBossMarquee.end+=delta; }
+      for(const fx of spaceBossBursts){ if(fx.t0) fx.t0 += delta; }
+      if(spaceBossPaddleRespawnAt) spaceBossPaddleRespawnAt += delta;
+      if(spaceBossDeathAnim){ spaceBossDeathAnim.start+=delta; spaceBossDeathAnim.explosionAt+=delta; spaceBossDeathAnim.end+=delta; spaceBossDeathAnim.lastBurst+=delta; }
+      if(spaceBossSuppressLifeLossUntil) spaceBossSuppressLifeLossUntil += delta;
       // 調整各種特效物件（粒子、雷射、黑洞等）的 till/until 終止時間
       const lists = [plasmas, holyFlashes, blackHoles, laserBeams, laserImpacts, missiles, hostileBeams, hostileArcs, hostileColumns, hazardClouds];
       for(const arr of lists){
@@ -1262,6 +1277,11 @@ select optgroup { color: #0b1022; }
   let comboNoticeTriggered={50:false,100:false,200:false,300:false,400:false,500:false,800:false,1000:false};
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
   const SPACE_BOSS_MAX_HP = 30;
+  const SPACE_BOSS_ATTACK_INTERVAL = 15000;
+  const SPACE_BOSS_PADDLE_MIN_WIDTH = 60;
+  const SPACE_BOSS_GUN_FIRE_RATE = 100; // ms between each burst per gun
+  const SPACE_BOSS_GUN_FIRE_DURATION = 3000;
+  const SPACE_BOSS_LASER_SWEEP_DURATION = 2000;
   let spaceBossPhase='inactive';
   let spaceBoss=null;
   let spaceBossPlaceholder=null;
@@ -1270,6 +1290,15 @@ select optgroup { color: #0b1022; }
   let spaceBossBursts=[];
   let spaceBossMarquee=null;
   let spaceBossDefeatedAt=0;
+  let spaceBossAttack=null;
+  let spaceBossNextAttackAt=0;
+  const spaceBossBullets=[];
+  let spaceBossPaddlePenalty=0;
+  let spaceBossPaddleRespawnAt=0;
+  let spaceBossDeathAnim=null;
+  let spaceBossLastPaddleCenter=0;
+  let spaceBossPrevPaddleCenter=0;
+  let spaceBossSuppressLifeLossUntil=0;
     let scoreUploaded=false;
     let uploading=false;
   let ledStyle = (localStorage.getItem('led_style')||'classic');
@@ -2167,6 +2196,13 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     spaceBossMarquee=null;
     spaceBossRevealScheduled=0;
     spaceBossDefeatedAt=0;
+    spaceBossAttack=null;
+    spaceBossNextAttackAt=0;
+    spaceBossBullets.length=0;
+    spaceBossPaddlePenalty=0;
+    spaceBossPaddleRespawnAt=0;
+    spaceBossDeathAnim=null;
+    spaceBossSuppressLifeLossUntil=0;
     spaceBossPhase = (level===5?'awaiting':'inactive');
     const lvlImg = getLevelImage(level);
     if (lvlImg && lvlImg.decode) { lvlImg.decode().catch(()=>{}); }
@@ -2191,7 +2227,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       const breakables = bricks.some(b => !b.unbreakable);
       if(breakables) return true;
       if(spaceBossPhase==='awaiting'){ startSpaceBossReveal(); return true; }
-      if(spaceBossPhase==='intro' || spaceBossPhase==='active') return true;
+      if(spaceBossPhase==='intro' || spaceBossPhase==='active' || spaceBossPhase==='dying') return true;
       return false;
     }
     return bricks.some(b => !b.unbreakable);
@@ -2227,7 +2263,6 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       spaceBossAnchor={x:anchorX,y:L.top,w:anchorW,h:anchorH};
     }
     spaceBossRevealScheduled = now + 900;
-    spaceBossMarquee={text:'有趣！ 讓你見識我的真面目吧!', start:now, fadeStart:now+5000, end:now+8000};
     screenShake=Math.max(screenShake,8);
     playSFX('fireExplosion');
   }
@@ -2257,18 +2292,25 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       hitFlashUntil:0,
       spawnAt:now,
       guns:[
-        {offsetX:-70,offsetY:32,phase:0,angle:-Math.PI/2,spin:0},
-        {offsetX:0,offsetY:42,phase:1.2,angle:-Math.PI/2,spin:0},
-        {offsetX:70,offsetY:32,phase:2.3,angle:-Math.PI/2,spin:0}
+        {offsetX:-70,offsetY:32,phase:0,angle:Math.PI/2,spin:0},
+        {offsetX:0,offsetY:42,phase:1.2,angle:Math.PI/2,spin:0},
+        {offsetX:70,offsetY:32,phase:2.3,angle:Math.PI/2,spin:0}
       ],
       lasers:[
-        {offsetX:-92,offsetY:-4,phase:0.6,angle:-0.35},
-        {offsetX:92,offsetY:-4,phase:1.8,angle:0.35}
+        {offsetX:-92,offsetY:-4,phase:0.6,angle:Math.PI},
+        {offsetX:92,offsetY:-4,phase:1.8,angle:Math.PI}
       ],
       thrusterPhase:0
     };
     spaceBossPhase='active';
     spaceBossBursts.push({type:'halo',x:cx,y:baseY,r0:40,r1:260,t0:now,life:1600,color:'130,200,255'});
+    spaceBossAttack=null;
+    spaceBossNextAttackAt=now + SPACE_BOSS_ATTACK_INTERVAL;
+    spaceBossBullets.length=0;
+    spaceBossPaddlePenalty=0;
+    spaceBossPaddleRespawnAt=0;
+    spaceBossDeathAnim=null;
+    spaceBossMarquee={text:'有趣！ 讓你見識我的真面目吧!', start:now, fadeStart:now+2600, end:now+3200, style:'alert'};
   }
 
   function damageSpaceBoss(amount=1){
@@ -2302,9 +2344,21 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     spaceBossBursts.push({type:'spark',x:sb.x,y:sb.y,r0:0,r1:200,t0:now,life:1200,color:'200,240,255'});
     screenShake=Math.max(screenShake,12);
     playSFX('fireExplosion');
-    spaceBossPhase='defeated';
-    spaceBossDefeatedAt=now;
-    spaceBoss=null;
+    spaceBossPhase='dying';
+    spaceBossAttack=null;
+    spaceBossBullets.length=0;
+    spaceBossNextAttackAt=0;
+    spaceBossMarquee={text:'成功擊殺Boss: 太空戰艦!', start:now, fadeStart:now+3000, end:now+3200, style:'alert'};
+    spaceBossDeathAnim={
+      start:now,
+      startY:sb.y,
+      dropDistance:200,
+      fallDuration:3000,
+      explosionAt:now+3000,
+      end:now+5000,
+      lastBurst:now,
+      bigBang:false
+    };
   }
 
   function updateSpaceBoss(){
@@ -2319,11 +2373,272 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       if(sb.x + sb.w/2 > 1100 - margin){ sb.x = 1100 - margin - sb.w/2; sb.vx = -Math.abs(sb.vx); }
       sb.y = sb.baseY + Math.sin((now - sb.spawnAt)/650)*28;
       sb.thrusterPhase = (sb.thrusterPhase||0) + 0.08;
-      for(const gun of sb.guns){ gun.spin=(gun.spin||0)+0.28; gun.angle = -Math.PI/2 + Math.sin((now/520)+gun.phase)*0.55; }
-      for(const laser of sb.lasers){ laser.angle = Math.sin((now/900)+laser.phase)*0.32; }
+      const atkMode = spaceBossAttack?.mode;
+      const atkState = spaceBossAttack?.state;
+      const pr = paddleRect();
+      for(const gun of sb.guns){
+        gun.spin=(gun.spin||0)+0.28;
+        if(atkMode===1 && atkState==='firing'){
+          const gx = sb.x + gun.offsetX;
+          const gy = sb.y + gun.offsetY;
+          const tx = pr.x + pr.w/2;
+          const ty = pr.y + pr.h/2;
+          const dir = Math.atan2(ty-gy, tx-gx);
+          gun.angle = dir + Math.PI/2;
+        }else{
+          gun.angle = Math.PI/2 + Math.sin((now/520)+gun.phase)*0.45;
+        }
+      }
+      for(const laser of sb.lasers){
+        if(atkMode===2 && atkState==='sweeping' && spaceBossAttack?.currentTarget){
+          const lx = sb.x + laser.offsetX;
+          const ly = sb.y + laser.offsetY;
+          const target = spaceBossAttack.currentTarget;
+          const dir = Math.atan2(target.y-ly, target.x-lx);
+          laser.angle = dir + Math.PI/2;
+        }else{
+          laser.angle = Math.PI + Math.sin((now/900)+laser.phase)*0.22;
+        }
+      }
       if(sb.hitFlashUntil && now>sb.hitFlashUntil){ sb.hitFlashUntil=0; }
     }
+    if(spaceBossPhase==='dying' && spaceBoss){
+      const anim=spaceBossDeathAnim;
+      if(anim){
+        const prog=Math.min(1, Math.max(0,(now-anim.start)/anim.fallDuration));
+        spaceBoss.y = anim.startY + prog*anim.dropDistance;
+        if(now-anim.lastBurst>120){
+          anim.lastBurst=now;
+          const jitterX=(Math.random()-0.5)*spaceBoss.w*0.8;
+          const jitterY=(Math.random()-0.3)*spaceBoss.h*0.8;
+          spawnParticles(spaceBoss.x+jitterX, spaceBoss.y+jitterY, '#ffe6b8', 30, 2.4, 3.6, 3.6);
+          spaceBossBursts.push({type:'spark',x:spaceBoss.x+jitterX,y:spaceBoss.y+jitterY,r0:0,r1:240,t0:now,life:800,color:'255,180,120'});
+          screenShake=Math.max(screenShake,6);
+        }
+        if(!anim.bigBang && now>=anim.explosionAt){
+          anim.bigBang=true;
+          screenShake=Math.max(screenShake,18);
+          spawnParticles(spaceBoss.x,spaceBoss.y,'#fff2d6',220,3.6,5.2,6);
+          spaceBossBursts.push({type:'ring',x:spaceBoss.x,y:spaceBoss.y,r0:80,r1:620,width:32,t0:now,life:2000,color:'255,220,180'});
+          spaceBossBursts.push({type:'flare',x:spaceBoss.x,y:spaceBoss.y,r0:0,r1:420,t0:now,life:2200,color:'255,240,210'});
+        }
+        if(now>=anim.end){
+          spaceBossPhase='defeated';
+          spaceBossDefeatedAt=now;
+          spaceBoss=null;
+          spaceBossDeathAnim=null;
+        }
+      }
+    }
     for(let i=spaceBossBursts.length-1;i>=0;i--){ const fx=spaceBossBursts[i]; const life=fx.life||1000; if(now>fx.t0+life){ spaceBossBursts.splice(i,1); } }
+    updateSpaceBossAttack(now);
+    updateSpaceBossBullets(now);
+    updateSpaceBossPaddleRespawn(now);
+  }
+
+  function startSpaceBossAttack(mode, now){
+    if(!spaceBoss) return;
+    const pr=paddleRect();
+    spaceBossNextAttackAt=0;
+    if(mode===1){
+      spaceBossAttack={
+        mode:1,
+        state:'countdown',
+        start:now,
+        countdownEnd:now+3000,
+        fireStart:now+3000,
+        fireEnd:now+3000+SPACE_BOSS_GUN_FIRE_DURATION,
+        lastShot:0
+      };
+      spaceBossMarquee={text:'危險！ 太空戰艦即將進行火力壓制!', start:now, fadeStart:now+3000, end:now+3200, style:'alert', countdownDuration:3000};
+    }else{
+      const baseTarget={x:pr.x+pr.w/2, y:pr.y+pr.h/2};
+      const movement=spaceBossLastPaddleCenter-spaceBossPrevPaddleCenter;
+      let dir=0;
+      if(Math.abs(movement)>1){ dir = movement>0?1:-1; }
+      spaceBossAttack={
+        mode:2,
+        state:'countdown',
+        start:now,
+        countdownEnd:now+3000,
+        sweepStart:now+3000,
+        sweepEnd:now+3000+SPACE_BOSS_LASER_SWEEP_DURATION,
+        baseTarget,
+        sweepDir:dir,
+        maxSweep:1100/3,
+        currentTarget:{...baseTarget},
+        hitApplied:false
+      };
+      spaceBossMarquee={text:'危險！ 太空戰艦即將使出致命雷射!', start:now, fadeStart:now+3000, end:now+3200, style:'alert', countdownDuration:3000};
+    }
+  }
+
+  function updateSpaceBossAttack(now){
+    if(level!==5) return;
+    if(spaceBossPhase!=='active' || !spaceBoss){
+      spaceBossAttack=null;
+      return;
+    }
+    if(!spaceBossAttack){
+      if(spaceBossNextAttackAt && now>=spaceBossNextAttackAt){
+        const mode = Math.random()<0.5 ? 1 : 2;
+        startSpaceBossAttack(mode, now);
+      }
+      return;
+    }
+    const atk=spaceBossAttack;
+    if(atk.state==='countdown'){
+      if(now>=atk.countdownEnd){
+        if(atk.mode===1){
+          atk.state='firing';
+          atk.lastShot=0;
+        }else{
+          atk.state='sweeping';
+          atk.currentTarget={...atk.baseTarget};
+        }
+        spaceBossMarquee=null;
+      }
+      return;
+    }
+    if(atk.mode===1){
+      if(now>=atk.fireEnd){
+        spaceBossAttack=null;
+        spaceBossNextAttackAt=now+SPACE_BOSS_ATTACK_INTERVAL;
+        return;
+      }
+      if(now-atk.lastShot>=SPACE_BOSS_GUN_FIRE_RATE){
+        const pr=paddleRect();
+        let tx=pr.x+pr.w/2;
+        let ty=pr.y+pr.h/2;
+        if(pr.w<=0 || pr.h<=0){
+          tx = spaceBossLastPaddleCenter || 1100/2;
+          ty = 700-50;
+        }
+        for(const gun of spaceBoss.guns){
+          const originX=spaceBoss.x+gun.offsetX;
+          const originY=spaceBoss.y+gun.offsetY;
+          const ang=Math.atan2(ty-originY, tx-originX);
+          const speed=11;
+          spaceBossBullets.push({x:originX, y:originY, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, born:now});
+          spaceBossBursts.push({type:'muzzle',x:originX,y:originY,r0:6,r1:60,t0:now,life:220,color:'255,210,120'});
+        }
+        atk.lastShot=now;
+        beep(820,0.04,0.04);
+      }
+    }else if(atk.mode===2){
+      const sweepProg = Math.min(1, Math.max(0,(now-atk.sweepStart)/SPACE_BOSS_LASER_SWEEP_DURATION));
+      const offset = atk.sweepDir * atk.maxSweep * sweepProg;
+      atk.currentTarget = {x: atk.baseTarget.x + offset, y: atk.baseTarget.y};
+      if(!atk.hitApplied){
+        const pr=paddleRect();
+        if(pr.w>0 && pr.h>0){
+          const mounts=spaceBoss.lasers || [];
+          for(const laser of mounts){
+            const originX = spaceBoss.x + laser.offsetX;
+            const originY = spaceBoss.y + laser.offsetY;
+            if(segmentIntersectsRect(originX, originY, atk.currentTarget.x, atk.currentTarget.y, pr)){
+              atk.hitApplied=true;
+              spaceBossLaserStrike();
+              break;
+            }
+          }
+        }
+      }
+      if(now>=atk.sweepEnd){
+        spaceBossAttack=null;
+        spaceBossNextAttackAt=now+SPACE_BOSS_ATTACK_INTERVAL;
+      }
+    }
+  }
+
+  function updateSpaceBossBullets(now){
+    for(let i=spaceBossBullets.length-1;i>=0;i--){
+      const b=spaceBossBullets[i];
+      b.x+=b.vx;
+      b.y+=b.vy;
+      if(b.x<-40||b.x>1140||b.y<-40||b.y>760){ spaceBossBullets.splice(i,1); continue; }
+      if(now<paddleGoneUntil) continue;
+      const pr=paddleRect();
+      if(b.x>=pr.x && b.x<=pr.x+pr.w && b.y>=pr.y && b.y<=pr.y+pr.h){
+        spaceBossBullets.splice(i,1);
+        spaceBossBulletHit(pr);
+      }
+    }
+  }
+
+  function spaceBossBulletHit(pr){
+    const centerX=pr.x+pr.w/2;
+    const centerY=pr.y+pr.h/2;
+    spawnParticles(centerX, centerY, '#ffdf9a', 26, 2.4, 3.6, 3.2);
+    screenShake=Math.max(screenShake,4);
+    const desired=desiredPaddleWidth();
+    const effective=Math.max(SPACE_BOSS_PADDLE_MIN_WIDTH, desired - spaceBossPaddlePenalty);
+    if(effective-SPACE_BOSS_PADDLE_MIN_WIDTH>0.5){
+      spaceBossPaddlePenalty=Math.min(desired - SPACE_BOSS_PADDLE_MIN_WIDTH, spaceBossPaddlePenalty + 10);
+      computePaddleWidth();
+      return;
+    }
+    const now=performance.now();
+    if(now<paddleGoneUntil) return;
+    spaceBossPaddlePenalty=0;
+    computePaddleWidth();
+    paddleGoneUntil=now+3000;
+    spaceBossPaddleRespawnAt=paddleGoneUntil;
+    spaceBossSuppressLifeLossUntil = spaceBossPaddleRespawnAt + 200;
+    spawnParticles(centerX, centerY, '#ffb347', 80, 3.0, 4.4, 4.2);
+    spaceBossBursts.push({type:'ring',x:centerX,y:centerY,r0:20,r1:220,width:18,t0:now,life:600,color:'255,180,90'});
+    screenShake=Math.max(screenShake,10);
+    lives--; updateHUD();
+    if(lives<=0){ running=false; paused=true; showGameOver(); return; }
+    balls.length=0;
+  }
+
+  function updateSpaceBossPaddleRespawn(now){
+    if(spaceBossPaddleRespawnAt && now>=spaceBossPaddleRespawnAt){
+      spaceBossPaddleRespawnAt=0;
+      if(lives>0 && !paused){ resetBalls(false); startCountdown(); }
+      spaceBossSuppressLifeLossUntil=0;
+    }
+  }
+
+  function spaceBossLaserStrike(){
+    if(paddleGoneUntil>performance.now()) return;
+    lives=Math.max(0, lives-1);
+    updateHUD();
+    screenShake=Math.max(screenShake,12);
+    const pr=paddleRect();
+    spawnParticles(pr.x+pr.w/2, pr.y+pr.h/2, '#ff6a88', 60, 3.0, 4.6, 4.0);
+    if(lives<=0){ running=false; paused=true; showGameOver(); return; }
+    balls.length=0;
+    paddleGoneUntil=performance.now()+1500;
+    spaceBossPaddleRespawnAt=paddleGoneUntil+1500;
+    spaceBossSuppressLifeLossUntil = spaceBossPaddleRespawnAt + 200;
+  }
+
+  function segmentIntersectsRect(x1,y1,x2,y2, rect){
+    const rx=rect.x, ry=rect.y, rw=rect.w, rh=rect.h;
+    const left=rx, right=rx+rw, top=ry, bottom=ry+rh;
+    if(x1>=left && x1<=right && y1>=top && y1<=bottom) return true;
+    if(x2>=left && x2<=right && y2>=top && y2<=bottom) return true;
+    if(segmentsIntersect(x1,y1,x2,y2,left,top,right,top)) return true;
+    if(segmentsIntersect(x1,y1,x2,y2,right,top,right,bottom)) return true;
+    if(segmentsIntersect(x1,y1,x2,y2,right,bottom,left,bottom)) return true;
+    if(segmentsIntersect(x1,y1,x2,y2,left,bottom,left,top)) return true;
+    return false;
+  }
+
+  function segmentsIntersect(x1,y1,x2,y2,x3,y3,x4,y4){
+    const denom=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+    if(Math.abs(denom)<1e-6) return false;
+    const pre=(x1*y2 - y1*x2);
+    const post=(x3*y4 - y3*x4);
+    const x=(pre*(x3-x4)-(x1-x2)*post)/denom;
+    const y=(pre*(y3-y4)-(y1-y2)*post)/denom;
+    if(x<Math.min(x1,x2)-1e-6 || x>Math.max(x1,x2)+1e-6) return false;
+    if(x<Math.min(x3,x4)-1e-6 || x>Math.max(x3,x4)+1e-6) return false;
+    if(y<Math.min(y1,y2)-1e-6 || y>Math.max(y1,y2)+1e-6) return false;
+    if(y<Math.min(y3,y4)-1e-6 || y>Math.max(y3,y4)+1e-6) return false;
+    return true;
   }
 
   function drawSpaceBossLayer(){
@@ -2369,11 +2684,19 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         ctx.beginPath();
         ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2),0,Math.PI*2);
         ctx.stroke();
+      }else if(fx.type==='muzzle'){
+        const rad=(fx.r0||6)+((fx.r1||60)-(fx.r0||6))*prog;
+        const alpha=1-prog;
+        ctx.fillStyle=`rgba(${fx.color||'255,200,120'},${0.6*alpha})`;
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2), 0, Math.PI*2);
+        ctx.fill();
       }
       ctx.restore();
     }
-    if(spaceBoss && (spaceBossPhase==='active' || spaceBossPhase==='intro')){
+    if(spaceBoss && (spaceBossPhase==='active' || spaceBossPhase==='intro' || spaceBossPhase==='dying')){
       drawSpaceBossShip(spaceBoss, now);
+      drawSpaceBossAttacks(now);
     }else if(spaceBossPhase==='intro' && spaceBossAnchor){
       const cx=(spaceBossAnchor.x+spaceBossAnchor.w/2)*scaleX;
       const cy=(spaceBossAnchor.y+spaceBossAnchor.h+60)*scaleY;
@@ -2386,7 +2709,54 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.fillStyle=g;
       ctx.beginPath(); ctx.arc(cx,cy,rad,0,Math.PI*2); ctx.fill();
       ctx.restore();
+    }else if(spaceBossPhase==='active' && !spaceBoss && spaceBossAttack){
+      drawSpaceBossAttacks(now);
     }
+  }
+
+  function drawSpaceBossAttacks(now){
+    ctx.save();
+    for(const b of spaceBossBullets){
+      const r=4*((scaleX+scaleY)/2);
+      const grad=ctx.createRadialGradient(b.x*scaleX,b.y*scaleY,0,b.x*scaleX,b.y*scaleY,r);
+      grad.addColorStop(0,'rgba(255,255,255,0.95)');
+      grad.addColorStop(0.6,'rgba(255,200,140,0.8)');
+      grad.addColorStop(1,'rgba(255,120,60,0)');
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.arc(b.x*scaleX,b.y*scaleY,r,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+    if(spaceBossAttack && spaceBossAttack.mode===2 && spaceBossAttack.state==='sweeping' && spaceBoss){
+      const target=spaceBossAttack.currentTarget;
+      const mounts=spaceBoss.lasers||[];
+      for(const laser of mounts){
+        const ox=(spaceBoss.x+laser.offsetX);
+        const oy=(spaceBoss.y+laser.offsetY);
+        drawSpaceBossLaserBeam(ox, oy, target.x, target.y, now);
+      }
+    }
+  }
+
+  function drawSpaceBossLaserBeam(x1,y1,x2,y2, now){
+    const sx1=x1*scaleX, sy1=y1*scaleY, sx2=x2*scaleX, sy2=y2*scaleY;
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    const pulse=0.7+0.3*Math.sin(now/60);
+    ctx.strokeStyle=`rgba(255,90,110,${0.35*pulse})`;
+    ctx.lineWidth=10;
+    ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
+    const grad=ctx.createLinearGradient(sx1,sy1,sx2,sy2);
+    grad.addColorStop(0,'rgba(255,200,200,0.4)');
+    grad.addColorStop(1,'rgba(255,80,120,0.9)');
+    ctx.strokeStyle=grad;
+    ctx.lineWidth=5;
+    ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,0.9)';
+    ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
+    ctx.restore();
   }
 
   function drawSpaceBossShip(sb, now){
@@ -2539,7 +2909,6 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.lineWidth=2;
     drawRoundedRect(x, topBase, width, areaHeight, radius);
     ctx.stroke();
-
     const innerX=x+10;
     const innerY=topBase+6;
     const innerW=width-20;
@@ -2547,66 +2916,115 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     drawRoundedRect(innerX, innerY, innerW, innerH, radius-6);
     ctx.save();
     ctx.clip();
-    const pxSpeed=180;
-    const baseX=(innerX+innerW)*scaleX;
-    const midY=(innerY+innerH/2)*scaleY;
-    ctx.fillStyle='#f5f9ff';
-    ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
-    ctx.textBaseline='middle';
-    ctx.shadowColor='rgba(120,200,255,0.55)';
-    ctx.shadowBlur=12*((scaleX+scaleY)/2);
-    const repeated=`✦  ${text}  ✦  `;
-    const textWidth=Math.max(1, ctx.measureText(repeated).width);
-    let drawX = baseX - ((now-start)/1000*pxSpeed % textWidth);
-    while(drawX > (innerX- textWidth/scaleX)*scaleX){ drawX -= textWidth; }
-    while(drawX < (innerX + innerW)*scaleX){ ctx.fillText(repeated, drawX, midY); drawX += textWidth; }
+    const style=spaceBossMarquee.style||'marquee';
+    if(style==='alert'){
+      const midY=(innerY+innerH/2)*scaleY;
+      ctx.fillStyle='#f5f9ff';
+      ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
+      ctx.textBaseline='middle';
+      ctx.textAlign='left';
+      ctx.shadowColor='rgba(120,200,255,0.45)';
+      ctx.shadowBlur=10*((scaleX+scaleY)/2);
+      ctx.fillText(text, (innerX+16)*scaleX, midY);
+      const cd=spaceBossMarquee.countdownDuration;
+      if(cd){
+        const remain=Math.max(0, cd - (now-start));
+        const num=Math.max(0, Math.ceil(remain/1000));
+        if(num>0){
+          ctx.shadowBlur=0;
+          ctx.fillStyle='rgba(255,180,140,0.9)';
+          ctx.font=`${Math.round(32*((scaleX+scaleY)/2))}px 'Playfair Display',serif`;
+          ctx.textAlign='right';
+          ctx.fillText(String(num), (innerX+innerW-16)*scaleX, midY);
+        }
+      }
+    }else{
+      const pxSpeed=180;
+      const baseX=(innerX+innerW)*scaleX;
+      const midY=(innerY+innerH/2)*scaleY;
+      ctx.fillStyle='#f5f9ff';
+      ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
+      ctx.textBaseline='middle';
+      ctx.shadowColor='rgba(120,200,255,0.55)';
+      ctx.shadowBlur=12*((scaleX+scaleY)/2);
+      const repeated=`✦  ${text}  ✦  `;
+      const textWidth=Math.max(1, ctx.measureText(repeated).width);
+      let drawX = baseX - ((now-start)/1000*pxSpeed % textWidth);
+      while(drawX > (innerX- textWidth/scaleX)*scaleX){ drawX -= textWidth; }
+      while(drawX < (innerX + innerW)*scaleX){ ctx.fillText(repeated, drawX, midY); drawX += textWidth; }
+    }
     ctx.restore();
     ctx.restore();
   }
 
   function drawSpaceBossHPBar(){
     if(spaceBossPhase!=='active' || !spaceBoss) return;
-    const barW=34;
-    const barH=340;
     const L=layout();
-    const x=1100 - barW - 24;
-    const y=Math.max(80, L.top + 10);
-    drawRoundedRect(x, y, barW, barH, 16);
-    const bgGrad=ctx.createLinearGradient(x*scaleX, y*scaleY, x*scaleX, (y+barH)*scaleY);
-    bgGrad.addColorStop(0,'rgba(12,24,46,0.9)');
-    bgGrad.addColorStop(1,'rgba(18,32,60,0.8)');
-    ctx.fillStyle=bgGrad;
-    ctx.fill();
-    ctx.strokeStyle='rgba(110,170,255,0.7)';
-    ctx.lineWidth=2;
-    drawRoundedRect(x, y, barW, barH, 16);
-    ctx.stroke();
-
-    const pad=6;
-    const ratio=Math.max(0, Math.min(1, spaceBoss.hp/SPACE_BOSS_MAX_HP));
-    const fillW=barW-pad*2;
-    const fillH=(barH-pad*2)*ratio;
-    if(fillH>0){
-      const fillX=x+pad;
-      const fillY=y+barH-pad-fillH;
-      const fillGrad=ctx.createLinearGradient(fillX*scaleX, (fillY+fillH)*scaleY, fillX*scaleX, fillY*scaleY);
-      fillGrad.addColorStop(0,'rgba(255,110,140,0.9)');
-      fillGrad.addColorStop(1,'rgba(255,230,250,0.95)');
-      ctx.fillStyle=fillGrad;
-      drawRoundedRect(fillX, fillY, fillW, fillH, 12);
-      ctx.fill();
-    }
+    const barW=280;
+    const barH=28;
+    const x=1100 - barW - 40;
+    const y=Math.max(40, L.top - barH - 10);
+    const ratio=Math.max(0, Math.min(1, spaceBoss.hp/spaceBoss.maxHp));
 
     ctx.save();
-    ctx.fillStyle='rgba(200,220,255,0.8)';
+    ctx.globalAlpha=0.95;
+    drawRoundedRect(x, y, barW, barH, 14);
+    const frameGrad=ctx.createLinearGradient(x*scaleX, y*scaleY, (x+barW)*scaleX, y*scaleY);
+    frameGrad.addColorStop(0,'rgba(40,80,140,0.9)');
+    frameGrad.addColorStop(0.5,'rgba(20,36,72,0.95)');
+    frameGrad.addColorStop(1,'rgba(40,80,140,0.9)');
+    ctx.fillStyle=frameGrad;
+    ctx.fill();
+    ctx.strokeStyle='rgba(160,220,255,0.55)';
+    ctx.lineWidth=2.2;
+    drawRoundedRect(x, y, barW, barH, 14);
+    ctx.stroke();
+
+    const innerX=x+8;
+    const innerY=y+6;
+    const innerW=barW-16;
+    const innerH=barH-12;
+    drawRoundedRect(innerX, innerY, innerW, innerH, 10);
+    const bg=ctx.createLinearGradient(innerX*scaleX, innerY*scaleY, innerX*scaleX, (innerY+innerH)*scaleY);
+    bg.addColorStop(0,'rgba(8,22,46,0.95)');
+    bg.addColorStop(1,'rgba(12,30,58,0.85)');
+    ctx.fillStyle=bg;
+    ctx.fill();
+
+    if(ratio>0){
+      ctx.save();
+      ctx.beginPath();
+      drawRoundedRect(innerX, innerY, innerW*ratio, innerH, 8);
+      ctx.clip();
+      const fillGrad=ctx.createLinearGradient(innerX*scaleX, innerY*scaleY, innerX*scaleX, (innerY+innerH)*scaleY);
+      fillGrad.addColorStop(0,'rgba(255,140,160,0.95)');
+      fillGrad.addColorStop(1,'rgba(255,230,240,0.85)');
+      ctx.fillStyle=fillGrad;
+      ctx.fillRect(innerX*scaleX, innerY*scaleY, innerW*ratio*scaleX, innerH*scaleY);
+      ctx.restore();
+    }
+
+    const segments=12;
+    ctx.strokeStyle='rgba(255,255,255,0.12)';
+    ctx.lineWidth=1;
+    for(let i=1;i<segments;i++){
+      const sx=(innerX + innerW*i/segments)*scaleX;
+      ctx.beginPath();
+      ctx.moveTo(sx, innerY*scaleY);
+      ctx.lineTo(sx, (innerY+innerH)*scaleY);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle='rgba(210,230,255,0.85)';
     ctx.font=`${Math.round(18*((scaleX+scaleY)/2))}px 'Playfair Display',sans-serif`;
-    ctx.textAlign='center';
+    ctx.textAlign='left';
     ctx.textBaseline='bottom';
-    ctx.fillText('BOSS', (x+barW/2)*scaleX, (y-8)*scaleY);
-    ctx.fillStyle='rgba(230,236,255,0.85)';
+    ctx.fillText('BOSS  太空戰艦', (x+4)*scaleX, (y-6)*scaleY);
+    ctx.fillStyle='rgba(240,244,255,0.85)';
     ctx.font=`${Math.round(14*((scaleX+scaleY)/2))}px 'Noto Sans TC',sans-serif`;
+    ctx.textAlign='right';
     ctx.textBaseline='top';
-    ctx.fillText(`${spaceBoss.hp}/${SPACE_BOSS_MAX_HP}`, (x+barW/2)*scaleX, (y+barH+6)*scaleY);
+    ctx.fillText(`${spaceBoss.hp}/${spaceBoss.maxHp}`, (x+barW-4)*scaleX, (y+barH+4)*scaleY);
     ctx.restore();
   }
 
@@ -3489,11 +3907,27 @@ function generateLevel(lv, L){
   }
 
   // === 擋板寬度 ===
-  function computePaddleWidth(){ const now=performance.now(); buffs.LONG.stacks=buffs.LONG.stacks.filter(t=>t>now); const longStacks=Math.min(GAME_CONFIG.powers.LONG.stacksMax, buffs.LONG.stacks.length);
-    const addLong=longStacks*(GAME_CONFIG.powers.LONG.longPerStackAdd||0); const addWide=(buffs.WIDE.active?(GAME_CONFIG.powers.WIDE.paddleWidthAdd||0):0); const base=getDiff().paddleBaseW;
-    let newW=Math.min(GAME_CONFIG.caps.paddleMaxW, base+addWide+addLong);
-    if(buffs.NARROW?.active) newW = Math.max(60, newW*0.5);
-    const center=paddle.x+paddle.w/2; paddle.w=newW; paddle.x=Math.max(0, Math.min(1100-paddle.w, center - paddle.w/2)); }
+  function desiredPaddleWidth(){
+    const now=performance.now();
+    buffs.LONG.stacks=buffs.LONG.stacks.filter(t=>t>now);
+    const longStacks=Math.min(GAME_CONFIG.powers.LONG.stacksMax, buffs.LONG.stacks.length);
+    const addLong=longStacks*(GAME_CONFIG.powers.LONG.longPerStackAdd||0);
+    const addWide=(buffs.WIDE.active?(GAME_CONFIG.powers.WIDE.paddleWidthAdd||0):0);
+    const base=getDiff().paddleBaseW;
+    let width=Math.min(GAME_CONFIG.caps.paddleMaxW, base+addWide+addLong);
+    if(buffs.NARROW?.active) width = Math.max(60, width*0.5);
+    return width;
+  }
+
+  function computePaddleWidth(){
+    let desired = desiredPaddleWidth();
+    const center=paddle.x+paddle.w/2;
+    const penaltyCap=Math.max(0, desired - SPACE_BOSS_PADDLE_MIN_WIDTH);
+    if(spaceBossPaddlePenalty>penaltyCap){ spaceBossPaddlePenalty = penaltyCap; }
+    let newW=Math.max(SPACE_BOSS_PADDLE_MIN_WIDTH, desired - spaceBossPaddlePenalty);
+    paddle.w=newW;
+    paddle.x=Math.max(0, Math.min(1100-paddle.w, center - paddle.w/2));
+  }
 
   // 擋板在不同朝向下的實際矩形
   function paddleRect(){
@@ -4634,12 +5068,19 @@ function generateLevel(lv, L){
     }
 
     // 球全沒了
-    if(balls.length===0){ const nowL=performance.now(); if(stats.lifeStart){ const dur=(nowL-stats.lifeStart)/1000; if(dur<stats.fastestDeath) stats.fastestDeath=dur; if(dur>stats.longestLife) stats.longestLife=dur; } stats.livesUsed++;
+    if(balls.length===0){
+      const nowL=performance.now();
+      if(nowL<=spaceBossSuppressLifeLossUntil){
+        // skip automatic life loss triggered by Space Boss abilities
+      }else{
+        if(stats.lifeStart){ const dur=(nowL-stats.lifeStart)/1000; if(dur<stats.fastestDeath) stats.fastestDeath=dur; if(dur>stats.longestLife) stats.longestLife=dur; }
+        stats.livesUsed++;
       if(buffs.BLACKHOLE.active){ buffs.BLACKHOLE.deaths=Math.min(8,(buffs.BLACKHOLE.deaths||0)+1); }
       if(buffs.ANNIHIL.active){ buffs.ANNIHIL.active=false; }
       lives--; updateHUD();
       if(lives<=0){ running=false; paused=true; showGameOver(); return; }
       else { resetBalls(false); startCountdown(); return; }
+      }
     }
 
     // 掉落道具移動/撿取
@@ -4673,6 +5114,12 @@ function generateLevel(lv, L){
       } else {
         if(p.y > 710){ powerups.splice(i,1); }
       }
+    }
+
+    {
+      const prNow = paddleRect();
+      spaceBossPrevPaddleCenter = spaceBossLastPaddleCenter;
+      spaceBossLastPaddleCenter = prNow.x + prNow.w/2;
     }
 
         // 天空定時掉落
