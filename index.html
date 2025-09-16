@@ -1261,6 +1261,15 @@ select optgroup { color: #0b1022; }
   const comboEl=document.getElementById('combo');
   let comboNoticeTriggered={50:false,100:false,200:false,300:false,400:false,500:false,800:false,1000:false};
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
+  const SPACE_BOSS_MAX_HP = 30;
+  let spaceBossPhase='inactive';
+  let spaceBoss=null;
+  let spaceBossPlaceholder=null;
+  let spaceBossAnchor=null;
+  let spaceBossRevealScheduled=0;
+  let spaceBossBursts=[];
+  let spaceBossMarquee=null;
+  let spaceBossDefeatedAt=0;
     let scoreUploaded=false;
     let uploading=false;
   let ledStyle = (localStorage.getItem('led_style')||'classic');
@@ -1520,6 +1529,7 @@ select optgroup { color: #0b1022; }
   function updateBossAbilities(){
     const bossLv = (level%5===0)? level : 0;
     if(!bossLv) return;
+    if(level===5 && spaceBossPhase!=='inactive') return;
     const now=performance.now();
     if(bossLv===5){ if(now>=nextBossAtkA){ spawnLionBeam(); nextBossAtkA = now + 10000; } }
     else if(bossLv===10){ if(now>=nextBossAtkA){ spawnKnightArc(); nextBossAtkA = now + 15000; } }
@@ -2150,6 +2160,14 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
   function initBricks(){
     const L=layout();
     const totalPad=(L.cols+1)*L.pad; brickW=Math.floor((1100-totalPad)/L.cols); brickH=L.h; bricks=[]; revealRects=[];
+    spaceBoss=null;
+    spaceBossAnchor=null;
+    spaceBossPlaceholder=null;
+    spaceBossBursts=[];
+    spaceBossMarquee=null;
+    spaceBossRevealScheduled=0;
+    spaceBossDefeatedAt=0;
+    spaceBossPhase = (level===5?'awaiting':'inactive');
     const lvlImg = getLevelImage(level);
     if (lvlImg && lvlImg.decode) { lvlImg.decode().catch(()=>{}); }
     // 依關卡設計關卡布局
@@ -2169,8 +2187,432 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
   
   // === 修正：過關判定改為只看「可破壞磚」是否清空 ===
   function hasBreakables(){
-    // 只要場上還有不是不可破壞的磚（包含 Boss 仍存活），就尚未清關
+    if(level===5){
+      const breakables = bricks.some(b => !b.unbreakable);
+      if(breakables) return true;
+      if(spaceBossPhase==='awaiting'){ startSpaceBossReveal(); return true; }
+      if(spaceBossPhase==='intro' || spaceBossPhase==='active') return true;
+      return false;
+    }
     return bricks.some(b => !b.unbreakable);
+  }
+
+  // === 第5關太空戰艦 Boss ===
+  function startSpaceBossReveal(){
+    if(spaceBossPhase!=='awaiting') return;
+    const now=performance.now();
+    spaceBossPhase='intro';
+    let anchor=spaceBossAnchor;
+    if(spaceBossPlaceholder){
+      anchor={x:spaceBossPlaceholder.x, y:spaceBossPlaceholder.y, w:spaceBossPlaceholder.w, h:spaceBossPlaceholder.h};
+      const cx=anchor.x+anchor.w/2;
+      const cy=anchor.y+anchor.h/2;
+      spawnParticles(cx,cy,'#fff5d6',120,3.2,5.0,5.5);
+      spawnParticles(cx,cy,'#8ab6ff',90,2.6,4.2,4.6);
+      spawnParticles(cx,cy,'#ff9fde',70,2.3,3.8,4.2);
+      spaceBossBursts.push({type:'ring',x:cx,y:cy,r0:24,r1:420,width:18,t0:now,life:1400,color:'255,220,180'});
+      spaceBossBursts.push({type:'flare',x:cx,y:cy,r0:0,r1:240,t0:now,life:1100,color:'140,200,255'});
+      spaceBossBursts.push({type:'spark',x:cx,y:cy,r0:0,r1:160,t0:now,life:900,color:'255,180,220'});
+      const idx=bricks.indexOf(spaceBossPlaceholder);
+      if(idx>=0) bricks.splice(idx,1);
+      spaceBossPlaceholder=null;
+      spaceBossAnchor=anchor;
+    }
+    if(!spaceBossAnchor){
+      const L=layout();
+      const bx=Math.floor(L.cols/2)-1;
+      const anchorW=brickW*2+L.pad;
+      const anchorH=brickH*2+L.pad;
+      const anchorX=L.pad + bx*(brickW+L.pad);
+      spaceBossAnchor={x:anchorX,y:L.top,w:anchorW,h:anchorH};
+    }
+    spaceBossRevealScheduled = now + 900;
+    spaceBossMarquee={text:'有趣！ 讓你見識我的真面目吧!', start:now, fadeStart:now+5000, end:now+8000};
+    screenShake=Math.max(screenShake,8);
+    playSFX('fireExplosion');
+  }
+
+  function activateSpaceBoss(){
+    if(spaceBossPhase!=='intro' || spaceBoss) return;
+    let anchor=spaceBossAnchor;
+    if(!anchor){
+      const L=layout();
+      const bx=Math.floor(L.cols/2)-1;
+      anchor={x:L.pad + bx*(brickW+L.pad), y:L.top, w:brickW*2+L.pad, h:brickH*2+L.pad};
+      spaceBossAnchor=anchor;
+    }
+    const cx=anchor.x+anchor.w/2;
+    const baseY=anchor.y+anchor.h+80;
+    const now=performance.now();
+    spaceBoss={
+      x:cx,
+      y:baseY,
+      baseY,
+      w:220,
+      h:120,
+      vx:(Math.random()<0.5?-1:1)*2.6,
+      hp:SPACE_BOSS_MAX_HP,
+      maxHp:SPACE_BOSS_MAX_HP,
+      hitCooldownUntil:0,
+      hitFlashUntil:0,
+      spawnAt:now,
+      guns:[
+        {offsetX:-70,offsetY:32,phase:0,angle:-Math.PI/2,spin:0},
+        {offsetX:0,offsetY:42,phase:1.2,angle:-Math.PI/2,spin:0},
+        {offsetX:70,offsetY:32,phase:2.3,angle:-Math.PI/2,spin:0}
+      ],
+      lasers:[
+        {offsetX:-92,offsetY:-4,phase:0.6,angle:-0.35},
+        {offsetX:92,offsetY:-4,phase:1.8,angle:0.35}
+      ],
+      thrusterPhase:0
+    };
+    spaceBossPhase='active';
+    spaceBossBursts.push({type:'halo',x:cx,y:baseY,r0:40,r1:260,t0:now,life:1600,color:'130,200,255'});
+  }
+
+  function damageSpaceBoss(amount=1){
+    if(spaceBossPhase!=='active' || !spaceBoss) return;
+    const now=performance.now();
+    if(spaceBoss.hitCooldownUntil && now<spaceBoss.hitCooldownUntil) return;
+    spaceBoss.hitCooldownUntil = now + 140;
+    spaceBoss.hp = Math.max(0, spaceBoss.hp - amount);
+    spaceBoss.hitFlashUntil = now + 220;
+    const jitterX=(Math.random()-0.5)*spaceBoss.w*0.4;
+    const jitterY=(Math.random()-0.5)*spaceBoss.h*0.3;
+    spaceBossBursts.push({type:'spark',x:spaceBoss.x+jitterX,y:spaceBoss.y+jitterY,r0:0,r1:120,t0:now,life:600,color:'160,220,255'});
+    spawnParticles(spaceBoss.x+jitterX, spaceBoss.y+jitterY, '#8fbaff', 18, 1.5, 2.6, 2.3);
+    screenShake=Math.max(screenShake,5);
+    beep(760,0.04,0.04);
+    if(spaceBoss.hp<=0){ defeatSpaceBoss(); }
+  }
+
+  function defeatSpaceBoss(){
+    if(spaceBossPhase!=='active' || !spaceBoss) return;
+    const now=performance.now();
+    const sb=spaceBoss;
+    const fake={x:sb.x-sb.w/2,y:sb.y-sb.h/2,w:sb.w,h:sb.h};
+    bossKillEffect(fake);
+    addScore(scoreForBrick({boss:true}));
+    stats.bossKills++;
+    updateHUD();
+    spawnParticles(sb.x, sb.y, '#ffe9b2', 160, 3.2, 5.6, 6.0);
+    spaceBossBursts.push({type:'ring',x:sb.x,y:sb.y,r0:40,r1:520,width:24,t0:now,life:2000,color:'255,200,150'});
+    spaceBossBursts.push({type:'flare',x:sb.x,y:sb.y,r0:0,r1:320,t0:now,life:1600,color:'255,235,200'});
+    spaceBossBursts.push({type:'spark',x:sb.x,y:sb.y,r0:0,r1:200,t0:now,life:1200,color:'200,240,255'});
+    screenShake=Math.max(screenShake,12);
+    playSFX('fireExplosion');
+    spaceBossPhase='defeated';
+    spaceBossDefeatedAt=now;
+    spaceBoss=null;
+  }
+
+  function updateSpaceBoss(){
+    if(level!==5) return;
+    const now=performance.now();
+    if(spaceBossPhase==='intro' && !spaceBoss && spaceBossRevealScheduled && now>=spaceBossRevealScheduled){ activateSpaceBoss(); }
+    if(spaceBossPhase==='active' && spaceBoss){
+      const sb=spaceBoss;
+      sb.x += sb.vx;
+      const margin=110;
+      if(sb.x - sb.w/2 < margin){ sb.x = margin + sb.w/2; sb.vx = Math.abs(sb.vx); }
+      if(sb.x + sb.w/2 > 1100 - margin){ sb.x = 1100 - margin - sb.w/2; sb.vx = -Math.abs(sb.vx); }
+      sb.y = sb.baseY + Math.sin((now - sb.spawnAt)/650)*28;
+      sb.thrusterPhase = (sb.thrusterPhase||0) + 0.08;
+      for(const gun of sb.guns){ gun.spin=(gun.spin||0)+0.28; gun.angle = -Math.PI/2 + Math.sin((now/520)+gun.phase)*0.55; }
+      for(const laser of sb.lasers){ laser.angle = Math.sin((now/900)+laser.phase)*0.32; }
+      if(sb.hitFlashUntil && now>sb.hitFlashUntil){ sb.hitFlashUntil=0; }
+    }
+    for(let i=spaceBossBursts.length-1;i>=0;i--){ const fx=spaceBossBursts[i]; const life=fx.life||1000; if(now>fx.t0+life){ spaceBossBursts.splice(i,1); } }
+  }
+
+  function drawSpaceBossLayer(){
+    if(spaceBossPhase==='inactive' && !spaceBossBursts.length) return;
+    const now=performance.now();
+    const easeOut=t=>1-Math.pow(1-Math.max(0,Math.min(1,t)),3);
+    for(const fx of spaceBossBursts){
+      const life=fx.life||1000;
+      const prog=Math.max(0, Math.min(1, (now-fx.t0)/life));
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      if(fx.type==='ring'){
+        const rad=(fx.r0||0)+((fx.r1||200)-(fx.r0||0))*easeOut(prog);
+        const alpha=1-prog;
+        ctx.strokeStyle=`rgba(${fx.color||'255,255,255'},${0.55*alpha})`;
+        ctx.lineWidth=(fx.width||14)*((scaleX+scaleY)/2)*(1-prog*0.7);
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2), 0, Math.PI*2);
+        ctx.stroke();
+      }else if(fx.type==='flare'){
+        const rad=(fx.r1||200)*easeOut(prog);
+        const grad=ctx.createRadialGradient(fx.x*scaleX, fx.y*scaleY, 0, fx.x*scaleX, fx.y*scaleY, Math.max(10, rad*((scaleX+scaleY)/2)));
+        grad.addColorStop(0, `rgba(${fx.color||'200,220,255'},${0.35*(1-prog)})`);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2),0,Math.PI*2);
+        ctx.fill();
+      }else if(fx.type==='spark'){
+        const rad=(fx.r1||80)*prog*((scaleX+scaleY)/2);
+        ctx.strokeStyle=`rgba(${fx.color||'160,220,255'},${0.7*(1-prog)})`;
+        ctx.lineWidth=2*((scaleX+scaleY)/2);
+        ctx.beginPath();
+        ctx.moveTo(fx.x*scaleX-rad, fx.y*scaleY);
+        ctx.lineTo(fx.x*scaleX+rad, fx.y*scaleY);
+        ctx.moveTo(fx.x*scaleX, fx.y*scaleY-rad);
+        ctx.lineTo(fx.x*scaleX, fx.y*scaleY+rad);
+        ctx.stroke();
+      }else if(fx.type==='halo'){
+        const rad=(fx.r0||30)+((fx.r1||220)-(fx.r0||30))*prog;
+        ctx.strokeStyle=`rgba(${fx.color||'140,200,255'},${0.25*(1-prog)})`;
+        ctx.lineWidth=8*((scaleX+scaleY)/2);
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2),0,Math.PI*2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    if(spaceBoss && (spaceBossPhase==='active' || spaceBossPhase==='intro')){
+      drawSpaceBossShip(spaceBoss, now);
+    }else if(spaceBossPhase==='intro' && spaceBossAnchor){
+      const cx=(spaceBossAnchor.x+spaceBossAnchor.w/2)*scaleX;
+      const cy=(spaceBossAnchor.y+spaceBossAnchor.h+60)*scaleY;
+      const rad=Math.max(spaceBossAnchor.w, spaceBossAnchor.h)*1.2*((scaleX+scaleY)/2);
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,rad);
+      g.addColorStop(0,'rgba(140,200,255,0.18)');
+      g.addColorStop(1,'rgba(140,200,255,0)');
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.arc(cx,cy,rad,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawSpaceBossShip(sb, now){
+    const s=(scaleX+scaleY)/2;
+    ctx.save();
+    ctx.translate(sb.x*scaleX, sb.y*scaleY);
+    const bodyW=sb.w*scaleX;
+    const bodyH=sb.h*scaleY;
+    const grad=ctx.createLinearGradient(-bodyW*0.5, -bodyH*0.6, bodyW*0.5, bodyH*0.6);
+    grad.addColorStop(0,'rgba(130,210,255,0.95)');
+    grad.addColorStop(0.45,'rgba(90,110,220,0.95)');
+    grad.addColorStop(1,'rgba(24,32,82,0.98)');
+    ctx.beginPath();
+    ctx.moveTo(-bodyW*0.45, -bodyH*0.45);
+    ctx.quadraticCurveTo(0, -bodyH*0.75, bodyW*0.45, -bodyH*0.45);
+    ctx.quadraticCurveTo(bodyW*0.62, 0, bodyW*0.45, bodyH*0.5);
+    ctx.quadraticCurveTo(0, bodyH*0.8, -bodyW*0.45, bodyH*0.5);
+    ctx.quadraticCurveTo(-bodyW*0.62, 0, -bodyW*0.45, -bodyH*0.45);
+    ctx.closePath();
+    ctx.fillStyle=grad;
+    ctx.shadowColor='rgba(90,150,255,'+(0.35+(sb.hitFlashUntil && now<sb.hitFlashUntil?0.45:0))+')';
+    ctx.shadowBlur=32*s;
+    ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(220,240,255,0.45)';
+    ctx.lineWidth=4*s;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-bodyW*0.6, -bodyH*0.05);
+    ctx.quadraticCurveTo(-bodyW*0.9, bodyH*0.05, -bodyW*0.5, bodyH*0.55);
+    ctx.lineTo(-bodyW*0.35, bodyH*0.3);
+    ctx.closePath();
+    ctx.fillStyle='rgba(40,60,120,0.85)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(bodyW*0.6, -bodyH*0.05);
+    ctx.quadraticCurveTo(bodyW*0.9, bodyH*0.05, bodyW*0.5, bodyH*0.55);
+    ctx.lineTo(bodyW*0.35, bodyH*0.3);
+    ctx.closePath();
+    ctx.fill();
+
+    const cockpitGrad=ctx.createRadialGradient(0,-bodyH*0.18,0,0,-bodyH*0.18,bodyW*0.28);
+    cockpitGrad.addColorStop(0,'rgba(255,255,255,0.9)');
+    cockpitGrad.addColorStop(1,'rgba(90,130,220,0.45)');
+    ctx.beginPath();
+    ctx.ellipse(0, -bodyH*0.1, bodyW*0.28, bodyH*0.24, 0, 0, Math.PI*2);
+    ctx.fillStyle=cockpitGrad;
+    ctx.fill();
+
+    const thrusters=[{x:-bodyW*0.25,y:bodyH*0.55},{x:bodyW*0.25,y:bodyH*0.55}];
+    const thrusterPhase=sb.thrusterPhase||0;
+    for(let i=0;i<thrusters.length;i++){
+      const t=thrusters[i];
+      const radius=(28+6*Math.sin(thrusterPhase*4+i*Math.PI))*s;
+      const tg=ctx.createRadialGradient(t.x,t.y,0,t.x,t.y,Math.max(radius,10));
+      tg.addColorStop(0,'rgba(255,240,180,0.95)');
+      tg.addColorStop(0.6,'rgba(255,180,60,0.75)');
+      tg.addColorStop(1,'rgba(255,120,0,0)');
+      ctx.fillStyle=tg;
+      ctx.beginPath();
+      ctx.arc(t.x,t.y,Math.max(radius,10),0,Math.PI*2);
+      ctx.fill();
+    }
+
+    for(const gun of sb.guns){
+      const gx=gun.offsetX*scaleX;
+      const gy=gun.offsetY*scaleY;
+      ctx.save();
+      ctx.translate(gx, gy);
+      ctx.rotate(gun.angle);
+      const barrelLen=34*s;
+      const barrelWidth=8*s;
+      ctx.fillStyle='rgba(160,210,255,0.95)';
+      ctx.fillRect(-barrelWidth/2, -barrelLen, barrelWidth, barrelLen);
+      ctx.save();
+      ctx.translate(0, -barrelLen);
+      ctx.rotate(gun.spin||0);
+      for(let k=0;k<3;k++){
+        const ang=k*Math.PI*2/3;
+        ctx.beginPath();
+        ctx.fillStyle='rgba(255,255,255,0.9)';
+        ctx.arc(Math.cos(ang)*4*s, Math.sin(ang)*4*s, 2.4*s, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.restore();
+      ctx.save();
+      ctx.translate(gx, gy);
+      ctx.fillStyle='#1c2246';
+      ctx.beginPath(); ctx.arc(0,0,12*s,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='rgba(120,180,255,0.8)';
+      ctx.lineWidth=2*s; ctx.stroke();
+      ctx.restore();
+    }
+
+    for(const laser of sb.lasers){
+      const lx=laser.offsetX*scaleX;
+      const ly=laser.offsetY*scaleY;
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.rotate(laser.angle);
+      const towerW=14*s;
+      const towerH=48*s;
+      const lg=ctx.createLinearGradient(0,0,0,-towerH);
+      lg.addColorStop(0,'rgba(90,150,255,0.9)');
+      lg.addColorStop(1,'rgba(220,255,255,0.6)');
+      ctx.fillStyle=lg;
+      ctx.fillRect(-towerW/2, -towerH, towerW, towerH);
+      ctx.beginPath();
+      ctx.strokeStyle='rgba(200,240,255,0.5)';
+      ctx.lineWidth=2*s;
+      ctx.moveTo(0,-towerH);
+      ctx.lineTo(0,-towerH-12*s);
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.fillStyle='#121b36';
+      ctx.beginPath(); ctx.arc(0,0,14*s,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='rgba(80,140,255,0.8)';
+      ctx.lineWidth=2*s; ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  function drawSpaceBossMarquee(){
+    if(!spaceBossMarquee) return;
+    const now=performance.now();
+    const {start, fadeStart, end, text} = spaceBossMarquee;
+    if(now>=end){ spaceBossMarquee=null; return; }
+    let alpha=1;
+    if(now>fadeStart){ alpha = Math.max(0, 1 - (now - fadeStart)/(end - fadeStart)); }
+    const areaHeight=52;
+    const topBase=Math.max(12, layout().top - areaHeight - 14);
+    const x=40;
+    const width=1100-80;
+    const radius=18;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    drawRoundedRect(x, topBase, width, areaHeight, radius);
+    const grad=ctx.createLinearGradient(x*scaleX, topBase*scaleY, x*scaleX, (topBase+areaHeight)*scaleY);
+    grad.addColorStop(0,'rgba(32,48,92,0.9)');
+    grad.addColorStop(1,'rgba(16,28,60,0.92)');
+    ctx.fillStyle=grad;
+    ctx.fill();
+    ctx.strokeStyle='rgba(160,200,255,0.85)';
+    ctx.lineWidth=2;
+    drawRoundedRect(x, topBase, width, areaHeight, radius);
+    ctx.stroke();
+
+    const innerX=x+10;
+    const innerY=topBase+6;
+    const innerW=width-20;
+    const innerH=areaHeight-12;
+    drawRoundedRect(innerX, innerY, innerW, innerH, radius-6);
+    ctx.save();
+    ctx.clip();
+    const pxSpeed=180;
+    const baseX=(innerX+innerW)*scaleX;
+    const midY=(innerY+innerH/2)*scaleY;
+    ctx.fillStyle='#f5f9ff';
+    ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
+    ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(120,200,255,0.55)';
+    ctx.shadowBlur=12*((scaleX+scaleY)/2);
+    const repeated=`✦  ${text}  ✦  `;
+    const textWidth=Math.max(1, ctx.measureText(repeated).width);
+    let drawX = baseX - ((now-start)/1000*pxSpeed % textWidth);
+    while(drawX > (innerX- textWidth/scaleX)*scaleX){ drawX -= textWidth; }
+    while(drawX < (innerX + innerW)*scaleX){ ctx.fillText(repeated, drawX, midY); drawX += textWidth; }
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function drawSpaceBossHPBar(){
+    if(spaceBossPhase!=='active' || !spaceBoss) return;
+    const barW=34;
+    const barH=340;
+    const L=layout();
+    const x=1100 - barW - 24;
+    const y=Math.max(80, L.top + 10);
+    drawRoundedRect(x, y, barW, barH, 16);
+    const bgGrad=ctx.createLinearGradient(x*scaleX, y*scaleY, x*scaleX, (y+barH)*scaleY);
+    bgGrad.addColorStop(0,'rgba(12,24,46,0.9)');
+    bgGrad.addColorStop(1,'rgba(18,32,60,0.8)');
+    ctx.fillStyle=bgGrad;
+    ctx.fill();
+    ctx.strokeStyle='rgba(110,170,255,0.7)';
+    ctx.lineWidth=2;
+    drawRoundedRect(x, y, barW, barH, 16);
+    ctx.stroke();
+
+    const pad=6;
+    const ratio=Math.max(0, Math.min(1, spaceBoss.hp/SPACE_BOSS_MAX_HP));
+    const fillW=barW-pad*2;
+    const fillH=(barH-pad*2)*ratio;
+    if(fillH>0){
+      const fillX=x+pad;
+      const fillY=y+barH-pad-fillH;
+      const fillGrad=ctx.createLinearGradient(fillX*scaleX, (fillY+fillH)*scaleY, fillX*scaleX, fillY*scaleY);
+      fillGrad.addColorStop(0,'rgba(255,110,140,0.9)');
+      fillGrad.addColorStop(1,'rgba(255,230,250,0.95)');
+      ctx.fillStyle=fillGrad;
+      drawRoundedRect(fillX, fillY, fillW, fillH, 12);
+      ctx.fill();
+    }
+
+    ctx.save();
+    ctx.fillStyle='rgba(200,220,255,0.8)';
+    ctx.font=`${Math.round(18*((scaleX+scaleY)/2))}px 'Playfair Display',sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='bottom';
+    ctx.fillText('BOSS', (x+barW/2)*scaleX, (y-8)*scaleY);
+    ctx.fillStyle='rgba(230,236,255,0.85)';
+    ctx.font=`${Math.round(14*((scaleX+scaleY)/2))}px 'Noto Sans TC',sans-serif`;
+    ctx.textBaseline='top';
+    ctx.fillText(`${spaceBoss.hp}/${SPACE_BOSS_MAX_HP}`, (x+barW/2)*scaleX, (y+barH+6)*scaleY);
+    ctx.restore();
+  }
+
+  function drawSpaceBossHUD(){
+    drawSpaceBossMarquee();
+    drawSpaceBossHPBar();
   }
 
   // === 修正：格點對齊地揭示底圖，避免黑洞與浮點誤差 ===
@@ -2206,6 +2648,27 @@ function generateLevel(lv, L){
     // Boss每5關
     const isBoss = (lv%5===0);
     if(isBoss){
+      if(lv===5){
+        const bx = Math.floor(cols/2)-1;
+        const by = 0;
+        const w = brickW*2 + pad;
+        const h = brickH*2 + pad;
+        const placeholderIndex=bricks.length;
+        addBrick(bricks, xAt(bx), yAt(by), w, h, {hp:1, colorIdx:0, boss:true, face:'獅', strong:true, unbreakable:true});
+        spaceBossPlaceholder = bricks[placeholderIndex];
+        if(spaceBossPlaceholder){
+          spaceBossPlaceholder.hp=0;
+          spaceBossPlaceholder.placeholderBoss=true;
+        }
+        for(let r=0;r<rows;r++){
+          for(let c=0;c<cols;c++){
+            if(c>=bx && c<=bx+1 && r>=by && r<=by+1) continue;
+            const explosive=Math.random()<GAME_CONFIG.bricks.explosiveChance;
+            addBrick(bricks, xAt(c), yAt(r), brickW, brickH, {hp:baseHP, colorIdx:(r%4), explosive});
+          }
+        }
+        return;
+      }
       // 中央大Boss（2x2磚尺寸一塊）
       const bx = Math.floor(cols/2)-1;
       const by = Math.max(1, Math.floor(rows/2)-1);
@@ -3339,6 +3802,16 @@ function generateLevel(lv, L){
       // 繪製
       let base = b.boss ? '#ff4d6d' : b.unbreakable ? '#888' : b.strong ? '#bb7aff' : b.moving ? '#6ec6ff' : b.explosive ? getVar('--expl') : brickColor(b.colorIdx);
       const g=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x)*scaleX,(b.y+b.h)*scaleY); g.addColorStop(0,base); g.addColorStop(1,'#1a1f3a'); ctx.fillStyle=g; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.fill();
+      if(b.placeholderBoss){
+        const pulse=0.5+0.5*Math.sin(performance.now()/200);
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        ctx.strokeStyle=`rgba(255,210,150,${0.35+0.35*pulse})`;
+        ctx.lineWidth=6;
+        drawRoundedRect(b.x-6,b.y-6,b.w+12,b.h+12,10);
+        ctx.stroke();
+        ctx.restore();
+      }
       if(b.elite){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.shadowColor='rgba(120,220,255,0.7)'; ctx.shadowBlur=15; const eg=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x+b.w)*scaleX,(b.y+b.h)*scaleY); eg.addColorStop(0,'rgba(0,255,255,0.9)'); eg.addColorStop(1,'rgba(120,180,255,0.2)'); ctx.strokeStyle=eg; ctx.lineWidth=3; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.stroke(); ctx.shadowBlur=0; ctx.strokeStyle='rgba(120,220,255,0.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo((b.x+6)*scaleX,(b.y+6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+6)*scaleY); ctx.moveTo((b.x+6)*scaleX,(b.y+b.h-6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+b.h-6)*scaleY); ctx.stroke(); ctx.restore(); }
       if(b.poisonUntil && performance.now()<b.poisonUntil){ ctx.fillStyle='rgba(0,255,0,0.25)'; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.fill(); }
       // 鎖鏈覆蓋
@@ -3361,6 +3834,7 @@ function generateLevel(lv, L){
       }
     }
 
+    drawSpaceBossLayer();
     drawPlasmas(); drawHoly(); drawPhoenix(); drawSwords();
 
       // Boss wind-up glow
@@ -3548,6 +4022,8 @@ function generateLevel(lv, L){
     for(let i=particles.length-1;i>=0;i--){ const P=particles[i]; P.x+=P.vx; P.y+=P.vy; P.vx*=0.98; P.vy*=0.98; P.life-=16; if(P.life<=0){ particles.splice(i,1); continue; }
       const a=Math.max(0, Math.min(1, P.life/500)); ctx.fillStyle=P.color||`rgba(255,220,180,${a*0.6})`; ctx.beginPath(); ctx.arc(P.x*scaleX,P.y*scaleY,P.size*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); }
 
+    drawSpaceBossHUD();
+
     // 倒數提示
     if(countdownShow>0){
       ctx.save();
@@ -3691,6 +4167,7 @@ function generateLevel(lv, L){
       }
     }
     computePaddleWidth(); updateBuffBadges();
+    updateSpaceBoss();
 
     // 劇毒磚持續扣血
     for(let i=bricks.length-1;i>=0;i--){
@@ -4032,9 +4509,12 @@ function generateLevel(lv, L){
       }
 
       // 碰磚
+      const inRampage = !!(b.rampageUntil && now<b.rampageUntil);
+      let collidedWithBrick=false;
       let hit=-1; for(let i=0;i<bricks.length;i++){ const bk=bricks[i]; if(b.x+r>bk.x && b.x-r<bk.x+bk.w && b.y+r>bk.y && b.y-r<bk.y+bk.h){ hit=i; break; } }
       if(hit>=0){
-        const bk=bricks[hit]; const inRampage=b.rampageUntil && now<b.rampageUntil;
+        const bk=bricks[hit];
+        collidedWithBrick=true;
         fireCollide();
         if((inRampage || b.piercing) && bk.unbreakable){
           if(b.loopBrick===bk){ b.loopHits++; } else { b.loopBrick=bk; b.loopHits=1; }
@@ -4091,6 +4571,34 @@ function generateLevel(lv, L){
 }
 
         beep(520+Math.random()*200,0.03,0.05);
+      }
+
+      if(!collidedWithBrick && spaceBossPhase==='active' && spaceBoss){
+        const sb=spaceBoss;
+        const halfW=sb.w/2, halfH=sb.h/2;
+        const rx=sb.x-halfW, ry=sb.y-halfH;
+        if(b.x+r>rx && b.x-r<rx+sb.w && b.y+r>ry && b.y-r<ry+sb.h){
+          const oL=(b.x+r)-rx, oR=(rx+sb.w)-(b.x-r), oT=(b.y+r)-ry, oB=(ry+sb.h)-(b.y-r);
+          const m=Math.min(oL,oR,oT,oB);
+          if(!inRampage && !b.piercing){
+            if(m===oL){ b.x=rx-r; b.vx=-Math.abs(b.vx)||-4; }
+            else if(m===oR){ b.x=rx+sb.w+r; b.vx=Math.abs(b.vx)||4; }
+            else if(m===oT){ b.y=ry-r; b.vy=-Math.abs(b.vy)||-4; }
+            else { b.y=ry+sb.h+r; b.vy=Math.abs(b.vy)||4; }
+          }else{
+            if(m===oL){ b.x=rx-r; b.vx=Math.abs(b.vx)||4; }
+            else if(m===oR){ b.x=rx+sb.w+r; b.vx=-Math.abs(b.vx)||-4; }
+            else if(m===oT){ b.y=ry-r; b.vy=Math.abs(b.vy)||4; }
+            else { b.y=ry+sb.h+r; b.vy=-Math.abs(b.vy)||-4; }
+            b.piercing=true;
+          }
+          const impactX = Math.max(rx, Math.min(b.x, rx+sb.w));
+          const impactY = Math.max(ry, Math.min(b.y, ry+sb.h));
+          spawnParticles(impactX, impactY, '#b8d6ff', 20, 1.4, 2.4, 2.2);
+          fireCollide();
+          damageSpaceBoss((inRampage||b.piercing)?2:1,'ball');
+          collidedWithBrick=true;
+        }
       }
 
       // 安全保底速度
