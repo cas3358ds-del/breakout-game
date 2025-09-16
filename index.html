@@ -2411,7 +2411,7 @@ function generateLevel(lv, L){
   function spawnBeneficialAtTop(){
     // 從所有非減益的道具中隨機挑選一種作為隨機掉落增益
     // 若畫面已有特殊道具掉落，暫時排除特殊道具
-    const goodTypes = ALL_TYPES.filter(k => GAME_CONFIG.powers[k].type !== 'debuff');
+    const goodTypes = ALL_TYPES.filter(k => GAME_CONFIG.powers[k].type !== 'debuff' && k !== 'NINE');
     let pool = goodTypes;
     if(powerups.some(p=>p.isSpecial)){
       pool = pool.filter(k => {
