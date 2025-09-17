@@ -482,6 +482,7 @@ select optgroup { color: #0b1022; }
               <button class="btn" id="saveBtn">存檔</button>
               <button class="btn" id="loadBtn">讀檔</button>
               <button class="btn" id="clearSaveBtn">清除存檔</button>
+              <button class="btn" id="levelJumpBtn" title="暫時測試用">跳至關卡…</button>
             </div>
             <h4>其他</h4>
             <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
@@ -854,6 +855,7 @@ select optgroup { color: #0b1022; }
   const scoreEl=document.getElementById('score'), levelEl=document.getElementById('level'), livesEl=document.getElementById('lives');
   const pauseBtn=document.getElementById('pauseBtn'), resetBtn=document.getElementById('resetBtn'), fsBtn=document.getElementById('fsBtn');
   const soundBtn=document.getElementById('soundBtn'), saveBtn=document.getElementById('saveBtn'), loadBtn=document.getElementById('loadBtn'), clearSaveBtn=document.getElementById('clearSaveBtn');
+  const levelJumpBtn=document.getElementById('levelJumpBtn');
   const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn'), galleryBtn=document.getElementById('galleryBtn'), rankBtn=document.getElementById('rankBtn');
   const centerNote=document.getElementById('centerNote'), noteTitle=document.getElementById('noteTitle'), noteText=document.getElementById('noteText'), noteBox=document.getElementById('noteBox');
   const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs'), promptsDock=document.getElementById('promptsDock');
@@ -3892,6 +3894,29 @@ function generateLevel(lv, L){
   difficultySel.addEventListener('change',()=>{ resetGame(); });
   if(ledStyleSel){ ledStyleSel.value = ledStyle; ledStyleSel.addEventListener('change', ()=>{ ledStyle = ledStyleSel.value; localStorage.setItem('led_style', ledStyle); }); }
   saveBtn.addEventListener('click',saveProgress); loadBtn.addEventListener('click',loadProgress); clearSaveBtn.addEventListener('click',clearSave);
+  if(levelJumpBtn){
+    levelJumpBtn.addEventListener('click',()=>{
+      const input = prompt(`輸入欲前往的關卡 (1-${GAME_CONFIG.totalLevels})`, String(level));
+      if(input===null) return;
+      const target = parseInt(input, 10);
+      if(Number.isNaN(target)){
+        alert('請輸入有效的關卡數字。');
+        return;
+      }
+      const clamped = Math.max(1, Math.min(GAME_CONFIG.totalLevels, target));
+      level = clamped;
+      gameOver = false;
+      gameover?.classList.remove('show');
+      paused = true;
+      running = false;
+      resetCombo();
+      initBricks();
+      resetBalls();
+      applyBGMThemeForLevel();
+      updateHUD();
+      showCenter(`暫時跳至第 ${level} 關`,`按 Space 或點畫面開始`);
+    });
+  }
   tutorBtn.addEventListener('click', ()=> toggleHelp('tutor'));
   effectsBtn.addEventListener('click', ()=> toggleHelp('effects'));
   againBtn.addEventListener('click', ()=>{ win.classList.remove('show'); resetGame(); });
