@@ -3093,40 +3093,41 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.save();
       ctx.clip();
       if(style==='alert'){
-      const midY=(innerY+innerH/2)*scaleY;
-      ctx.fillStyle='#f5f9ff';
-      ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
-      ctx.textBaseline='middle';
-      ctx.textAlign='left';
-      ctx.shadowColor='rgba(120,200,255,0.45)';
-      ctx.shadowBlur=10*((scaleX+scaleY)/2);
-      ctx.fillText(text, (innerX+16)*scaleX, midY);
-      const cd=spaceBossMarquee.countdownDuration;
-      if(cd){
-        const remain=Math.max(0, cd - (now-start));
-        const num=Math.max(0, Math.ceil(remain/1000));
-        if(num>0){
-          ctx.shadowBlur=0;
-          ctx.fillStyle='rgba(255,180,140,0.9)';
-          ctx.font=`${Math.round(32*((scaleX+scaleY)/2))}px 'Playfair Display',serif`;
-          ctx.textAlign='right';
-          ctx.fillText(String(num), (innerX+innerW-16)*scaleX, midY);
+        const midY=(innerY+innerH/2)*scaleY;
+        ctx.fillStyle='#f5f9ff';
+        ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
+        ctx.textBaseline='middle';
+        ctx.textAlign='left';
+        ctx.shadowColor='rgba(120,200,255,0.45)';
+        ctx.shadowBlur=10*((scaleX+scaleY)/2);
+        ctx.fillText(text, (innerX+16)*scaleX, midY);
+        const cd=spaceBossMarquee.countdownDuration;
+        if(cd){
+          const remain=Math.max(0, cd - (now-start));
+          const num=Math.max(0, Math.ceil(remain/1000));
+          if(num>0){
+            ctx.shadowBlur=0;
+            ctx.fillStyle='rgba(255,180,140,0.9)';
+            ctx.font=`${Math.round(32*((scaleX+scaleY)/2))}px 'Playfair Display',serif`;
+            ctx.textAlign='right';
+            ctx.fillText(String(num), (innerX+innerW-16)*scaleX, midY);
+          }
         }
+      } else {
+        const pxSpeed=180;
+        const baseX=(innerX+innerW)*scaleX;
+        const midY=(innerY+innerH/2)*scaleY;
+        ctx.fillStyle='#f5f9ff';
+        ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
+        ctx.textBaseline='middle';
+        ctx.shadowColor='rgba(120,200,255,0.55)';
+        ctx.shadowBlur=12*((scaleX+scaleY)/2);
+        const repeated=`✦  ${text}  ✦  `;
+        const textWidth=Math.max(1, ctx.measureText(repeated).width);
+        let drawX = baseX - ((now-start)/1000*pxSpeed % textWidth);
+        while(drawX > (innerX- textWidth/scaleX)*scaleX){ drawX -= textWidth; }
+        while(drawX < (innerX + innerW)*scaleX){ ctx.fillText(repeated, drawX, midY); drawX += textWidth; }
       }
-    else{
-      const pxSpeed=180;
-      const baseX=(innerX+innerW)*scaleX;
-      const midY=(innerY+innerH/2)*scaleY;
-      ctx.fillStyle='#f5f9ff';
-      ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
-      ctx.textBaseline='middle';
-      ctx.shadowColor='rgba(120,200,255,0.55)';
-      ctx.shadowBlur=12*((scaleX+scaleY)/2);
-      const repeated=`✦  ${text}  ✦  `;
-      const textWidth=Math.max(1, ctx.measureText(repeated).width);
-      let drawX = baseX - ((now-start)/1000*pxSpeed % textWidth);
-      while(drawX > (innerX- textWidth/scaleX)*scaleX){ drawX -= textWidth; }
-      while(drawX < (innerX + innerW)*scaleX){ ctx.fillText(repeated, drawX, midY); drawX += textWidth; }
     }
     ctx.restore();
     ctx.restore();
