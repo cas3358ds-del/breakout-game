@@ -2452,7 +2452,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const now=performance.now();
     const sb=spaceBoss;
     const fake={x:sb.x-sb.w/2,y:sb.y-sb.h/2,w:sb.w,h:sb.h};
-    bossKillEffect(fake,{dropNineCat:'never'});
+    bossKillEffect(fake,{dropNineCat:'always'});
     addScore(scoreForBrick({boss:true}));
     stats.bossKills++;
     updateHUD();
@@ -3033,7 +3033,17 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(now>=end){ spaceBossMarquee=null; return; }
     let alpha=1;
     if(style!=='victory' && now>fadeStart){ alpha = Math.max(0, 1 - (now - fadeStart)/(end - fadeStart||1)); }
-    const areaHeight=52;
+    const fallbackCanvasWidth = (typeof canvas!=='undefined' && canvas && canvas.clientWidth) ? canvas.clientWidth : 0;
+    const viewW = (typeof window!=='undefined' && window.innerWidth) ? window.innerWidth : fallbackCanvasWidth;
+    let deviceBoost=1;
+    if(viewW && viewW<=600){ deviceBoost=1.4; }
+    else if(viewW && viewW<=900){ deviceBoost=1.18; }
+    const scaleAvg=(scaleX+scaleY)/2;
+    const textScale=Math.max(0.6, scaleAvg*deviceBoost);
+    const numberScale=Math.max(0.6, scaleAvg*(deviceBoost>1?deviceBoost+0.05:1));
+    const marqueeScale=Math.max(0.6, scaleAvg*(deviceBoost>1?deviceBoost:1));
+    const areaHeightBase=52;
+    const areaHeight = deviceBoost>1 ? Math.round(areaHeightBase * 1.18) : areaHeightBase;
     const topBase=Math.max(12, layout().top - areaHeight - 14);
     const x=40;
     const width=1100-80;
@@ -3062,11 +3072,12 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.fillRect(innerX*scaleX, innerY*scaleY, innerW*scaleX, innerH*scaleY);
       ctx.restore();
       ctx.fillStyle='#ffeede';
-      ctx.font=`${Math.round(28*((scaleX+scaleY)/2))}px 'Playfair Display', serif`;
+      const victoryFont=Math.max(24, Math.round(28*marqueeScale));
+      ctx.font=`${victoryFont}px 'Playfair Display', serif`;
       ctx.textAlign='center';
       ctx.textBaseline='middle';
       ctx.shadowColor='rgba(255,220,170,0.6)';
-      ctx.shadowBlur=18*((scaleX+scaleY)/2);
+      ctx.shadowBlur=18*marqueeScale;
       ctx.fillText(text, (x+width/2)*scaleX, (topBase+areaHeight/2)*scaleY);
       ctx.shadowBlur=0;
       ctx.strokeStyle='rgba(255,220,170,0.45)';
@@ -3095,11 +3106,12 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       if(style==='alert'){
         const midY=(innerY+innerH/2)*scaleY;
         ctx.fillStyle='#f5f9ff';
-        ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
+        const alertFont=Math.max(18, Math.round(24*textScale));
+        ctx.font=`${alertFont}px 'Noto Sans TC','Playfair Display',sans-serif`;
         ctx.textBaseline='middle';
         ctx.textAlign='left';
         ctx.shadowColor='rgba(120,200,255,0.45)';
-        ctx.shadowBlur=10*((scaleX+scaleY)/2);
+        ctx.shadowBlur=10*textScale;
         ctx.fillText(text, (innerX+16)*scaleX, midY);
         const cd=spaceBossMarquee.countdownDuration;
         if(cd){
@@ -3108,7 +3120,8 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
           if(num>0){
             ctx.shadowBlur=0;
             ctx.fillStyle='rgba(255,180,140,0.9)';
-            ctx.font=`${Math.round(32*((scaleX+scaleY)/2))}px 'Playfair Display',serif`;
+            const countdownFont=Math.max(22, Math.round(32*numberScale));
+            ctx.font=`${countdownFont}px 'Playfair Display',serif`;
             ctx.textAlign='right';
             ctx.fillText(String(num), (innerX+innerW-16)*scaleX, midY);
           }
@@ -3118,10 +3131,11 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         const baseX=(innerX+innerW)*scaleX;
         const midY=(innerY+innerH/2)*scaleY;
         ctx.fillStyle='#f5f9ff';
-        ctx.font=`${Math.round(24*((scaleX+scaleY)/2))}px 'Noto Sans TC','Playfair Display',sans-serif`;
+        const marqueeFont=Math.max(18, Math.round(24*marqueeScale));
+        ctx.font=`${marqueeFont}px 'Noto Sans TC','Playfair Display',sans-serif`;
         ctx.textBaseline='middle';
         ctx.shadowColor='rgba(120,200,255,0.55)';
-        ctx.shadowBlur=12*((scaleX+scaleY)/2);
+        ctx.shadowBlur=12*marqueeScale;
         const repeated=`✦  ${text}  ✦  `;
         const textWidth=Math.max(1, ctx.measureText(repeated).width);
         let drawX = baseX - ((now-start)/1000*pxSpeed % textWidth);
@@ -3274,7 +3288,7 @@ function generateLevel(lv, L){
       const bossIdx = Math.floor(lv/5)-1;
       const bossHP = hpList[Math.max(0,Math.min(3,bossIdx))];
       const faces=['獅','騎','目','魔'];
-      addBrick(bricks, xAt(bx), yAt(by), w, h, {hp:bossHP, colorIdx:0, boss:true, face:faces[bossIdx], strong:true});
+      addBrick(bricks, xAt(bx), yAt(by), w, h, {hp:bossHP, colorIdx:0, boss:true, face:faces[bossIdx], strong:true, unbreakable:true});
       // 周圍護衛磚
       for(let r=0;r<rows;r++){
         for(let c=0;c<cols;c++){
@@ -3371,9 +3385,12 @@ function generateLevel(lv, L){
     screenShake=Math.max(screenShake,6);
     playSFX('fireExplosion');
     showComboNotice(`成功擊殺第${level}關Boss!`,5000,3000);
-    const dropMode=opts.dropNineCat||'default';
-    if(dropMode==='always'){ spawnPower(cx-12,cy,{forceType:'NINE'}); }
-    else if(dropMode!=='never' && Math.random()<0.5){ spawnPower(cx-12,cy,{forceType:'NINE'}); }
+    const dropMode = opts.dropNineCat ?? 'never';
+    if(dropMode==='always'){
+      spawnPower(cx-12,cy,{forceType:'NINE'});
+    } else if(dropMode==='default' || dropMode==='chance'){
+      if(Math.random()<0.5){ spawnPower(cx-12,cy,{forceType:'NINE'}); }
+    }
   }
   function destroyBrick(i, sfx='default'){
     const b=bricks[i]; if(!b) return; if(!canDestroyBrick(b)) return;
@@ -4780,7 +4797,7 @@ function generateLevel(lv, L){
     const maxLevel=20;
     const l=Math.min(Math.max(lv,1),maxLevel);
     const t=(l-1)/(maxLevel-1);
-    return 1.04 + 0.06 * t; // 1.04 -> 1.10
+    return 1.04 + 0.02 * t; // 1.04 -> 1.06
   }
 
   function resetBalls(center=true){ balls=[makeBall(false)]; const base=getDiff().baseSpeed; const speed=speedForLevel(level); const angle=(-60-Math.random()*60)*Math.PI/180;
