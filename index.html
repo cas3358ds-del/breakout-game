@@ -5288,8 +5288,10 @@ function generateLevel(lv, L){
 
         // 當前磚扣血（若已在上面被處理則略過）
         if(!buffs.HELL.active && !buffs.HOLY.active){
-          // 鎖鏈中不受傷害
-          if(!(bk.lockedUntil && now<bk.lockedUntil)){
+          // 不可破壞／鎖鏈狀態下不扣血
+          if(bk.unbreakable || (bk.lockedUntil && now<bk.lockedUntil)){
+            if(bk.boss){ updateHUD(); }
+          }else{
             bk.hp=(bk.hp||1)-1; incrementCombo();
             if(bk.hp<=0){
               const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
