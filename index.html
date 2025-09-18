@@ -3974,32 +3974,88 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const headR=bodyW*0.26;
     const headY=-bodyH*0.84;
     ctx.save();
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    const fontSize=Math.round(headR*3.2);
-    ctx.font=`${fontSize}px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji','Noto Sans TC',sans-serif`;
+    ctx.translate(0, headY);
     ctx.shadowColor='rgba(255,200,240,0.45)';
     ctx.shadowBlur=16*s;
-    ctx.fillText('💀', 0, headY);
+    const skullGrad=ctx.createRadialGradient(0, -headR*0.4, headR*0.4, 0, headR*0.2, headR*1.35);
+    skullGrad.addColorStop(0,'#fff7ff');
+    skullGrad.addColorStop(0.55,'#f7e0f2');
+    skullGrad.addColorStop(1,'#e2c1e2');
+    ctx.fillStyle=skullGrad;
+    ctx.beginPath();
+    ctx.moveTo(-headR*0.92, -headR*0.1);
+    ctx.quadraticCurveTo(-headR*1.06, -headR*0.96, 0, -headR*1.12);
+    ctx.quadraticCurveTo(headR*1.06, -headR*0.96, headR*0.92, -headR*0.1);
+    ctx.quadraticCurveTo(headR*0.94, headR*0.52, headR*0.42, headR*0.94);
+    ctx.quadraticCurveTo(0, headR*1.16, -headR*0.42, headR*0.94);
+    ctx.quadraticCurveTo(-headR*0.94, headR*0.52, -headR*0.92, -headR*0.1);
+    ctx.closePath();
+    ctx.fill();
     ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(120,70,150,0.55)';
+    ctx.lineWidth=2.4*s;
+    ctx.stroke();
+
+    ctx.fillStyle='rgba(20,0,30,0.92)';
+    ctx.save();
+    ctx.translate(-headR*0.46, -headR*0.32);
+    ctx.rotate(-0.16);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, headR*0.34, headR*0.26, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(headR*0.46, -headR*0.32);
+    ctx.rotate(0.16);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, headR*0.34, headR*0.26, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle='rgba(60,10,80,0.9)';
+    ctx.beginPath();
+    ctx.moveTo(-headR*0.18, headR*0.18);
+    ctx.lineTo(0, headR*0.52);
+    ctx.lineTo(headR*0.18, headR*0.18);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle='rgba(160,90,200,0.7)';
+    ctx.lineWidth=1.6*s;
+    ctx.beginPath();
+    for(let i=-2;i<=2;i++){
+      const t=i/2;
+      const toothX=t*headR*0.14;
+      const toothY=headR*0.64 - Math.abs(t)*headR*0.08;
+      ctx.moveTo(toothX, headR*0.7);
+      ctx.lineTo(toothX, toothY);
+    }
+    ctx.stroke();
+
+    ctx.fillStyle='rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, -headR*0.36, headR*0.48, headR*0.52, 0.1, 0, Math.PI);
+    ctx.fill();
+
     ctx.restore();
 
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    const skullGlow=ctx.createRadialGradient(0, headY, headR*0.2, 0, headY, headR*1.1);
-    skullGlow.addColorStop(0,'rgba(255,210,250,0.55)');
+    const skullGlow=ctx.createRadialGradient(0, headY, headR*0.2, 0, headY, headR*1.2);
+    skullGlow.addColorStop(0,'rgba(255,210,250,0.52)');
     skullGlow.addColorStop(1,'rgba(255,210,250,0)');
     ctx.fillStyle=skullGlow;
     ctx.beginPath();
-    ctx.arc(0, headY, headR*1.22, 0, Math.PI*2);
+    ctx.arc(0, headY, headR*1.28, 0, Math.PI*2);
     ctx.fill();
     ctx.restore();
 
     ctx.save();
     ctx.rotate(-0.34 + Math.sin(now/520 + rb.cloakPhase)*0.08);
     const handleGrad=ctx.createLinearGradient(0,-bodyH*1.1,0,bodyH*0.2);
-    handleGrad.addColorStop(0,'#321015');
-    handleGrad.addColorStop(1,'#a23035');
+    handleGrad.addColorStop(0,'#4a0212');
+    handleGrad.addColorStop(0.5,'#7e0d1f');
+    handleGrad.addColorStop(1,'#d62238');
     ctx.strokeStyle=handleGrad;
     ctx.lineWidth=8*s;
     ctx.lineCap='round';
@@ -4008,12 +4064,12 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.lineTo(bodyW*0.86, -bodyH*0.98);
     ctx.stroke();
 
-    ctx.fillStyle='#fdf3ff';
+    ctx.fillStyle='rgba(255,120,140,0.85)';
     ctx.beginPath();
-    ctx.ellipse(bodyW*0.3, -bodyH*0.16, bodyW*0.08, bodyW*0.05, 0, 0, Math.PI*2);
+    ctx.ellipse(bodyW*0.32, -bodyH*0.2, bodyW*0.085, bodyW*0.052, 0, 0, Math.PI*2);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(bodyW*0.48, -bodyH*0.38, bodyW*0.08, bodyW*0.05, 0, 0, Math.PI*2);
+    ctx.ellipse(bodyW*0.5, -bodyH*0.42, bodyW*0.085, bodyW*0.052, 0, 0, Math.PI*2);
     ctx.fill();
     ctx.restore();
 
@@ -4022,18 +4078,26 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.rotate(-0.05 + Math.sin(now/320 + rb.cloakPhase)*0.05);
     ctx.beginPath();
     ctx.moveTo(-bodyW*0.02, -bodyH*0.02);
-    ctx.quadraticCurveTo(bodyW*0.36, -bodyH*0.38, bodyW*0.32, bodyH*0.24);
-    ctx.quadraticCurveTo(bodyW*0.18, bodyH*0.36, -bodyW*0.08, bodyH*0.2);
+    ctx.quadraticCurveTo(bodyW*0.38, -bodyH*0.42, bodyW*0.34, bodyH*0.26);
+    ctx.quadraticCurveTo(bodyW*0.2, bodyH*0.4, -bodyW*0.08, bodyH*0.2);
     ctx.closePath();
-    const bladeGrad=ctx.createLinearGradient(-bodyW*0.08, -bodyH*0.36, bodyW*0.42, bodyH*0.26);
-    bladeGrad.addColorStop(0,'rgba(255,255,255,0.95)');
-    bladeGrad.addColorStop(0.55,'rgba(210,230,255,0.85)');
-    bladeGrad.addColorStop(1,'rgba(255,120,160,0.9)');
+    const bladeGrad=ctx.createLinearGradient(-bodyW*0.08, -bodyH*0.36, bodyW*0.42, bodyH*0.28);
+    bladeGrad.addColorStop(0,'rgba(255,110,130,0.98)');
+    bladeGrad.addColorStop(0.35,'rgba(255,60,80,0.92)');
+    bladeGrad.addColorStop(0.72,'rgba(200,20,40,0.88)');
+    bladeGrad.addColorStop(1,'rgba(120,10,24,0.85)');
     ctx.fillStyle=bladeGrad;
     ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.82)';
+    ctx.strokeStyle='rgba(255,170,190,0.9)';
     ctx.lineWidth=3*s;
     ctx.stroke();
+    ctx.globalCompositeOperation='lighter';
+    const bladeGlow=ctx.createLinearGradient(-bodyW*0.04, -bodyH*0.26, bodyW*0.32, bodyH*0.2);
+    bladeGlow.addColorStop(0,'rgba(255,140,160,0.45)');
+    bladeGlow.addColorStop(1,'rgba(255,0,40,0)');
+    ctx.fillStyle=bladeGlow;
+    ctx.fill();
+    ctx.globalCompositeOperation='source-over';
     ctx.restore();
 
     ctx.strokeStyle='rgba(210,160,255,0.32)';
