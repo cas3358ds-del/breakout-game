@@ -1314,6 +1314,14 @@ select optgroup { color: #0b1022; }
   let reaperDeathAnim=null;
   let reaperTeleportSchedule=null;
   let reaperTargetHighlightUntil=0;
+  let reaperAttackState=null;
+  let reaperSlashZone=null;
+  let reaperSlashEffects=[];
+  let reaperBlackHoleAttack=null;
+  let reaperLifeLossCooldownUntil=0;
+  let reaperPaddlePenalty=0;
+  let reaperPenaltyLastUpdate=0;
+  const REAPER_PADDLE_MIN_WIDTH=80;
 
   function isSpaceBossActive(){
     return level===5 && spaceBossPhase==='active' && !!spaceBoss;
@@ -2386,6 +2394,13 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     reaperDeathAnim=null;
     reaperTeleportSchedule=null;
     reaperTargetHighlightUntil=0;
+    reaperAttackState=null;
+    reaperSlashZone=null;
+    reaperSlashEffects=[];
+    reaperBlackHoleAttack=null;
+    reaperLifeLossCooldownUntil=0;
+    reaperPaddlePenalty=0;
+    reaperPenaltyLastUpdate=0;
     reaperPhase = (level===10?'awaiting':'inactive');
     const lvlImg = getLevelImage(level);
     if (lvlImg && lvlImg.decode) { lvlImg.decode().catch(()=>{}); }
@@ -3382,7 +3397,8 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       hitCooldownUntil:0,
       hitFlashUntil:0,
       spawnAt:now,
-      cloakPhase:Math.random()*Math.PI*2
+      cloakPhase:Math.random()*Math.PI*2,
+      hiddenUntil:0
     };
     reaperTeleportSchedule={
       nextSingle: now + 10000,
@@ -3393,6 +3409,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       burstActive:false
     };
     reaperPhase='active';
+    reaperAttackState={nextAttack: now + 15000, current:null};
+    reaperSlashZone=null;
+    reaperBlackHoleAttack=null;
     reaperBursts.push({type:'halo',x:cx,y:baseY-40,r0:60,r1:320,t0:now,life:1700,color:'200,140,255'});
     screenShake=Math.max(screenShake,6);
   }
@@ -3420,9 +3439,233 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     screenShake=Math.max(screenShake, rapid?4:3);
   }
 
+  function reaperApplyLifeLoss(now, reason='reaper'){
+    if(now<reaperLifeLossCooldownUntil) return;
+    if(now<paddleGoneUntil) return;
+    reaperLifeLossCooldownUntil = now + 600;
+    if(stats.lifeStart){
+      const dur=(now-stats.lifeStart)/1000;
+      if(dur<stats.fastestDeath) stats.fastestDeath=dur;
+      if(dur>stats.longestLife) stats.longestLife=dur;
+    }
+    stats.livesUsed++;
+    if(buffs.BLACKHOLE.active){ buffs.BLACKHOLE.deaths=Math.min(8,(buffs.BLACKHOLE.deaths||0)+1); }
+    if(buffs.ANNIHIL.active){ buffs.ANNIHIL.active=false; }
+    lives=Math.max(0, lives-1);
+    updateHUD();
+    const pr=paddleRect();
+    const cx=pr.x+pr.w/2;
+    const cy=pr.y+pr.h/2;
+    spawnParticles(cx, cy, '#ff6a9a', 70, 2.6, 3.8, 3.4);
+    screenShake=Math.max(screenShake,12);
+    playSFX('explosion');
+    balls.length=0;
+    if(lives<=0){ running=false; paused=true; showGameOver(); return; }
+    resetBalls(false);
+    startCountdown();
+  }
+
+  function startReaperSlash(now){
+    const segment=Math.floor(Math.random()*3);
+    const zoneWidth=1100/3;
+    const zoneHeight=140;
+    const zoneX=segment*zoneWidth;
+    const zoneY=700-zoneHeight;
+    reaperSlashZone={x:zoneX,y:zoneY,w:zoneWidth,h:zoneHeight,start:now,countdownEnd:now+3000};
+    reaperMarquee={text:'危險！ 暗黑死神即將使出死神斬!', start:now, fadeStart:now+3000, end:now+3000, style:'alert'};
+    return {
+      type:'slash',
+      stage:'countdown',
+      start:now,
+      countdownEnd:now+3000,
+      area:{x:zoneX,y:zoneY,w:zoneWidth,h:zoneHeight},
+      slashes:0,
+      nextSlash:now+3000,
+      vanishEnd:0,
+      resolved:false,
+      reappeared:false
+    };
+  }
+
+  function spawnReaperSlashStrike(state, now){
+    const area=state.area;
+    const baseX=area.x + Math.random()*area.w;
+    const len=area.h*1.8;
+    const angle=-Math.PI/3 + Math.random()*(2*Math.PI/3);
+    const cos=Math.cos(angle);
+    const sin=Math.sin(angle);
+    const centerY=area.y + area.h*0.4;
+    const x1=baseX - cos*len;
+    const y1=area.y + area.h - sin*len;
+    const x2=baseX + cos*len;
+    const y2=area.y + area.h + sin*len;
+    reaperSlashEffects.push({x1,y1,x2,y2,start:now,life:240});
+    reaperBursts.push({type:'flare',x:baseX,y:centerY,r0:0,r1:240,t0:now,life:240,color:'255,80,120'});
+    spawnParticles(baseX, centerY, '#ff6a88', 20, 1.6, 2.6, 2.4);
+    screenShake=Math.max(screenShake,8);
+    playSFX('sword');
+    const pr=paddleRect();
+    if(pr.w>0 && segmentIntersectsRect(x1,y1,x2,y2, pr)){
+      reaperApplyLifeLoss(now,'reaperSlash');
+    }
+  }
+
+  function updateReaperSlash(state, now){
+    if(state.stage==='countdown'){
+      if(now>=state.countdownEnd){
+        state.stage='slashing';
+        state.nextSlash=now;
+        state.vanishEnd=now+3000;
+        if(reaperBoss){ reaperBoss.hiddenUntil = Math.max(reaperBoss.hiddenUntil||0, state.vanishEnd); }
+        reaperSlashZone=null;
+      }
+    }else if(state.stage==='slashing'){
+      if(state.slashes<30 && now>=state.nextSlash){
+        spawnReaperSlashStrike(state, now);
+        state.slashes++;
+        state.nextSlash=now+100;
+        if(state.slashes>=30){ state.stage='recover'; }
+      }
+      if(now>=state.vanishEnd){ state.stage='recover'; }
+    }
+    if(state.stage==='recover'){
+      if(!state.reappeared && reaperBoss && now>=state.vanishEnd){
+        state.reappeared=true;
+        reaperBoss.hiddenUntil=0;
+        reaperAfterimages.push({x:reaperBoss.x,y:reaperBoss.y,t0:now,life:520,scale:1.05,emerge:true});
+      }
+      if(now>=state.vanishEnd+400){ state.resolved=true; }
+    }
+    if(state.resolved){
+      reaperAttackState.current=null;
+      reaperAttackState.nextAttack = now + 15000;
+    }
+  }
+
+  function startReaperBlackHole(now){
+    const state={
+      type:'blackhole',
+      stage:'countdown',
+      start:now,
+      countdownEnd:now+3000,
+      projectile:null,
+      projectileTrail:[],
+      hole:null,
+      resolved:false,
+      baseDesiredWidth:desiredPaddleWidth(),
+      didKill:false
+    };
+    reaperMarquee={text:'危險！ 暗黑死神即將使出黑洞吞噬!', start:now, fadeStart:now+3000, end:now+3000, style:'alert'};
+    reaperBlackHoleAttack=state;
+    return state;
+  }
+
+  function applyReaperHolePull(hole, now){
+    const pr=paddleRect();
+    if(!orientLeft){
+      const center=paddle.x+paddle.w/2;
+      const dist=hole.x-center;
+      paddle.x += dist*0.04;
+      paddle.x=Math.max(0, Math.min(1100-paddle.w, paddle.x));
+    }else{
+      const center=pr.y+pr.h/2;
+      const dist=hole.y-center;
+      paddle.y += dist*0.045;
+      paddle.y=Math.max(0, Math.min(700-paddle.w, paddle.y));
+    }
+  }
+
+  function updateReaperBlackHole(state, now){
+    if(state.stage==='countdown'){
+      if(now>=state.countdownEnd){
+        state.stage='projectile';
+        if(reaperBoss){
+          const pr=paddleRect();
+          const targetX=pr.x+pr.w/2;
+          const targetY=pr.y+pr.h/2;
+          const startX=reaperBoss.x;
+          const startY=reaperBoss.y-reaperBoss.h*0.2;
+          const dx=targetX-startX;
+          const dy=(targetY-startY);
+          const dist=Math.hypot(dx,dy)||1;
+          const speed=4.5;
+          state.projectile={x:startX,y:startY,vx:(dx/dist)*speed,vy:(dy/dist)*speed,radius:22};
+          state.projectileTrail=[];
+          playSFX('blackhole');
+        }else{
+          state.resolved=true;
+        }
+      }
+    }else if(state.stage==='projectile'){
+      const proj=state.projectile;
+      if(!proj){
+        state.resolved=true;
+      }else{
+        proj.x+=proj.vx;
+        proj.y+=proj.vy;
+        state.projectileTrail.push({x:proj.x,y:proj.y,t:now});
+        if(state.projectileTrail.length>18) state.projectileTrail.shift();
+        if(proj.y>=700-100){
+          const holeX=proj.x;
+          const holeY=700-90;
+          state.hole={x:holeX,y:holeY,start:now,end:now+3000,nextTick:now+1000,baseDesired:state.baseDesiredWidth};
+          blackHoles.push({x:holeX,y:holeY,r:160,until:now+3000});
+          state.stage='hole';
+          state.projectile=null;
+          state.projectileTrail=[];
+        }
+      }
+    }else if(state.stage==='hole'){
+      const hole=state.hole;
+      if(!hole){
+        state.resolved=true;
+      }else{
+        applyReaperHolePull(hole, now);
+        if(now>=hole.nextTick){
+          const desired=Math.max(hole.baseDesired||0, desiredPaddleWidth());
+          hole.baseDesired=desired;
+          const cap=Math.max(0, desired - REAPER_PADDLE_MIN_WIDTH);
+          if(reaperPaddlePenalty < cap){
+            const before=reaperPaddlePenalty;
+            reaperPaddlePenalty=Math.min(cap, reaperPaddlePenalty + 100);
+            if(reaperPaddlePenalty!==before){ computePaddleWidth(); }
+          }else if(!state.didKill){
+            reaperApplyLifeLoss(now,'blackhole');
+            state.didKill=true;
+          }
+          hole.nextTick = now + 1000;
+        }
+        if(now>=hole.end){ state.resolved=true; }
+      }
+    }
+    if(state.resolved){
+      reaperAttackState.current=null;
+      reaperAttackState.nextAttack = now + 15000;
+      reaperBlackHoleAttack=null;
+    }
+  }
+
+  function updateReaperAttacks(now){
+    if(reaperPhase!=='active' || !reaperBoss) return;
+    if(!reaperAttackState){ reaperAttackState={nextAttack: now + 15000, current:null}; }
+    if(reaperAttackState.current){
+      const curr=reaperAttackState.current;
+      if(curr.type==='slash'){ updateReaperSlash(curr, now); }
+      else if(curr.type==='blackhole'){ updateReaperBlackHole(curr, now); }
+      return;
+    }
+    if(now>=reaperAttackState.nextAttack){
+      const modes=['slash','blackhole'];
+      const pick=modes[Math.floor(Math.random()*modes.length)];
+      if(pick==='slash'){ reaperAttackState.current=startReaperSlash(now); }
+      else { reaperAttackState.current=startReaperBlackHole(now); }
+    }
+  }
+
   function damageReaperBoss(amount=1, source='generic', impact){
     if(reaperPhase!=='active' || !reaperBoss) return false;
     const now=performance.now();
+    if(reaperBoss.hiddenUntil && now<reaperBoss.hiddenUntil) return false;
     if(reaperBoss.hitCooldownUntil && now<reaperBoss.hitCooldownUntil) return false;
     const dmg = amount>0?1:0;
     if(!dmg) return false;
@@ -3462,6 +3705,13 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     addScore(scoreForBrick({boss:true}));
     stats.bossKills++;
     updateHUD();
+    reaperAttackState=null;
+    reaperSlashZone=null;
+    reaperSlashEffects=[];
+    reaperBlackHoleAttack=null;
+    reaperPaddlePenalty=0;
+    reaperPenaltyLastUpdate=0;
+    computePaddleWidth();
     reaperPhase='dying';
     reaperDefeatedAt=now;
     reaperTeleportSchedule=null;
@@ -3498,7 +3748,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       if(reaperBoss.x + reaperBoss.w/2 > 1100 - margin){ reaperBoss.x = 1100 - margin - reaperBoss.w/2; reaperBoss.vx = -Math.abs(reaperBoss.vx); }
       reaperBoss.y = reaperBoss.baseY + Math.sin((now - reaperBoss.spawnAt)/780)*42;
       reaperBoss.cloakPhase += 0.03;
-      if(reaperTeleportSchedule){
+      const activeAttack=reaperAttackState && reaperAttackState.current;
+      const teleportLocked = !!(activeAttack && activeAttack.stage && activeAttack.stage!=='countdown');
+      if(reaperTeleportSchedule && !teleportLocked){
         if(reaperTeleportSchedule.burstActive){
           if(now>=reaperTeleportSchedule.nextBurstTeleport){
             performReaperTeleport(true);
@@ -3529,6 +3781,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
           reaperTeleportSchedule.nextSingle = now + 10000;
         }
       }
+      updateReaperAttacks(now);
+    }else if(reaperAttackState && reaperAttackState.current){
+      updateReaperAttacks(now);
     }
     if(reaperPhase==='dying' && reaperBoss){
       const anim=reaperDeathAnim;
@@ -3566,89 +3821,246 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     }
     for(let i=reaperBursts.length-1;i>=0;i--){ const fx=reaperBursts[i]; const life=fx.life||1000; if(now>fx.t0+life) reaperBursts.splice(i,1); }
     for(let i=reaperAfterimages.length-1;i>=0;i--){ const af=reaperAfterimages[i]; if(now>af.t0+(af.life||600)) reaperAfterimages.splice(i,1); }
+    for(let i=reaperSlashEffects.length-1;i>=0;i--){ const slash=reaperSlashEffects[i]; if(now>slash.start+(slash.life||200)){ reaperSlashEffects.splice(i,1); } }
+    if(!reaperPenaltyLastUpdate) reaperPenaltyLastUpdate=now;
+    const activeHole = reaperBlackHoleAttack && reaperBlackHoleAttack.stage==='hole';
+    if(reaperPaddlePenalty>0){
+      if(!activeHole){
+        const dt=now - reaperPenaltyLastUpdate;
+        if(dt>0){
+          const recover=(dt/1000)*120;
+          if(recover>0){
+            const before=reaperPaddlePenalty;
+            reaperPaddlePenalty=Math.max(0, reaperPaddlePenalty - recover);
+            if(Math.abs(before-reaperPaddlePenalty)>0.5){ computePaddleWidth(); }
+          }
+        }
+      }
+    }
+    reaperPenaltyLastUpdate=now;
   }
 
   function drawReaperBoss(rb, now){
     const s=(scaleX+scaleY)/2;
     ctx.save();
     ctx.translate(rb.x*scaleX, rb.y*scaleY);
-    const bodyW=rb.w*0.6*s;
-    const bodyH=rb.h*0.6*s;
-    const wave=Math.sin(now/420 + rb.cloakPhase)*0.18;
+    if(rb.hiddenUntil && now<rb.hiddenUntil){
+      const fade=1-Math.max(0, Math.min(1,(rb.hiddenUntil-now)/3000));
+      const radius=rb.w*0.9*s*(1+0.1*Math.sin(now/160));
+      const grad=ctx.createRadialGradient(0,0,radius*0.2,0,0,radius);
+      grad.addColorStop(0,`rgba(130,90,200,${0.18+0.22*fade})`);
+      grad.addColorStop(1,'rgba(130,90,200,0)');
+      ctx.globalCompositeOperation='lighter';
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.arc(0,0,radius,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+    const float=Math.sin((now-rb.spawnAt)/520 + rb.cloakPhase*0.6)*8*s;
+    ctx.translate(0, float);
+
+    const bodyW=rb.w*0.58*s;
+    const bodyH=rb.h*0.64*s;
+    const flutterA=Math.sin(now/340 + rb.cloakPhase)*0.28;
+    const flutterB=Math.sin(now/220 + rb.cloakPhase*1.4)*0.22;
+    const flutterC=Math.sin(now/180 + rb.cloakPhase*0.8)*0.18;
+
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(-bodyW*0.55, bodyH*0.5);
-    ctx.quadraticCurveTo(-bodyW*0.3, bodyH*(-0.2+wave), -bodyW*0.2, -bodyH*0.6);
-    ctx.quadraticCurveTo(0, -bodyH*0.74, bodyW*0.2, -bodyH*0.6);
-    ctx.quadraticCurveTo(bodyW*0.32, bodyH*(-0.2-wave), bodyW*0.55, bodyH*0.5);
-    ctx.quadraticCurveTo(0, bodyH*(0.78+wave*0.6), -bodyW*0.55, bodyH*0.5);
-    const cloakGrad=ctx.createLinearGradient(0,-bodyH*0.8,0,bodyH*0.8);
-    cloakGrad.addColorStop(0,'rgba(90,40,130,0.95)');
-    cloakGrad.addColorStop(1,'rgba(20,10,40,0.98)');
+    ctx.moveTo(-bodyW*0.46, -bodyH*0.08);
+    ctx.quadraticCurveTo(-bodyW*0.74, -bodyH*0.7, -bodyW*0.24, -bodyH*1.18);
+    ctx.quadraticCurveTo(0, -bodyH*1.28, bodyW*0.24, -bodyH*1.18);
+    ctx.quadraticCurveTo(bodyW*0.74, -bodyH*0.7, bodyW*0.46, -bodyH*0.08);
+    const ragged=6;
+    for(let i=0;i<=ragged;i++){
+      const t=i/ragged;
+      const wave=Math.sin(now/320 + rb.cloakPhase*0.5 + t*Math.PI*1.6)*bodyH*0.12;
+      const offset=-bodyW*0.46 + t*bodyW*0.92;
+      const dip=(i%2===0?1:-1)*bodyH*0.08;
+      const baseY=bodyH*(0.94 + 0.05*Math.sin(t*Math.PI*2 + now/280));
+      ctx.quadraticCurveTo(offset-bodyW*0.06, baseY-bodyH*0.08 + flutterA*bodyH*0.2, offset, baseY + wave + dip);
+    }
+    ctx.quadraticCurveTo(bodyW*0.64, bodyH*0.3 + flutterB*bodyH*0.28, bodyW*0.42, bodyH*0.82 + flutterC*bodyH*0.22);
+    ctx.quadraticCurveTo(bodyW*0.16, bodyH*(0.96+flutterB*0.12), 0, bodyH*(0.86 + flutterA*0.24));
+    ctx.quadraticCurveTo(-bodyW*0.16, bodyH*(0.96-flutterB*0.12), -bodyW*0.42, bodyH*0.82 - flutterC*bodyH*0.22);
+    ctx.quadraticCurveTo(-bodyW*0.64, bodyH*0.3 - flutterB*bodyH*0.28, -bodyW*0.46, -bodyH*0.08);
+    ctx.closePath();
+    const cloakGrad=ctx.createLinearGradient(0,-bodyH*1.3,0,bodyH*1.1);
+    cloakGrad.addColorStop(0,'rgba(32,20,42,0.98)');
+    cloakGrad.addColorStop(0.45,'rgba(20,10,30,0.98)');
+    cloakGrad.addColorStop(1,'rgba(6,4,12,0.95)');
     ctx.fillStyle=cloakGrad;
-    ctx.shadowColor='rgba(160,110,255,0.4)';
+    ctx.shadowColor='rgba(180,120,255,0.45)';
     ctx.shadowBlur=26*s;
     ctx.fill();
     ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(140,110,210,0.35)';
+    ctx.lineWidth=4*s;
+    ctx.stroke();
     if(rb.hitFlashUntil && now<rb.hitFlashUntil){
-      ctx.strokeStyle='rgba(255,180,220,0.9)';
-      ctx.lineWidth=4*s;
+      ctx.strokeStyle='rgba(255,210,250,0.9)';
+      ctx.lineWidth=4.8*s;
       ctx.stroke();
     }
-    ctx.restore();
-    // Head
-    const headR=bodyW*0.28;
-    const headY=-bodyH*0.72;
-    const headGrad=ctx.createRadialGradient(0, headY, headR*0.2, 0, headY, headR);
-    headGrad.addColorStop(0,'rgba(255,255,255,0.95)');
-    headGrad.addColorStop(1,'rgba(130,90,180,0.95)');
-    ctx.fillStyle=headGrad;
-    ctx.beginPath();
-    ctx.arc(0, headY, headR, 0, Math.PI*2);
-    ctx.fill();
-    // Eyes
-    ctx.fillStyle='rgba(255,90,120,0.95)';
-    ctx.beginPath(); ctx.ellipse(-headR*0.35, headY, headR*0.22, headR*0.08, 0, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(headR*0.35, headY, headR*0.22, headR*0.08, 0, 0, Math.PI*2); ctx.fill();
-    // Scythe handle
     ctx.save();
-    ctx.rotate(-0.45 + Math.sin(now/520 + rb.cloakPhase)*0.06);
-    ctx.strokeStyle='rgba(200,180,255,0.75)';
-    ctx.lineWidth=6*s;
+    ctx.clip();
+    const liningGrad=ctx.createLinearGradient(0,-bodyH,0,bodyH*1.1);
+    liningGrad.addColorStop(0,'rgba(150,30,48,0.65)');
+    liningGrad.addColorStop(0.55,'rgba(120,20,40,0.52)');
+    liningGrad.addColorStop(1,'rgba(80,8,26,0.4)');
+    ctx.globalAlpha=0.85;
+    ctx.fillStyle=liningGrad;
     ctx.beginPath();
-    ctx.moveTo(bodyW*0.3, -bodyH*0.05);
-    ctx.lineTo(bodyW*0.72, -bodyH*0.85);
-    ctx.stroke();
-    ctx.restore();
-    // Scythe blade
-    ctx.save();
-    ctx.translate(bodyW*0.72, -bodyH*0.85);
-    ctx.rotate(-0.1 + Math.sin(now/360 + rb.cloakPhase)*0.05);
-    ctx.beginPath();
-    ctx.moveTo(0,0);
-    ctx.quadraticCurveTo(bodyW*0.28, -bodyH*0.22, bodyW*0.22, bodyH*0.24);
-    ctx.quadraticCurveTo(bodyW*0.06, bodyH*0.2, 0, bodyH*0.12);
+    ctx.moveTo(-bodyW*0.32, -bodyH*0.04);
+    ctx.quadraticCurveTo(-bodyW*0.2, bodyH*0.52, -bodyW*0.3, bodyH*(0.86+flutterC*0.12));
+    ctx.quadraticCurveTo(-bodyW*0.06, bodyH*(0.9+flutterA*0.16), 0, bodyH*(0.76 + flutterB*0.14));
+    ctx.quadraticCurveTo(bodyW*0.06, bodyH*(0.9-flutterA*0.16), bodyW*0.3, bodyH*(0.84-flutterC*0.12));
+    ctx.quadraticCurveTo(bodyW*0.2, bodyH*0.52, bodyW*0.32, -bodyH*0.04);
     ctx.closePath();
-    const bladeGrad=ctx.createLinearGradient(0,-bodyH*0.22, bodyW*0.3, bodyH*0.26);
-    bladeGrad.addColorStop(0,'rgba(255,220,240,0.95)');
-    bladeGrad.addColorStop(1,'rgba(255,70,110,0.9)');
+    ctx.fill();
+    ctx.restore();
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(-bodyW*0.42, -bodyH*0.18);
+    ctx.quadraticCurveTo(-bodyW*0.64, -bodyH*0.76, -bodyW*0.18, -bodyH*1.24);
+    ctx.quadraticCurveTo(0, -bodyH*1.36, bodyW*0.18, -bodyH*1.24);
+    ctx.quadraticCurveTo(bodyW*0.64, -bodyH*0.76, bodyW*0.42, -bodyH*0.18);
+    ctx.closePath();
+    const hoodGrad=ctx.createLinearGradient(0,-bodyH*1.4,0,-bodyH*0.2);
+    hoodGrad.addColorStop(0,'rgba(42,18,56,0.98)');
+    hoodGrad.addColorStop(1,'rgba(16,8,28,0.98)');
+    ctx.fillStyle=hoodGrad;
+    ctx.fill();
+    ctx.save();
+    ctx.clip();
+    const hoodInner=ctx.createRadialGradient(0,-bodyH*0.92, bodyW*0.08, 0,-bodyH*0.92, bodyW*0.46);
+    hoodInner.addColorStop(0,'rgba(210,40,70,0.55)');
+    hoodInner.addColorStop(1,'rgba(80,0,20,0.25)');
+    ctx.fillStyle=hoodInner;
+    ctx.fillRect(-bodyW*0.6, -bodyH*1.4, bodyW*1.2, bodyH*1.4);
+    ctx.restore();
+    ctx.restore();
+
+    const headR=bodyW*0.26;
+    const headY=-bodyH*0.84;
+    ctx.fillStyle='#fefbff';
+    ctx.beginPath();
+    ctx.ellipse(0, headY, headR*0.9, headR*1.05, 0, 0, Math.PI*2);
+    ctx.fill();
+    const skullShade=ctx.createLinearGradient(0, headY-headR, 0, headY+headR);
+    skullShade.addColorStop(0,'rgba(255,255,255,0)');
+    skullShade.addColorStop(1,'rgba(200,190,220,0.65)');
+    ctx.fillStyle=skullShade;
+    ctx.beginPath();
+    ctx.ellipse(0, headY, headR*0.9, headR*1.05, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.save();
+    const eyeOffset=headR*0.45;
+    ctx.fillStyle='rgba(0,0,0,0.92)';
+    ctx.beginPath();
+    ctx.ellipse(-eyeOffset, headY, headR*0.32, headR*0.24, -0.08, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(eyeOffset, headY, headR*0.32, headR*0.24, 0.08, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle='rgba(220,60,110,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(-eyeOffset, headY, headR*0.2, headR*0.18, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(eyeOffset, headY, headR*0.2, headR*0.18, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle='rgba(40,20,60,0.85)';
+    ctx.beginPath();
+    ctx.moveTo(-headR*0.14, headY+headR*0.12);
+    ctx.lineTo(0, headY+headR*0.28);
+    ctx.lineTo(headR*0.14, headY+headR*0.12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle='rgba(80,40,100,0.75)';
+    ctx.lineWidth=2*s;
+    const jawY=headY+headR*0.52;
+    ctx.beginPath();
+    ctx.moveTo(-headR*0.36, jawY);
+    ctx.quadraticCurveTo(0, jawY+headR*0.12, headR*0.36, jawY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-headR*0.24, jawY-headR*0.04);
+    ctx.lineTo(-headR*0.24, jawY+headR*0.16);
+    ctx.moveTo(-headR*0.08, jawY+headR*0.02);
+    ctx.lineTo(-headR*0.08, jawY+headR*0.18);
+    ctx.moveTo(headR*0.08, jawY+headR*0.02);
+    ctx.lineTo(headR*0.08, jawY+headR*0.18);
+    ctx.moveTo(headR*0.24, jawY-headR*0.04);
+    ctx.lineTo(headR*0.24, jawY+headR*0.16);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.rotate(-0.34 + Math.sin(now/520 + rb.cloakPhase)*0.08);
+    const handleGrad=ctx.createLinearGradient(0,-bodyH*1.1,0,bodyH*0.2);
+    handleGrad.addColorStop(0,'#321015');
+    handleGrad.addColorStop(1,'#a23035');
+    ctx.strokeStyle=handleGrad;
+    ctx.lineWidth=8*s;
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(bodyW*0.26, -bodyH*0.12);
+    ctx.lineTo(bodyW*0.86, -bodyH*0.98);
+    ctx.stroke();
+
+    ctx.fillStyle='#fdf3ff';
+    ctx.beginPath();
+    ctx.ellipse(bodyW*0.3, -bodyH*0.16, bodyW*0.08, bodyW*0.05, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(bodyW*0.48, -bodyH*0.38, bodyW*0.08, bodyW*0.05, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(bodyW*0.86, -bodyH*0.98);
+    ctx.rotate(-0.05 + Math.sin(now/320 + rb.cloakPhase)*0.05);
+    ctx.beginPath();
+    ctx.moveTo(-bodyW*0.02, -bodyH*0.02);
+    ctx.quadraticCurveTo(bodyW*0.36, -bodyH*0.38, bodyW*0.32, bodyH*0.24);
+    ctx.quadraticCurveTo(bodyW*0.18, bodyH*0.36, -bodyW*0.08, bodyH*0.2);
+    ctx.closePath();
+    const bladeGrad=ctx.createLinearGradient(-bodyW*0.08, -bodyH*0.36, bodyW*0.42, bodyH*0.26);
+    bladeGrad.addColorStop(0,'rgba(255,255,255,0.95)');
+    bladeGrad.addColorStop(0.55,'rgba(210,230,255,0.85)');
+    bladeGrad.addColorStop(1,'rgba(255,120,160,0.9)');
     ctx.fillStyle=bladeGrad;
     ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.85)';
-    ctx.lineWidth=2.4*s;
+    ctx.strokeStyle='rgba(255,255,255,0.82)';
+    ctx.lineWidth=3*s;
     ctx.stroke();
     ctx.restore();
-    // Floating aura
-    ctx.save();
-    const auraGrad=ctx.createRadialGradient(0, bodyH*0.2, bodyW*0.2, 0, bodyH*0.2, bodyW*1.1);
-    auraGrad.addColorStop(0,'rgba(180,120,255,0.25)');
-    auraGrad.addColorStop(1,'rgba(180,120,255,0)');
+
+    ctx.strokeStyle='rgba(210,160,255,0.32)';
+    ctx.lineWidth=2.4*s;
+    ctx.beginPath();
+    ctx.moveTo(-bodyW*0.44, -bodyH*0.08);
+    ctx.quadraticCurveTo(-bodyW*0.28, -bodyH*0.64, -bodyW*0.12, -bodyH*1.04);
+    ctx.quadraticCurveTo(0, -bodyH*1.18, bodyW*0.12, -bodyH*1.04);
+    ctx.quadraticCurveTo(bodyW*0.28, -bodyH*0.64, bodyW*0.44, -bodyH*0.08);
+    ctx.stroke();
+
+    const auraGrad=ctx.createRadialGradient(0, bodyH*0.18, bodyW*0.2, 0, bodyH*0.18, bodyW*1.15);
+    auraGrad.addColorStop(0,'rgba(150,100,220,0.32)');
+    auraGrad.addColorStop(1,'rgba(150,100,220,0)');
     ctx.globalCompositeOperation='lighter';
     ctx.fillStyle=auraGrad;
     ctx.beginPath();
-    ctx.arc(0, bodyH*0.2, bodyW*1.1, 0, Math.PI*2);
+    ctx.arc(0, bodyH*0.18, bodyW*1.15, 0, Math.PI*2);
     ctx.fill();
-    ctx.restore();
     ctx.restore();
   }
 
@@ -3698,6 +4110,92 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         ctx.stroke();
       }
       ctx.restore();
+    }
+    if(reaperSlashZone){
+      const zone=reaperSlashZone;
+      const pulse=0.5+0.5*Math.sin(now/140);
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      const grad=ctx.createLinearGradient(zone.x*scaleX, (zone.y+zone.h/2)*scaleY, (zone.x+zone.w)*scaleX, (zone.y+zone.h/2)*scaleY);
+      grad.addColorStop(0,`rgba(255,70,100,${0.08+0.12*pulse})`);
+      grad.addColorStop(0.5,`rgba(255,90,140,${0.22+0.25*pulse})`);
+      grad.addColorStop(1,`rgba(255,70,100,${0.08+0.12*pulse})`);
+      ctx.fillStyle=grad;
+      ctx.fillRect(zone.x*scaleX, zone.y*scaleY, zone.w*scaleX, zone.h*scaleY);
+      ctx.strokeStyle=`rgba(255,150,190,${0.35+0.3*pulse})`;
+      ctx.lineWidth=3*((scaleX+scaleY)/2);
+      ctx.strokeRect(zone.x*scaleX, zone.y*scaleY, zone.w*scaleX, zone.h*scaleY);
+      ctx.restore();
+    }
+    for(const slash of reaperSlashEffects){
+      const life=slash.life||240;
+      const prog=Math.max(0, Math.min(1,(now-slash.start)/life));
+      const alpha=1-prog;
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      const grad=ctx.createLinearGradient(slash.x1*scaleX, slash.y1*scaleY, slash.x2*scaleX, slash.y2*scaleY);
+      grad.addColorStop(0,`rgba(255,120,160,${0.08*alpha})`);
+      grad.addColorStop(0.5,`rgba(255,80,130,${0.85*alpha})`);
+      grad.addColorStop(1,`rgba(255,120,160,${0.08*alpha})`);
+      ctx.strokeStyle=grad;
+      ctx.lineWidth=4*((scaleX+scaleY)/2)*(1+0.4*(1-prog));
+      ctx.beginPath();
+      ctx.moveTo(slash.x1*scaleX, slash.y1*scaleY);
+      ctx.lineTo(slash.x2*scaleX, slash.y2*scaleY);
+      ctx.stroke();
+      ctx.restore();
+    }
+    const countdownAttack=reaperAttackState && reaperAttackState.current;
+    if(countdownAttack && countdownAttack.stage==='countdown'){
+      const remain=Math.ceil((countdownAttack.countdownEnd-now)/1000);
+      if(remain>0){
+        ctx.save();
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        const fontSize=Math.round(70*((scaleX+scaleY)/2));
+        if(countdownAttack.type==='slash' && reaperSlashZone){
+          ctx.fillStyle='rgba(255,240,250,0.92)';
+          ctx.font=`${fontSize}px 'Playfair Display','Noto Sans TC',serif`;
+          ctx.shadowColor='rgba(255,160,200,0.85)';
+          ctx.shadowBlur=24*((scaleX+scaleY)/2);
+          ctx.fillText(String(remain), (reaperSlashZone.x+reaperSlashZone.w/2)*scaleX, (reaperSlashZone.y+reaperSlashZone.h/2)*scaleY);
+        }else{
+          ctx.fillStyle='rgba(230,230,255,0.92)';
+          ctx.font=`${fontSize}px 'Playfair Display','Noto Sans TC',serif`;
+          ctx.shadowColor='rgba(180,170,255,0.85)';
+          ctx.shadowBlur=22*((scaleX+scaleY)/2);
+          const L=layout();
+          ctx.fillText(String(remain), canvas.width/2, (L.top+90)*scaleY);
+        }
+        ctx.restore();
+      }
+    }
+    if(reaperBlackHoleAttack){
+      const atk=reaperBlackHoleAttack;
+      if(atk.projectile){
+        const trail=atk.projectileTrail||[];
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        for(const t of trail){
+          const age=Math.max(0, Math.min(1,(now-t.t)/400));
+          const alpha=1-age;
+          const r=atk.projectile.radius*((scaleX+scaleY)/2)*0.6*alpha;
+          ctx.fillStyle=`rgba(150,90,220,${0.18*alpha})`;
+          ctx.beginPath();
+          ctx.arc(t.x*scaleX, t.y*scaleY, r, 0, Math.PI*2);
+          ctx.fill();
+        }
+        const rad=atk.projectile.radius*((scaleX+scaleY)/2)*(1+0.15*Math.sin(now/120));
+        const grad=ctx.createRadialGradient(atk.projectile.x*scaleX, atk.projectile.y*scaleY, rad*0.2, atk.projectile.x*scaleX, atk.projectile.y*scaleY, rad);
+        grad.addColorStop(0,'rgba(20,10,40,0.9)');
+        grad.addColorStop(0.4,'rgba(130,60,200,0.75)');
+        grad.addColorStop(1,'rgba(255,140,220,0)');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.arc(atk.projectile.x*scaleX, atk.projectile.y*scaleY, rad, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
     }
     for(const af of reaperAfterimages){
       const life=af.life||600;
@@ -3813,40 +4311,76 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
   }
 
   function drawReaperHPBar(){
-    if(!reaperBoss || (reaperPhase!=='active' && reaperPhase!=='dying')) return;
-    const bounds=getReaperBounds();
-    if(!bounds) return;
-    const barW=200;
-    const barH=18;
-    const x=1100 - barW - 40;
-    const y=bounds.y + bounds.h/2 - barH/2;
+    if((reaperPhase!=='active' && reaperPhase!=='dying') || !reaperBoss) return;
+    const L=layout();
+    const barW=32;
+    const maxH=700-(L.top+80);
+    const barH=Math.max(200, Math.min(360, maxH));
+    const x=1100 - barW - 26;
+    const y=L.top + 30;
     const ratio=Math.max(0, Math.min(1, reaperBoss.hp/reaperBoss.maxHp));
+
     ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    drawRoundedRect(x-10, y-18, barW+20, barH+36, 16);
-    const bgGrad=ctx.createLinearGradient(x*scaleX, (y-6)*scaleY, x*scaleX, (y+barH+6)*scaleY);
-    bgGrad.addColorStop(0,'rgba(40,26,70,0.85)');
-    bgGrad.addColorStop(1,'rgba(26,16,50,0.9)');
-    ctx.fillStyle=bgGrad;
-    ctx.fillRect((x-6)*scaleX,(y-6)*scaleY,(barW+12)*scaleX,(barH+12)*scaleY);
-    const hpGrad=ctx.createLinearGradient(x*scaleX, y*scaleY, (x+barW)*scaleX, (y+barH)*scaleY);
-    hpGrad.addColorStop(0,'rgba(255,120,200,0.95)');
-    hpGrad.addColorStop(1,'rgba(200,120,255,0.95)');
-    ctx.fillStyle='rgba(0,0,0,0.45)';
-    ctx.fillRect(x*scaleX, y*scaleY, barW*scaleX, barH*scaleY);
-    ctx.fillStyle=hpGrad;
-    ctx.fillRect(x*scaleX, y*scaleY, (barW*ratio)*scaleX, barH*scaleY);
-    ctx.strokeStyle='rgba(255,200,240,0.8)';
+    ctx.globalAlpha=0.96;
+    drawRoundedRect(x, y, barW, barH, 16);
+    const frameGrad=ctx.createLinearGradient(x*scaleX, y*scaleY, x*scaleX, (y+barH)*scaleY);
+    frameGrad.addColorStop(0,'rgba(40,20,60,0.96)');
+    frameGrad.addColorStop(1,'rgba(24,12,42,0.92)');
+    ctx.fillStyle=frameGrad;
+    ctx.fill();
+    ctx.strokeStyle='rgba(210,160,255,0.6)';
     ctx.lineWidth=2;
-    ctx.strokeRect(x*scaleX, y*scaleY, barW*scaleX, barH*scaleY);
-    ctx.fillStyle='#f8eaff';
-    ctx.font=`${Math.round(16*((scaleX+scaleY)/2))}px 'Playfair Display',serif`;
+    drawRoundedRect(x, y, barW, barH, 16);
+    ctx.stroke();
+
+    const innerX=x+6;
+    const innerY=y+10;
+    const innerW=barW-12;
+    const innerH=barH-20;
+    drawRoundedRect(innerX, innerY, innerW, innerH, 12);
+    const bg=ctx.createLinearGradient(innerX*scaleX, (innerY+innerH)*scaleY, innerX*scaleX, innerY*scaleY);
+    bg.addColorStop(0,'rgba(12,10,26,0.92)');
+    bg.addColorStop(1,'rgba(26,18,40,0.88)');
+    ctx.fillStyle=bg;
+    ctx.fill();
+
+    if(ratio>0){
+      const fillHeight=innerH*ratio;
+      ctx.save();
+      ctx.beginPath();
+      drawRoundedRect(innerX, innerY, innerW, innerH, 10);
+      ctx.clip();
+      const fillGrad=ctx.createLinearGradient(innerX*scaleX, (innerY+innerH)*scaleY, innerX*scaleX, (innerY+innerH-fillHeight)*scaleY);
+      fillGrad.addColorStop(0,'rgba(255,110,160,0.22)');
+      fillGrad.addColorStop(0.35,'rgba(255,120,200,0.6)');
+      fillGrad.addColorStop(1,'rgba(255,220,250,0.95)');
+      ctx.fillStyle=fillGrad;
+      ctx.fillRect(innerX*scaleX, (innerY+innerH-fillHeight)*scaleY, innerW*scaleX, fillHeight*scaleY);
+      ctx.restore();
+    }
+
+    ctx.strokeStyle='rgba(255,255,255,0.14)';
+    ctx.lineWidth=1;
+    const segments=reaperBoss.maxHp;
+    const step=innerH/segments;
+    for(let i=1;i<segments;i++){
+      const sy=(innerY + innerH - step*i)*scaleY;
+      ctx.beginPath();
+      ctx.moveTo(innerX*scaleX, sy);
+      ctx.lineTo((innerX+innerW)*scaleX, sy);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle='rgba(220,234,255,0.92)';
+    ctx.font=`${Math.round(18*((scaleX+scaleY)/2))}px 'Playfair Display',sans-serif`;
+    ctx.textAlign='right';
+    ctx.textBaseline='top';
+    ctx.fillText('BOSS 暗黑死神', (x-10)*scaleX, (y-8)*scaleY);
+    ctx.fillStyle='rgba(240,220,255,0.85)';
+    ctx.font=`${Math.round(14*((scaleX+scaleY)/2))}px 'Noto Sans TC',sans-serif`;
     ctx.textAlign='center';
     ctx.textBaseline='bottom';
-    ctx.fillText('BOSS 暗黑死神', (x+barW/2)*scaleX, (y-8)*scaleY);
-    ctx.fillStyle='rgba(240,220,255,0.85)';
-    ctx.textBaseline='top';
-    ctx.fillText(`${reaperBoss.hp}/${reaperBoss.maxHp}`, (x+barW/2)*scaleX, (y+barH+4)*scaleY);
+    ctx.fillText(`${reaperBoss.hp}/${reaperBoss.maxHp}`, (x+barW/2)*scaleX, (y+barH+6)*scaleY);
     ctx.restore();
   }
 
