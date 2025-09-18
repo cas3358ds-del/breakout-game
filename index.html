@@ -3725,9 +3725,11 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       vanishAt:now+5000,
       finishAt:now+8000,
       lastBurst:now,
+      smallBurstInterval:180,
       bigBang:false,
       lastX:rb.x,
-      lastY:rb.y
+      lastY:rb.y,
+      dropSpawned:false
     };
     reaperBursts.push({type:'ring',x:rb.x,y:rb.y,r0:60,r1:560,width:26,t0:now,life:2200,color:'255,170,230'});
     reaperBursts.push({type:'flare',x:rb.x,y:rb.y,r0:0,r1:360,t0:now,life:1900,color:'210,140,255'});
@@ -3794,28 +3796,44 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         reaperBoss.vx = 0;
         anim.lastX = reaperBoss.x;
         anim.lastY = reaperBoss.y;
-        if(now-anim.lastBurst>=320 && now<anim.bigExplosionStart){
+        if(now-anim.lastBurst>=(anim.smallBurstInterval||220) && now<anim.bigExplosionStart){
           anim.lastBurst=now;
+          anim.smallBurstInterval=140+Math.random()*120;
           const sx=reaperBoss.x + (Math.random()-0.5)*reaperBoss.w*0.7;
           const sy=reaperBoss.y + (Math.random()-0.5)*reaperBoss.h*0.7;
-          reaperBursts.push({type:'spark',x:sx,y:sy,r0:0,r1:160,t0:now,life:820,color:'255,170,220'});
-          spawnParticles(sx, sy, '#ffd9f1', 28, 1.8, 3.0, 3.4);
+          reaperBursts.push({type:'spark',x:sx,y:sy,r0:0,r1:200,t0:now,life:920,color:'255,170,220'});
+          reaperBursts.push({type:'flare',x:sx,y:sy,r0:0,r1:280,t0:now,life:700,color:'200,120,255'});
+          spawnParticles(sx, sy, '#ffd9f1', 34, 1.8, 3.2, 3.6);
         }
         if(!anim.bigBang && now>=anim.bigExplosionStart){
           anim.bigBang=true;
           const bx=anim.lastX;
           const by=anim.lastY;
-          spawnParticles(bx, by, '#fff0ff', 240, 3.6, 6.0, 6.4);
-          reaperBursts.push({type:'ring',x:bx,y:by,r0:80,r1:620,width:30,t0:now,life:2200,color:'255,200,240'});
-          reaperBursts.push({type:'flare',x:bx,y:by,r0:0,r1:420,t0:now,life:2000,color:'230,170,255'});
+          spawnParticles(bx, by, '#fff0ff', 280, 3.8, 6.2, 6.6);
+          spawnParticles(bx, by, '#ffe0ff', 220, 3.4, 5.6, 6.0);
+          reaperBursts.push({type:'ring',x:bx,y:by,r0:80,r1:640,width:34,t0:now,life:2200,color:'255,200,240'});
+          reaperBursts.push({type:'flare',x:bx,y:by,r0:0,r1:480,t0:now,life:2000,color:'230,170,255'});
+          reaperBursts.push({type:'halo',x:bx,y:by,r0:120,r1:720,t0:now,life:2400,color:'255,180,240'});
           screenShake=Math.max(screenShake,16);
           playSFX('fireExplosion');
+          if(!anim.dropSpawned){
+            spawnPower(bx-12, by, {forceType:'NINE'});
+            anim.dropSpawned=true;
+          }
+        }
+        if(anim.bigBang && now<anim.bigExplosionEnd){
+          const theta=Math.random()*Math.PI*2;
+          const dist=reaperBoss.w*0.5 + Math.random()*reaperBoss.w*0.5;
+          const px=anim.lastX + Math.cos(theta)*dist;
+          const py=anim.lastY + Math.sin(theta)*dist;
+          reaperBursts.push({type:'spark',x:px,y:py,r0:0,r1:320,t0:now,life:860,color:'255,190,240'});
         }
         if(now>=anim.vanishAt){
           reaperBoss=null;
         }
         if(now>=anim.finishAt){
           reaperPhase='defeated';
+          reaperDefeatedAt=now;
         }
       }
     }
