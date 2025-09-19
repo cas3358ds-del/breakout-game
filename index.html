@@ -1962,7 +1962,27 @@ select optgroup { color: #0b1022; }
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
-let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0},blinkAt:0,loopBrick:null,loopHits:0,lastBrickId:null,lastBrickHitTime:0,sameBrickHits:0,lastBounce:null}; }
+let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0},blinkAt:0,loopBrick:null,loopHits:0,lastBrickId:null,lastBrickHitTime:0,sameBrickHits:0,lastBounce:null,speedBoostSuppressedUntil:0,lastCeilingBounce:0}; }
+
+  function isSpeedSuppressed(ball, now){
+    return !!(ball?.speedBoostSuppressedUntil && now < ball.speedBoostSuppressedUntil);
+  }
+
+  function suppressSpeedBoost(ball, now, duration=1000){
+    if(!ball) return;
+    const target = now + duration;
+    if(!ball.speedBoostSuppressedUntil || ball.speedBoostSuppressedUntil < target){
+      ball.speedBoostSuppressedUntil = target;
+    }
+  }
+
+  function noteCeilingBounce(ball, now){
+    if(!ball) return;
+    if(ball.lastCeilingBounce && now - ball.lastCeilingBounce <= 1000){
+      suppressSpeedBoost(ball, now);
+    }
+    ball.lastCeilingBounce = now;
+  }
 
   function applyBounceNudge(ball, axis){
     const sp=Math.hypot(ball.vx,ball.vy);
@@ -6653,7 +6673,7 @@ function generateLevel(lv, L){
       if(!orientLeft){
         if(b.x-r<0){ b.x=r; b.vx*=-1; beep(780,0.03); spawnParticles(b.x,b.y,'rgba(153,187,255,.8)',5,1.2,1.2,2); fireCollide(); noteBounce(b,b.x,b.y,'x',now); }
         if(b.x+r>1100){ b.x=1100-r; b.vx*=-1; beep(780,0.03); spawnParticles(b.x,b.y,'rgba(153,187,255,.8)',5,1.2,1.2,2); fireCollide(); noteBounce(b,b.x,b.y,'x',now); }
-        if(b.y-r<0){ b.y=r; b.vy*=-1; beep(700,0.03); spawnParticles(b.x,b.y,'rgba(153,187,255,.8)',5,1.2,1.2,2); fireCollide(); noteBounce(b,b.x,b.y,'y',now); }
+        if(b.y-r<0){ b.y=r; b.vy*=-1; beep(700,0.03); spawnParticles(b.x,b.y,'rgba(153,187,255,.8)',5,1.2,1.2,2); fireCollide(); noteCeilingBounce(b, now); noteBounce(b,b.x,b.y,'y',now); }
         if(b.y-r>700){
           // 底部：GODSPEED 不落地 / SHIELD 擋一次
           if(buffs.GODSPEED.active){ b.y=700-r; b.vy=-Math.abs(b.vy); noteBounce(b,b.x,b.y,'y',now); }
@@ -6662,7 +6682,7 @@ function generateLevel(lv, L){
         }
       }else{
         // 左側模式：上下為牆，左側為落點；GODSPEED 無落地
-        if(b.y-r<0){ b.y=r; b.vy*=-1; fireCollide(); noteBounce(b,b.x,b.y,'y',now); }
+        if(b.y-r<0){ b.y=r; b.vy*=-1; fireCollide(); noteCeilingBounce(b, now); noteBounce(b,b.x,b.y,'y',now); }
         if(b.y+r>700){ b.y=700-r; b.vy*=-1; fireCollide(); noteBounce(b,b.x,b.y,'y',now); }
         if(b.x+r>1100){ b.x=1100-r; b.vx*=-1; fireCollide(); noteBounce(b,b.x,b.y,'x',now); }
         if(b.x-r<0){
@@ -6692,12 +6712,15 @@ function generateLevel(lv, L){
         hitPaddle = inSeg1 || inSeg2;
       }
       if(hitPaddle){ stats.catches++;
+        const baseSpeed=Math.hypot(b.vx,b.vy);
+        const speedMul = isSpeedSuppressed(b, now) ? 1 : paddleHitSpeedMul(level);
+        const sp=Math.min(baseSpeed*speedMul, b.speedCap);
         if(!orientLeft){
-          const hitPos=(b.x-(pr.x+pr.w/2))/(pr.w/2); const sp=Math.min(Math.hypot(b.vx,b.vy)*paddleHitSpeedMul(level), b.speedCap); const angle=hitPos*(Math.PI/3);
+          const hitPos=(b.x-(pr.x+pr.w/2))/(pr.w/2); const angle=hitPos*(Math.PI/3);
           b.vx=Math.sin(angle)*sp; b.vy=-Math.cos(angle)*sp; b.y=pr.y-b.r-0.1;
           noteBounce(b,b.x,b.y,'y',now);
         }else{
-          const hitPos=(b.y-(pr.y+pr.h/2))/(pr.h/2); const sp=Math.min(Math.hypot(b.vx,b.vy)*paddleHitSpeedMul(level), b.speedCap); const angle=hitPos*(Math.PI/3);
+          const hitPos=(b.y-(pr.y+pr.h/2))/(pr.h/2); const angle=hitPos*(Math.PI/3);
           b.vx=Math.cos(angle)*sp; b.vy=Math.sin(angle)*sp; b.x=pr.x+pr.w+b.r+0.1;
           noteBounce(b,b.x,b.y,'x',now);
         }
@@ -6766,12 +6789,13 @@ function generateLevel(lv, L){
           if(b.loopHits>=20){ b.piercing=false; b.rampageUntil=0; b.loopBrick=null; b.loopHits=0; }
         }else{ b.loopBrick=null; b.loopHits=0; }
         let suppressBrickAccel=false;
+        let shouldSuppressSpeedBoost=false;
         if(bk.id!=null){
           const prevId=b.lastBrickId;
           const prevTime=b.lastBrickHitTime||0;
           if(prevId===bk.id && now-prevTime<=1000){
             b.sameBrickHits=(b.sameBrickHits||1)+1;
-            if(b.sameBrickHits>=2){ suppressBrickAccel=true; }
+            if(b.sameBrickHits>=2){ suppressBrickAccel=true; shouldSuppressSpeedBoost=true; }
           }else{
             b.sameBrickHits=1;
           }
@@ -6782,7 +6806,8 @@ function generateLevel(lv, L){
           b.lastBrickId=null;
           b.lastBrickHitTime=0;
         }
-        if(b.loopBrick===bk && b.loopHits>=3){ suppressBrickAccel=true; }
+        if(b.loopBrick===bk && b.loopHits>=3){ suppressBrickAccel=true; shouldSuppressSpeedBoost=true; }
+        if(shouldSuppressSpeedBoost){ suppressSpeedBoost(b, now); }
         // 反彈
         let bounceAxis=null;
         const oL=(b.x+r)-bk.x, oR=(bk.x+bk.w)-(b.x-r), oT=(b.y+r)-bk.y, oB=(bk.y+bk.h)-(b.y-r); const m=Math.min(oL,oR,oT,oB);
@@ -6795,7 +6820,7 @@ function generateLevel(lv, L){
         if(bounceAxis){ noteBounce(b,b.x,b.y,bounceAxis,now); }
 
         // 強反彈加速
-        if(bk.strong){ if(!suppressBrickAccel){ const sp=Math.min(Math.hypot(b.vx,b.vy)*1.08, b.speedCap); const ang=Math.atan2(b.vy,b.vx); b.vx=Math.cos(ang)*sp; b.vy=Math.sin(ang)*sp; } screenShake=Math.max(screenShake,3); }
+        if(bk.strong){ const skipAccel = suppressBrickAccel || isSpeedSuppressed(b, now); if(!skipAccel){ const sp=Math.min(Math.hypot(b.vx,b.vy)*1.08, b.speedCap); const ang=Math.atan2(b.vy,b.vx); b.vx=Math.cos(ang)*sp; b.vy=Math.sin(ang)*sp; } screenShake=Math.max(screenShake,3); }
 
         // 特效觸發
         if(buffs.PLASMA.active){ const cfg=GAME_CONFIG.powers.PLASMA.plasma; const ang=Math.random()*Math.PI*2; plasmas.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,vx:Math.cos(ang)*cfg.drift,vy:Math.sin(ang)*cfg.drift,until:now+cfg.lifeMs,radius:cfg.radius,phase:Math.random()*Math.PI*2}); playSFX('plasma'); }
