@@ -1294,6 +1294,7 @@ select optgroup { color: #0b1022; }
   const SPACE_BOSS_GUN_FIRE_RATE = 100; // ms between each burst per gun
   const SPACE_BOSS_GUN_FIRE_DURATION = 3000;
   const SPACE_BOSS_LASER_SWEEP_DURATION = 2000;
+  const DRAGON_MAX_HP = 50;
   let spaceBossPhase='inactive';
   let spaceBoss=null;
   let spaceBossPlaceholder=null;
@@ -1339,6 +1340,15 @@ select optgroup { color: #0b1022; }
   let reaperPaddlePenalty=0;
   let reaperPenaltyLastUpdate=0;
   const REAPER_PADDLE_MIN_WIDTH=80;
+  let dragonPhase='inactive';
+  let dragonBoss=null;
+  let dragonPlaceholder=null;
+  let dragonAnchor=null;
+  let dragonRevealScheduled=0;
+  let dragonBursts=[];
+  let dragonMarquee=null;
+  let dragonDefeatedAt=0;
+  let dragonDeathAnim=null;
 
   function isSpaceBossActive(){
     return level===5 && spaceBossPhase==='active' && !!spaceBoss;
@@ -1346,6 +1356,10 @@ select optgroup { color: #0b1022; }
 
   function isReaperActive(){
     return level===10 && reaperPhase==='active' && !!reaperBoss;
+  }
+
+  function isDragonActive(){
+    return level===15 && dragonPhase==='active' && !!dragonBoss;
   }
 
   function getSpaceBossBounds(){
@@ -1358,8 +1372,28 @@ select optgroup { color: #0b1022; }
     };
   }
 
+  function getDragonBounds(){
+    if(!dragonBoss) return null;
+    return {
+      x: dragonBoss.x - dragonBoss.w/2,
+      y: dragonBoss.y - dragonBoss.h/2,
+      w: dragonBoss.w,
+      h: dragonBoss.h
+    };
+  }
+
   function circleIntersectsSpaceBoss(cx, cy, radius){
     const bounds=getSpaceBossBounds();
+    if(!bounds) return false;
+    const nearestX = Math.max(bounds.x, Math.min(cx, bounds.x + bounds.w));
+    const nearestY = Math.max(bounds.y, Math.min(cy, bounds.y + bounds.h));
+    const dx = cx - nearestX;
+    const dy = cy - nearestY;
+    return dx*dx + dy*dy <= radius*radius;
+  }
+
+  function circleIntersectsDragon(cx, cy, radius){
+    const bounds=getDragonBounds();
     if(!bounds) return false;
     const nearestX = Math.max(bounds.x, Math.min(cx, bounds.x + bounds.w));
     const nearestY = Math.max(bounds.y, Math.min(cy, bounds.y + bounds.h));
@@ -1651,7 +1685,7 @@ select optgroup { color: #0b1022; }
   }
 
   function isTrueBossFightActive(){
-    return (spaceBossPhase==='active' && spaceBoss) || (reaperPhase==='active' && reaperBoss);
+    return (spaceBossPhase==='active' && spaceBoss) || (reaperPhase==='active' && reaperBoss) || (dragonPhase==='active' && dragonBoss);
   }
 
   function spawnBossTreasureBrick(){
@@ -1693,7 +1727,11 @@ select optgroup { color: #0b1022; }
   const hostileColumns=[]; // 直下石化光束 {x,w,tStart,tEnd,color,applied}
   const hazardClouds=[]; // 烏雲 {x,y,tEnd,spawned}
 
-  function bossCenter(){ for(const b of bricks){ if(b.boss) return {b, x:b.x+b.w/2, y:b.y+b.h/2}; } return null; }
+  function bossCenter(){
+    if(isDragonActive() && dragonBoss) return {b:null, x:dragonBoss.x, y:dragonBoss.y, type:'dragon'};
+    for(const b of bricks){ if(b.boss) return {b, x:b.x+b.w/2, y:b.y+b.h/2}; }
+    return null;
+  }
 
   function spawnLionBeamFrom(x,y){
     const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
@@ -1798,16 +1836,7 @@ select optgroup { color: #0b1022; }
       if(b.boss){
         if(b.cyclops && !cyclopsShellBurst){
           cyclopsShellBurst=true;
-          b.cyclopsRevealed=true;
-          const cx=b.x+b.w/2, cy=b.y+b.h/2;
-          spawnParticles(cx,cy,'#fff5c0',80,2.6,4.2,4.6);
-          spawnParticles(cx,cy,'#ff9c4a',50,2.2,3.4,3.8);
-          const now=performance.now();
-          spaceBossBursts.push({type:'ring',x:cx,y:cy,r0:24,r1:420,width:18,t0:now,life:1400,color:'255,220,180'});
-          spaceBossBursts.push({type:'flare',x:cx,y:cy,r0:0,r1:260,t0:now,life:1100,color:'140,200,255'});
-          spaceBossBursts.push({type:'spark',x:cx,y:cy,r0:0,r1:160,t0:now,life:900,color:'255,180,220'});
-          playSFX('fireExplosion');
-          screenShake=Math.max(screenShake,26);
+          startDragonReveal(b);
         }
         continue;
       }
@@ -1828,6 +1857,7 @@ select optgroup { color: #0b1022; }
     const bossLv = (level%5===0)? level : 0;
     if(!bossLv) return;
     if(level===5 && spaceBossPhase!=='inactive') return;
+    if(level===15 && dragonPhase!=='active') return;
     const now=performance.now();
     if(bossLv===5){ if(now>=nextBossAtkA){ spawnLionBeam(); nextBossAtkA = now + 10000; } }
     else if(bossLv===10){ if(now>=nextBossAtkA){ spawnKnightArc(); nextBossAtkA = now + 15000; } }
@@ -2646,6 +2676,15 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     reaperPaddlePenalty=0;
     reaperPenaltyLastUpdate=0;
     reaperPhase = (level===10?'awaiting':'inactive');
+    dragonBoss=null;
+    dragonAnchor=null;
+    dragonPlaceholder=null;
+    dragonBursts=[];
+    dragonMarquee=null;
+    dragonRevealScheduled=0;
+    dragonDefeatedAt=0;
+    dragonDeathAnim=null;
+    dragonPhase = (level===15?'awaiting':'inactive');
     cyclopsFirstAttackAt=0;
     cyclopsEventStarted=false;
     cyclopsMarqueeShown=false;
@@ -2695,10 +2734,19 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       return false;
     }
     if(level===15){
+      const now=performance.now();
       const hasBreakable = bricks.some(b => !b.unbreakable && !b.treasure && !b.placeholderBoss);
       if(hasBreakable) return true;
-      const hasBoss = bricks.some(b => b.boss);
-      return hasBoss;
+      if(dragonPhase==='awaiting'){
+        if(dragonPlaceholder){ startDragonReveal(); return true; }
+        const hasBossShell = bricks.some(b=>b.boss);
+        if(hasBossShell) return true;
+      }
+      if(dragonPhase==='intro' || dragonPhase==='active' || dragonPhase==='dying') return true;
+      if(dragonPhase==='defeated' && dragonDefeatedAt && now < dragonDefeatedAt + 3000){
+        return true;
+      }
+      return false;
     }
     return bricks.some(b => !b.unbreakable);
   }
@@ -4838,41 +4886,612 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     drawReaperHPBar();
   }
 
+  // === 第15關 毀滅之龍 Boss ===
+  function startDragonReveal(fromBrick){
+    if(level!==15) return;
+    if(dragonPhase!=='awaiting' && dragonPhase!=='intro') return;
+    const now=performance.now();
+    dragonPhase='intro';
+    let source=fromBrick || dragonPlaceholder;
+    if(fromBrick){
+      const idx=bricks.indexOf(fromBrick);
+      if(idx>=0) bricks.splice(idx,1);
+    }else if(dragonPlaceholder){
+      const idx=bricks.indexOf(dragonPlaceholder);
+      if(idx>=0) bricks.splice(idx,1);
+    }
+    dragonPlaceholder=null;
+    if(!source){
+      const L=layout();
+      const bx=Math.floor(L.cols/2)-1;
+      const w=brickW*2 + L.pad;
+      const h=brickH*2 + L.pad;
+      source={x:L.pad + bx*(brickW+L.pad), y:L.top, w, h};
+    }
+    dragonAnchor={x:source.x, y:source.y, w:source.w, h:source.h};
+    const cx=dragonAnchor.x+dragonAnchor.w/2;
+    const cy=dragonAnchor.y+dragonAnchor.h/2;
+    spawnParticles(cx,cy,'#fff2c7',120,2.8,4.2,4.5);
+    spawnParticles(cx,cy,'#ffbc5e',90,2.4,3.8,4.0);
+    spawnParticles(cx,cy,'#ffd36f',80,2.0,3.2,3.6);
+    dragonBursts.push({type:'ring',x:cx,y:cy,r0:30,r1:460,width:22,t0:now,life:1600,color:'255,215,120'});
+    dragonBursts.push({type:'flare',x:cx,y:cy,r0:0,r1:320,t0:now,life:1400,color:'255,210,140'});
+    dragonBursts.push({type:'spark',x:cx,y:cy,r0:0,r1:220,t0:now,life:1200,color:'255,240,200'});
+    playSFX('fireExplosion');
+    screenShake=Math.max(screenShake,24);
+    dragonRevealScheduled = now + 1000;
+  }
+
+  function activateDragonBoss(){
+    if(level!==15) return;
+    if(dragonPhase!=='intro' || dragonBoss) return;
+    const L=layout();
+    let anchor=dragonAnchor;
+    if(!anchor){
+      const bx=Math.floor(L.cols/2)-1;
+      const w=brickW*2 + L.pad;
+      const h=brickH*2 + L.pad;
+      anchor={x:L.pad + bx*(brickW+L.pad), y:L.top, w, h};
+      dragonAnchor=anchor;
+    }
+    const cx=anchor.x+anchor.w/2;
+    const baseY=Math.max(L.top + 160, anchor.y + anchor.h + 140);
+    const now=performance.now();
+    dragonBoss={
+      x:cx,
+      y:baseY,
+      baseY,
+      w:240,
+      h:150,
+      hp:DRAGON_MAX_HP,
+      maxHp:DRAGON_MAX_HP,
+      wingPhase:Math.random()*Math.PI*2,
+      hoverPhase:Math.random()*Math.PI*2,
+      moveTarget:null,
+      nextMove:now+800,
+      hitCooldownUntil:0,
+      hitFlashUntil:0,
+      lastUpdate:now
+    };
+    dragonPhase='active';
+    dragonBursts.push({type:'halo',x:cx,y:baseY-20,r0:80,r1:420,t0:now,life:1800,color:'255,215,140'});
+    dragonMarquee={text:'真正的毀滅之龍現身了!', start:now, fadeStart:now+3200, end:now+3600, style:'alert'};
+    scheduleNextTreasureBrick(now);
+  }
+
+  function dragonImpactPoint(fromX, fromY){
+    if(!dragonBoss) return {x:fromX, y:fromY};
+    const bounds=getDragonBounds();
+    if(!bounds) return {x:fromX, y:fromY};
+    const dx=dragonBoss.x - fromX;
+    const dy=dragonBoss.y - fromY;
+    if(dx===0 && dy===0) return {x:dragonBoss.x, y:dragonBoss.y};
+    const halfW=bounds.w/2;
+    const halfH=bounds.h/2;
+    const scale=Math.sqrt((dx*dx)/(halfW*halfW) + (dy*dy)/(halfH*halfH));
+    if(!isFinite(scale) || scale===0) return {x:dragonBoss.x, y:dragonBoss.y};
+    const t=1/scale;
+    return {x:dragonBoss.x - dx*t, y:dragonBoss.y - dy*t};
+  }
+
+  function dragonClampPoint(x, y){
+    const bounds=getDragonBounds();
+    if(!bounds) return {x, y};
+    return {
+      x: Math.max(bounds.x, Math.min(x, bounds.x + bounds.w)),
+      y: Math.max(bounds.y, Math.min(y, bounds.y + bounds.h))
+    };
+  }
+
+  function damageDragonBoss(amount=1, source='generic', impact){
+    if(dragonPhase!=='active' || !dragonBoss) return false;
+    const now=performance.now();
+    if(dragonBoss.hitCooldownUntil && now<dragonBoss.hitCooldownUntil) return false;
+    dragonBoss.hitCooldownUntil=now+140;
+    dragonBoss.hp=Math.max(0, dragonBoss.hp-amount);
+    dragonBoss.hitFlashUntil=now+220;
+    const ix=(impact&&impact.x!=null)?impact.x:dragonBoss.x;
+    const iy=(impact&&impact.y!=null)?impact.y:dragonBoss.y;
+    dragonBursts.push({type:'ember',x:ix,y:iy,t0:now,life:600});
+    spawnParticles(ix,iy,'#ffd97a',18,2.0,3.0,3.2);
+    screenShake=Math.max(screenShake,4);
+    if(dragonBoss.hp<=0){ defeatDragonBoss(); }
+    return true;
+  }
+
+  function defeatDragonBoss(){
+    if(dragonPhase==='dying' || dragonPhase==='defeated') return;
+    const now=performance.now();
+    dragonPhase='dying';
+    dragonMarquee={text:'成功擊殺Boss: 毀滅之龍!', start:now, fadeStart:now+5000, end:now+5000, style:'victorySolid'};
+    dragonDeathAnim={start:now, fallDuration:3000, bigExplosionStart:now+3000, bigExplosionEnd:now+5000, lastSmallBurst:0, bigExplosionTriggered:false, finished:false};
+    if(dragonBoss){
+      const cx=dragonBoss.x, cy=dragonBoss.y;
+      dragonBursts.push({type:'flare',x:cx,y:cy,r0:0,r1:360,t0:now,life:1500,color:'255,220,150'});
+      dragonBursts.push({type:'ring',x:cx,y:cy,r0:60,r1:520,width:26,t0:now,life:1800,color:'255,210,130'});
+    }
+    stats.bossKills++;
+    updateHUD();
+    screenShake=Math.max(screenShake,20);
+    playSFX('fireExplosion');
+  }
+
+  function updateDragonBoss(){
+    if(level!==15) return;
+    const now=performance.now();
+    if(dragonPhase==='intro' && !dragonBoss && dragonRevealScheduled && now>=dragonRevealScheduled){
+      activateDragonBoss();
+    }
+    if(dragonPhase==='active' && dragonBoss){
+      const dt = now - (dragonBoss.lastUpdate||now);
+      dragonBoss.lastUpdate=now;
+      if(!dragonBoss.moveTarget || now>=dragonBoss.nextMove){
+        const L=layout();
+        const minX=170;
+        const maxX=930;
+        const minY=L.top+140;
+        const maxY=Math.min(L.top+300, dragonBoss.baseY+80);
+        dragonBoss.moveTarget={x:minX+Math.random()*(maxX-minX), y:minY+Math.random()*(maxY-minY)};
+        dragonBoss.nextMove=now+2200+Math.random()*1600;
+      }
+      if(dragonBoss.moveTarget){
+        const speed=Math.min(0.18, (dt/1000)*0.6);
+        dragonBoss.x += (dragonBoss.moveTarget.x - dragonBoss.x)*speed;
+        dragonBoss.baseY += (dragonBoss.moveTarget.y - dragonBoss.baseY)*speed;
+      }
+      dragonBoss.hoverPhase += dt*0.002;
+      dragonBoss.y = dragonBoss.baseY + Math.sin(dragonBoss.hoverPhase)*10;
+      dragonBoss.wingPhase += dt*0.01;
+    }else if(dragonPhase==='dying'){
+      const anim=dragonDeathAnim;
+      if(anim){
+        if(dragonBoss){
+          if(now<anim.bigExplosionStart){
+            const dur=anim.fallDuration||3000;
+            const prog=Math.max(0, Math.min(1,(now-anim.start)/dur));
+            const drop=160;
+            dragonBoss.y = dragonBoss.baseY + prog*drop;
+            if(!anim.lastSmallBurst || now-anim.lastSmallBurst>140){
+              anim.lastSmallBurst=now;
+              const ox=(Math.random()-0.5)*dragonBoss.w*0.7;
+              const oy=(Math.random()-0.4)*dragonBoss.h*0.7;
+              const px=dragonBoss.x+ox;
+              const py=dragonBoss.y+oy;
+              dragonBursts.push({type:'spark',x:px,y:py,r0:0,r1:240,t0:now,life:900,color:'255,210,150'});
+              spawnParticles(px,py,'#ffdd9b',24,2.2,3.4,3.6);
+            }
+          }else if(now<anim.bigExplosionEnd){
+            if(!anim.bigExplosionTriggered){
+              anim.bigExplosionTriggered=true;
+              const cx=dragonBoss.x, cy=dragonBoss.y;
+              dragonBursts.push({type:'mega',x:cx,y:cy,r0:140,r1:720,t0:now,life:2000});
+              dragonBursts.push({type:'halo',x:cx,y:cy,r0:160,r1:680,t0:now,life:2400,color:'255,220,150'});
+              spawnParticles(cx,cy,'#fff2d6',300,3.8,5.6,6.0);
+              spawnParticles(cx,cy,'#ffe4a6',200,3.4,4.8,5.2);
+              screenShake=Math.max(screenShake,32);
+              playSFX('fireExplosion');
+            }
+          }else{
+            dragonBoss=null;
+          }
+        }else if(!anim.finished && now>=anim.bigExplosionEnd){
+          anim.finished=true;
+          dragonDefeatedAt=now;
+          dragonPhase='defeated';
+          dragonDeathAnim=null;
+        }
+      }
+    }
+    for(let i=dragonBursts.length-1;i>=0;i--){ const fx=dragonBursts[i]; const life=fx.life||1200; if(now>fx.t0+life){ dragonBursts.splice(i,1); } }
+    if(dragonMarquee && now>=dragonMarquee.end){ dragonMarquee=null; }
+  }
+
+  function renderDragonBody(boss, now){
+    const scaleAvg=(scaleX+scaleY)/2;
+    const bodyScale=boss.w/240;
+    ctx.save();
+    ctx.translate(boss.x*scaleX, boss.y*scaleY);
+    ctx.scale(scaleAvg*bodyScale, scaleAvg*bodyScale);
+    const flap=Math.sin(now/220 + boss.wingPhase)*0.5;
+    const flash = boss.hitFlashUntil && now<boss.hitFlashUntil;
+    ctx.save();
+    ctx.strokeStyle=`rgba(255,220,150,${flash?0.95:0.75})`;
+    ctx.lineWidth=6;
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(-70,28);
+    ctx.quadraticCurveTo(-150,78,-190,98);
+    ctx.stroke();
+    ctx.lineWidth=3.2;
+    ctx.beginPath();
+    ctx.moveTo(-180,92);
+    ctx.lineTo(-196,104);
+    ctx.lineTo(-178,118);
+    ctx.stroke();
+    ctx.restore();
+    const leftSpread=1.28 + flap*0.35;
+    ctx.save();
+    const wingGradL=ctx.createLinearGradient(-150*leftSpread,-60-40*flap,-40,60);
+    wingGradL.addColorStop(0, flash?'#fff6d4':'#fce9a0');
+    wingGradL.addColorStop(1, flash?'#ffeab0':'#f3b64a');
+    ctx.fillStyle=wingGradL;
+    ctx.beginPath();
+    ctx.moveTo(-22,-18);
+    ctx.quadraticCurveTo(-150*leftSpread,-60-40*flap,-158*leftSpread,36);
+    ctx.quadraticCurveTo(-90*leftSpread,8+30*flap,-26,32);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    const rightSpread=1.28 + flap*0.35;
+    ctx.save();
+    const wingGradR=ctx.createLinearGradient(40,60,150*rightSpread,-60-40*flap);
+    wingGradR.addColorStop(0, flash?'#fff6d4':'#fce9a0');
+    wingGradR.addColorStop(1, flash?'#ffeab0':'#f3b64a');
+    ctx.fillStyle=wingGradR;
+    ctx.beginPath();
+    ctx.moveTo(22,-18);
+    ctx.quadraticCurveTo(150*rightSpread,-60-40*flap,158*rightSpread,36);
+    ctx.quadraticCurveTo(90*rightSpread,8+30*flap,26,32);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    const bodyGrad=ctx.createLinearGradient(-70,-60,90,84);
+    bodyGrad.addColorStop(0, flash?'#fff9dc':'#fff1c8');
+    bodyGrad.addColorStop(0.45, flash?'#ffe5a4':'#f3be4c');
+    bodyGrad.addColorStop(1, flash?'#ffeec2':'#f8d88d');
+    ctx.shadowColor='rgba(255,220,160,0.55)';
+    ctx.shadowBlur=24;
+    ctx.fillStyle=bodyGrad;
+    ctx.beginPath();
+    ctx.moveTo(-62,24);
+    ctx.quadraticCurveTo(-78,-38,0,-72);
+    ctx.quadraticCurveTo(68,-38,96,8);
+    ctx.quadraticCurveTo(120,60,30,88);
+    ctx.quadraticCurveTo(-42,74,-62,24);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(255,240,200,0.7)';
+    ctx.lineWidth=2.4;
+    ctx.beginPath();
+    ctx.moveTo(-28,-18);
+    ctx.lineTo(-12,36);
+    ctx.lineTo(6,52);
+    ctx.lineTo(24,32);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-8,-30);
+    ctx.lineTo(12,-34);
+    ctx.lineTo(42,-20);
+    ctx.stroke();
+    ctx.strokeStyle='rgba(255,220,150,0.85)';
+    ctx.lineWidth=3.2;
+    ctx.beginPath();
+    ctx.moveTo(-36,42);
+    ctx.lineTo(-46,58);
+    ctx.moveTo(-22,46);
+    ctx.lineTo(-26,64);
+    ctx.moveTo(44,46);
+    ctx.lineTo(56,62);
+    ctx.moveTo(58,40);
+    ctx.lineTo(70,56);
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(84,-6);
+    const headGrad=ctx.createLinearGradient(-34,-26,36,28);
+    headGrad.addColorStop(0, flash?'#fff7cf':'#ffe8a6');
+    headGrad.addColorStop(1, flash?'#ffde88':'#f4b540');
+    ctx.fillStyle=headGrad;
+    ctx.beginPath();
+    ctx.moveTo(-32,-12);
+    ctx.quadraticCurveTo(-12,-40,20,-38);
+    ctx.quadraticCurveTo(44,-32,52,-4);
+    ctx.quadraticCurveTo(56,12,24,26);
+    ctx.quadraticCurveTo(-6,18,-32,-12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle='rgba(255,230,170,0.85)';
+    ctx.lineWidth=3.2;
+    ctx.beginPath();
+    ctx.moveTo(-4,-32);
+    ctx.quadraticCurveTo(8,-46,18,-42);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(12,-30);
+    ctx.quadraticCurveTo(24,-44,34,-38);
+    ctx.stroke();
+    ctx.fillStyle='#ba2a26';
+    ctx.beginPath();
+    ctx.ellipse(12,-6,10,6,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath();
+    ctx.ellipse(15,-8,4,2.2,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle='rgba(160,40,20,0.85)';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(-12,4);
+    ctx.quadraticCurveTo(12,10,28,6);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(18,6);
+    ctx.lineTo(22,12);
+    ctx.moveTo(10,4);
+    ctx.lineTo(14,10);
+    ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function drawDragonLayer(){
+    if(level!==15) return;
+    const now=performance.now();
+    const easeOut=t=>1-Math.pow(1-Math.max(0,Math.min(1,t)),3);
+    if(dragonPhase==='intro' && dragonAnchor){
+      const cx=(dragonAnchor.x+dragonAnchor.w/2)*scaleX;
+      const cy=(dragonAnchor.y+dragonAnchor.h+80)*scaleY;
+      const rad=Math.max(dragonAnchor.w, dragonAnchor.h)*1.3*((scaleX+scaleY)/2);
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,rad);
+      g.addColorStop(0,'rgba(255,220,160,0.18)');
+      g.addColorStop(1,'rgba(255,220,160,0)');
+      ctx.fillStyle=g;
+      ctx.beginPath();
+      ctx.arc(cx,cy,rad,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+    for(const fx of dragonBursts){
+      const life=fx.life||1200;
+      const prog=Math.max(0, Math.min(1,(now-fx.t0)/life));
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      if(fx.type==='ring'){
+        const rad=(fx.r0||0)+((fx.r1||320)-(fx.r0||0))*easeOut(prog);
+        ctx.strokeStyle=`rgba(${fx.color||'255,210,140'},${0.4*(1-prog)})`;
+        ctx.lineWidth=(fx.width||20)*((scaleX+scaleY)/2)*(1-prog*0.6);
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2),0,Math.PI*2);
+        ctx.stroke();
+      }else if(fx.type==='flare'){
+        const rad=(fx.r1||260)*easeOut(prog);
+        const grad=ctx.createRadialGradient(fx.x*scaleX, fx.y*scaleY, 0, fx.x*scaleX, fx.y*scaleY, Math.max(20, rad*((scaleX+scaleY)/2)));
+        grad.addColorStop(0,`rgba(${fx.color||'255,215,160'},${0.5*(1-prog)})`);
+        grad.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2),0,Math.PI*2);
+        ctx.fill();
+      }else if(fx.type==='spark'){
+        const rad=(fx.r1||200)*prog*((scaleX+scaleY)/2);
+        ctx.strokeStyle=`rgba(${fx.color||'255,210,150'},${0.75*(1-prog)})`;
+        ctx.lineWidth=2.6*((scaleX+scaleY)/2);
+        ctx.beginPath();
+        ctx.moveTo(fx.x*scaleX-rad, fx.y*scaleY);
+        ctx.lineTo(fx.x*scaleX+rad, fx.y*scaleY);
+        ctx.moveTo(fx.x*scaleX, fx.y*scaleY-rad*0.6);
+        ctx.lineTo(fx.x*scaleX, fx.y*scaleY+rad*0.6);
+        ctx.stroke();
+      }else if(fx.type==='ember'){
+        const size=14*((scaleX+scaleY)/2)*(1-prog);
+        ctx.fillStyle=`rgba(255,200,110,${0.7*(1-prog)})`;
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, size,0,Math.PI*2);
+        ctx.fill();
+      }else if(fx.type==='halo'){
+        const rad=(fx.r0||40)+((fx.r1||320)-(fx.r0||40))*prog;
+        ctx.strokeStyle=`rgba(${fx.color||'255,210,140'},${0.25*(1-prog)})`;
+        ctx.lineWidth=8*((scaleX+scaleY)/2);
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2),0,Math.PI*2);
+        ctx.stroke();
+      }else if(fx.type==='mega'){
+        const rad=(fx.r1||720)*easeOut(prog);
+        const grad=ctx.createRadialGradient(fx.x*scaleX, fx.y*scaleY, 0, fx.x*scaleX, fx.y*scaleY, Math.max(40, rad*((scaleX+scaleY)/2)));
+        grad.addColorStop(0,'rgba(255,250,220,0.95)');
+        grad.addColorStop(0.35,'rgba(255,210,140,0.55)');
+        grad.addColorStop(1,'rgba(255,180,90,0)');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2),0,Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    if(dragonBoss && (dragonPhase==='active' || dragonPhase==='dying')){
+      renderDragonBody(dragonBoss, now);
+    }
+  }
+
+  function drawDragonMarquee(){
+    if(!dragonMarquee) return;
+    const now=performance.now();
+    const {start, fadeStart, end, text} = dragonMarquee;
+    const style=dragonMarquee.style||'alert';
+    if(now>=end){ dragonMarquee=null; return; }
+    let alpha=1;
+    if(style!=='victorySolid' && fadeStart && now>fadeStart){
+      alpha=Math.max(0, 1 - (now - fadeStart)/(end - fadeStart||1));
+    }
+    const areaHeight=60;
+    const top=Math.max(16, layout().top - areaHeight - 14);
+    const width=Math.min(560, 1100-120);
+    const x=(1100-width)/2;
+    const radius=20;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    drawRoundedRect(x, top, width, areaHeight, radius);
+    if(style==='victorySolid'){
+      const grad=ctx.createLinearGradient(x*scaleX, top*scaleY, x*scaleX, (top+areaHeight)*scaleY);
+      grad.addColorStop(0,'rgba(82,52,10,0.96)');
+      grad.addColorStop(1,'rgba(48,26,6,0.96)');
+      ctx.fillStyle=grad;
+      ctx.fill();
+      ctx.strokeStyle='rgba(255,220,160,0.85)';
+      ctx.lineWidth=2.6;
+      drawRoundedRect(x, top, width, areaHeight, radius);
+      ctx.stroke();
+      ctx.fillStyle='#fff4d4';
+      const fontSize=Math.max(24, Math.round(28*((scaleX+scaleY)/2)));
+      ctx.font=`${fontSize}px 'Playfair Display','Noto Sans TC',serif`;
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.shadowColor='rgba(255,200,120,0.6)';
+      ctx.shadowBlur=18*((scaleX+scaleY)/2);
+      ctx.fillText(text, (x+width/2)*scaleX, (top+areaHeight/2)*scaleY);
+      ctx.shadowBlur=0;
+    }else{
+      const grad=ctx.createLinearGradient(x*scaleX, top*scaleY, x*scaleX, (top+areaHeight)*scaleY);
+      grad.addColorStop(0,'rgba(60,32,6,0.95)');
+      grad.addColorStop(1,'rgba(32,18,4,0.9)');
+      ctx.fillStyle=grad;
+      ctx.fill();
+      ctx.strokeStyle='rgba(255,210,120,0.75)';
+      ctx.lineWidth=2.2;
+      drawRoundedRect(x, top, width, areaHeight, radius);
+      ctx.stroke();
+      const innerX=x+12;
+      const innerY=top+6;
+      const innerW=width-24;
+      const innerH=areaHeight-12;
+      drawRoundedRect(innerX, innerY, innerW, innerH, radius-6);
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle='#fff5d8';
+      const fontSize=Math.max(18, Math.round(24*((scaleX+scaleY)/2)));
+      ctx.font=`${fontSize}px 'Noto Sans TC','Playfair Display',sans-serif`;
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.shadowColor='rgba(255,200,120,0.55)';
+      ctx.shadowBlur=12*((scaleX+scaleY)/2);
+      ctx.fillText(text, (innerX+innerW/2)*scaleX, (innerY+innerH/2)*scaleY);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function drawDragonHPBar(){
+    if((dragonPhase!=='active' && dragonPhase!=='dying') || !dragonBoss) return;
+    const L=layout();
+    const barW=32;
+    const maxH=700-(L.top+80);
+    const barH=Math.max(200, Math.min(360, maxH));
+    const x=1100 - barW - 26;
+    const y=L.top + 30;
+    const ratio=Math.max(0, Math.min(1, dragonBoss.hp/dragonBoss.maxHp));
+
+    ctx.save();
+    ctx.globalAlpha=0.96;
+    drawRoundedRect(x, y, barW, barH, 16);
+    const frameGrad=ctx.createLinearGradient(x*scaleX, y*scaleY, x*scaleX, (y+barH)*scaleY);
+    frameGrad.addColorStop(0,'rgba(92,58,12,0.96)');
+    frameGrad.addColorStop(1,'rgba(46,28,8,0.9)');
+    ctx.fillStyle=frameGrad;
+    ctx.fill();
+    ctx.strokeStyle='rgba(255,210,120,0.8)';
+    ctx.lineWidth=2;
+    drawRoundedRect(x, y, barW, barH, 16);
+    ctx.stroke();
+
+    const innerX=x+6;
+    const innerY=y+10;
+    const innerW=barW-12;
+    const innerH=barH-20;
+    drawRoundedRect(innerX, innerY, innerW, innerH, 12);
+    const bg=ctx.createLinearGradient(innerX*scaleX, (innerY+innerH)*scaleY, innerX*scaleX, innerY*scaleY);
+    bg.addColorStop(0,'rgba(28,18,6,0.92)');
+    bg.addColorStop(1,'rgba(42,26,8,0.9)');
+    ctx.fillStyle=bg;
+    ctx.fill();
+
+    if(ratio>0){
+      const fillHeight=innerH*ratio;
+      ctx.save();
+      ctx.beginPath();
+      drawRoundedRect(innerX, innerY, innerW, innerH, 10);
+      ctx.clip();
+      const fillGrad=ctx.createLinearGradient(innerX*scaleX, (innerY+innerH)*scaleY, innerX*scaleX, (innerY+innerH-fillHeight)*scaleY);
+      fillGrad.addColorStop(0,'rgba(255,180,90,0.25)');
+      fillGrad.addColorStop(0.4,'rgba(255,210,120,0.65)');
+      fillGrad.addColorStop(1,'rgba(255,240,200,0.96)');
+      ctx.fillStyle=fillGrad;
+      ctx.fillRect(innerX*scaleX, (innerY+innerH-fillHeight)*scaleY, innerW*scaleX, fillHeight*scaleY);
+      ctx.restore();
+    }
+
+    ctx.strokeStyle='rgba(255,255,255,0.15)';
+    ctx.lineWidth=1;
+    const segments=10;
+    for(let i=1;i<segments;i++){
+      const sy=(innerY + innerH - innerH*i/segments)*scaleY;
+      ctx.beginPath();
+      ctx.moveTo(innerX*scaleX, sy);
+      ctx.lineTo((innerX+innerW)*scaleX, sy);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle='rgba(255,235,200,0.92)';
+    ctx.font=`${Math.round(18*((scaleX+scaleY)/2))}px 'Playfair Display',sans-serif`;
+    ctx.textAlign='right';
+    ctx.textBaseline='top';
+    ctx.fillText('BOSS 毀滅之龍', (x-10)*scaleX, (y-8)*scaleY);
+    ctx.fillStyle='rgba(255,235,200,0.85)';
+    ctx.font=`${Math.round(14*((scaleX+scaleY)/2))}px 'Noto Sans TC',sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='bottom';
+    ctx.fillText(`${dragonBoss.hp}/${dragonBoss.maxHp}`, (x+barW/2)*scaleX, (y+barH+6)*scaleY);
+    ctx.restore();
+  }
+
+  function drawDragonHUD(){
+    drawDragonMarquee();
+    drawDragonHPBar();
+  }
+
+
   function isSpecialBossActive(){
-    return isSpaceBossActive() || isReaperActive();
+    return isSpaceBossActive() || isReaperActive() || isDragonActive();
   }
 
   function activeBossCenter(){
     if(isSpaceBossActive()) return {x:spaceBoss.x, y:spaceBoss.y, type:'space'};
     if(isReaperActive() && reaperBoss) return {x:reaperBoss.x, y:reaperBoss.y, type:'reaper'};
+    if(isDragonActive() && dragonBoss) return {x:dragonBoss.x, y:dragonBoss.y, type:'dragon'};
     return null;
   }
 
   function getActiveBossBounds(){
     if(isSpaceBossActive()) return getSpaceBossBounds();
     if(isReaperActive()) return getReaperBounds();
+    if(isDragonActive()) return getDragonBounds();
     return null;
   }
 
   function activeBossImpactPoint(fromX, fromY){
     if(isSpaceBossActive()) return spaceBossImpactPoint(fromX, fromY);
     if(isReaperActive()) return reaperImpactPoint(fromX, fromY);
+    if(isDragonActive()) return dragonImpactPoint(fromX, fromY);
     return {x:fromX, y:fromY};
   }
 
   function damageActiveBoss(amount=1, source='generic', impact){
     if(isSpaceBossActive()) return damageSpaceBoss(amount, source, impact);
     if(isReaperActive()) return damageReaperBoss(amount, source, impact);
+    if(isDragonActive()) return damageDragonBoss(amount, source, impact);
     return false;
   }
 
   function circleIntersectsActiveBoss(cx, cy, radius){
     if(isSpaceBossActive()) return circleIntersectsSpaceBoss(cx, cy, radius);
     if(isReaperActive()) return circleIntersectsReaper(cx, cy, radius);
+    if(isDragonActive()) return circleIntersectsDragon(cx, cy, radius);
     return false;
   }
 
   function activeBossClampPoint(x, y){
+    if(isDragonActive()) return dragonClampPoint(x, y);
     const bounds=getActiveBossBounds();
     if(!bounds) return {x, y};
     return {
@@ -4971,7 +5590,10 @@ function generateLevel(lv, L){
       const faces=['獅','騎','目','魔'];
       if(lv===15){
         const by=0;
+        const placeholderIndex=bricks.length;
         addBrick(bricks, xAt(bx), yAt(by), w, h, {hp:bossHP, colorIdx:0, boss:true, face:faces[bossIdx], strong:true, unbreakable:true, cyclops:true, cyclopsRevealed:false});
+        dragonPlaceholder = bricks[placeholderIndex];
+        if(dragonPlaceholder){ dragonPlaceholder.placeholderBoss=true; }
         for(let r=0;r<rows;r++){
           for(let c=0;c<cols;c++){
             if(r===0) continue;
@@ -6273,12 +6895,14 @@ function generateLevel(lv, L){
 
     drawSpaceBossLayer();
     drawReaperLayer();
+    drawDragonLayer();
     drawPlasmas(); drawHoly(); drawPhoenix(); drawSwords();
 
       // Boss wind-up glow
       if(bossChargeUntil && performance.now()<bossChargeUntil){
       const a = 0.5 + 0.5*Math.sin(performance.now()/80);
       for(const b of bricks){ if(b.boss){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba('+bossChargeColor+','+(0.6*a)+')'; ctx.lineWidth=4; drawRoundedRect(b.x,b.y,b.w,b.h,10); ctx.stroke(); ctx.restore(); } }
+      if(isDragonActive() && dragonBoss){ const bounds=getDragonBounds(); if(bounds){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba('+bossChargeColor+','+(0.6*a)+')'; ctx.lineWidth=4; drawRoundedRect(bounds.x, bounds.y, bounds.w, bounds.h, 18); ctx.stroke(); ctx.restore(); } }
     }
 
 
@@ -6496,6 +7120,7 @@ function generateLevel(lv, L){
 
     drawSpaceBossHUD();
     drawReaperHUD();
+    drawDragonHUD();
 
     // 倒數提示
     if(countdownShow>0){
@@ -6677,6 +7302,7 @@ function generateLevel(lv, L){
     computePaddleWidth(); updateBuffBadges();
     updateSpaceBoss();
     updateReaperBoss();
+    updateDragonBoss();
 
     if(isTrueBossFightActive()){
       if(!nextTreasureBrickAt){
