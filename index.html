@@ -2044,11 +2044,13 @@ select optgroup { color: #0b1022; }
       const cx=b.x+b.w/2, cy=b.y+b.h/2;
       spawnParticles(cx,cy,'#ffe6a1',28,2.4,3.2,3.6);
       spawnParticles(cx,cy,'#ffb46d',18,2.0,2.8,3.2);
+      if(!b.fallingTreasure){ revealBrickArea(b); }
       bricks.splice(i,1);
       removed=true;
     }
     if(removed){
       screenShake=Math.max(screenShake,18);
+      playSFX('fireExplosion');
       updateHUD();
     }
   }
@@ -6073,35 +6075,44 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const headScaleY=0.38;
     ctx.scale(headScaleX, headScaleY);
 
+    const hornOuterFill=metalGradient(-96,-320,96,-120);
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.fillStyle=metalGradient(-86,-232,86,-48);
+      ctx.fillStyle=hornOuterFill;
       ctx.beginPath();
-      ctx.moveTo(18,-188);
-      ctx.lineTo(58,-276);
-      ctx.quadraticCurveTo(34,-352,0,-294);
-      ctx.quadraticCurveTo(14,-240,10,-190);
+      ctx.moveTo(22,-188);
+      ctx.quadraticCurveTo(88,-246,154,-338);
+      ctx.lineTo(136,-356);
+      ctx.quadraticCurveTo(90,-350,54,-290);
+      ctx.lineTo(28,-188);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle=darkMetal(0.92);
-      ctx.lineWidth=1.4;
+      ctx.strokeStyle=flash?'rgba(255,236,214,0.96)':'rgba(255,214,176,0.82)';
+      ctx.lineWidth=2.3;
       ctx.stroke();
-      ctx.restore();
-    }
-    for(const side of [-1,1]){
-      ctx.save();
-      ctx.scale(side,1);
-      ctx.fillStyle=metalGradient(-64,-210,54,-36);
+
+      ctx.fillStyle=flash?'rgba(255,250,234,0.9)':'rgba(255,228,188,0.78)';
       ctx.beginPath();
-      ctx.moveTo(6,-184);
-      ctx.quadraticCurveTo(40,-250,22,-296);
-      ctx.quadraticCurveTo(6,-314,-10,-276);
-      ctx.quadraticCurveTo(0,-226,4,-188);
+      ctx.moveTo(32,-192);
+      ctx.quadraticCurveTo(92,-250,134,-334);
+      ctx.lineTo(110,-336);
+      ctx.quadraticCurveTo(74,-296,44,-210);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle=flash?'#ffeede':'#f2cda6';
+
+      ctx.strokeStyle=darkMetal(0.9);
+      ctx.lineWidth=1.3;
+      ctx.beginPath();
+      ctx.moveTo(36,-200);
+      ctx.quadraticCurveTo(98,-260,132,-342);
+      ctx.stroke();
+
+      ctx.strokeStyle=flash?'rgba(255,210,170,0.88)':'rgba(255,160,100,0.74)';
       ctx.lineWidth=1.1;
+      ctx.beginPath();
+      ctx.moveTo(50,-214);
+      ctx.quadraticCurveTo(104,-274,124,-344);
       ctx.stroke();
       ctx.restore();
     }
@@ -6287,38 +6298,74 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
 
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    const eyeFill=flash?'rgba(255,130,120,1)':'rgba(255,38,22,1)';
-    ctx.fillStyle=eyeFill;
-    ctx.shadowColor=flash?'rgba(255,90,70,0.9)':'rgba(255,30,20,0.82)';
-    ctx.shadowBlur=24;
+    const eyeGlow=flash?'rgba(255,140,130,0.95)':'rgba(255,0,0,0.9)';
+    ctx.shadowColor=eyeGlow;
+    ctx.shadowBlur=28;
+
+    const leftEyeGrad=ctx.createLinearGradient(-58,-52,-4,-20);
+    leftEyeGrad.addColorStop(0, flash?'#ffd4c8':'#ff7a62');
+    leftEyeGrad.addColorStop(0.45, flash?'#ff9686':'#ff3216');
+    leftEyeGrad.addColorStop(1, flash?'#ff4c42':'#a00000');
+    ctx.fillStyle=leftEyeGrad;
     ctx.beginPath();
-    ctx.moveTo(-40,-26);
-    ctx.quadraticCurveTo(-26,-60,-6,-50);
-    ctx.lineTo(-14,-30);
-    ctx.quadraticCurveTo(-28,-24,-42,-18);
+    ctx.moveTo(-52,-48);
+    ctx.quadraticCurveTo(-34,-70,-14,-72);
+    ctx.lineTo(-2,-24);
+    ctx.quadraticCurveTo(-32,-18,-54,-30);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,220,210,0.75)':'rgba(255,170,150,0.55)';
-    ctx.lineWidth=1.3;
+    ctx.strokeStyle=flash?'rgba(255,226,214,0.82)':'rgba(255,170,150,0.62)';
+    ctx.lineWidth=1.4;
     ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.strokeStyle=flash?'rgba(255,200,184,0.9)':'rgba(255,118,110,0.7)';
+    ctx.lineWidth=1.1;
     ctx.beginPath();
-    ctx.ellipse(-26,-40,6,4.2,0,0,Math.PI*2);
+    ctx.moveTo(-44,-56);
+    ctx.quadraticCurveTo(-20,-68,-6,-38);
+    ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.45)';
+    ctx.beginPath();
+    ctx.ellipse(-36,-56,7,4.6,-0.35,0,Math.PI*2);
     ctx.fill();
-    ctx.fillStyle=eyeFill;
+    ctx.fillStyle='rgba(255,255,255,0.32)';
     ctx.beginPath();
-    ctx.moveTo(40,-26);
-    ctx.quadraticCurveTo(26,-60,6,-50);
-    ctx.lineTo(14,-30);
-    ctx.quadraticCurveTo(28,-24,42,-18);
+    ctx.moveTo(-22,-40);
+    ctx.lineTo(-10,-28);
+    ctx.lineTo(-26,-28);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,220,210,0.75)':'rgba(255,170,150,0.55)';
-    ctx.lineWidth=1.3;
-    ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,0.5)';
+
+    const rightEyeGrad=ctx.createLinearGradient(4,-20,58,-52);
+    rightEyeGrad.addColorStop(0, flash?'#ff4c42':'#a00000');
+    rightEyeGrad.addColorStop(0.55, flash?'#ff9686':'#ff3216');
+    rightEyeGrad.addColorStop(1, flash?'#ffd4c8':'#ff7a62');
+    ctx.fillStyle=rightEyeGrad;
     ctx.beginPath();
-    ctx.ellipse(26,-40,6,4.2,0,0,Math.PI*2);
+    ctx.moveTo(52,-48);
+    ctx.quadraticCurveTo(34,-70,14,-72);
+    ctx.lineTo(2,-24);
+    ctx.quadraticCurveTo(32,-18,54,-30);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle=flash?'rgba(255,226,214,0.82)':'rgba(255,170,150,0.62)';
+    ctx.lineWidth=1.4;
+    ctx.stroke();
+    ctx.strokeStyle=flash?'rgba(255,200,184,0.9)':'rgba(255,118,110,0.7)';
+    ctx.lineWidth=1.1;
+    ctx.beginPath();
+    ctx.moveTo(44,-56);
+    ctx.quadraticCurveTo(20,-68,6,-38);
+    ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.45)';
+    ctx.beginPath();
+    ctx.ellipse(36,-56,7,4.6,0.35,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.32)';
+    ctx.beginPath();
+    ctx.moveTo(22,-40);
+    ctx.lineTo(10,-28);
+    ctx.lineTo(26,-28);
+    ctx.closePath();
     ctx.fill();
     ctx.restore();
 
@@ -6642,6 +6689,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
   }
   // === 修正：格點對齊地揭示底圖，避免黑洞與浮點誤差 ===
   function revealBrickArea(brick){
+    if(!brick || brick.fallingTreasure) return;
     const L = layout();
     const cellW = brickW, cellH = brickH;
     // 以格點定位（四捨五入）
