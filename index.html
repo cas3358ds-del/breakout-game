@@ -1318,6 +1318,13 @@ select optgroup { color: #0b1022; }
   let reaperAnchor=null;
   let reaperRevealScheduled=0;
   let reaperBursts=[];
+  let cyclopsFirstAttackAt=0;
+  let cyclopsEventStarted=false;
+  let cyclopsMarqueeShown=false;
+  let cyclopsRowBlastIndex=-1;
+  let cyclopsNextRowBlast=0;
+  let cyclopsShellBurst=false;
+  let cyclopsEventComplete=false;
   let reaperAfterimages=[];
   let reaperMarquee=null;
   let reaperDefeatedAt=0;
@@ -1719,8 +1726,9 @@ select optgroup { color: #0b1022; }
     const bc=bossCenter(); if(!bc) return;
     bossChargeColor='255,235,150'; bossChargeUntil=performance.now()+2000;
     setTimeout(()=>{
-      hostileColumns.push({x:bc.x, w:150, tStart:performance.now(), tEnd:performance.now()+1000, color:'#eedc9a', applied:false});
-      cyclopsShakeUntil=performance.now()+2000; beep(500,0.12,0.08);
+      const now=performance.now();
+      hostileColumns.push({x:bc.x, w:150, tStart:now, tEnd:now+1000, color:'#eedc9a', applied:false});
+      cyclopsShakeUntil=now+2000; noteCyclopsFirstAttack(now); beep(500,0.12,0.08);
     },2000);
   }
   function spawnDemonBeam(){
@@ -1739,6 +1747,80 @@ select optgroup { color: #0b1022; }
     const y = layout().top - 10;
     const tEnd = performance.now() + 1000;
     for(const x of picks){ hazardClouds.push({x,y,tEnd,spawned:false}); }
+  }
+  function noteCyclopsFirstAttack(at){
+    if(level!==15 || cyclopsFirstAttackAt) return;
+    cyclopsFirstAttackAt = at;
+    cyclopsMarqueeShown=false;
+    cyclopsEventStarted=false;
+    cyclopsEventComplete=false;
+    cyclopsRowBlastIndex=-1;
+    cyclopsNextRowBlast=0;
+    cyclopsShellBurst=false;
+  }
+  function updateCyclopsEvent(){
+    if(level!==15 || !cyclopsFirstAttackAt || cyclopsEventComplete) return;
+    const now=performance.now();
+    const triggerAt = cyclopsFirstAttackAt + 5000;
+    if(now>=triggerAt){
+      if(!cyclopsMarqueeShown){
+        showComboNotice('竟然妄想踏入神之領域嗎? 真是愚蠢的人類!',5000,3000);
+        cyclopsMarqueeShown=true;
+      }
+      if(!cyclopsEventStarted){
+        cyclopsEventStarted=true;
+        const L=layout();
+        cyclopsRowBlastIndex=L.rows-1;
+        cyclopsNextRowBlast=now;
+      }
+    }
+    if(cyclopsEventStarted){
+      screenShake=Math.max(screenShake,20);
+      if(cyclopsRowBlastIndex>=0 && now>=cyclopsNextRowBlast){
+        cyclopsBlastRow(cyclopsRowBlastIndex);
+        cyclopsRowBlastIndex--;
+        cyclopsNextRowBlast=now+500;
+      }
+      if(cyclopsRowBlastIndex<0){
+        cyclopsEventStarted=false;
+        cyclopsEventComplete=true;
+      }
+    }
+  }
+  function cyclopsBlastRow(rowIndex){
+    const L=layout();
+    const rowHeight = brickH + L.pad;
+    let removed=false;
+    for(let i=bricks.length-1;i>=0;i--){
+      const b=bricks[i];
+      const row=Math.round(((b.y - L.top) / rowHeight));
+      if(row!==rowIndex) continue;
+      if(b.boss){
+        if(b.cyclops && !cyclopsShellBurst){
+          cyclopsShellBurst=true;
+          b.cyclopsRevealed=true;
+          const cx=b.x+b.w/2, cy=b.y+b.h/2;
+          spawnParticles(cx,cy,'#fff5c0',80,2.6,4.2,4.6);
+          spawnParticles(cx,cy,'#ff9c4a',50,2.2,3.4,3.8);
+          const now=performance.now();
+          spaceBossBursts.push({type:'ring',x:cx,y:cy,r0:24,r1:420,width:18,t0:now,life:1400,color:'255,220,180'});
+          spaceBossBursts.push({type:'flare',x:cx,y:cy,r0:0,r1:260,t0:now,life:1100,color:'140,200,255'});
+          spaceBossBursts.push({type:'spark',x:cx,y:cy,r0:0,r1:160,t0:now,life:900,color:'255,180,220'});
+          playSFX('fireExplosion');
+          screenShake=Math.max(screenShake,26);
+        }
+        continue;
+      }
+      const cx=b.x+b.w/2, cy=b.y+b.h/2;
+      spawnParticles(cx,cy,'#ffe6a1',28,2.4,3.2,3.6);
+      spawnParticles(cx,cy,'#ffb46d',18,2.0,2.8,3.2);
+      bricks.splice(i,1);
+      removed=true;
+    }
+    if(removed){
+      screenShake=Math.max(screenShake,18);
+      updateHUD();
+    }
   }
   let nextBossAtkA=0, nextBossAtkB=0, bossChargeUntil=0, bossChargeColor='', cyclopsShakeUntil=0;
 
@@ -1918,6 +2000,36 @@ select optgroup { color: #0b1022; }
   
   function drawBossEmblem(b){
     const cx = (b.x + b.w/2)*scaleX, cy = (b.y + b.h/2)*scaleY;
+    if(b.cyclops && b.cyclopsRevealed){
+      const pulse = 0.7 + 0.3*Math.sin(performance.now()/240);
+      const radius = Math.min(b.w,b.h)*0.36*((scaleX+scaleY)/2);
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.shadowColor=`rgba(255,220,120,${0.5+0.4*pulse})`;
+      ctx.shadowBlur=30*((scaleX+scaleY)/2);
+      const grad=ctx.createRadialGradient(cx,cy,radius*0.15,cx,cy,radius);
+      grad.addColorStop(0,'rgba(255,255,220,0.98)');
+      grad.addColorStop(0.45,'rgba(255,230,150,0.9)');
+      grad.addColorStop(1,'rgba(255,170,60,0.08)');
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.arc(cx,cy,radius,0,Math.PI*2);
+      ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.lineWidth=2.4*((scaleX+scaleY)/2);
+      ctx.strokeStyle=`rgba(255,245,200,${0.75+0.2*pulse})`;
+      ctx.beginPath();
+      ctx.arc(cx,cy,radius*0.72,0,Math.PI*2);
+      ctx.stroke();
+      ctx.strokeStyle=`rgba(255,210,120,${0.25+0.2*Math.sin(performance.now()/180)})`;
+      ctx.lineWidth=1.6*((scaleX+scaleY)/2);
+      ctx.beginPath();
+      const swing=performance.now()/520;
+      ctx.arc(cx,cy,radius*1.18,swing, swing+Math.PI*1.1);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
     const t = performance.now()/600;
     // 裝甲層
     ctx.save();
@@ -2534,6 +2646,13 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     reaperPaddlePenalty=0;
     reaperPenaltyLastUpdate=0;
     reaperPhase = (level===10?'awaiting':'inactive');
+    cyclopsFirstAttackAt=0;
+    cyclopsEventStarted=false;
+    cyclopsMarqueeShown=false;
+    cyclopsRowBlastIndex=-1;
+    cyclopsNextRowBlast=0;
+    cyclopsShellBurst=false;
+    cyclopsEventComplete=false;
     const lvlImg = getLevelImage(level);
     if (lvlImg && lvlImg.decode) { lvlImg.decode().catch(()=>{}); }
     // 依關卡設計關卡布局
@@ -2574,6 +2693,12 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         return true;
       }
       return false;
+    }
+    if(level===15){
+      const hasBreakable = bricks.some(b => !b.unbreakable && !b.treasure && !b.placeholderBoss);
+      if(hasBreakable) return true;
+      const hasBoss = bricks.some(b => b.boss);
+      return hasBoss;
     }
     return bricks.some(b => !b.unbreakable);
   }
@@ -4838,13 +4963,26 @@ function generateLevel(lv, L){
       }
       // 中央大Boss（2x2磚尺寸一塊）
       const bx = Math.floor(cols/2)-1;
-      const by = Math.max(1, Math.floor(rows/2)-1);
       const w = brickW*2 + pad;
       const h = brickH*2 + pad;
       const hpList=[10,20,30,40];
       const bossIdx = Math.floor(lv/5)-1;
       const bossHP = hpList[Math.max(0,Math.min(3,bossIdx))];
       const faces=['獅','騎','目','魔'];
+      if(lv===15){
+        const by=0;
+        addBrick(bricks, xAt(bx), yAt(by), w, h, {hp:bossHP, colorIdx:0, boss:true, face:faces[bossIdx], strong:true, unbreakable:true, cyclops:true, cyclopsRevealed:false});
+        for(let r=0;r<rows;r++){
+          for(let c=0;c<cols;c++){
+            if(r===0) continue;
+            if(r===1 && c>=bx && c<=bx+1) continue;
+            const explosive=Math.random()<GAME_CONFIG.bricks.explosiveChance;
+            addBrick(bricks, xAt(c), yAt(r), brickW, brickH, {hp:baseHP, colorIdx:(r%4), explosive});
+          }
+        }
+        return;
+      }
+      const by = Math.max(1, Math.floor(rows/2)-1);
       addBrick(bricks, xAt(bx), yAt(by), w, h, {hp:bossHP, colorIdx:0, boss:true, face:faces[bossIdx], strong:true, unbreakable:true});
       // 周圍護衛磚
       for(let r=0;r<rows;r++){
@@ -6119,12 +6257,14 @@ function generateLevel(lv, L){
       // 血條 / 面孔
       if(b.boss){
         drawBossEmblem(b);
-        // 血條
-        ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect((b.x+8)*scaleX,(b.y+b.h-8)*scaleY,(b.w-16)*scaleX,6*scaleY);
-        const ratio=Math.max(0, b.hp/40);
-        const hpGrad=ctx.createLinearGradient((b.x+8)*scaleX,(b.y+b.h-8)*scaleY,(b.x+b.w-8)*scaleX,(b.y+b.h-8)*scaleY);
-        hpGrad.addColorStop(0,'rgba(255,150,150,.95)'); hpGrad.addColorStop(1,'rgba(255,240,240,.95)');
-        ctx.fillStyle=hpGrad; ctx.fillRect((b.x+8)*scaleX,(b.y+b.h-8)*scaleY,(b.w-16)*ratio*scaleX,6*scaleY);
+        if(!b.cyclops){
+          // 血條
+          ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect((b.x+8)*scaleX,(b.y+b.h-8)*scaleY,(b.w-16)*scaleX,6*scaleY);
+          const ratio=Math.max(0, b.hp/40);
+          const hpGrad=ctx.createLinearGradient((b.x+8)*scaleX,(b.y+b.h-8)*scaleY,(b.x+b.w-8)*scaleX,(b.y+b.h-8)*scaleY);
+          hpGrad.addColorStop(0,'rgba(255,150,150,.95)'); hpGrad.addColorStop(1,'rgba(255,240,240,.95)');
+          ctx.fillStyle=hpGrad; ctx.fillRect((b.x+8)*scaleX,(b.y+b.h-8)*scaleY,(b.w-16)*ratio*scaleX,6*scaleY);
+        }
       }else if(b.hp>1 && b.hp<99 && b.hp<Infinity){
         ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect((b.x+4)*scaleX,(b.y+b.h-6)*scaleY,(b.w-8)*scaleX,4*scaleY);
         ctx.fillStyle='rgba(255,255,255,.75)'; const ratio=Math.max(0,(b.hp-1))/3; ctx.fillRect((b.x+4)*scaleX,(b.y+b.h-6)*scaleY,(b.w-8)*ratio*scaleX,4*scaleY);
@@ -6801,6 +6941,7 @@ function generateLevel(lv, L){
 
     // Boss 能力排程
     updateBossAbilities();
+    updateCyclopsEvent();
     for(const b of balls){
       if(b.rampageUntil && now>b.rampageUntil){ b.rampageUntil=0; if(!buffs.PIERCE.active) b.piercing=false; }
 
