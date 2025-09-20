@@ -4955,7 +4955,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     };
     dragonPhase='active';
     dragonBursts.push({type:'halo',x:cx,y:baseY-20,r0:80,r1:420,t0:now,life:1800,color:'255,215,140'});
-    dragonMarquee={text:'真正的毀滅之龍現身了!', start:now, fadeStart:now+3200, end:now+3600, style:'alert'};
+    dragonMarquee={text:'毀滅之龍現身了!', start:now, fadeStart:now+3200, end:now+3600, style:'alert'};
     scheduleNextTreasureBrick(now);
   }
 
