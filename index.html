@@ -1637,6 +1637,39 @@ select optgroup { color: #0b1022; }
   const laserImpacts=[]; // {x,y,t0,tEnd}
   const gatlingBullets=[]; // 火力壓制子彈 {x,y,vx,vy}
   const lockBoxes=[]; // {x,y,w,h,until,kind}
+  let nextTreasureBrickAt=0;
+
+  function scheduleNextTreasureBrick(now=performance.now()){
+    nextTreasureBrickAt = now + 5000 + Math.random()*3000;
+  }
+
+  function isTrueBossFightActive(){
+    return (spaceBossPhase==='active' && spaceBoss) || (reaperPhase==='active' && reaperBoss);
+  }
+
+  function spawnBossTreasureBrick(){
+    if(!isTrueBossFightActive()) return;
+    const L=layout();
+    const width=Math.max(48, brickW||80);
+    const height=Math.max(20, brickH||24);
+    const pad=40;
+    const minX=pad;
+    const maxX=Math.max(minX, 1100 - pad - width);
+    const spawnX=minX + Math.random()*(maxX - minX);
+    const top=L?L.top:0;
+    const spawnY=(top||0) - height - 12;
+    const fallVy=GAME_CONFIG.powerCapsule.fallVy||2.2;
+    addBrick(bricks, spawnX, spawnY, width, height, {
+      hp:1,
+      treasure:true,
+      fallingTreasure:true,
+      vy:fallVy,
+      colorIdx:0
+    });
+    spawnParticles(spawnX + width/2, Math.max(spawnY + height/2, 0), '#a8e3ff', 14, 1.6, 2.6, 2.4);
+    spawnParticles(spawnX + width/2, Math.max(spawnY + height/2, 0), '#ff9bf1', 10, 1.2, 2.0, 2.0);
+    updateHUD();
+  }
 
   // 特殊增益相關容器
   const swords=[]; // 劍芒裂空：{x,y,vx,vy,state,tx,ty}
@@ -1658,7 +1691,7 @@ select optgroup { color: #0b1022; }
   function spawnLionBeamFrom(x,y){
     const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
     const ang=Math.atan2(ty-y, tx-x); const speed=6.0;
-    hostileBeams.push({x:x, y:y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); }});
+    hostileBeams.push({x:x, y:y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); screenShake=Math.max(screenShake,6); }});
     beep(1100,0.12,0.08);
   }
   function spawnLionBeam(){
@@ -1667,7 +1700,7 @@ select optgroup { color: #0b1022; }
     setTimeout(()=>{
       const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
       const ang=Math.atan2(ty-bc.y, tx-bc.x); const speed=6.0;
-      hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); }});
+      hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); screenShake=Math.max(screenShake,6); }});
       beep(1100,0.12,0.08);
     },2000);
   }
@@ -1678,7 +1711,7 @@ select optgroup { color: #0b1022; }
       const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
       const ang=Math.atan2(ty-bc.y, tx-bc.x);
       const speed=4.5;
-      hostileArcs.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, phase:0, amp:32, color:'silver', onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
+      hostileArcs.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, phase:0, amp:32, color:'silver', onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); screenShake=Math.max(screenShake,10); }});
       beep(900,0.12,0.07);
     },2000);
   }
@@ -1696,7 +1729,7 @@ select optgroup { color: #0b1022; }
     setTimeout(()=>{
       const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
       const ang=Math.atan2(ty-bc.y, tx-bc.x); const speed=7.2;
-      hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'red', hit:false, onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); }});
+      hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'red', hit:false, onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); screenShake=Math.max(screenShake,12); }});
       beep(600,0.14,0.09);
     },2000);
   }
@@ -1793,7 +1826,7 @@ select optgroup { color: #0b1022; }
       const pr = paddleRect();
       if(!c.applied){
         const inter = !( pr.x+pr.w < (c.x - c.w/2) || pr.x > (c.x + c.w/2) );
-        if(inter){ paddleStunUntil = Math.max(paddleStunUntil, performance.now()+3000); c.applied=true; }
+        if(inter){ paddleStunUntil = Math.max(paddleStunUntil, performance.now()+3000); screenShake=Math.max(screenShake,7); c.applied=true; }
       }
     }
     // 烏雲
@@ -2522,7 +2555,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
   function hasBreakables(){
     if(level===5){
       const now=performance.now();
-      const breakables = bricks.some(b => !b.unbreakable);
+      const breakables = bricks.some(b => !b.unbreakable && !b.treasure);
       if(breakables) return true;
       if(spaceBossPhase==='awaiting'){ startSpaceBossReveal(); return true; }
       if(spaceBossPhase==='intro' || spaceBossPhase==='active' || spaceBossPhase==='dying') return true;
@@ -2533,7 +2566,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     }
     if(level===10){
       const now=performance.now();
-      const breakables = bricks.some(b => !b.unbreakable && !b.placeholderBoss);
+      const breakables = bricks.some(b => !b.unbreakable && !b.placeholderBoss && !b.treasure);
       if(breakables) return true;
       if(reaperPhase==='awaiting'){ startReaperReveal(); return true; }
       if(reaperPhase==='intro' || reaperPhase==='active' || reaperPhase==='dying') return true;
@@ -2623,6 +2656,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     spaceBossPaddleRespawnAt=0;
     spaceBossDeathAnim=null;
     spaceBossMarquee={text:'有趣！ 讓你見識我的真面目吧!', start:now, fadeStart:now+2600, end:now+3200, style:'alert'};
+    scheduleNextTreasureBrick(now);
   }
 
   function damageSpaceBoss(amount=1, source='generic', impact){
@@ -2679,6 +2713,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     spaceBossBullets.length=0;
     spaceBossNextAttackAt=0;
     spaceBossMarquee={text:'成功擊殺Boss: 太空戰艦!', start:now, fadeStart:now+5000, end:now+5000, style:'victory'};
+    nextTreasureBrickAt=0;
     spaceBossDeathAnim={
       start:now,
       startY:sb.y,
@@ -2909,6 +2944,19 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       b.x+=b.vx;
       b.y+=b.vy;
       if(b.x<-40||b.x>1140||b.y<-40||b.y>760){ spaceBossBullets.splice(i,1); continue; }
+      let removed=false;
+      for(let j=bricks.length-1;j>=0;j--){
+        const bk=bricks[j];
+        if(!bk?.fallingTreasure) continue;
+        if(b.x>=bk.x && b.x<=bk.x+bk.w && b.y>=bk.y && b.y<=bk.y+bk.h){
+          spawnParticles(b.x, b.y, '#ffe08a', 14, 2.0, 3.0, 2.8);
+          damageBrick(j,1,'laser');
+          spaceBossBullets.splice(i,1);
+          removed=true;
+          break;
+        }
+      }
+      if(removed) continue;
       if(now<paddleGoneUntil) continue;
       const pr=paddleRect();
       if(b.x>=pr.x && b.x<=pr.x+pr.w && b.y>=pr.y && b.y<=pr.y+pr.h){
@@ -3513,6 +3561,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     reaperBlackHoleAttack=null;
     reaperBursts.push({type:'halo',x:cx,y:baseY-40,r0:60,r1:320,t0:now,life:1700,color:'200,140,255'});
     screenShake=Math.max(screenShake,6);
+    scheduleNextTreasureBrick(now);
   }
 
   function performReaperTeleport(rapid=false){
@@ -3607,6 +3656,14 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(pr.w>0 && segmentIntersectsRect(x1,y1,x2,y2, pr)){
       reaperApplyLifeLoss(now,'reaperSlash');
     }
+    for(let j=bricks.length-1;j>=0;j--){
+      const bk=bricks[j];
+      if(!bk?.fallingTreasure) continue;
+      if(segmentIntersectsRect(x1,y1,x2,y2, bk)){
+        spawnParticles(bk.x+bk.w/2, bk.y+bk.h/2, '#ffd6ff', 16, 2.0, 3.2, 3.0);
+        damageBrick(j,1,'sword');
+      }
+    }
   }
 
   function updateReaperSlash(state, now){
@@ -3661,16 +3718,33 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
 
   function applyReaperHolePull(hole, now){
     const pr=paddleRect();
+    const px=pr.x+pr.w/2;
+    const py=pr.y+pr.h/2;
+    const radius = hole?.radius || hole?.r || 0;
+    const dx=hole.x - px;
+    const dy=hole.y - py;
+    const dist=Math.hypot(dx, dy);
+    const influence = radius>0 ? Math.max(0, 1 - dist/(radius)) : 1;
     if(!orientLeft){
-      const center=paddle.x+paddle.w/2;
-      const dist=hole.x-center;
-      paddle.x += dist*0.024;
+      paddle.x += dx*0.024*influence;
       paddle.x=Math.max(0, Math.min(1100-paddle.w, paddle.x));
     }else{
-      const center=pr.y+pr.h/2;
-      const dist=hole.y-center;
-      paddle.y += dist*0.028;
+      paddle.y += dy*0.028*influence;
       paddle.y=Math.max(0, Math.min(700-paddle.w, paddle.y));
+    }
+    const pullRange = radius>0 ? radius*1.35 : 220;
+    for(const p of powerups){
+      const cx=p.x + p.w/2;
+      const cy=p.y + p.h/2;
+      const pdx=hole.x - cx;
+      const pdy=hole.y - cy;
+      const pdist=Math.hypot(pdx, pdy);
+      if(pdist>pullRange) continue;
+      const weight = Math.max(0, 1 - pdist/pullRange);
+      p.x += pdx * 0.06 * weight;
+      p.y += pdy * 0.06 * weight;
+      p.x = Math.max(-20, Math.min(1100 - p.w + 20, p.x));
+      p.y = Math.max(-40, Math.min(720, p.y));
     }
   }
 
@@ -3707,7 +3781,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         if(proj.y>=700-100){
           const holeX=proj.x;
           const holeY=700-90;
-          const holeRadius=160;
+          const holeRadius=Math.round(160*0.7);
           const spinDir=(Math.random()>0.5?1:-1);
           state.hole={x:holeX,y:holeY,start:now,end:now+3000,nextTick:now+1000,baseDesired:state.baseDesiredWidth,radius:holeRadius,spinDir,vortexPhase:Math.random()*Math.PI*2};
           reaperBursts.push({type:'ring',x:holeX,y:holeY-60,r0:40,r1:360,width:22,t0:now,life:1600,color:'210,170,255'});
@@ -3725,16 +3799,24 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       }else{
         applyReaperHolePull(hole, now);
         if(now>=hole.nextTick){
-          const desired=Math.max(hole.baseDesired||0, desiredPaddleWidth());
-          hole.baseDesired=desired;
-          const cap=Math.max(0, desired - REAPER_PADDLE_MIN_WIDTH);
-          if(reaperPaddlePenalty < cap){
-            const before=reaperPaddlePenalty;
-            reaperPaddlePenalty=Math.min(cap, reaperPaddlePenalty + 40);
-            if(reaperPaddlePenalty!==before){ computePaddleWidth(); }
-          }else if(!state.didKill){
-            reaperApplyLifeLoss(now,'blackhole');
-            state.didKill=true;
+          const prNow=paddleRect();
+          const px=prNow.x+prNow.w/2;
+          const py=prNow.y+prNow.h/2;
+          const radius=hole.radius || hole.r || 0;
+          const dist=Math.hypot((hole.x||0)-px, (hole.y||0)-py);
+          const inRange = radius<=0 || dist<=radius;
+          if(inRange){
+            const desired=Math.max(hole.baseDesired||0, desiredPaddleWidth());
+            hole.baseDesired=desired;
+            const cap=Math.max(0, desired - REAPER_PADDLE_MIN_WIDTH);
+            if(reaperPaddlePenalty < cap){
+              const before=reaperPaddlePenalty;
+              reaperPaddlePenalty=Math.min(cap, reaperPaddlePenalty + 40);
+              if(reaperPaddlePenalty!==before){ computePaddleWidth(); }
+            }else if(!state.didKill){
+              reaperApplyLifeLoss(now,'blackhole');
+              state.didKill=true;
+            }
           }
           hole.nextTick = now + 1000;
         }
@@ -3840,6 +3922,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     screenShake=Math.max(screenShake,14);
     playSFX('fireExplosion');
     reaperMarquee={text:'成功擊殺Boss: 暗黑死神!', start:now, fadeStart:now+5000, end:now+5000, style:'victorySolid'};
+    nextTreasureBrickAt=0;
   }
 
   function updateReaperBoss(){
@@ -4880,8 +4963,12 @@ function generateLevel(lv, L){
     }
     if(b.elite){ stats.eliteKills++; }
     const bx=b.x+b.w/2, by=b.y+b.h/2;
-    const color=b.boss?'#ff4d6d':b.unbreakable?'#888':b.strong?'#bb7aff':b.moving?'#6ec6ff':b.explosive?getVar('--expl'):brickColor(b.colorIdx);
+    const color=b.treasure?'#ffd166':b.boss?'#ff4d6d':b.unbreakable?'#888':b.strong?'#bb7aff':b.moving?'#6ec6ff':b.explosive?getVar('--expl'):brickColor(b.colorIdx);
     spawnParticles(bx,by,color,30,2.0,3.2,3.5);
+    if(b.treasure){
+      spawnParticles(bx,by,'#74c0fc',18,2.0,3.0,3.2);
+      spawnParticles(bx,by,'#da77f2',18,1.8,2.8,3.0);
+    }
     if(sfx==='default'){ beep(420,0.06,0.08); setTimeout(()=>beep(620,0.05,0.06),40); }
     else if(sfx!=='none'){ playSFX(sfx); }
     revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); updateHUD();
@@ -5035,6 +5122,10 @@ function generateLevel(lv, L){
   }
   function maybeDropFromBrick(b, rateMul=1){
     if(!b || b.unbreakable) return;
+    if(b.treasure){
+      spawnPower(b.x + b.w/2 - GAME_CONFIG.powerCapsule.width/2, b.y + b.h/2, {forceGood:true});
+      return;
+    }
     // Boss不會掉落一般增益（保持平衡）
     if(b.boss) return;
     const now=performance.now();
@@ -5956,8 +6047,38 @@ function generateLevel(lv, L){
         if(b.x+b.w>1100-8){ b.x=1100-8-b.w; b.vx=-Math.abs(b.vx); }
       }
       // 繪製
-      let base = b.boss ? '#ff4d6d' : b.unbreakable ? '#888' : b.strong ? '#bb7aff' : b.moving ? '#6ec6ff' : b.explosive ? getVar('--expl') : brickColor(b.colorIdx);
-      const g=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x)*scaleX,(b.y+b.h)*scaleY); g.addColorStop(0,base); g.addColorStop(1,'#1a1f3a'); ctx.fillStyle=g; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.fill();
+      let fillStyle;
+      if(b.treasure){
+        const g=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x+b.w)*scaleX,(b.y+b.h)*scaleY);
+        g.addColorStop(0,'#ff6ec7');
+        g.addColorStop(0.25,'#ffd166');
+        g.addColorStop(0.5,'#6ec6ff');
+        g.addColorStop(0.75,'#b197fc');
+        g.addColorStop(1,'#ffe066');
+        fillStyle=g;
+      }else{
+        let base = b.boss ? '#ff4d6d' : b.unbreakable ? '#888' : b.strong ? '#bb7aff' : b.moving ? '#6ec6ff' : b.explosive ? getVar('--expl') : brickColor(b.colorIdx);
+        const g=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x)*scaleX,(b.y+b.h)*scaleY);
+        g.addColorStop(0,base);
+        g.addColorStop(1,'#1a1f3a');
+        fillStyle=g;
+      }
+      ctx.fillStyle=fillStyle;
+      drawRoundedRect(b.x,b.y,b.w,b.h,6);
+      ctx.fill();
+      if(b.treasure){
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        const glow=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x+b.w)*scaleX,(b.y+b.h)*scaleY);
+        glow.addColorStop(0,'rgba(255,110,199,0.8)');
+        glow.addColorStop(0.5,'rgba(110,198,255,0.6)');
+        glow.addColorStop(1,'rgba(255,224,102,0.8)');
+        ctx.strokeStyle=glow;
+        ctx.lineWidth=3;
+        drawRoundedRect(b.x-3,b.y-3,b.w+6,b.h+6,8);
+        ctx.stroke();
+        ctx.restore();
+      }
       if(b.placeholderBoss){
         const pulse=0.5+0.5*Math.sin(performance.now()/200);
         ctx.save();
@@ -6397,6 +6518,27 @@ function generateLevel(lv, L){
     updateSpaceBoss();
     updateReaperBoss();
 
+    if(isTrueBossFightActive()){
+      if(!nextTreasureBrickAt){
+        scheduleNextTreasureBrick(now);
+      }else if(now>=nextTreasureBrickAt){
+        spawnBossTreasureBrick();
+        scheduleNextTreasureBrick(now);
+      }
+    }else{
+      nextTreasureBrickAt=0;
+    }
+
+    let treasureRemoved=false;
+    for(let i=bricks.length-1;i>=0;i--){
+      const bk=bricks[i];
+      if(!bk?.fallingTreasure) continue;
+      const vy=bk.vy || GAME_CONFIG.powerCapsule.fallVy || 2.2;
+      bk.y += vy;
+      if(bk.y>710){ bricks.splice(i,1); treasureRemoved=true; }
+    }
+    if(treasureRemoved){ updateHUD(); }
+
     // 劇毒磚持續扣血
     for(let i=bricks.length-1;i>=0;i--){
       const bk=bricks[i];
@@ -6741,6 +6883,7 @@ function generateLevel(lv, L){
           noteBounce(b,b.x,b.y,'x',now);
         }
         beep(880,0.03); spawnParticles(b.x,b.y,'#caddff',8,1.3,1.5,2.5); fireCollide();
+        screenShake=Math.max(screenShake, orientLeft?4:3);
         if(buffs.STICKY.active){ b.stuck=true; b.offsetX= (!orientLeft) ? (b.x-(paddle.x+paddle.w/2)) : 0; }
         if(buffs.BLINK.active){ b.blinkAt=performance.now()+ (GAME_CONFIG.powers.BLINK.blink.delayMs||1000); }
 
