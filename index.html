@@ -90,6 +90,10 @@
     .level-select select{
       min-width:120px;
     }
+    .level-select select option.boss-level{
+      color:#ff9b4a;
+      font-weight:700;
+    }
     select,input[type="range"]{background:var(--glass-2);color:#fff;border:1px solid var(--stroke);border-radius:8px;padding:6px 10px}
     /* Buffs & Prompts */
     #buffs{
@@ -1943,12 +1947,28 @@ select optgroup { color: #0b1022; }
   }
   function spawnCyclopsColumn(){
     const bc=bossCenter(); if(!bc) return;
-    bossChargeColor='255,235,150'; bossChargeUntil=performance.now()+2000;
+    const now=performance.now();
+    bossChargeColor='255,235,150';
+    bossChargeUntil=now+3000;
+    if(isDragonActive() && dragonBoss){
+      dragonBoss.petrifyCharge={start:now,end:now+3000};
+      dragonMarquee={text:'危險！ 毀滅之龍即將使出石化光束!', start:now, fadeStart:now+2600, end:now+3000, style:'elegant'};
+    }
     setTimeout(()=>{
-      const now=performance.now();
-      hostileColumns.push({x:bc.x, w:150, tStart:now, tEnd:now+1000, color:'#eedc9a', applied:false});
-      cyclopsShakeUntil=now+2000; noteCyclopsFirstAttack(now); beep(500,0.12,0.08);
-    },2000);
+      const center=bossCenter();
+      if(!center){
+        if(dragonBoss) dragonBoss.petrifyCharge=null;
+        return;
+      }
+      const releaseAt=performance.now();
+      hostileColumns.push({x:center.x, w:150, tStart:releaseAt, tEnd:releaseAt+1000, color:'#eedc9a', applied:false});
+      cyclopsShakeUntil=releaseAt+2000;
+      if(isDragonActive() && dragonBoss){
+        dragonBoss.petrifyCharge=null;
+      }
+      noteCyclopsFirstAttack(releaseAt);
+      beep(500,0.12,0.08);
+    },3000);
   }
   function spawnDemonBeam(){
     const bc=bossCenter(); if(!bc) return;
@@ -5132,7 +5152,8 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       nextMove:now+800,
       hitCooldownUntil:0,
       hitFlashUntil:0,
-      lastUpdate:now
+      lastUpdate:now,
+      petrifyCharge:null
     };
     dragonPhase='active';
     dragonBursts.push({type:'halo',x:cx,y:baseY-20,r0:80,r1:420,t0:now,life:1800,color:'255,215,140'});
@@ -5187,6 +5208,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     dragonMarquee={text:'成功擊殺Boss: 毀滅之龍!', start:now, fadeStart:now+5000, end:now+5000, style:'victorySolid'};
     dragonDeathAnim={start:now, fallDuration:3000, bigExplosionStart:now+3000, bigExplosionEnd:now+5000, lastSmallBurst:0, bigExplosionTriggered:false, finished:false};
     if(dragonBoss){
+      dragonBoss.petrifyCharge=null;
       const cx=dragonBoss.x, cy=dragonBoss.y;
       dragonBursts.push({type:'flare',x:cx,y:cy,r0:0,r1:360,t0:now,life:1500,color:'255,220,150'});
       dragonBursts.push({type:'ring',x:cx,y:cy,r0:60,r1:520,width:26,t0:now,life:1800,color:'255,210,130'});
@@ -5281,8 +5303,6 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const flash = boss.hitFlashUntil && now<boss.hitFlashUntil;
     const wingLift = 26*flap;
     const wingSpread = 1.38 + flap*0.42;
-    const shimmerHighlight = flash ? 1 : 0;
-
     const metalGradient=(x0,y0,x1,y1)=>{
       const g=ctx.createLinearGradient(x0,y0,x1,y1);
       g.addColorStop(0, flash?'#fff9ed':'#fcefd6');
@@ -5294,35 +5314,30 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const darkMetal=(alpha=1)=>`rgba(110,64,22,${(flash?0.55:0.38)*alpha})`;
 
     const tailSwing=Math.sin(now/340 + boss.wingPhase*1.6)*5.8;
-
-    function drawDragonHalo(ctx){
+    const charge=boss.petrifyCharge;
+    let chargeProgress=0;
+    if(charge){
+      const duration=(charge.end||0)-(charge.start||0) || 1;
+      chargeProgress=Math.max(0, Math.min(1,(now-charge.start)/duration));
+    }
+    if(chargeProgress>0){
       ctx.save();
-      ctx.translate(0,-132);
-      ctx.scale(1.24,0.88);
       ctx.globalCompositeOperation='lighter';
-      const outerR=112;
-      const haloStroke=ctx.createRadialGradient(0,0,outerR*0.38,0,0,outerR);
-      haloStroke.addColorStop(0, flash?'rgba(255,250,230,0.45)':'rgba(255,232,190,0.36)');
-      haloStroke.addColorStop(0.55, flash?'rgba(255,220,150,0.82)':'rgba(255,194,120,0.68)');
-      haloStroke.addColorStop(1,'rgba(255,170,70,0.05)');
-      ctx.shadowColor=flash?'rgba(255,238,200,0.9)':'rgba(255,210,150,0.74)';
-      ctx.shadowBlur=30;
-      ctx.lineWidth=18;
-      ctx.strokeStyle=haloStroke;
+      ctx.globalAlpha=0.35+0.45*chargeProgress;
+      const bodyGlow=ctx.createRadialGradient(0,-20,40,0,-20,220);
+      bodyGlow.addColorStop(0,'rgba(255,180,120,1)');
+      bodyGlow.addColorStop(1,'rgba(255,60,20,0)');
+      ctx.fillStyle=bodyGlow;
       ctx.beginPath();
-      ctx.ellipse(0,0,outerR,outerR*0.7,0,0,Math.PI*2);
-      ctx.stroke();
-
-      const haloFill=ctx.createRadialGradient(0,0,outerR*0.08,0,0,outerR*1.18);
-      haloFill.addColorStop(0, flash?'rgba(255,255,240,0.42)':'rgba(255,244,214,0.28)');
-      haloFill.addColorStop(0.6, flash?'rgba(255,224,150,0.32)':'rgba(255,198,120,0.22)');
-      haloFill.addColorStop(1,'rgba(255,170,80,0)');
-      ctx.shadowColor='transparent';
-      ctx.shadowBlur=0;
-      ctx.fillStyle=haloFill;
-      ctx.beginPath();
-      ctx.ellipse(0,0,outerR*1.06,outerR*0.74,0,0,Math.PI*2);
+      ctx.ellipse(0,20,180,240,0,0,Math.PI*2);
       ctx.fill();
+      ctx.shadowColor=`rgba(255,170,120,${0.65+0.3*chargeProgress})`;
+      ctx.shadowBlur=48;
+      ctx.strokeStyle=`rgba(255,210,140,${0.4+0.3*chargeProgress})`;
+      ctx.lineWidth=6;
+      ctx.beginPath();
+      ctx.ellipse(0,-36,128,170,0,0,Math.PI*2);
+      ctx.stroke();
       ctx.restore();
     }
     ctx.save();
@@ -5488,7 +5503,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         {base:[-8,88], ctrl:[-138,138+wingLift*0.36], tip:[-158,188+wingLift*0.46], width:20, curvature:11, tipWidth:7, serrations:6, serrationDepth:6}
       ];
 
-      function drawBladeLayer(blades, options){
+      function drawBladeLayer(blades, palette){
         for(const blade of blades){
           const baseX=blade.base[0];
           const baseY=blade.base[1];
@@ -5513,10 +5528,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
           const trailingTipY=tipY-perpY*(blade.tipWidth||blade.width*0.22);
 
           const grad=ctx.createLinearGradient(leadingBaseX, leadingBaseY, leadingTipX, leadingTipY);
-          grad.addColorStop(0, `rgba(255,244,204,${flash?0.96:0.82})`);
-          grad.addColorStop(0.12, `rgba(255,228,168,${flash?0.9:0.76})`);
-          grad.addColorStop(0.42, options.midColor);
-          grad.addColorStop(1, options.edgeColor);
+          grad.addColorStop(0, palette.light);
+          grad.addColorStop(0.45, palette.mid);
+          grad.addColorStop(1, palette.edge);
           ctx.fillStyle=grad;
 
           ctx.beginPath();
@@ -5539,7 +5553,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
           ctx.closePath();
           ctx.fill();
 
-          ctx.strokeStyle=`rgba(255,236,210,${flash?0.94:0.76})`;
+          ctx.strokeStyle=palette.outline;
           ctx.lineWidth=2.2;
           ctx.stroke();
 
@@ -5547,10 +5561,10 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
           ctx.lineWidth=1.4;
           ctx.beginPath();
           ctx.moveTo(baseX, baseY);
-          ctx.quadraticCurveTo(ctrlX, ctrlY+options.veinLift, tipX, tipY);
+          ctx.quadraticCurveTo(ctrlX, ctrlY+(palette.veinLift||0), tipX, tipY);
           ctx.stroke();
 
-          ctx.strokeStyle=`rgba(255,222,150,${flash?0.98:0.8})`;
+          ctx.strokeStyle=palette.highlight;
           ctx.lineWidth=1.1;
           ctx.beginPath();
           ctx.moveTo(leadingBaseX, leadingBaseY);
@@ -5559,7 +5573,15 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         }
       }
 
-      drawBladeLayer(outerBlades,{midColor:`rgba(220,156,96,${flash?0.68:0.52})`,edgeColor:`rgba(170,112,72,${flash?0.58:0.46})`,veinLift:12});
+      const outerPalette={
+        light: flash?'#fff3d8':'#f3d1a2',
+        mid: flash?'#f6c98d':'#d9a05e',
+        edge: flash?'#ca7e40':'#8f5224',
+        outline: flash?'#ffe9cc':'#f2c8a0',
+        highlight: flash?'#fff2df':'#f4d7b7',
+        veinLift:12
+      };
+      drawBladeLayer(outerBlades, outerPalette);
 
       // metallic spars between layers
       ctx.save();
@@ -5585,7 +5607,15 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.stroke();
       ctx.restore();
 
-      drawBladeLayer(innerBlades,{midColor:`rgba(208,138,90,${flash?0.62:0.48})`,edgeColor:`rgba(150,96,62,${flash?0.52:0.4})`,veinLift:18});
+      const innerPalette={
+        light: flash?'#ffe9c8':'#ecc190',
+        mid: flash?'#f0b272':'#c6864b',
+        edge: flash?'#b96a32':'#7c3e19',
+        outline: flash?'#ffe3c4':'#f0c09a',
+        highlight: flash?'#ffeedf':'#f6dcbc',
+        veinLift:18
+      };
+      drawBladeLayer(innerBlades, innerPalette);
 
       // trailing edge spikes
       ctx.fillStyle=metalGradient(-210*wingSpread,80+wingLift*0.2,-160*wingSpread,160+wingLift*0.4);
@@ -5674,7 +5704,10 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.save();
       ctx.scale(side,1);
       ctx.translate(44,96);
-      const legSwing=(6*side + Math.sin(now/320 + side*0.9)*4.2);
+      const gaitPhase=now/420 + side*0.7;
+      const legSwing=side*3 + Math.sin(gaitPhase)*5.4;
+      const legLift=Math.sin(gaitPhase+Math.PI/2)*3.2;
+      ctx.translate(0,-legLift);
       ctx.rotate(legSwing*Math.PI/180);
 
       const limbGradient=(x0,y0,x1,y1)=>{
@@ -5860,7 +5893,10 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.save();
       ctx.scale(side,1);
       ctx.translate(72,-12);
-      const armSwing=(-10*side + Math.sin(now/240 + side)*4.6);
+      const reachPhase=now/360 + side*0.6;
+      const shoulderLift=Math.cos(reachPhase)*3.2;
+      const armSwing=-6*side + Math.sin(reachPhase)*6.2;
+      ctx.translate(0, shoulderLift);
       ctx.rotate(armSwing*Math.PI/180);
 
       const armGradient=(x0,y0,x1,y1)=>{
@@ -6031,13 +6067,44 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.restore();
     }
 
-    drawDragonHalo(ctx);
-
     ctx.save();
     ctx.translate(0,-12);
     const headScaleX=0.41;
     const headScaleY=0.38;
     ctx.scale(headScaleX, headScaleY);
+
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      ctx.fillStyle=metalGradient(-86,-232,86,-48);
+      ctx.beginPath();
+      ctx.moveTo(18,-188);
+      ctx.lineTo(58,-276);
+      ctx.quadraticCurveTo(34,-352,0,-294);
+      ctx.quadraticCurveTo(14,-240,10,-190);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle=darkMetal(0.92);
+      ctx.lineWidth=1.4;
+      ctx.stroke();
+      ctx.restore();
+    }
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      ctx.fillStyle=metalGradient(-64,-210,54,-36);
+      ctx.beginPath();
+      ctx.moveTo(6,-184);
+      ctx.quadraticCurveTo(40,-250,22,-296);
+      ctx.quadraticCurveTo(6,-314,-10,-276);
+      ctx.quadraticCurveTo(0,-226,4,-188);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle=flash?'#ffeede':'#f2cda6';
+      ctx.lineWidth=1.1;
+      ctx.stroke();
+      ctx.restore();
+    }
 
     const crownGrad=metalGradient(-70,-188,70,36);
     ctx.fillStyle=crownGrad;
@@ -6220,21 +6287,38 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
 
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    const eyeFill=flash?'rgba(255,188,160,0.96)':'rgba(255,72,44,0.9)';
+    const eyeFill=flash?'rgba(255,130,120,1)':'rgba(255,38,22,1)';
     ctx.fillStyle=eyeFill;
-    ctx.shadowColor=flash?'rgba(255,140,90,0.88)':'rgba(255,70,30,0.72)';
-    ctx.shadowBlur=16;
+    ctx.shadowColor=flash?'rgba(255,90,70,0.9)':'rgba(255,30,20,0.82)';
+    ctx.shadowBlur=24;
     ctx.beginPath();
-    ctx.moveTo(-38,-28);
-    ctx.quadraticCurveTo(-26,-54,-12,-44);
-    ctx.quadraticCurveTo(-20,-24,-38,-20);
+    ctx.moveTo(-40,-26);
+    ctx.quadraticCurveTo(-26,-60,-6,-50);
+    ctx.lineTo(-14,-30);
+    ctx.quadraticCurveTo(-28,-24,-42,-18);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle=flash?'rgba(255,220,210,0.75)':'rgba(255,170,150,0.55)';
+    ctx.lineWidth=1.3;
+    ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.5)';
     ctx.beginPath();
-    ctx.moveTo(38,-28);
-    ctx.quadraticCurveTo(26,-54,12,-44);
-    ctx.quadraticCurveTo(20,-24,38,-20);
+    ctx.ellipse(-26,-40,6,4.2,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle=eyeFill;
+    ctx.beginPath();
+    ctx.moveTo(40,-26);
+    ctx.quadraticCurveTo(26,-60,6,-50);
+    ctx.lineTo(14,-30);
+    ctx.quadraticCurveTo(28,-24,42,-18);
     ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle=flash?'rgba(255,220,210,0.75)':'rgba(255,170,150,0.55)';
+    ctx.lineWidth=1.3;
+    ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(26,-40,6,4.2,0,0,Math.PI*2);
     ctx.fill();
     ctx.restore();
 
@@ -6362,6 +6446,43 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.shadowBlur=18*((scaleX+scaleY)/2);
       ctx.fillText(text, (x+width/2)*scaleX, (top+areaHeight/2)*scaleY);
       ctx.shadowBlur=0;
+    }else if(style==='elegant'){
+      const grad=ctx.createLinearGradient(x*scaleX, top*scaleY, x*scaleX, (top+areaHeight)*scaleY);
+      grad.addColorStop(0,'rgba(48,22,10,0.9)');
+      grad.addColorStop(1,'rgba(28,12,6,0.88)');
+      ctx.fillStyle=grad;
+      ctx.fill();
+      ctx.strokeStyle='rgba(255,210,150,0.85)';
+      ctx.lineWidth=2.4;
+      drawRoundedRect(x, top, width, areaHeight, radius);
+      ctx.stroke();
+      const innerX=x+10;
+      const innerY=top+6;
+      const innerW=width-20;
+      const innerH=areaHeight-12;
+      ctx.save();
+      drawRoundedRect(innerX, innerY, innerW, innerH, radius-6);
+      const innerGrad=ctx.createLinearGradient(innerX*scaleX, innerY*scaleY, innerX*scaleX, (innerY+innerH)*scaleY);
+      innerGrad.addColorStop(0,'rgba(140,70,30,0.45)');
+      innerGrad.addColorStop(1,'rgba(80,34,14,0.35)');
+      ctx.fillStyle=innerGrad;
+      ctx.fill();
+      ctx.strokeStyle='rgba(255,220,180,0.45)';
+      ctx.lineWidth=1.4;
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      drawRoundedRect(innerX, innerY, innerW, innerH, radius-6);
+      ctx.clip();
+      ctx.fillStyle='#ffeedd';
+      const fontSize=Math.max(20, Math.round(26*((scaleX+scaleY)/2)));
+      ctx.font=`${fontSize}px 'Playfair Display','Noto Sans TC',serif`;
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.shadowColor='rgba(255,150,110,0.55)';
+      ctx.shadowBlur=14*((scaleX+scaleY)/2);
+      ctx.fillText(text, (innerX+innerW/2)*scaleX, (innerY+innerH/2)*scaleY);
+      ctx.restore();
     }else{
       const grad=ctx.createLinearGradient(x*scaleX, top*scaleY, x*scaleX, (top+areaHeight)*scaleY);
       grad.addColorStop(0,'rgba(60,32,6,0.95)');
@@ -7274,6 +7395,11 @@ function generateLevel(lv, L){
         const option=document.createElement('option');
         option.value=String(i);
         option.textContent=`第 ${i} 關`;
+        if(i%5===0){
+          option.classList.add('boss-level');
+          option.style.color='#ff9b4a';
+          option.style.fontWeight='700';
+        }
         levelJumpSel.appendChild(option);
       }
     };
