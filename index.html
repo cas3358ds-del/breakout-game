@@ -4963,11 +4963,12 @@ function generateLevel(lv, L){
     }
     if(b.elite){ stats.eliteKills++; }
     const bx=b.x+b.w/2, by=b.y+b.h/2;
-    const color=b.treasure?'#ffd166':b.boss?'#ff4d6d':b.unbreakable?'#888':b.strong?'#bb7aff':b.moving?'#6ec6ff':b.explosive?getVar('--expl'):brickColor(b.colorIdx);
+    const color=b.treasure?'#ffdf6f':b.boss?'#ff4d6d':b.unbreakable?'#888':b.strong?'#bb7aff':b.moving?'#6ec6ff':b.explosive?getVar('--expl'):brickColor(b.colorIdx);
     spawnParticles(bx,by,color,30,2.0,3.2,3.5);
     if(b.treasure){
-      spawnParticles(bx,by,'#74c0fc',18,2.0,3.0,3.2);
-      spawnParticles(bx,by,'#da77f2',18,1.8,2.8,3.0);
+      spawnParticles(bx,by,'#ffe8a3',20,2.0,3.2,3.6);
+      const rainbowBurst=['#ff6ec7','#ff9f43','#ffe066','#8ce99a','#74c0fc','#b197fc','#ff85f5'];
+      for(const col of rainbowBurst){ spawnParticles(bx,by,col,8,1.8,3.0,3.2); }
     }
     if(sfx==='default'){ beep(420,0.06,0.08); setTimeout(()=>beep(620,0.05,0.06),40); }
     else if(sfx!=='none'){ playSFX(sfx); }
@@ -6049,13 +6050,13 @@ function generateLevel(lv, L){
       // 繪製
       let fillStyle;
       if(b.treasure){
-        const g=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x+b.w)*scaleX,(b.y+b.h)*scaleY);
-        g.addColorStop(0,'#ff6ec7');
-        g.addColorStop(0.25,'#ffd166');
-        g.addColorStop(0.5,'#6ec6ff');
-        g.addColorStop(0.75,'#b197fc');
-        g.addColorStop(1,'#ffe066');
-        fillStyle=g;
+        const gold=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x)*scaleX,(b.y+b.h)*scaleY);
+        gold.addColorStop(0,'#fff5d6');
+        gold.addColorStop(0.18,'#ffe38a');
+        gold.addColorStop(0.45,'#ffd042');
+        gold.addColorStop(0.78,'#d9a326');
+        gold.addColorStop(1,'#9f7012');
+        fillStyle=gold;
       }else{
         let base = b.boss ? '#ff4d6d' : b.unbreakable ? '#888' : b.strong ? '#bb7aff' : b.moving ? '#6ec6ff' : b.explosive ? getVar('--expl') : brickColor(b.colorIdx);
         const g=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x)*scaleX,(b.y+b.h)*scaleY);
@@ -6067,15 +6068,34 @@ function generateLevel(lv, L){
       drawRoundedRect(b.x,b.y,b.w,b.h,6);
       ctx.fill();
       if(b.treasure){
+        const now=performance.now();
+        const sheenPos=(now%1400)/1400;
         ctx.save();
         ctx.globalCompositeOperation='lighter';
-        const glow=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x+b.w)*scaleX,(b.y+b.h)*scaleY);
-        glow.addColorStop(0,'rgba(255,110,199,0.8)');
-        glow.addColorStop(0.5,'rgba(110,198,255,0.6)');
-        glow.addColorStop(1,'rgba(255,224,102,0.8)');
-        ctx.strokeStyle=glow;
-        ctx.lineWidth=3;
-        drawRoundedRect(b.x-3,b.y-3,b.w+6,b.h+6,8);
+        const sheen=ctx.createLinearGradient((b.x-12)*scaleX,(b.y-12)*scaleY,(b.x+b.w+12)*scaleX,(b.y+b.h+12)*scaleY);
+        const start=Math.max(0,sheenPos-0.2);
+        const peak=sheenPos;
+        const end=Math.min(1,sheenPos+0.2);
+        sheen.addColorStop(0,'rgba(255,255,255,0)');
+        sheen.addColorStop(start,'rgba(255,255,255,0)');
+        sheen.addColorStop(peak,'rgba(255,255,255,0.85)');
+        sheen.addColorStop(end,'rgba(255,255,255,0)');
+        sheen.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.globalAlpha=0.55;
+        ctx.fillStyle=sheen;
+        drawRoundedRect(b.x-4,b.y-4,b.w+8,b.h+8,9);
+        ctx.fill();
+
+        const glowPulse=0.65+0.35*Math.sin(now/320);
+        const rainbow=ctx.createLinearGradient((b.x-10)*scaleX,(b.y-10)*scaleY,(b.x+b.w+10)*scaleX,(b.y+b.h+10)*scaleY);
+        const rainbowColors=['#ff6ec7','#ff9f43','#ffe066','#8ce99a','#74c0fc','#b197fc','#ff85f5'];
+        rainbowColors.forEach((col,i)=>rainbow.addColorStop(i/(rainbowColors.length-1),col));
+        ctx.globalAlpha=0.8+0.2*Math.sin(now/360);
+        ctx.strokeStyle=rainbow;
+        ctx.lineWidth=3.5+1.5*glowPulse;
+        ctx.shadowBlur=20;
+        ctx.shadowColor=`rgba(255,210,120,${0.3+0.25*glowPulse})`;
+        drawRoundedRect(b.x-5,b.y-5,b.w+10,b.h+10,10);
         ctx.stroke();
         ctx.restore();
       }
