@@ -82,6 +82,14 @@
       padding:8px 12px;border-radius:10px;border:1px solid var(--stroke);cursor:pointer;
       background:var(--glass-2);color:#fff;box-shadow:var(--btnGlow)
     }
+    .level-select{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .level-select select{
+      min-width:120px;
+    }
     select,input[type="range"]{background:var(--glass-2);color:#fff;border:1px solid var(--stroke);border-radius:8px;padding:6px 10px}
     /* Buffs & Prompts */
     #buffs{
@@ -482,7 +490,9 @@ select optgroup { color: #0b1022; }
               <button class="btn" id="saveBtn">存檔</button>
               <button class="btn" id="loadBtn">讀檔</button>
               <button class="btn" id="clearSaveBtn">清除存檔</button>
-              <button class="btn" id="levelJumpBtn" title="暫時測試用">跳至關卡…</button>
+              <label class="btn level-select" id="levelJumpLabel">跳至關卡
+                <select id="levelJumpSel" aria-label="跳至關卡"></select>
+              </label>
             </div>
             <h4>其他</h4>
             <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
@@ -855,7 +865,7 @@ select optgroup { color: #0b1022; }
   const scoreEl=document.getElementById('score'), levelEl=document.getElementById('level'), livesEl=document.getElementById('lives');
   const pauseBtn=document.getElementById('pauseBtn'), resetBtn=document.getElementById('resetBtn'), fsBtn=document.getElementById('fsBtn');
   const soundBtn=document.getElementById('soundBtn'), saveBtn=document.getElementById('saveBtn'), loadBtn=document.getElementById('loadBtn'), clearSaveBtn=document.getElementById('clearSaveBtn');
-  const levelJumpBtn=document.getElementById('levelJumpBtn');
+  const levelJumpSel=document.getElementById('levelJumpSel');
   const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn'), galleryBtn=document.getElementById('galleryBtn'), rankBtn=document.getElementById('rankBtn');
   const centerNote=document.getElementById('centerNote'), noteTitle=document.getElementById('noteTitle'), noteText=document.getElementById('noteText'), noteBox=document.getElementById('noteBox');
   const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs'), promptsDock=document.getElementById('promptsDock');
@@ -5251,6 +5261,7 @@ function generateLevel(lv, L){
     // 顯示目前關卡數（level 元素）和總關卡數（totalLevels 元素）
     levelEl.textContent = level;
     if (totalLevelsEl) totalLevelsEl.textContent = GAME_CONFIG.totalLevels;
+    if (levelJumpSel) levelJumpSel.value = String(level);
     // 更新生命文字與愛心
     livesEl.textContent = lives;
     if (heartsEl) {
@@ -5384,17 +5395,22 @@ function generateLevel(lv, L){
   difficultySel.addEventListener('change',()=>{ resetGame(); });
   if(ledStyleSel){ ledStyleSel.value = ledStyle; ledStyleSel.addEventListener('change', ()=>{ ledStyle = ledStyleSel.value; localStorage.setItem('led_style', ledStyle); }); }
   saveBtn.addEventListener('click',saveProgress); loadBtn.addEventListener('click',loadProgress); clearSaveBtn.addEventListener('click',clearSave);
-  if(levelJumpBtn){
-    levelJumpBtn.addEventListener('click',()=>{
-      const input = prompt(`輸入欲前往的關卡 (1-${GAME_CONFIG.totalLevels})`, String(level));
-      if(input===null) return;
-      const target = parseInt(input, 10);
-      if(Number.isNaN(target)){
-        alert('請輸入有效的關卡數字。');
-        return;
+  if(levelJumpSel){
+    const populateLevelJumpOptions = ()=>{
+      levelJumpSel.innerHTML = '';
+      for(let i=1;i<=GAME_CONFIG.totalLevels;i++){
+        const option=document.createElement('option');
+        option.value=String(i);
+        option.textContent=`第 ${i} 關`;
+        levelJumpSel.appendChild(option);
       }
-      const clamped = Math.max(1, Math.min(GAME_CONFIG.totalLevels, target));
-      level = clamped;
+    };
+    populateLevelJumpOptions();
+    levelJumpSel.value = String(level);
+    levelJumpSel.addEventListener('change',()=>{
+      const target=parseInt(levelJumpSel.value,10);
+      if(Number.isNaN(target)) return;
+      level = Math.max(1, Math.min(GAME_CONFIG.totalLevels, target));
       gameOver = false;
       gameover?.classList.remove('show');
       paused = true;
