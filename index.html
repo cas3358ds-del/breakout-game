@@ -5178,49 +5178,119 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.lineWidth=2.6;
       ctx.stroke();
 
-      const blades=[
-        {base:[-20,-6], ctrl:[-120,-110-wingLift*0.4], tip:[-240,-140-wingLift*0.6], width:40},
-        {base:[-18,16], ctrl:[-168,-70-wingLift*0.25], tip:[-280,-52-wingLift*0.25], width:34},
-        {base:[-16,36], ctrl:[-210,-8-wingLift*0.1], tip:[-268,44+wingLift*0.05], width:30},
-        {base:[-12,56], ctrl:[-216,68+wingLift*0.2], tip:[-240,116+wingLift*0.3], width:28},
-        {base:[-8,76], ctrl:[-186,120+wingLift*0.26], tip:[-210,168+wingLift*0.4], width:24},
-        {base:[-6,94], ctrl:[-162,166+wingLift*0.32], tip:[-182,208+wingLift*0.46], width:22}
+      const outerBlades=[
+        {base:[-24,-14], ctrl:[-150,-148-wingLift*0.5], tip:[-304,-168-wingLift*0.74], width:54, curvature:34, tipWidth:20},
+        {base:[-22,10], ctrl:[-188,-112-wingLift*0.32], tip:[-312,-94-wingLift*0.38], width:46, curvature:28, tipWidth:18},
+        {base:[-18,36], ctrl:[-228,-52-wingLift*0.16], tip:[-298,26+wingLift*0.04], width:40, curvature:26, tipWidth:16},
+        {base:[-14,60], ctrl:[-234,40+wingLift*0.22], tip:[-262,112+wingLift*0.28], width:36, curvature:24, tipWidth:14},
+        {base:[-10,84], ctrl:[-202,104+wingLift*0.34], tip:[-226,168+wingLift*0.42], width:32, curvature:22, tipWidth:12}
       ];
-      for(const blade of blades){
-        const tipX=blade.tip[0]*wingSpread;
-        const ctrlX=blade.ctrl[0]*wingSpread;
-        const baseX=blade.base[0];
-        ctx.fillStyle=metalGradient(baseX-20, blade.base[1]-40, tipX, blade.tip[1]+40);
-        ctx.beginPath();
-        ctx.moveTo(baseX-blade.width*0.38, blade.base[1]-12);
-        ctx.quadraticCurveTo(ctrlX-blade.width*0.18, blade.ctrl[1], tipX, blade.tip[1]);
-        ctx.quadraticCurveTo(ctrlX+blade.width*0.18, blade.ctrl[1]+22, baseX+blade.width*0.38, blade.base[1]+14);
-        ctx.lineTo(baseX+blade.width*0.12, blade.base[1]-6);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle=`rgba(255,240,220,${flash?0.94:0.76})`;
-        ctx.lineWidth=2.4;
-        ctx.stroke();
+      const innerBlades=[
+        {base:[-18,4], ctrl:[-120,-46-wingLift*0.22], tip:[-182,-12-wingLift*0.18], width:28, curvature:18, tipWidth:10, serrations:4, serrationDepth:10},
+        {base:[-16,24], ctrl:[-148,-4-wingLift*0.12], tip:[-190,42+wingLift*0.04], width:26, curvature:16, tipWidth:10, serrations:5, serrationDepth:9},
+        {base:[-12,46], ctrl:[-162,48+wingLift*0.18], tip:[-188,106+wingLift*0.24], width:24, curvature:14, tipWidth:9, serrations:5, serrationDepth:8},
+        {base:[-10,68], ctrl:[-150,96+wingLift*0.28], tip:[-174,150+wingLift*0.34], width:22, curvature:12, tipWidth:8, serrations:6, serrationDepth:7},
+        {base:[-8,88], ctrl:[-138,138+wingLift*0.36], tip:[-158,188+wingLift*0.46], width:20, curvature:11, tipWidth:7, serrations:6, serrationDepth:6}
+      ];
 
-        ctx.strokeStyle=darkMetal();
-        ctx.lineWidth=1.6;
-        ctx.beginPath();
-        ctx.moveTo(baseX, blade.base[1]);
-        ctx.quadraticCurveTo(ctrlX, blade.ctrl[1]+6, tipX, blade.tip[1]);
-        ctx.stroke();
+      function drawBladeLayer(blades, options){
+        for(const blade of blades){
+          const baseX=blade.base[0];
+          const baseY=blade.base[1];
+          const ctrlX=blade.ctrl[0]*wingSpread;
+          const ctrlY=blade.ctrl[1];
+          const tipX=blade.tip[0]*wingSpread;
+          const tipY=blade.tip[1];
+          const angle=Math.atan2(tipY-baseY, tipX-baseX);
+          const perpX=-Math.sin(angle);
+          const perpY=Math.cos(angle);
+          const leadingBaseX=baseX+perpX*blade.width*0.58;
+          const leadingBaseY=baseY+perpY*blade.width*0.58;
+          const trailingBaseX=baseX-perpX*blade.width*0.44;
+          const trailingBaseY=baseY-perpY*blade.width*0.44;
+          const leadingCtrlX=ctrlX+perpX*(blade.curvature||0);
+          const leadingCtrlY=ctrlY+perpY*(blade.curvature||0);
+          const trailingCtrlX=ctrlX-perpX*((blade.curvature||0)*0.74);
+          const trailingCtrlY=ctrlY-perpY*((blade.curvature||0)*0.74);
+          const leadingTipX=tipX+perpX*(blade.tipWidth||blade.width*0.32);
+          const leadingTipY=tipY+perpY*(blade.tipWidth||blade.width*0.32);
+          const trailingTipX=tipX-perpX*(blade.tipWidth||blade.width*0.22);
+          const trailingTipY=tipY-perpY*(blade.tipWidth||blade.width*0.22);
+
+          const grad=ctx.createLinearGradient(leadingBaseX, leadingBaseY, leadingTipX, leadingTipY);
+          grad.addColorStop(0, `rgba(255,244,204,${flash?0.96:0.82})`);
+          grad.addColorStop(0.12, `rgba(255,228,168,${flash?0.9:0.76})`);
+          grad.addColorStop(0.42, options.midColor);
+          grad.addColorStop(1, options.edgeColor);
+          ctx.fillStyle=grad;
+
+          ctx.beginPath();
+          ctx.moveTo(leadingBaseX, leadingBaseY);
+          ctx.quadraticCurveTo(leadingCtrlX, leadingCtrlY, leadingTipX, leadingTipY);
+          if(blade.serrations){
+            ctx.lineTo(trailingTipX, trailingTipY);
+            for(let i=blade.serrations;i>=1;i--){
+              const t=i/blade.serrations;
+              const px=trailingTipX+(trailingBaseX-trailingTipX)*t;
+              const py=trailingTipY+(trailingBaseY-trailingTipY)*t;
+              const offset=(i%2===0?-1:1)*(blade.serrationDepth||6);
+              ctx.lineTo(px+perpX*offset*0.6, py+perpY*offset*0.6);
+            }
+            ctx.lineTo(trailingBaseX, trailingBaseY);
+          }else{
+            ctx.quadraticCurveTo(trailingCtrlX, trailingCtrlY, trailingBaseX, trailingBaseY);
+          }
+          ctx.lineTo(baseX+perpX*blade.width*0.12, baseY+perpY*blade.width*0.12);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle=`rgba(255,236,210,${flash?0.94:0.76})`;
+          ctx.lineWidth=2.2;
+          ctx.stroke();
+
+          ctx.strokeStyle=darkMetal();
+          ctx.lineWidth=1.4;
+          ctx.beginPath();
+          ctx.moveTo(baseX, baseY);
+          ctx.quadraticCurveTo(ctrlX, ctrlY+options.veinLift, tipX, tipY);
+          ctx.stroke();
+
+          ctx.strokeStyle=`rgba(255,222,150,${flash?0.98:0.8})`;
+          ctx.lineWidth=1.1;
+          ctx.beginPath();
+          ctx.moveTo(leadingBaseX, leadingBaseY);
+          ctx.quadraticCurveTo(leadingCtrlX, leadingCtrlY, leadingTipX, leadingTipY);
+          ctx.stroke();
+        }
       }
 
-      // inner struts
-      ctx.strokeStyle=`rgba(255,210,150,${flash?0.85:0.66})`;
-      ctx.lineWidth=3.2;
+      drawBladeLayer(outerBlades,{midColor:`rgba(220,156,96,${flash?0.68:0.52})`,edgeColor:`rgba(170,112,72,${flash?0.58:0.46})`,veinLift:12});
+
+      // metallic spars between layers
+      ctx.save();
+      ctx.strokeStyle=metalGradient(-42,4,-210*wingSpread,152+wingLift*0.36);
+      ctx.lineWidth=5.4;
       ctx.beginPath();
-      ctx.moveTo(-10,0);
-      ctx.quadraticCurveTo(-158*wingSpread,-82-wingLift*0.2,-246*wingSpread,80+wingLift*0.26);
-      ctx.moveTo(-4,26);
-      ctx.quadraticCurveTo(-188*wingSpread,-10-wingLift*0.15,-236*wingSpread,132+wingLift*0.34);
-      ctx.moveTo(-2,52);
-      ctx.quadraticCurveTo(-176*wingSpread,46+wingLift*0.12,-208*wingSpread,190+wingLift*0.4);
+      ctx.moveTo(-26,6);
+      ctx.quadraticCurveTo(-182*wingSpread,-18-wingLift*0.24,-248*wingSpread,86+wingLift*0.28);
+      ctx.quadraticCurveTo(-208*wingSpread,128+wingLift*0.32,-188*wingSpread,170+wingLift*0.4);
       ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle=`rgba(255,204,148,${flash?0.86:0.52})`;
+      ctx.lineWidth=3.6;
+      ctx.shadowColor=`rgba(255,220,170,${flash?0.72:0.42})`;
+      ctx.shadowBlur=18;
+      ctx.beginPath();
+      ctx.moveTo(-22,12);
+      ctx.quadraticCurveTo(-176*wingSpread,-6-wingLift*0.18,-232*wingSpread,94+wingLift*0.3);
+      ctx.quadraticCurveTo(-198*wingSpread,136+wingLift*0.34,-176*wingSpread,180+wingLift*0.46);
+      ctx.stroke();
+      ctx.restore();
+
+      drawBladeLayer(innerBlades,{midColor:`rgba(208,138,90,${flash?0.62:0.48})`,edgeColor:`rgba(150,96,62,${flash?0.52:0.4})`,veinLift:18});
 
       // trailing edge spikes
       ctx.fillStyle=metalGradient(-210*wingSpread,80+wingLift*0.2,-160*wingSpread,160+wingLift*0.4);
