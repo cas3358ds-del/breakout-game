@@ -6297,77 +6297,89 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.restore();
 
     ctx.save();
-    ctx.globalCompositeOperation='lighter';
     const eyeGlow=flash?'rgba(255,90,60,0.96)':'rgba(255,36,0,0.92)';
-    ctx.shadowColor=eyeGlow;
-    ctx.shadowBlur=flash?36:34;
 
-    const leftEyeGrad=ctx.createLinearGradient(-60,-54,-2,-18);
-    leftEyeGrad.addColorStop(0, flash?'#ff7058':'#ff6a54');
-    leftEyeGrad.addColorStop(0.5, flash?'#ff2a00':'#ff2100');
-    leftEyeGrad.addColorStop(1, flash?'#a30000':'#450000');
-    ctx.fillStyle=leftEyeGrad;
-    ctx.beginPath();
-    ctx.moveTo(-58,-42);
-    ctx.quadraticCurveTo(-42,-86,-8,-82);
-    ctx.lineTo(-2,-54);
-    ctx.quadraticCurveTo(-28,-18,-64,-28);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,224,210,0.84)':'rgba(255,120,90,0.66)';
-    ctx.lineWidth=1.5;
-    ctx.stroke();
-    ctx.strokeStyle=flash?'rgba(255,198,184,0.92)':'rgba(255,88,66,0.74)';
-    ctx.lineWidth=1.15;
-    ctx.beginPath();
-    ctx.moveTo(-50,-60);
-    ctx.quadraticCurveTo(-28,-80,-10,-48);
-    ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,0.42)';
-    ctx.beginPath();
-    ctx.ellipse(-40,-58,6,3.6,-0.35,0,Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.28)';
-    ctx.beginPath();
-    ctx.moveTo(-26,-38);
-    ctx.lineTo(-12,-28);
-    ctx.lineTo(-32,-28);
-    ctx.closePath();
-    ctx.fill();
+    const drawEyeBase=side=>{
+      const isLeft=side<0;
+      const grad=isLeft
+        ? ctx.createLinearGradient(-60,-54,-2,-18)
+        : ctx.createLinearGradient(2,-18,60,-54);
+      if(isLeft){
+        grad.addColorStop(0, flash?'#ff7058':'#ff6a54');
+        grad.addColorStop(0.5, flash?'#ff2a00':'#ff2100');
+        grad.addColorStop(1, flash?'#a30000':'#450000');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.moveTo(-58,-42);
+        ctx.quadraticCurveTo(-42,-86,-8,-82);
+        ctx.lineTo(-2,-54);
+        ctx.quadraticCurveTo(-28,-18,-64,-28);
+        ctx.closePath();
+      }else{
+        grad.addColorStop(0, flash?'#a30000':'#450000');
+        grad.addColorStop(0.5, flash?'#ff2a00':'#ff2100');
+        grad.addColorStop(1, flash?'#ff7058':'#ff6a54');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.moveTo(58,-42);
+        ctx.quadraticCurveTo(42,-86,8,-82);
+        ctx.lineTo(2,-54);
+        ctx.quadraticCurveTo(28,-18,64,-28);
+        ctx.closePath();
+      }
+      ctx.shadowColor=eyeGlow;
+      ctx.shadowBlur=flash?36:34;
+      ctx.fill();
+      ctx.strokeStyle=flash?'rgba(255,224,210,0.84)':'rgba(255,120,90,0.66)';
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+      ctx.strokeStyle=flash?'rgba(255,198,184,0.92)':'rgba(255,88,66,0.74)';
+      ctx.lineWidth=1.15;
+      ctx.beginPath();
+      if(isLeft){
+        ctx.moveTo(-50,-60);
+        ctx.quadraticCurveTo(-28,-80,-10,-48);
+      }else{
+        ctx.moveTo(50,-60);
+        ctx.quadraticCurveTo(28,-80,10,-48);
+      }
+      ctx.stroke();
+    };
 
-    const rightEyeGrad=ctx.createLinearGradient(2,-18,60,-54);
-    rightEyeGrad.addColorStop(0, flash?'#a30000':'#450000');
-    rightEyeGrad.addColorStop(0.5, flash?'#ff2a00':'#ff2100');
-    rightEyeGrad.addColorStop(1, flash?'#ff7058':'#ff6a54');
-    ctx.fillStyle=rightEyeGrad;
-    ctx.beginPath();
-    ctx.moveTo(58,-42);
-    ctx.quadraticCurveTo(42,-86,8,-82);
-    ctx.lineTo(2,-54);
-    ctx.quadraticCurveTo(28,-18,64,-28);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,224,210,0.84)':'rgba(255,120,90,0.66)';
-    ctx.lineWidth=1.5;
-    ctx.stroke();
-    ctx.strokeStyle=flash?'rgba(255,198,184,0.92)':'rgba(255,88,66,0.74)';
-    ctx.lineWidth=1.15;
-    ctx.beginPath();
-    ctx.moveTo(50,-60);
-    ctx.quadraticCurveTo(28,-80,10,-48);
-    ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,0.42)';
-    ctx.beginPath();
-    ctx.ellipse(40,-58,6,3.6,0.35,0,Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.28)';
-    ctx.beginPath();
-    ctx.moveTo(26,-38);
-    ctx.lineTo(12,-28);
-    ctx.lineTo(32,-28);
-    ctx.closePath();
-    ctx.fill();
+    const drawEyeHighlights=side=>{
+      const isLeft=side<0;
+      ctx.shadowBlur=0;
+      ctx.fillStyle='rgba(255,255,255,0.42)';
+      ctx.beginPath();
+      if(isLeft){
+        ctx.ellipse(-40,-58,6,3.6,-0.35,0,Math.PI*2);
+      }else{
+        ctx.ellipse(40,-58,6,3.6,0.35,0,Math.PI*2);
+      }
+      ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.28)';
+      ctx.beginPath();
+      if(isLeft){
+        ctx.moveTo(-26,-38);
+        ctx.lineTo(-12,-28);
+        ctx.lineTo(-32,-28);
+      }else{
+        ctx.moveTo(26,-38);
+        ctx.lineTo(12,-28);
+        ctx.lineTo(32,-28);
+      }
+      ctx.closePath();
+      ctx.fill();
+    };
 
+    drawEyeBase(-1);
+    drawEyeBase(1);
+    drawEyeHighlights(-1);
+    drawEyeHighlights(1);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
     ctx.fillStyle=flash?'rgba(255,132,110,0.35)':'rgba(255,24,0,0.26)';
     ctx.beginPath();
     ctx.ellipse(-30,-52,20,12,-0.22,0,Math.PI*2);
