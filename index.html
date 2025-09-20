@@ -5109,6 +5109,37 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const darkMetal=(alpha=1)=>`rgba(110,64,22,${(flash?0.55:0.38)*alpha})`;
 
     const tailSwing=Math.sin(now/340 + boss.wingPhase*1.6)*6;
+
+    function drawDragonHalo(ctx){
+      ctx.save();
+      ctx.translate(0,-132);
+      ctx.scale(1.24,0.88);
+      ctx.globalCompositeOperation='lighter';
+      const outerR=112;
+      const haloStroke=ctx.createRadialGradient(0,0,outerR*0.38,0,0,outerR);
+      haloStroke.addColorStop(0, flash?'rgba(255,250,230,0.45)':'rgba(255,232,190,0.36)');
+      haloStroke.addColorStop(0.55, flash?'rgba(255,220,150,0.82)':'rgba(255,194,120,0.68)');
+      haloStroke.addColorStop(1,'rgba(255,170,70,0.05)');
+      ctx.shadowColor=flash?'rgba(255,238,200,0.9)':'rgba(255,210,150,0.74)';
+      ctx.shadowBlur=30;
+      ctx.lineWidth=18;
+      ctx.strokeStyle=haloStroke;
+      ctx.beginPath();
+      ctx.ellipse(0,0,outerR,outerR*0.7,0,0,Math.PI*2);
+      ctx.stroke();
+
+      const haloFill=ctx.createRadialGradient(0,0,outerR*0.08,0,0,outerR*1.18);
+      haloFill.addColorStop(0, flash?'rgba(255,255,240,0.42)':'rgba(255,244,214,0.28)');
+      haloFill.addColorStop(0.6, flash?'rgba(255,224,150,0.32)':'rgba(255,198,120,0.22)');
+      haloFill.addColorStop(1,'rgba(255,170,80,0)');
+      ctx.shadowColor='transparent';
+      ctx.shadowBlur=0;
+      ctx.fillStyle=haloFill;
+      ctx.beginPath();
+      ctx.ellipse(0,0,outerR*1.06,outerR*0.74,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
     ctx.save();
     ctx.translate(0,62);
     ctx.rotate(tailSwing*Math.PI/180);
@@ -5521,124 +5552,217 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.restore();
     }
 
-    const headGrad=metalGradient(-56,-82,56,62);
+    drawDragonHalo(ctx);
+
+    const headGrad=metalGradient(-64,-142,64,72);
     ctx.fillStyle=headGrad;
     ctx.beginPath();
-    ctx.moveTo(-58,18);
-    ctx.quadraticCurveTo(-86,-32,-34,-106);
-    ctx.lineTo(-10,-138);
-    ctx.lineTo(0,-158);
-    ctx.lineTo(10,-138);
-    ctx.lineTo(34,-106);
-    ctx.quadraticCurveTo(86,-32,58,18);
-    ctx.quadraticCurveTo(12,44,-12,46);
-    ctx.quadraticCurveTo(-18,44,-58,18);
+    ctx.moveTo(-68,26);
+    ctx.lineTo(-94,-18);
+    ctx.quadraticCurveTo(-108,-82,-72,-146);
+    ctx.quadraticCurveTo(-34,-206,-8,-214);
+    ctx.lineTo(0,-220);
+    ctx.lineTo(8,-214);
+    ctx.quadraticCurveTo(34,-206,72,-146);
+    ctx.quadraticCurveTo(108,-82,94,-18);
+    ctx.lineTo(68,26);
+    ctx.quadraticCurveTo(24,58,0,62);
+    ctx.quadraticCurveTo(-24,58,-68,26);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle=`rgba(255,238,214,${flash?0.94:0.78})`;
-    ctx.lineWidth=3;
+    ctx.strokeStyle=`rgba(255,240,220,${flash?0.94:0.8})`;
+    ctx.lineWidth=3.2;
     ctx.stroke();
 
-    // crown blades
+    // segmented forehead plates with central ridge
+    ctx.strokeStyle=`rgba(255,236,210,${flash?0.92:0.74})`;
+    ctx.lineWidth=2.2;
+    ctx.beginPath();
+    ctx.moveTo(0,-218);
+    ctx.lineTo(0,20);
+    ctx.stroke();
+
+    const foreheadSteps=[
+      {y:-188, inset:20},
+      {y:-160, inset:26},
+      {y:-132, inset:32},
+      {y:-104, inset:38}
+    ];
+    ctx.lineWidth=1.6;
+    for(const step of foreheadSteps){
+      ctx.beginPath();
+      ctx.moveTo(-step.inset, step.y);
+      ctx.lineTo(step.inset, step.y);
+      ctx.stroke();
+    }
+
+    const crownSegments=[
+      {top:-232, mid:-220, base:-206, width:16},
+      {top:-222, mid:-208, base:-194, width:30},
+      {top:-210, mid:-194, base:-182, width:44}
+    ];
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.fillStyle=metalGradient(-20,-168,-4,-96);
-      ctx.beginPath();
-      ctx.moveTo(0,-150);
-      ctx.quadraticCurveTo(24,-186,18,-210);
-      ctx.lineTo(6,-204);
-      ctx.quadraticCurveTo(-6,-178,0,-150);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle=`rgba(255,240,220,${flash?0.92:0.78})`;
-      ctx.lineWidth=1.6;
-      ctx.stroke();
+      ctx.fillStyle=metalGradient(-32,-220,-4,-176);
+      ctx.strokeStyle=`rgba(255,242,226,${flash?0.92:0.78})`;
+      ctx.lineWidth=1.5;
+      for(const segment of crownSegments){
+        ctx.beginPath();
+        ctx.moveTo(0, segment.mid);
+        ctx.lineTo(segment.width*0.4, segment.base);
+        ctx.lineTo(segment.width, segment.mid);
+        ctx.lineTo(segment.width*0.6, segment.top);
+        ctx.lineTo(0, segment.top+4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
-    // jaw armor
-    ctx.fillStyle=metalGradient(-48,-16,48,54);
+    // angular upper beak
+    ctx.fillStyle=metalGradient(-58,-48,58,-10);
     ctx.beginPath();
-    ctx.moveTo(-50,10);
-    ctx.lineTo(-20,34);
-    ctx.lineTo(20,34);
-    ctx.lineTo(50,10);
-    ctx.lineTo(24,-12);
-    ctx.lineTo(-24,-12);
+    ctx.moveTo(-56,-6);
+    ctx.quadraticCurveTo(-78,-52,-32,-130);
+    ctx.lineTo(0,-170);
+    ctx.lineTo(32,-130);
+    ctx.quadraticCurveTo(78,-52,56,-6);
+    ctx.quadraticCurveTo(12,16,0,20);
+    ctx.quadraticCurveTo(-12,16,-56,-6);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle=`rgba(255,234,210,${flash?0.9:0.76})`;
+    ctx.strokeStyle=`rgba(255,236,216,${flash?0.92:0.76})`;
     ctx.lineWidth=2.2;
     ctx.stroke();
 
-    ctx.fillStyle='rgba(38,8,4,0.92)';
+    // tapered lower jaw armor
+    ctx.fillStyle=metalGradient(-42,0,42,56);
     ctx.beginPath();
-    ctx.moveTo(-32,-4);
-    ctx.quadraticCurveTo(0,-24,32,-4);
-    ctx.quadraticCurveTo(8,10,-8,16);
-    ctx.quadraticCurveTo(-14,10,-32,-4);
+    ctx.moveTo(-38,4);
+    ctx.lineTo(-14,30);
+    ctx.quadraticCurveTo(0,40,14,30);
+    ctx.lineTo(38,4);
+    ctx.lineTo(16,-12);
+    ctx.lineTo(-16,-12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle=`rgba(255,232,210,${flash?0.9:0.74})`;
+    ctx.lineWidth=1.9;
+    ctx.stroke();
+
+    ctx.fillStyle='rgba(32,10,6,0.9)';
+    ctx.beginPath();
+    ctx.moveTo(-30,-6);
+    ctx.quadraticCurveTo(0,-30,30,-6);
+    ctx.quadraticCurveTo(8,12,0,18);
+    ctx.quadraticCurveTo(-8,12,-30,-6);
     ctx.closePath();
     ctx.fill();
 
-    ctx.strokeStyle=`rgba(255,230,200,${flash?0.86:0.7})`;
-    ctx.lineWidth=1.8;
+    ctx.strokeStyle=`rgba(255,228,200,${flash?0.86:0.68})`;
+    ctx.lineWidth=1.6;
     ctx.beginPath();
-    ctx.moveTo(-26,4);
-    ctx.lineTo(-12,20);
-    ctx.moveTo(26,4);
-    ctx.lineTo(12,20);
+    ctx.moveTo(-24,2);
+    ctx.lineTo(-10,22);
+    ctx.moveTo(24,2);
+    ctx.lineTo(10,22);
     ctx.stroke();
 
-    // teeth
-    ctx.fillStyle=flash?'#fffef4':'#fdf0d0';
+    // new beak teeth
+    ctx.fillStyle=flash?'#fffef4':'#fdf2d6';
     for(const side of [-1,1]){
       for(let i=0;i<3;i++){
-        const offset=-18 + i*12;
+        const offset=-14 + i*10;
         ctx.beginPath();
-        ctx.moveTo(offset*side,-2);
-        ctx.lineTo((offset+4)*side,12);
-        ctx.lineTo((offset+1)*side,6);
+        ctx.moveTo(offset*side,-4);
+        ctx.lineTo((offset+3)*side,10);
+        ctx.lineTo((offset+1)*side,4);
         ctx.closePath();
         ctx.fill();
       }
     }
 
-    // crest fins
+    // cheek spikes and solar flares
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.fillStyle=metalGradient(-40,-90,-12,-10);
+      const cheekPanels=[
+        {points:[[46,-24],[106,-74],[84,-12],[52,-2]]},
+        {points:[[44,-2],[124,6],[86,40],[48,18]]},
+        {points:[[40,22],[112,72],[70,58],[46,34]]}
+      ];
+      for(const panel of cheekPanels){
+        ctx.beginPath();
+        ctx.moveTo(panel.points[0][0], panel.points[0][1]);
+        for(let i=1;i<panel.points.length;i++){
+          ctx.lineTo(panel.points[i][0], panel.points[i][1]);
+        }
+        ctx.closePath();
+        ctx.fillStyle=metalGradient(-60,-10,80,panel.points[1][1]+20);
+        ctx.fill();
+        ctx.strokeStyle=`rgba(255,236,212,${flash?0.88:0.7})`;
+        ctx.lineWidth=1.4;
+        ctx.stroke();
+      }
+      const spikeGrad=metalGradient(-66,-58,90,12);
+      ctx.fillStyle=spikeGrad;
       ctx.beginPath();
-      ctx.moveTo(12,-104);
-      ctx.lineTo(80,-88);
-      ctx.lineTo(30,-42);
+      ctx.moveTo(54,-44);
+      ctx.lineTo(102,-118);
+      ctx.lineTo(78,-38);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle=`rgba(255,240,220,${flash?0.9:0.74})`;
-      ctx.lineWidth=1.6;
+      ctx.strokeStyle=`rgba(255,240,220,${flash?0.88:0.72})`;
+      ctx.lineWidth=1.5;
       ctx.stroke();
       ctx.restore();
     }
 
-    // glowing eyes
+    // radiant forehead gem
     ctx.save();
-    ctx.shadowColor='rgba(255,60,60,0.9)';
-    ctx.shadowBlur=18;
-    ctx.fillStyle=flash?'rgba(255,120,120,1)':'rgba(255,70,70,0.95)';
+    ctx.translate(0,-134);
+    const gemGrad=ctx.createRadialGradient(0,0,0,0,0,20);
+    gemGrad.addColorStop(0, flash?'#eaffff':'#9effff');
+    gemGrad.addColorStop(0.5, flash?'rgba(120,252,255,0.95)':'rgba(60,228,250,0.92)');
+    gemGrad.addColorStop(1,'rgba(0,140,180,0)');
     ctx.beginPath();
-    ctx.ellipse(-20,-34,10,5,-0.35,0,Math.PI*2);
-    ctx.ellipse(20,-34,10,5,0.35,0,Math.PI*2);
+    ctx.ellipse(0,0,12,18,0,0,Math.PI*2);
+    ctx.fillStyle=gemGrad;
+    ctx.shadowColor=flash?'rgba(120,252,255,0.86)':'rgba(60,220,240,0.72)';
+    ctx.shadowBlur=24;
+    ctx.fill();
+    ctx.restore();
+
+    // luminous eyes
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    const eyeFill=flash?'rgba(210,255,255,0.95)':'rgba(80,220,255,0.85)';
+    ctx.fillStyle=eyeFill;
+    ctx.shadowColor=flash?'rgba(200,255,255,0.8)':'rgba(60,210,250,0.65)';
+    ctx.shadowBlur=16;
+    ctx.beginPath();
+    ctx.moveTo(-34,-34);
+    ctx.quadraticCurveTo(-18,-46,-8,-34);
+    ctx.quadraticCurveTo(-14,-28,-34,-30);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(34,-34);
+    ctx.quadraticCurveTo(18,-46,8,-34);
+    ctx.quadraticCurveTo(14,-28,34,-30);
+    ctx.closePath();
     ctx.fill();
     ctx.restore();
 
     ctx.strokeStyle=darkMetal(0.85);
     ctx.lineWidth=2;
     ctx.beginPath();
-    ctx.moveTo(-24,-52);
-    ctx.quadraticCurveTo(0,-70,24,-52);
-    ctx.moveTo(-18,-26);
-    ctx.quadraticCurveTo(0,-38,18,-26);
+    ctx.moveTo(-26,-58);
+    ctx.quadraticCurveTo(0,-76,26,-58);
+    ctx.moveTo(-20,-28);
+    ctx.quadraticCurveTo(0,-40,20,-28);
     ctx.stroke();
 
     ctx.restore();
