@@ -5108,7 +5108,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     };
     const darkMetal=(alpha=1)=>`rgba(110,64,22,${(flash?0.55:0.38)*alpha})`;
 
-    const tailSwing=Math.sin(now/340 + boss.wingPhase*1.6)*6;
+    const tailSwing=Math.sin(now/340 + boss.wingPhase*1.6)*5.8;
 
     function drawDragonHalo(ctx){
       ctx.save();
@@ -5142,51 +5142,130 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     }
     ctx.save();
     ctx.translate(0,62);
-    ctx.rotate(tailSwing*Math.PI/180);
-    const tailSegments=7;
+    const tailBaseSwing=tailSwing;
+    const tailRipple=Math.sin(now/260 + boss.wingPhase*2.2)*3.6;
+    ctx.rotate(tailBaseSwing*Math.PI/180);
+    const tailSegments=12;
+    const segmentSpacing=22;
+    const tailLength=tailSegments*segmentSpacing;
     for(let i=0;i<tailSegments;i++){
       const prog=i/(tailSegments-1);
-      const segW=40 - prog*18;
-      const segH=28 - prog*12;
-      const segOffset=i*24;
+      const segOffset=i*segmentSpacing;
+      const segWidth=42 - prog*18;
+      const segHeight=28 - prog*10;
       ctx.save();
       ctx.translate(0,segOffset);
-      ctx.scale(1 - prog*0.06,1);
-      ctx.fillStyle=metalGradient(-segW, -segH*0.6, segW, segH*0.8);
-      ctx.beginPath();
-      ctx.moveTo(-segW*0.55,-segH*0.55);
-      ctx.lineTo(-segW*0.2,segH*0.52);
-      ctx.lineTo(segW*0.2,segH*0.52);
-      ctx.lineTo(segW*0.55,-segH*0.55);
-      ctx.quadraticCurveTo(0,-segH*0.95,-segW*0.55,-segH*0.55);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle=`rgba(255,230,200,${flash?0.82:0.62})`;
-      ctx.lineWidth=2;
-      ctx.stroke();
-      ctx.strokeStyle=darkMetal(0.9);
-      ctx.lineWidth=1.4;
-      ctx.beginPath();
-      ctx.moveTo(0,-segH*0.6);
-      ctx.lineTo(0,segH*0.6);
-      ctx.moveTo(-segW*0.32,-segH*0.25);
-      ctx.lineTo(-segW*0.12,segH*0.4);
-      ctx.moveTo(segW*0.32,-segH*0.25);
-      ctx.lineTo(segW*0.12,segH*0.4);
-      ctx.stroke();
+      ctx.rotate((tailRipple*prog)*Math.PI/180);
+      if(i%2===0){
+        const outerW=segWidth*0.52;
+        const outerH=segHeight*0.5;
+        const innerW=outerW*0.56;
+        const innerH=outerH*0.58;
+        ctx.fillStyle=metalGradient(-outerW, -outerH*0.6, outerW, outerH*1.2);
+        ctx.beginPath();
+        ctx.ellipse(0,0,outerW,outerH,0,0,Math.PI*2);
+        ctx.ellipse(0,0,innerW,innerH,0,0,Math.PI*2,true);
+        ctx.fill('evenodd');
+        ctx.strokeStyle=`rgba(255,234,208,${flash?0.9:0.72})`;
+        ctx.lineWidth=1.8;
+        ctx.beginPath();
+        ctx.ellipse(0,0,outerW,outerH,0,0,Math.PI*2);
+        ctx.stroke();
+        ctx.strokeStyle=darkMetal(0.85);
+        ctx.lineWidth=1.2;
+        ctx.beginPath();
+        ctx.ellipse(0,0,innerW*1.02,innerH*1.02,0,0,Math.PI*2);
+        ctx.stroke();
+      }else{
+        const bladeW=segWidth*0.6;
+        const bladeH=segHeight*1.26;
+        ctx.fillStyle=metalGradient(-bladeW*0.8, -bladeH*0.4, bladeW*0.9, bladeH*0.9);
+        ctx.beginPath();
+        ctx.moveTo(-bladeW*0.46,-bladeH*0.2);
+        ctx.quadraticCurveTo(-bladeW*0.62,bladeH*0.38,-bladeW*0.2,bladeH*0.84);
+        ctx.lineTo(bladeW*0.2,bladeH*0.84);
+        ctx.quadraticCurveTo(bladeW*0.62,bladeH*0.34,bladeW*0.46,-bladeH*0.2);
+        ctx.quadraticCurveTo(0,-bladeH*0.82,-bladeW*0.46,-bladeH*0.2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle=`rgba(255,238,214,${flash?0.92:0.76})`;
+        ctx.lineWidth=1.9;
+        ctx.stroke();
+        ctx.strokeStyle=darkMetal(0.88);
+        ctx.lineWidth=1.1;
+        ctx.beginPath();
+        ctx.moveTo(0,-bladeH*0.72);
+        ctx.lineTo(0,bladeH*0.74);
+        ctx.moveTo(-bladeW*0.24,-bladeH*0.12);
+        ctx.lineTo(-bladeW*0.06,bladeH*0.62);
+        ctx.moveTo(bladeW*0.24,-bladeH*0.12);
+        ctx.lineTo(bladeW*0.06,bladeH*0.62);
+        ctx.stroke();
+      }
       ctx.restore();
+
+      if(i<tailSegments-1){
+        const nodeProg=(i+0.5)/(tailSegments-1);
+        ctx.save();
+        ctx.translate(0,segOffset+segmentSpacing*0.5);
+        ctx.rotate((tailRipple*nodeProg)*Math.PI/180);
+        const nodeGrad=metalGradient(-12,-8,12,14);
+        ctx.fillStyle=nodeGrad;
+        ctx.beginPath();
+        ctx.ellipse(0,0,8.4,6.2,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle=`rgba(255,244,220,${flash?0.94:0.78})`;
+        ctx.lineWidth=1.2;
+        ctx.stroke();
+        ctx.strokeStyle=`rgba(255,212,150,${flash?0.7:0.56})`;
+        ctx.lineWidth=0.9;
+        ctx.beginPath();
+        ctx.ellipse(0,0,5.4,3.8,0,0,Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
-    ctx.fillStyle=metalGradient(-18, tailSegments*24-10, 18, tailSegments*24+36);
+
+    ctx.save();
+    ctx.translate(0,tailLength+12);
+    const spearAngle=tailBaseSwing*0.38 + Math.sin(now/320 + boss.wingPhase*2.6)*6;
+    ctx.rotate(spearAngle*Math.PI/180);
+    const spearGrad=metalGradient(-22,-36,22,68);
+    ctx.fillStyle=spearGrad;
     ctx.beginPath();
-    ctx.moveTo(-12,tailSegments*24-6);
-    ctx.lineTo(0,tailSegments*24+40);
-    ctx.lineTo(12,tailSegments*24-6);
-    ctx.quadraticCurveTo(0,tailSegments*24-18,-12,tailSegments*24-6);
+    ctx.moveTo(-10,-12);
+    ctx.quadraticCurveTo(-22,28,-6,74);
+    ctx.lineTo(0,92);
+    ctx.lineTo(6,74);
+    ctx.quadraticCurveTo(22,28,10,-12);
+    ctx.quadraticCurveTo(0,-42,-10,-12);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle=`rgba(255,230,180,${flash?0.88:0.7})`;
-    ctx.lineWidth=2;
+    ctx.strokeStyle=`rgba(255,236,210,${flash?0.92:0.76})`;
+    ctx.lineWidth=2.2;
     ctx.stroke();
+    ctx.strokeStyle=darkMetal(0.88);
+    ctx.lineWidth=1.2;
+    ctx.beginPath();
+    ctx.moveTo(0,-28);
+    ctx.lineTo(0,76);
+    ctx.stroke();
+    for(const side of [-1,1]){
+      ctx.beginPath();
+      ctx.moveTo(side*4,42);
+      ctx.lineTo(side*28,14);
+      ctx.lineTo(side*10,68);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.strokeStyle=`rgba(255,246,228,${flash?0.92:0.8})`;
+    ctx.lineWidth=1.1;
+    ctx.beginPath();
+    ctx.moveTo(-12,52);
+    ctx.quadraticCurveTo(0,82,12,52);
+    ctx.stroke();
+    ctx.restore();
     ctx.restore();
 
     function drawWing(side){
@@ -5410,52 +5489,184 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.save();
       ctx.scale(side,1);
       ctx.translate(44,96);
-      ctx.rotate((8*side + Math.sin(now/300 + side*0.8)*3)*Math.PI/180);
-      ctx.fillStyle=metalGradient(-32,-24,38,120);
+      const legSwing=(6*side + Math.sin(now/320 + side*0.9)*4.2);
+      ctx.rotate(legSwing*Math.PI/180);
+
+      const limbGradient=(x0,y0,x1,y1)=>{
+        const g=ctx.createLinearGradient(x0,y0,x1,y1);
+        g.addColorStop(0, flash?'#fff7e8':'#fbe8c8');
+        g.addColorStop(0.38, flash?'#ffd99c':'#f3c27d');
+        g.addColorStop(0.72, flash?'#f0a95a':'#d78a3f');
+        g.addColorStop(1, flash?'#b86a28':'#8d4616');
+        return g;
+      };
+
+      // segmented thigh armor
+      ctx.fillStyle=limbGradient(-40,-36,42,96);
       ctx.beginPath();
-      ctx.moveTo(-30,-18);
-      ctx.lineTo(-44,36);
-      ctx.lineTo(-12,92);
-      ctx.lineTo(18,82);
-      ctx.lineTo(30,26);
-      ctx.lineTo(10,-18);
+      ctx.moveTo(-34,-26);
+      ctx.lineTo(-56,32);
+      ctx.lineTo(-24,96);
+      ctx.lineTo(18,88);
+      ctx.lineTo(38,24);
+      ctx.lineTo(6,-32);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle=`rgba(255,232,200,${flash?0.86:0.7})`;
+      ctx.strokeStyle=`rgba(255,236,210,${flash?0.92:0.76})`;
       ctx.lineWidth=2.4;
       ctx.stroke();
 
-      ctx.fillStyle=metalGradient(-18,82,28,140);
+      ctx.fillStyle=limbGradient(-24,-12,30,76);
       ctx.beginPath();
-      ctx.moveTo(-16,80);
-      ctx.lineTo(-4,128);
-      ctx.lineTo(12,108);
-      ctx.lineTo(20,74);
+      ctx.moveTo(-16,-10);
+      ctx.lineTo(-36,40);
+      ctx.lineTo(-10,76);
+      ctx.lineTo(18,62);
+      ctx.lineTo(24,18);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle=`rgba(255,235,210,${flash?0.88:0.72})`;
+      ctx.strokeStyle=`rgba(255,242,220,${flash?0.94:0.8})`;
       ctx.lineWidth=1.8;
       ctx.stroke();
 
-      ctx.fillStyle=metalGradient(-22,128,32,176);
+      ctx.strokeStyle=darkMetal(0.92);
+      ctx.lineWidth=1.3;
       ctx.beginPath();
-      ctx.moveTo(-18,124);
-      ctx.lineTo(-10,166);
-      ctx.lineTo(8,166);
-      ctx.lineTo(24,136);
-      ctx.lineTo(6,128);
+      ctx.moveTo(-20,8);
+      ctx.lineTo(14,60);
+      ctx.moveTo(-32,34);
+      ctx.lineTo(-4,82);
+      ctx.stroke();
+
+      // articulated knee and shin plates
+      ctx.fillStyle=limbGradient(-16,66,36,132);
+      ctx.beginPath();
+      ctx.moveTo(-12,64);
+      ctx.lineTo(-24,110);
+      ctx.lineTo(12,126);
+      ctx.lineTo(24,82);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle=`rgba(255,228,198,${flash?0.82:0.66})`;
+      ctx.strokeStyle=`rgba(255,238,214,${flash?0.9:0.74})`;
+      ctx.lineWidth=1.9;
+      ctx.stroke();
+
+      ctx.fillStyle=limbGradient(4,80,48,144);
+      ctx.beginPath();
+      ctx.moveTo(14,82);
+      ctx.lineTo(46,114);
+      ctx.lineTo(22,72);
+      ctx.lineTo(6,68);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle=`rgba(255,246,226,${flash?0.94:0.82})`;
+      ctx.lineWidth=1.4;
+      ctx.stroke();
+
+      ctx.fillStyle=limbGradient(-20,106,30,174);
+      ctx.beginPath();
+      ctx.moveTo(-18,102);
+      ctx.lineTo(-8,150);
+      ctx.lineTo(14,162);
+      ctx.lineTo(32,128);
+      ctx.lineTo(10,108);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle=`rgba(255,234,208,${flash?0.88:0.72})`;
       ctx.lineWidth=1.8;
       ctx.stroke();
 
-      ctx.strokeStyle=darkMetal(0.9);
-      ctx.lineWidth=1.5;
+      ctx.fillStyle=limbGradient(-10,124,26,182);
       ctx.beginPath();
-      ctx.moveTo(-6,82);
-      ctx.lineTo(4,132);
+      ctx.moveTo(-4,122);
+      ctx.lineTo(-2,158);
+      ctx.lineTo(16,156);
+      ctx.lineTo(22,124);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle=`rgba(255,244,220,${flash?0.92:0.78})`;
+      ctx.lineWidth=1.4;
       ctx.stroke();
+
+      ctx.strokeStyle=darkMetal(0.88);
+      ctx.lineWidth=1.2;
+      ctx.beginPath();
+      ctx.moveTo(-8,110);
+      ctx.lineTo(12,160);
+      ctx.moveTo(-2,144);
+      ctx.lineTo(20,138);
+      ctx.stroke();
+
+      // armored foot with toe blades
+      ctx.fillStyle=limbGradient(-26,150,34,206);
+      ctx.beginPath();
+      ctx.moveTo(-24,148);
+      ctx.lineTo(-16,198);
+      ctx.lineTo(12,206);
+      ctx.lineTo(40,168);
+      ctx.lineTo(16,144);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle=`rgba(255,238,214,${flash?0.9:0.74})`;
+      ctx.lineWidth=1.6;
+      ctx.stroke();
+
+      ctx.fillStyle=limbGradient(-8,158,20,202);
+      ctx.beginPath();
+      ctx.moveTo(-6,154);
+      ctx.lineTo(10,198);
+      ctx.lineTo(26,180);
+      ctx.lineTo(18,150);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle=`rgba(255,244,224,${flash?0.94:0.8})`;
+      ctx.lineWidth=1.3;
+      ctx.stroke();
+
+      const toes=[
+        {x:-14,y:186,rot:-16},
+        {x:2,y:194,rot:0},
+        {x:20,y:186,rot:18}
+      ];
+      for(const toe of toes){
+        ctx.save();
+        ctx.translate(toe.x,toe.y);
+        ctx.rotate(toe.rot*Math.PI/180);
+        ctx.fillStyle=limbGradient(-8,-6,22,48);
+        ctx.beginPath();
+        ctx.moveTo(-6,-2);
+        ctx.quadraticCurveTo(-20,12,-14,36);
+        ctx.lineTo(20,40);
+        ctx.lineTo(14,4);
+        ctx.quadraticCurveTo(4,-10,-6,-2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle=`rgba(255,246,226,${flash?0.94:0.8})`;
+        ctx.lineWidth=1.2;
+        ctx.stroke();
+        ctx.strokeStyle=darkMetal(0.84);
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.moveTo(-2,0);
+        ctx.lineTo(12,32);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const knuckles=[{x:-18,y:172},{x:0,y:178},{x:18,y:170}];
+      for(const node of knuckles){
+        ctx.save();
+        ctx.translate(node.x,node.y);
+        const knuckleGrad=ctx.createRadialGradient(0,0,0,0,0,8);
+        knuckleGrad.addColorStop(0, flash?'rgba(255,250,236,0.98)':'rgba(255,244,224,0.86)');
+        knuckleGrad.addColorStop(1, flash?'rgba(255,204,150,0.4)':'rgba(240,184,120,0.34)');
+        ctx.fillStyle=knuckleGrad;
+        ctx.beginPath();
+        ctx.ellipse(0,0,7,5,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+
       ctx.restore();
     }
 
@@ -5464,67 +5675,150 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.save();
       ctx.scale(side,1);
       ctx.translate(72,-12);
-      ctx.rotate((-12*side + Math.sin(now/240 + side)*4)*Math.PI/180);
+      const armSwing=(-10*side + Math.sin(now/240 + side)*4.6);
+      ctx.rotate(armSwing*Math.PI/180);
 
-      ctx.fillStyle=metalGradient(-48,-36,36,120);
+      const armGradient=(x0,y0,x1,y1)=>{
+        const g=ctx.createLinearGradient(x0,y0,x1,y1);
+        g.addColorStop(0, flash?'#fff9ec':'#fce9ce');
+        g.addColorStop(0.3, flash?'#ffe0a8':'#f6c47e');
+        g.addColorStop(0.68, flash?'#f0a868':'#d1843c');
+        g.addColorStop(1, flash?'#b86a2c':'#823f18');
+        return g;
+      };
+
+      // layered shoulder armor
+      ctx.fillStyle=armGradient(-56,-42,44,118);
       ctx.beginPath();
-      ctx.moveTo(-50,-22);
-      ctx.lineTo(-68,40);
-      ctx.lineTo(-28,92);
-      ctx.lineTo(10,66);
-      ctx.lineTo(28,10);
-      ctx.lineTo(-10,-26);
+      ctx.moveTo(-54,-24);
+      ctx.lineTo(-80,36);
+      ctx.lineTo(-46,116);
+      ctx.lineTo(6,86);
+      ctx.lineTo(34,18);
+      ctx.lineTo(-8,-32);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle=`rgba(255,236,210,${flash?0.92:0.78})`;
+      ctx.strokeStyle=`rgba(255,238,214,${flash?0.92:0.78})`;
       ctx.lineWidth=2.6;
       ctx.stroke();
 
-      ctx.fillStyle=metalGradient(-34,70,30,140);
+      ctx.fillStyle=armGradient(-34,-12,32,74);
       ctx.beginPath();
-      ctx.moveTo(-18,64);
-      ctx.lineTo(-42,120);
-      ctx.lineTo(-16,136);
-      ctx.lineTo(10,96);
+      ctx.moveTo(-24,-8);
+      ctx.lineTo(-48,46);
+      ctx.lineTo(-18,90);
+      ctx.lineTo(14,70);
+      ctx.lineTo(26,18);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle=`rgba(255,232,208,${flash?0.88:0.74})`;
-      ctx.lineWidth=2;
+      ctx.strokeStyle=`rgba(255,244,224,${flash?0.94:0.82})`;
+      ctx.lineWidth=1.9;
       ctx.stroke();
 
-      ctx.fillStyle=metalGradient(-10,130,24,176);
+      ctx.strokeStyle=darkMetal(0.9);
+      ctx.lineWidth=1.3;
       ctx.beginPath();
-      ctx.moveTo(-12,126);
-      ctx.lineTo(-30,178);
-      ctx.lineTo(-8,170);
-      ctx.lineTo(10,132);
+      ctx.moveTo(-30,12);
+      ctx.lineTo(8,74);
+      ctx.moveTo(-44,40);
+      ctx.lineTo(-10,92);
+      ctx.stroke();
+
+      // forearm plating
+      ctx.fillStyle=armGradient(-30,72,34,152);
+      ctx.beginPath();
+      ctx.moveTo(-22,68);
+      ctx.lineTo(-52,130);
+      ctx.lineTo(-22,150);
+      ctx.lineTo(8,104);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle=`rgba(255,236,212,${flash?0.9:0.76})`;
-      ctx.lineWidth=1.6;
+      ctx.strokeStyle=`rgba(255,240,220,${flash?0.92:0.8})`;
+      ctx.lineWidth=1.8;
       ctx.stroke();
 
-      ctx.strokeStyle=darkMetal(0.85);
+      ctx.fillStyle=armGradient(-10,108,28,178);
+      ctx.beginPath();
+      ctx.moveTo(-12,108);
+      ctx.lineTo(-34,170);
+      ctx.lineTo(-6,184);
+      ctx.lineTo(14,132);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle=`rgba(255,244,226,${flash?0.94:0.82})`;
       ctx.lineWidth=1.5;
-      ctx.beginPath();
-      ctx.moveTo(-32,150);
-      ctx.lineTo(-6,96);
       ctx.stroke();
 
-      // claws
-      ctx.fillStyle=metalGradient(-26,168,14,206);
-      for(let i=0;i<3;i++){
-        const offset=-12 + i*12;
+      ctx.strokeStyle=darkMetal(0.86);
+      ctx.lineWidth=1.2;
+      ctx.beginPath();
+      ctx.moveTo(-38,150);
+      ctx.lineTo(-8,100);
+      ctx.moveTo(-18,120);
+      ctx.lineTo(6,162);
+      ctx.stroke();
+
+      // wrist ring and dorsal spike
+      ctx.save();
+      ctx.translate(-8,132);
+      ctx.scale(1.08,1);
+      ctx.fillStyle=armGradient(-28,118,28,150);
+      ctx.beginPath();
+      ctx.ellipse(0,0,24,10,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle=`rgba(255,248,232,${flash?0.96:0.84})`;
+      ctx.lineWidth=1.4;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle=armGradient(-6,120,26,186);
+      ctx.beginPath();
+      ctx.moveTo(10,138);
+      ctx.lineTo(32,152);
+      ctx.lineTo(18,116);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle=`rgba(255,248,230,${flash?0.96:0.84})`;
+      ctx.lineWidth=1.2;
+      ctx.stroke();
+
+      // hand back spike
+      ctx.fillStyle=armGradient(-4,150,30,210);
+      ctx.beginPath();
+      ctx.moveTo(0,160);
+      ctx.lineTo(24,200);
+      ctx.lineTo(-6,182);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle=`rgba(255,246,228,${flash?0.94:0.82})`;
+      ctx.lineWidth=1.2;
+      ctx.stroke();
+
+      // claws with gleaming edges
+      const clawOffsets=[-16,-2,12];
+      for(const offset of clawOffsets){
+        ctx.save();
+        ctx.translate(offset,168);
+        ctx.fillStyle=armGradient(-18,-4,18,46);
         ctx.beginPath();
-        ctx.moveTo(offset,168);
-        ctx.lineTo(offset-10,204);
-        ctx.lineTo(offset+6,194);
+        ctx.moveTo(0,0);
+        ctx.quadraticCurveTo(-16,18,-12,46);
+        ctx.lineTo(12,38);
+        ctx.lineTo(10,4);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle=`rgba(255,240,218,${flash?0.9:0.76})`;
-        ctx.lineWidth=1.4;
+        ctx.strokeStyle=`rgba(255,248,234,${flash?0.96:0.84})`;
+        ctx.lineWidth=1.3;
         ctx.stroke();
+        ctx.strokeStyle=darkMetal(0.84);
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.moveTo(-2,6);
+        ctx.lineTo(8,36);
+        ctx.stroke();
+        ctx.restore();
       }
+
       ctx.restore();
     }
 
