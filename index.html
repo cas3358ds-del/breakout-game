@@ -6965,7 +6965,21 @@ function generateLevel(lv, L){
         fireCollide();
         if((inRampage || b.piercing) && bk.unbreakable){
           if(b.loopBrick===bk){ b.loopHits++; } else { b.loopBrick=bk; b.loopHits=1; }
-          if(b.loopHits>=20){ b.piercing=false; b.rampageUntil=0; b.loopBrick=null; b.loopHits=0; }
+          if(b.loopHits>=20){
+            const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
+            const dx=b.x-cx, dy=b.y-cy;
+            const len=Math.hypot(dx,dy)||1;
+            const pushDist=Math.max(bk.w,bk.h)/2 + b.r + 4;
+            b.x=cx + (dx/len)*pushDist;
+            b.y=cy + (dy/len)*pushDist;
+            const sp=Math.max(4, Math.hypot(b.vx,b.vy));
+            const jitter=(Math.random()>0.5?1:-1)*(Math.PI/12);
+            const ang=Math.atan2(b.vy,b.vx)+jitter;
+            b.vx=Math.cos(ang)*sp || (Math.random()>0.5?4:-4);
+            b.vy=Math.sin(ang)*sp || (Math.random()>0.5?4:-4);
+            b.loopBrick=null;
+            b.loopHits=0;
+          }
         }else{ b.loopBrick=null; b.loopHits=0; }
         let suppressBrickAccel=false;
         let shouldSuppressSpeedBoost=false;
