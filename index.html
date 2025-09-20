@@ -1857,7 +1857,7 @@ select optgroup { color: #0b1022; }
     const bossLv = (level%5===0)? level : 0;
     if(!bossLv) return;
     if(level===5 && spaceBossPhase!=='inactive') return;
-    if(level===15 && dragonPhase!=='active') return;
+    if(level===15 && (dragonPhase==='dying' || dragonPhase==='defeated' || dragonPhase==='inactive')) return;
     const now=performance.now();
     if(bossLv===5){ if(now>=nextBossAtkA){ spawnLionBeam(); nextBossAtkA = now + 10000; } }
     else if(bossLv===10){ if(now>=nextBossAtkA){ spawnKnightArc(); nextBossAtkA = now + 15000; } }
