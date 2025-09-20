@@ -1492,7 +1492,16 @@ select optgroup { color: #0b1022; }
       return;
     }
     const bounds=getSpaceBossBounds();
-    if(bounds){ pushLockBox(bounds.x, bounds.y, bounds.w, bounds.h, 'target'); }
+    if(bounds){
+      pushLockBox(bounds.x, bounds.y, bounds.w, bounds.h, 'target');
+      return;
+    }
+    if(isDragonActive()){
+      const dragonBounds=getDragonBounds();
+      if(dragonBounds){
+        pushLockBox(dragonBounds.x, dragonBounds.y, dragonBounds.w, dragonBounds.h, 'target');
+      }
+    }
   }
     let scoreUploaded=false;
     let uploading=false;
