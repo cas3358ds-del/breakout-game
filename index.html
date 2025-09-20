@@ -6298,14 +6298,14 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
 
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    const eyeGlow=flash?'rgba(255,170,150,0.96)':'rgba(255,36,0,0.92)';
+    const eyeGlow=flash?'rgba(255,90,60,0.96)':'rgba(255,36,0,0.92)';
     ctx.shadowColor=eyeGlow;
     ctx.shadowBlur=flash?36:34;
 
     const leftEyeGrad=ctx.createLinearGradient(-60,-54,-2,-18);
-    leftEyeGrad.addColorStop(0, flash?'#ffe3d8':'#ff6a54');
-    leftEyeGrad.addColorStop(0.5, flash?'#ff9a88':'#ff2100');
-    leftEyeGrad.addColorStop(1, flash?'#ff3a2a':'#450000');
+    leftEyeGrad.addColorStop(0, flash?'#ff7058':'#ff6a54');
+    leftEyeGrad.addColorStop(0.5, flash?'#ff2a00':'#ff2100');
+    leftEyeGrad.addColorStop(1, flash?'#a30000':'#450000');
     ctx.fillStyle=leftEyeGrad;
     ctx.beginPath();
     ctx.moveTo(-58,-42);
@@ -6336,9 +6336,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.fill();
 
     const rightEyeGrad=ctx.createLinearGradient(2,-18,60,-54);
-    rightEyeGrad.addColorStop(0, flash?'#ff3a2a':'#450000');
-    rightEyeGrad.addColorStop(0.5, flash?'#ff9a88':'#ff2100');
-    rightEyeGrad.addColorStop(1, flash?'#ffe3d8':'#ff6a54');
+    rightEyeGrad.addColorStop(0, flash?'#a30000':'#450000');
+    rightEyeGrad.addColorStop(0.5, flash?'#ff2a00':'#ff2100');
+    rightEyeGrad.addColorStop(1, flash?'#ff7058':'#ff6a54');
     ctx.fillStyle=rightEyeGrad;
     ctx.beginPath();
     ctx.moveTo(58,-42);
