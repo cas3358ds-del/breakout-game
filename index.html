@@ -6310,10 +6310,10 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         grad.addColorStop(1, flash?'#a30000':'#450000');
         ctx.fillStyle=grad;
         ctx.beginPath();
-        ctx.moveTo(-62,-64);
-        ctx.quadraticCurveTo(-44,-110,-10,-92);
-        ctx.lineTo(-2,-38);
-        ctx.quadraticCurveTo(-30,4,-68,-22);
+        ctx.moveTo(-66,-94);
+        ctx.quadraticCurveTo(-48,-120,-18,-86);
+        ctx.lineTo(-2,-42);
+        ctx.quadraticCurveTo(-34,2,-72,-26);
         ctx.closePath();
       }else{
         grad.addColorStop(0, flash?'#a30000':'#450000');
@@ -6321,10 +6321,10 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         grad.addColorStop(1, flash?'#ff7058':'#ff6a54');
         ctx.fillStyle=grad;
         ctx.beginPath();
-        ctx.moveTo(62,-64);
-        ctx.quadraticCurveTo(44,-110,10,-92);
-        ctx.lineTo(2,-38);
-        ctx.quadraticCurveTo(30,4,68,-22);
+        ctx.moveTo(66,-94);
+        ctx.quadraticCurveTo(48,-120,18,-86);
+        ctx.lineTo(2,-42);
+        ctx.quadraticCurveTo(34,2,72,-26);
         ctx.closePath();
       }
       ctx.shadowColor=eyeGlow;
@@ -6337,11 +6337,11 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.lineWidth=1.15;
       ctx.beginPath();
       if(isLeft){
-        ctx.moveTo(-54,-84);
-        ctx.quadraticCurveTo(-30,-112,-6,-52);
+        ctx.moveTo(-58,-96);
+        ctx.quadraticCurveTo(-32,-118,-8,-56);
       }else{
-        ctx.moveTo(54,-84);
-        ctx.quadraticCurveTo(30,-112,6,-52);
+        ctx.moveTo(58,-96);
+        ctx.quadraticCurveTo(32,-118,8,-56);
       }
       ctx.stroke();
     };
