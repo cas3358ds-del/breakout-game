@@ -6301,32 +6301,30 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
 
     const drawEyeBase=side=>{
       const isLeft=side<0;
-      const grad=isLeft
-        ? ctx.createLinearGradient(-62,-70,-4,-24)
-        : ctx.createLinearGradient(4,-24,62,-70);
+      const tipX=62*side;
+      const tipY=-106;
+      const innerX=14*side;
+      const innerY=-44;
+      const lowerX=48*side;
+      const lowerY=-18;
+      let grad;
       if(isLeft){
+        grad=ctx.createLinearGradient(tipX, tipY, innerX, innerY);
         grad.addColorStop(0, flash?'#ff7058':'#ff6a54');
         grad.addColorStop(0.45, flash?'#ff2a00':'#ff2100');
         grad.addColorStop(1, flash?'#a30000':'#450000');
-        ctx.fillStyle=grad;
-        ctx.beginPath();
-        ctx.moveTo(-66,-94);
-        ctx.quadraticCurveTo(-48,-120,-18,-86);
-        ctx.lineTo(-2,-42);
-        ctx.quadraticCurveTo(-34,2,-72,-26);
-        ctx.closePath();
       }else{
+        grad=ctx.createLinearGradient(innerX, innerY, tipX, tipY);
         grad.addColorStop(0, flash?'#a30000':'#450000');
         grad.addColorStop(0.55, flash?'#ff2a00':'#ff2100');
         grad.addColorStop(1, flash?'#ff7058':'#ff6a54');
-        ctx.fillStyle=grad;
-        ctx.beginPath();
-        ctx.moveTo(66,-94);
-        ctx.quadraticCurveTo(48,-120,18,-86);
-        ctx.lineTo(2,-42);
-        ctx.quadraticCurveTo(34,2,72,-26);
-        ctx.closePath();
       }
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(innerX, innerY);
+      ctx.lineTo(lowerX, lowerY);
+      ctx.closePath();
       ctx.shadowColor=eyeGlow;
       ctx.shadowBlur=flash?36:34;
       ctx.fill();
@@ -6336,13 +6334,8 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.strokeStyle=flash?'rgba(255,198,184,0.92)':'rgba(255,88,66,0.74)';
       ctx.lineWidth=1.15;
       ctx.beginPath();
-      if(isLeft){
-        ctx.moveTo(-58,-96);
-        ctx.quadraticCurveTo(-32,-118,-8,-56);
-      }else{
-        ctx.moveTo(58,-96);
-        ctx.quadraticCurveTo(32,-118,8,-56);
-      }
+      ctx.moveTo(tipX - side*4, tipY+6);
+      ctx.lineTo(innerX, innerY-6);
       ctx.stroke();
     };
 
@@ -6351,23 +6344,28 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       ctx.shadowBlur=0;
       ctx.fillStyle='rgba(255,255,255,0.42)';
       ctx.beginPath();
-      if(isLeft){
-        ctx.ellipse(-42,-76,5.2,3.2,-0.4,0,Math.PI*2);
-      }else{
-        ctx.ellipse(42,-76,5.2,3.2,0.4,0,Math.PI*2);
-      }
+      const tipX=62*side;
+      const tipY=-106;
+      const innerX=14*side;
+      const innerY=-44;
+      const lowerX=48*side;
+      const lowerY=-18;
+      const highlightAngle=isLeft?-0.42:0.42;
+      const highlightX=tipX - side*10;
+      const highlightY=tipY+26;
+      ctx.ellipse(highlightX, highlightY, 5.4, 3.4, highlightAngle, 0, Math.PI*2);
       ctx.fill();
       ctx.fillStyle='rgba(255,255,255,0.28)';
       ctx.beginPath();
-      if(isLeft){
-        ctx.moveTo(-26,-34);
-        ctx.lineTo(-10,-24);
-        ctx.lineTo(-36,-24);
-      }else{
-        ctx.moveTo(26,-34);
-        ctx.lineTo(10,-24);
-        ctx.lineTo(36,-24);
-      }
+      const lowerMidX=(innerX+lowerX)/2;
+      const lowerMidY=(innerY+lowerY)/2 + 6;
+      const innerHighlightX=innerX + side*6;
+      const innerHighlightY=innerY + 8;
+      const lowerHighlightX=lowerX + side*4;
+      const lowerHighlightY=lowerY + 4;
+      ctx.moveTo(lowerMidX, lowerMidY);
+      ctx.lineTo(innerHighlightX, innerHighlightY);
+      ctx.lineTo(lowerHighlightX, lowerHighlightY);
       ctx.closePath();
       ctx.fill();
     };
