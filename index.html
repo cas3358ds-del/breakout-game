@@ -1298,7 +1298,7 @@ select optgroup { color: #0b1022; }
   const SPACE_BOSS_GUN_FIRE_RATE = 100; // ms between each burst per gun
   const SPACE_BOSS_GUN_FIRE_DURATION = 3000;
   const SPACE_BOSS_LASER_SWEEP_DURATION = 2000;
-  const DRAGON_MAX_HP = 50;
+  const DRAGON_MAX_HP = 80;
   const DRAGON_BASE_MODEL_WIDTH = 260;
   let spaceBossPhase='inactive';
   let spaceBoss=null;
@@ -5219,6 +5219,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     updateHUD();
     screenShake=Math.max(screenShake,20);
     playSFX('fireExplosion');
+    const dropX=(dragonBoss?dragonBoss.x:550)-12;
+    const dropY=dragonBoss?dragonBoss.y:300;
+    spawnPower(dropX, dropY, {forceType:'NINE'});
   }
 
   function updateDragonBoss(){
