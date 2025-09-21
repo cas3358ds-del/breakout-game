@@ -1385,6 +1385,12 @@ select optgroup { color: #0b1022; }
   let demonCore=null;
   let demonEventTargets=0;
   let demonEventCleared=0;
+  let demonPhase='inactive';
+  let demonBoss=null;
+  let demonRevealScheduled=0;
+  let demonAfterimages=[];
+  let demonDeathAnim=null;
+  let demonDefeatedAt=0;
 
   function isSpaceBossActive(){
     return level===5 && spaceBossPhase==='active' && !!spaceBoss;
@@ -1396,6 +1402,10 @@ select optgroup { color: #0b1022; }
 
   function isDragonActive(){
     return level===15 && dragonPhase==='active' && !!dragonBoss;
+  }
+
+  function isDemonActive(){
+    return level===20 && demonPhase==='active' && !!demonBoss;
   }
 
   function getSpaceBossBounds(){
@@ -1633,6 +1643,26 @@ select optgroup { color: #0b1022; }
     return dx*dx + dy*dy <= radius*radius;
   }
 
+  function getDemonBounds(){
+    if(!demonBoss) return null;
+    return {
+      x: demonBoss.x - demonBoss.w/2,
+      y: demonBoss.y - demonBoss.h/2,
+      w: demonBoss.w,
+      h: demonBoss.h
+    };
+  }
+
+  function circleIntersectsDemon(cx, cy, radius){
+    const bounds=getDemonBounds();
+    if(!bounds) return false;
+    const nearestX = Math.max(bounds.x, Math.min(cx, bounds.x + bounds.w));
+    const nearestY = Math.max(bounds.y, Math.min(cy, bounds.y + bounds.h));
+    const dx = cx - nearestX;
+    const dy = cy - nearestY;
+    return dx*dx + dy*dy <= radius*radius;
+  }
+
   function spaceBossImpactPoint(fromX, fromY){
     const bounds=getSpaceBossBounds();
     if(!bounds) return {x:fromX, y:fromY};
@@ -1668,6 +1698,36 @@ select optgroup { color: #0b1022; }
     if(!bounds) return {x:fromX, y:fromY};
     const targetX = reaperBoss.x;
     const targetY = reaperBoss.y;
+    const dx = targetX - fromX;
+    const dy = targetY - fromY;
+    let bestT = Infinity;
+    function test(t){
+      if(t<=0 || t>=1e6) return;
+      const ix = fromX + dx*t;
+      const iy = fromY + dy*t;
+      if(ix>=bounds.x-1e-6 && ix<=bounds.x+bounds.w+1e-6 && iy>=bounds.y-1e-6 && iy<=bounds.y+bounds.h+1e-6){
+        if(t<bestT) bestT=t;
+      }
+    }
+    if(Math.abs(dx)>1e-6){
+      test((bounds.x - fromX)/dx);
+      test((bounds.x + bounds.w - fromX)/dx);
+    }
+    if(Math.abs(dy)>1e-6){
+      test((bounds.y - fromY)/dy);
+      test((bounds.y + bounds.h - fromY)/dy);
+    }
+    if(bestT!==Infinity){
+      return {x: fromX + dx*bestT, y: fromY + dy*bestT};
+    }
+    return {x: targetX, y: targetY};
+  }
+
+  function demonImpactPoint(fromX, fromY){
+    const bounds=getDemonBounds();
+    if(!bounds) return {x:fromX, y:fromY};
+    const targetX = demonBoss.x;
+    const targetY = demonBoss.y;
     const dx = targetX - fromX;
     const dy = targetY - fromY;
     let bestT = Infinity;
@@ -1905,7 +1965,7 @@ select optgroup { color: #0b1022; }
   }
 
   function isTrueBossFightActive(){
-    return (spaceBossPhase==='active' && spaceBoss) || (reaperPhase==='active' && reaperBoss) || (dragonPhase==='active' && dragonBoss);
+    return (spaceBossPhase==='active' && spaceBoss) || (reaperPhase==='active' && reaperBoss) || (dragonPhase==='active' && dragonBoss) || (demonPhase==='active' && demonBoss);
   }
 
   function spawnBossTreasureBrick(){
@@ -2353,7 +2413,14 @@ select optgroup { color: #0b1022; }
     }
     demonEventRows = Array.from(rowsMap.entries())
       .sort((a,b)=>b[0]-a[0])
-      .map(([,arr])=>arr);
+      .map(([,arr])=>{
+        const copy=arr.slice();
+        for(let i=copy.length-1;i>0;i--){
+          const j=Math.floor(Math.random()*(i+1));
+          [copy[i], copy[j]]=[copy[j], copy[i]];
+        }
+        return copy;
+      });
     demonEventTargets = demonEventRows.reduce((sum,row)=>sum+row.length,0);
     demonEventCleared=0;
   }
@@ -2375,10 +2442,11 @@ select optgroup { color: #0b1022; }
         h:brick.h,
         color:baseColor,
         treasure:!!brick.treasure,
-        vy:1.4 + Math.random()*1.3,
-        gravity:0.12 + Math.random()*0.05,
-        angle:(Math.random()-0.5)*0.2,
-        spin:(Math.random()-0.5)*0.05
+        vx:(Math.random()-0.5)*1.4,
+        vy:2.1 + Math.random()*2.0,
+        gravity:0.16 + Math.random()*0.07,
+        angle:(Math.random()-0.5)*0.25,
+        spin:(Math.random()-0.5)*0.06
       });
     }
     if(debris.length){
@@ -2391,6 +2459,7 @@ select optgroup { color: #0b1022; }
   function startDemonEvent(now){
     if(demonEventPhase!=='awaiting') return;
     demonEventPhase='collapse';
+    demonPhase='event';
     demonEventTriggeredAt=now;
     const shell=demonShellBrick;
     const cx=shell? shell.x + shell.w/2 : 1100/2;
@@ -2401,15 +2470,15 @@ select optgroup { color: #0b1022; }
       fadeStart:now+5000,
       end:now+8000
     };
-    demonEventWave={x:cx, y:cy, start:now, duration:3200, maxRadius:Math.hypot(1100,700)};
-    demonEventShakeUntil = now + 6000;
+    demonEventWave={x:cx, y:cy, start:now, duration:2000, maxRadius:Math.hypot(1100,700)};
+    demonEventShakeUntil = now + 7000;
     prepareDemonRows();
     demonEventNextRowAt=now;
     if(demonEventTargets===0){
       explodeDemonShell(now);
       return;
     }
-    screenShake=Math.max(screenShake,20);
+    screenShake=Math.max(screenShake,26);
   }
 
   function explodeDemonShell(now){
@@ -2427,6 +2496,9 @@ select optgroup { color: #0b1022; }
     screenShake=Math.max(screenShake,22);
     demonShellBrick=null;
     demonEventPhase='revealed';
+    demonPhase='intro';
+    demonRevealScheduled=now+1400;
+    demonAfterimages=[];
   }
 
   function updateDemonEvent(now){
@@ -2445,7 +2517,7 @@ select optgroup { color: #0b1022; }
       if(demonEventRows.length && now>=demonEventNextRowAt){
         const row=demonEventRows.shift();
         dropDemonRow(row, now);
-        demonEventNextRowAt = now + 5000;
+        demonEventNextRowAt = now + 1000;
       }
       if(demonEventTargets>0 && demonEventCleared>=demonEventTargets){
         explodeDemonShell(now);
@@ -2480,40 +2552,421 @@ select optgroup { color: #0b1022; }
     const barWidth = canvas.width*0.7;
     const barX = (canvas.width-barWidth)/2;
     const barY = Math.max(12, L.top*scaleY - barHeight - 20);
-    const radius = 18*((scaleX+scaleY)/2);
     ctx.save();
     ctx.globalAlpha=alpha;
-    const bgGrad=ctx.createLinearGradient(barX, barY, barX, barY+barHeight);
-    bgGrad.addColorStop(0,'rgba(90,30,140,0.85)');
-    bgGrad.addColorStop(1,'rgba(40,10,80,0.9)');
-    ctx.fillStyle=bgGrad;
-    ctx.beginPath();
-    ctx.moveTo(barX+radius, barY);
-    ctx.lineTo(barX+barWidth-radius, barY);
-    ctx.quadraticCurveTo(barX+barWidth, barY, barX+barWidth, barY+radius);
-    ctx.lineTo(barX+barWidth, barY+barHeight-radius);
-    ctx.quadraticCurveTo(barX+barWidth, barY+barHeight, barX+barWidth-radius, barY+barHeight);
-    ctx.lineTo(barX+radius, barY+barHeight);
-    ctx.quadraticCurveTo(barX, barY+barHeight, barX, barY+barHeight-radius);
-    ctx.lineTo(barX, barY+radius);
-    ctx.quadraticCurveTo(barX, barY, barX+radius, barY);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle='rgba(210,150,255,0.85)';
-    ctx.lineWidth=2.5*((scaleX+scaleY)/2);
-    ctx.stroke();
-
     const fontSize = Math.round(26*((scaleX+scaleY)/2));
     ctx.font=`${fontSize}px 'Playfair Display','Noto Sans TC',sans-serif`;
-    ctx.fillStyle='rgba(255,235,255,0.95)';
+    const glowGrad=ctx.createLinearGradient(barX, barY, barX+barWidth, barY);
+    glowGrad.addColorStop(0,'rgba(255,240,255,0.85)');
+    glowGrad.addColorStop(0.5,'rgba(220,190,255,0.95)');
+    glowGrad.addColorStop(1,'rgba(255,240,255,0.85)');
+    ctx.fillStyle=glowGrad;
     ctx.textBaseline='middle';
     const textWidth=ctx.measureText(evt.text).width;
     const travel=barWidth + textWidth + 40;
     const t=Math.min(1, (now-evt.start)/5000);
     const textX = barX + barWidth + 20 - travel*t;
     const textY = barY + barHeight/2;
+    ctx.shadowColor='rgba(205,160,255,0.75)';
+    ctx.shadowBlur=24*((scaleX+scaleY)/2);
     ctx.fillText(evt.text, textX, textY);
+    ctx.shadowBlur=0;
+    ctx.lineWidth=2*((scaleX+scaleY)/2);
+    ctx.strokeStyle='rgba(210,160,255,0.45)';
+    ctx.beginPath();
+    ctx.moveTo(barX, textY + fontSize*0.36);
+    ctx.lineTo(barX+barWidth, textY + fontSize*0.36);
+    ctx.stroke();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle='rgba(255,230,255,0.25)';
+    ctx.lineWidth=1.2*((scaleX+scaleY)/2);
+    ctx.beginPath();
+    ctx.moveTo(barX, textY - fontSize*0.42);
+    ctx.lineTo(barX+barWidth, textY - fontSize*0.42);
+    ctx.stroke();
     ctx.restore();
+  }
+
+  function renderDemonFigure(entity, now, opts={}){
+    if(!entity) return;
+    const scaleAvg=(scaleX+scaleY)/2;
+    const size=(entity.w||220)/220;
+    let alpha = opts.alpha!=null ? opts.alpha : 1;
+    if(entity.deathFade!=null) alpha*=entity.deathFade;
+    if(alpha<=0) return;
+    ctx.save();
+    ctx.translate(entity.x*scaleX, entity.y*scaleY);
+    ctx.scale(scaleAvg*size, scaleAvg*size);
+    const ghostMul = opts.ghost ? 0.65 : 1;
+    ctx.globalAlpha *= Math.max(0, Math.min(1, alpha*ghostMul));
+
+    const flash = entity.hitFlashUntil && now<entity.hitFlashUntil;
+    const hoverPhase = entity.hoverPhase||0;
+    const cloakPhase = entity.cloakPhase||0;
+    const swordPhase = entity.swordPhase||0;
+
+    const auraPulse = 0.45 + 0.35*Math.sin(now/200 + hoverPhase);
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha*=0.55;
+    const aura=ctx.createRadialGradient(0,60,20,0,60,220);
+    aura.addColorStop(0,`rgba(210,170,255,${0.45 + auraPulse*0.25})`);
+    aura.addColorStop(1,'rgba(90,40,160,0)');
+    ctx.fillStyle=aura;
+    ctx.beginPath();
+    ctx.ellipse(0,60,140,62,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    const wave=Math.sin(now/480 + cloakPhase)*0.35;
+    ctx.translate(0,48);
+    ctx.beginPath();
+    ctx.moveTo(-122,-30);
+    ctx.quadraticCurveTo(-170,50+wave*50,-94,150);
+    ctx.quadraticCurveTo(0,196+wave*60,94,150);
+    ctx.quadraticCurveTo(170,50-wave*50,122,-28);
+    ctx.closePath();
+    const cloakGrad=ctx.createLinearGradient(-150,-70,150,220);
+    if(flash){
+      cloakGrad.addColorStop(0,'rgba(255,240,255,0.92)');
+      cloakGrad.addColorStop(1,'rgba(255,170,230,0.9)');
+    }else{
+      cloakGrad.addColorStop(0,'rgba(70,20,120,0.94)');
+      cloakGrad.addColorStop(0.5,'rgba(120,36,160,0.96)');
+      cloakGrad.addColorStop(1,'rgba(190,48,170,0.92)');
+    }
+    ctx.fillStyle=cloakGrad;
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(-60,8);
+    ctx.quadraticCurveTo(-82,-42,0,-84);
+    ctx.quadraticCurveTo(82,-42,60,8);
+    ctx.quadraticCurveTo(40,100,0,138);
+    ctx.quadraticCurveTo(-40,100,-60,8);
+    ctx.closePath();
+    const armorGrad=ctx.createLinearGradient(-70,-90,70,160);
+    if(flash){
+      armorGrad.addColorStop(0,'#fff3ff');
+      armorGrad.addColorStop(0.5,'#f5d6ff');
+      armorGrad.addColorStop(1,'#e8c4ff');
+    }else{
+      armorGrad.addColorStop(0,'rgba(34,16,54,0.95)');
+      armorGrad.addColorStop(0.45,'rgba(74,34,110,0.96)');
+      armorGrad.addColorStop(1,'rgba(24,10,36,0.92)');
+    }
+    ctx.fillStyle=armorGrad;
+    ctx.fill();
+    ctx.strokeStyle='rgba(210,190,255,0.6)';
+    ctx.lineWidth=3.2;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle=flash?'rgba(255,240,255,0.96)':'rgba(150,120,220,0.92)';
+    ctx.beginPath();
+    ctx.moveTo(0,-34);
+    ctx.lineTo(26,0);
+    ctx.lineTo(0,48);
+    ctx.lineTo(-26,0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle='rgba(220,205,255,0.7)';
+    ctx.lineWidth=2.4;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle=flash?'rgba(235,210,255,0.92)':'rgba(110,70,160,0.95)';
+    ctx.fillRect(-28,42,56,16);
+    ctx.fillRect(-34,60,68,18);
+    ctx.restore();
+
+    ctx.save();
+    const shoulderColor=flash?'rgba(250,230,255,0.95)':'rgba(80,36,130,0.95)';
+    ctx.fillStyle=shoulderColor;
+    ctx.beginPath();
+    ctx.ellipse(-82,-6,36,28,0,0,Math.PI*2);
+    ctx.ellipse(82,-6,36,28,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle=flash?'rgba(220,200,255,0.92)':'rgba(90,50,140,0.92)';
+    ctx.fillRect(-90,20,18,52);
+    ctx.fillRect(72,20,18,52);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(0,-76);
+    const skullGrad=ctx.createLinearGradient(0,-44,0,60);
+    skullGrad.addColorStop(0, flash?'#ffffff':'#f5f5f5');
+    skullGrad.addColorStop(1, flash?'#ffffff':'#dedede');
+    ctx.fillStyle=skullGrad;
+    ctx.beginPath();
+    ctx.ellipse(0,0,40,46,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle='rgba(60,40,90,0.6)';
+    ctx.lineWidth=4;
+    ctx.stroke();
+
+    ctx.fillStyle='rgba(0,0,0,0.9)';
+    ctx.beginPath();
+    ctx.moveTo(-18,-4);
+    ctx.quadraticCurveTo(-4,-22,-2,-4);
+    ctx.quadraticCurveTo(-8,8,-20,12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(18,-4);
+    ctx.quadraticCurveTo(4,-22,2,-4);
+    ctx.quadraticCurveTo(8,8,20,12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle='rgba(255,90,150,0.85)';
+    ctx.beginPath();
+    ctx.arc(-10,-2,6,0,Math.PI*2);
+    ctx.arc(10,-2,6,0,Math.PI*2);
+    ctx.fill();
+
+    const hornPulse = 0.9 + 0.1*Math.sin(now/260 + hoverPhase);
+    ctx.strokeStyle='rgba(255,240,255,0.85)';
+    ctx.lineWidth=8;
+    ctx.beginPath();
+    ctx.moveTo(-24,-38);
+    ctx.quadraticCurveTo(-92,-120*hornPulse,-62,-168*hornPulse);
+    ctx.quadraticCurveTo(-32,-196*hornPulse,-12,-154);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(24,-38);
+    ctx.quadraticCurveTo(92,-120*hornPulse,62,-168*hornPulse);
+    ctx.quadraticCurveTo(32,-196*hornPulse,12,-154);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(78,34);
+    const swing = Math.sin(swordPhase)*0.2;
+    ctx.rotate(-Math.PI/4 + swing);
+    const bladeGrad=ctx.createLinearGradient(-8,-12,110,12);
+    bladeGrad.addColorStop(0, flash?'rgba(255,255,255,0.95)':'rgba(240,236,255,0.95)');
+    bladeGrad.addColorStop(1, flash?'rgba(255,210,255,0.85)':'rgba(210,200,255,0.85)');
+    ctx.fillStyle=bladeGrad;
+    ctx.beginPath();
+    ctx.moveTo(-8,-10);
+    ctx.lineTo(96,-10);
+    ctx.lineTo(118,0);
+    ctx.lineTo(96,10);
+    ctx.lineTo(-8,10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle='rgba(200,200,255,0.7)';
+    ctx.lineWidth=2.6;
+    ctx.stroke();
+    ctx.fillStyle=flash?'rgba(240,220,255,0.9)':'rgba(110,70,160,0.9)';
+    ctx.fillRect(-12,-18,24,36);
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function drawDemonAfterimages(now){
+    if(!demonAfterimages.length) return;
+    for(const ghost of demonAfterimages){
+      const life=ghost.life||520;
+      const age=now-ghost.t0;
+      const alpha=Math.max(0, 1 - age/life);
+      if(alpha<=0) continue;
+      const ghostState={
+        x:ghost.x,
+        y:ghost.y + Math.sin((now-ghost.t0)/260)*4,
+        w:ghost.w,
+        h:ghost.h,
+        hoverPhase:ghost.hoverPhase,
+        cloakPhase:ghost.cloakPhase,
+        swordPhase:ghost.swordPhase,
+        hitFlashUntil:0,
+        deathFade:ghost.fade?alpha:1
+      };
+      renderDemonFigure(ghostState, now, {ghost:true, alpha});
+    }
+  }
+
+  function drawDemonLayer(now){
+    if(level!==20) return;
+    drawDemonCore(now);
+    drawDemonAfterimages(now);
+    if(demonBoss && (demonPhase==='active' || demonPhase==='dying')){
+      renderDemonFigure(demonBoss, now);
+    }
+    if(demonDeathAnim && demonPhase!=='defeated'){
+      const anim=demonDeathAnim;
+      const elapsed=now-anim.start;
+      const life=Math.max(1, (anim.duration||2200));
+      const prog=Math.max(0, Math.min(1, elapsed/life));
+      const cx=(anim.centerX||550)*scaleX;
+      const cy=(anim.centerY|| (layout().top+160))*scaleY;
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      const outer=200*((scaleX+scaleY)/2)*(1+prog*0.6);
+      const glow=ctx.createRadialGradient(cx,cy,0,cx,cy,outer);
+      glow.addColorStop(0,`rgba(240,220,255,${0.55*(1-prog)})`);
+      glow.addColorStop(0.55,`rgba(180,120,220,${0.4*(1-prog)})`);
+      glow.addColorStop(1,'rgba(110,50,200,0)');
+      ctx.fillStyle=glow;
+      ctx.beginPath();
+      ctx.arc(cx,cy,outer,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function activateDemonBoss(){
+    if(level!==20) return;
+    const now=performance.now();
+    const L=layout();
+    const cx=1100/2;
+    const baseY=L.top + 160;
+    demonBoss={
+      x:cx,
+      y:baseY,
+      baseY,
+      w:220,
+      h:220,
+      hp:90,
+      maxHp:90,
+      hoverPhase:0,
+      cloakPhase:Math.random()*Math.PI*2,
+      swordPhase:Math.random()*Math.PI*2,
+      hitFlashUntil:0,
+      hitCooldownUntil:0,
+      lastUpdate:now,
+      lastAfterimage:0,
+      deathFade:1,
+      spawnAt:now
+    };
+    demonPhase='active';
+    demonAfterimages=[];
+    screenShake=Math.max(screenShake,16);
+    spawnParticles(cx, baseY, '#dcb6ff', 110, 2.0, 3.2, 3.0);
+    spawnParticles(cx, baseY, '#f0e4ff', 80, 1.8, 2.6, 2.4);
+    demonEventWave={x:cx,y:baseY,start:now,duration:2000,maxRadius:Math.hypot(1100,700)};
+  }
+
+  function damageDemonBoss(amount=1, source='generic', impact){
+    if(demonPhase!=='active' || !demonBoss) return false;
+    const now=performance.now();
+    if(demonBoss.hitCooldownUntil && now<demonBoss.hitCooldownUntil) return false;
+    demonBoss.hitCooldownUntil=now+140;
+    demonBoss.hp=Math.max(0, demonBoss.hp-amount);
+    demonBoss.hitFlashUntil=now+220;
+    const ix=(impact&&impact.x!=null)?impact.x:demonBoss.x;
+    const iy=(impact&&impact.y!=null)?impact.y:demonBoss.y;
+    spawnParticles(ix,iy,'#dcb6ff',24,1.8,3.0,2.8);
+    screenShake=Math.max(screenShake,4);
+    if(demonBoss.hp<=0){
+      defeatDemonBoss();
+    }
+    return true;
+  }
+
+  function defeatDemonBoss(){
+    if(demonPhase==='dying' || demonPhase==='defeated') return;
+    const now=performance.now();
+    const centerX=demonBoss?demonBoss.x:550;
+    const centerY=demonBoss?demonBoss.y:(layout().top+160);
+    demonPhase='dying';
+    demonDeathAnim={start:now, duration:2200, vanishAt:now+900, lastSpark:0, centerX:centerX, centerY:centerY};
+    demonEventWave={x:centerX,y:centerY,start:now,duration:2600,maxRadius:Math.hypot(1100,700)};
+    demonEventMarquee={text:'成功擊殺Boss: 魔王埃裡赫曼!', start:now, fadeStart:now+5000, end:now+5000};
+    if(demonBoss){
+      demonBoss.hp=0;
+      demonBoss.hitFlashUntil=now+260;
+    }
+    stats.bossKills++;
+    updateHUD();
+    screenShake=Math.max(screenShake,24);
+    spawnParticles(centerX,centerY,'#fff5ff',200,3.0,4.4,4.8);
+    spawnParticles(centerX,centerY,'#c08cff',150,2.4,3.6,3.8);
+    spawnParticles(centerX,centerY,'#ffd1ff',120,2.6,3.8,3.6);
+    spawnPower(centerX-12, centerY, {forceType:'NINE'});
+  }
+
+  function updateDemonBoss(){
+    if(level!==20) return;
+    const now=performance.now();
+    if(demonPhase==='intro' && !demonBoss && demonRevealScheduled && now>=demonRevealScheduled){
+      activateDemonBoss();
+    }
+    if(demonPhase==='active' && demonBoss){
+      const dt = now - (demonBoss.lastUpdate||now);
+      demonBoss.lastUpdate=now;
+      if(!demonBoss.moveTarget || now>=demonBoss.nextMove){
+        const L=layout();
+        const minX=210;
+        const maxX=890;
+        const minY=L.top + 100;
+        const maxY=L.top + 260;
+        demonBoss.moveTarget={x:minX + Math.random()*(maxX-minX), y:minY + Math.random()*(maxY-minY)};
+        demonBoss.nextMove = now + 1400 + Math.random()*1400;
+      }
+      if(demonBoss.moveTarget){
+        const speed=Math.min(0.22, (dt/1000)*0.75);
+        demonBoss.x += (demonBoss.moveTarget.x - demonBoss.x)*speed;
+        demonBoss.baseY += (demonBoss.moveTarget.y - demonBoss.baseY)*speed;
+      }
+      demonBoss.hoverPhase += dt*0.0026;
+      demonBoss.cloakPhase += dt*0.0018;
+      demonBoss.swordPhase += dt*0.0035;
+      demonBoss.y = demonBoss.baseY + Math.sin(demonBoss.hoverPhase)*14;
+      if(!demonBoss.lastAfterimage || now - demonBoss.lastAfterimage > 90){
+        demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, swordPhase:demonBoss.swordPhase, t0:now, life:520});
+        demonBoss.lastAfterimage=now;
+      }
+    }else if(demonPhase==='dying' && demonDeathAnim){
+      const anim=demonDeathAnim;
+      const elapsed=now-anim.start;
+      const fadeDuration=Math.max(1, (anim.vanishAt|| (anim.start+900)) - anim.start);
+      if(demonBoss){
+        const dt = now - (demonBoss.lastUpdate||now);
+        demonBoss.lastUpdate=now;
+        demonBoss.hoverPhase += dt*0.002;
+        demonBoss.y = demonBoss.baseY + Math.min(120, elapsed*0.18);
+        demonBoss.deathFade = Math.max(0, 1 - elapsed/fadeDuration);
+        if(!anim.lastSpark || now-anim.lastSpark>90){
+          const ox=(Math.random()-0.5)*demonBoss.w*0.6;
+          const oy=(Math.random()-0.5)*demonBoss.h*0.6;
+          spawnParticles(demonBoss.x+ox, demonBoss.y+oy, '#dcb6ff', 16, 1.4, 2.4, 2.5);
+          anim.lastSpark=now;
+        }
+        if(elapsed>=fadeDuration){
+          demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, swordPhase:demonBoss.swordPhase, t0:now, life:720, fade:true});
+          demonBoss=null;
+        }
+      }
+      if(elapsed>=(anim.duration||2200)){
+        demonPhase='defeated';
+        demonDeathAnim=null;
+        demonDefeatedAt=now;
+      }
+    }
+    for(let i=demonAfterimages.length-1;i>=0;i--){
+      const ghost=demonAfterimages[i];
+      const life=ghost.life||520;
+      if(now-ghost.t0>=life){ demonAfterimages.splice(i,1); }
+    }
+  }
+
+  function demonClampPoint(x, y){
+    const bounds=getDemonBounds();
+    if(!bounds) return {x, y};
+    return {
+      x: Math.max(bounds.x, Math.min(x, bounds.x + bounds.w)),
+      y: Math.max(bounds.y, Math.min(y, bounds.y + bounds.h))
+    };
   }
 
   function drawDemonWave(now){
@@ -2522,16 +2975,16 @@ select optgroup { color: #0b1022; }
     const life = wave.duration||1;
     const prog = Math.max(0, Math.min(1,(now-wave.start)/life));
     const radius = (wave.maxRadius||Math.hypot(1100,700)) * prog;
-    const alpha = 0.35*(1-prog);
+    const alpha = 0.45*(1-prog);
     if(alpha<=0) return;
     ctx.save();
     ctx.globalCompositeOperation='lighter';
     const maxR = radius*((scaleX+scaleY)/2);
     const minR = maxR*0.35;
     const grad=ctx.createRadialGradient(wave.x*scaleX, wave.y*scaleY, minR, wave.x*scaleX, wave.y*scaleY, Math.max(minR+1,maxR));
-    grad.addColorStop(0,`rgba(180,120,255,${alpha})`);
-    grad.addColorStop(0.65,`rgba(120,50,200,${alpha*0.6})`);
-    grad.addColorStop(1,'rgba(80,20,160,0)');
+    grad.addColorStop(0,`rgba(210,170,255,${alpha})`);
+    grad.addColorStop(0.6,`rgba(160,110,255,${alpha*0.6})`);
+    grad.addColorStop(1,'rgba(110,40,200,0)');
     ctx.fillStyle=grad;
     ctx.beginPath();
     ctx.arc(wave.x*scaleX, wave.y*scaleY, Math.max(minR+1,maxR),0,Math.PI*2);
@@ -3504,6 +3957,12 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     demonCore=null;
     demonEventTargets=0;
     demonEventCleared=0;
+    demonPhase = (level===20?'awaiting':'inactive');
+    demonBoss=null;
+    demonRevealScheduled=0;
+    demonAfterimages=[];
+    demonDeathAnim=null;
+    demonDefeatedAt=0;
     const lvlImg = getLevelImage(level);
     if (lvlImg && lvlImg.decode) { lvlImg.decode().catch(()=>{}); }
     // 依關卡設計關卡布局
@@ -3569,8 +4028,11 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       return false;
     }
     if(level===20){
+      const now=performance.now();
       const remaining = bricks.some(b => !b.unbreakable && !b.demonShell);
       if(remaining) return true;
+      if(demonPhase==='intro' || demonPhase==='event' || demonPhase==='active' || demonPhase==='dying') return true;
+      if(demonPhase==='defeated' && demonDefeatedAt && now < demonDefeatedAt + 3000) return true;
       if(demonEventPhase && demonEventPhase!=='inactive' && demonEventPhase!=='complete') return true;
       return false;
     }
@@ -7486,15 +7948,68 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     drawDragonHPBar();
   }
 
+  function drawDemonHUD(){
+    if(level!==20) return;
+    if((demonPhase!=='active' && demonPhase!=='dying') || !demonBoss) return;
+    const L=layout();
+    const width=320;
+    const height=22;
+    const x=(1100-width)/2;
+    const y=Math.max(16, L.top - 52);
+    const ratio=Math.max(0, Math.min(1, demonBoss.hp/demonBoss.maxHp));
+
+    ctx.save();
+    ctx.globalAlpha=0.96;
+    drawRoundedRect(x, y, width, height, 12);
+    ctx.clip();
+    const frameGrad=ctx.createLinearGradient(x*scaleX,y*scaleY,x*scaleX,(y+height)*scaleY);
+    frameGrad.addColorStop(0,'rgba(60,20,110,0.92)');
+    frameGrad.addColorStop(1,'rgba(30,10,70,0.92)');
+    ctx.fillStyle=frameGrad;
+    ctx.fillRect(x*scaleX, y*scaleY, width*scaleX, height*scaleY);
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle='rgba(220,170,255,0.65)';
+    ctx.lineWidth=2*((scaleX+scaleY)/2);
+    drawRoundedRect(x, y, width, height, 12);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    drawRoundedRect(x+6, y+4, width-12, height-8, 8);
+    ctx.clip();
+    const fillWidth=(width-12)*ratio;
+    const fillGrad=ctx.createLinearGradient((x+6)*scaleX,(y+height-4)*scaleY,(x+6)*scaleX,(y+4)*scaleY);
+    fillGrad.addColorStop(0,'rgba(150,90,220,0.95)');
+    fillGrad.addColorStop(1,'rgba(240,210,255,0.96)');
+    ctx.fillStyle=fillGrad;
+    ctx.fillRect((x+6)*scaleX,(y+4)*scaleY,Math.max(0,fillWidth)*scaleX,(height-8)*scaleY);
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle='rgba(255,235,255,0.94)';
+    ctx.font=`${Math.round(18*((scaleX+scaleY)/2))}px 'Playfair Display','Noto Sans TC',sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='bottom';
+    ctx.fillText('BOSS 魔王埃裡赫曼', (x+width/2)*scaleX, (y-6)*scaleY);
+    ctx.font=`${Math.round(14*((scaleX+scaleY)/2))}px 'Noto Sans TC',sans-serif`;
+    ctx.textBaseline='middle';
+    ctx.fillText(`${demonBoss.hp}/${demonBoss.maxHp}`, (x+width/2)*scaleX, (y+height/2)*scaleY);
+    ctx.restore();
+  }
+
 
   function isSpecialBossActive(){
-    return isSpaceBossActive() || isReaperActive() || isDragonActive();
+    return isSpaceBossActive() || isReaperActive() || isDragonActive() || isDemonActive();
   }
 
   function activeBossCenter(){
     if(isSpaceBossActive()) return {x:spaceBoss.x, y:spaceBoss.y, type:'space'};
     if(isReaperActive() && reaperBoss) return {x:reaperBoss.x, y:reaperBoss.y, type:'reaper'};
     if(isDragonActive() && dragonBoss) return {x:dragonBoss.x, y:dragonBoss.y, type:'dragon'};
+    if(isDemonActive() && demonBoss) return {x:demonBoss.x, y:demonBoss.y, type:'demon'};
     return null;
   }
 
@@ -7502,6 +8017,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(isSpaceBossActive()) return getSpaceBossBounds();
     if(isReaperActive()) return getReaperBounds();
     if(isDragonActive()) return getDragonBounds();
+    if(isDemonActive()) return getDemonBounds();
     return null;
   }
 
@@ -7509,6 +8025,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(isSpaceBossActive()) return spaceBossImpactPoint(fromX, fromY);
     if(isReaperActive()) return reaperImpactPoint(fromX, fromY);
     if(isDragonActive()) return dragonImpactPoint(fromX, fromY);
+    if(isDemonActive()) return demonImpactPoint(fromX, fromY);
     return {x:fromX, y:fromY};
   }
 
@@ -7516,6 +8033,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(isSpaceBossActive()) return damageSpaceBoss(amount, source, impact);
     if(isReaperActive()) return damageReaperBoss(amount, source, impact);
     if(isDragonActive()) return damageDragonBoss(amount, source, impact);
+    if(isDemonActive()) return damageDemonBoss(amount, source, impact);
     return false;
   }
 
@@ -7523,11 +8041,13 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(isSpaceBossActive()) return circleIntersectsSpaceBoss(cx, cy, radius);
     if(isReaperActive()) return circleIntersectsReaper(cx, cy, radius);
     if(isDragonActive()) return circleIntersectsDragon(cx, cy, radius);
+    if(isDemonActive()) return circleIntersectsDemon(cx, cy, radius);
     return false;
   }
 
   function activeBossClampPoint(x, y){
     if(isDragonActive()) return dragonClampPoint(x, y);
+    if(isDemonActive()) return demonClampPoint(x, y);
     const bounds=getActiveBossBounds();
     if(!bounds) return {x, y};
     return {
@@ -8989,7 +9509,7 @@ function generateLevel(lv, L){
     drawSpaceBossLayer();
     drawReaperLayer();
     drawDragonLayer();
-    drawDemonCore(now);
+    drawDemonLayer(now);
     drawPlasmas(); drawHoly(); drawPhoenix(); drawSwords();
 
       // Boss wind-up glow
@@ -9217,6 +9737,7 @@ function generateLevel(lv, L){
     drawSpaceBossHUD();
     drawReaperHUD();
     drawDragonHUD();
+    drawDemonHUD();
     drawDemonMarquee(now);
 
     // 倒數提示
@@ -9401,6 +9922,7 @@ function generateLevel(lv, L){
     updateReaperBoss();
     updateDragonBoss();
     updateDemonEvent(now);
+    updateDemonBoss();
 
     if(isTrueBossFightActive()){
       if(!nextTreasureBrickAt){
@@ -9427,6 +9949,7 @@ function generateLevel(lv, L){
       const d=demonFallingDebris[i];
       d.vy += d.gravity;
       d.y += d.vy;
+      if(d.vx){ d.x += d.vx; d.vx*=0.99; }
       d.angle += d.spin;
       if(d.y>720){ demonFallingDebris.splice(i,1); }
     }
