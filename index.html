@@ -3161,7 +3161,11 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     }
     // 重置 Boss 計時
     nextBossAtkA = nextBossAtkB = bossChargeUntil = cyclopsShakeUntil = 0; bossChargeColor='';
-    if(level===15){ cyclopsForcedPetrifyAt = performance.now() + 10000; }
+    if(level===15){
+      // The cyclops boss takes 3 seconds to charge before firing the petrify column.
+      // Schedule the forced cast so that the beam lands exactly 5 seconds after entry.
+      cyclopsForcedPetrifyAt = performance.now() + 2000;
+    }
   }
 
   
