@@ -8037,9 +8037,10 @@ function generateLevel(lv, L){
       levelJumpSel.innerHTML = '';
       for(let i=1;i<=GAME_CONFIG.totalLevels;i++){
         const option=document.createElement('option');
+        const isBoss = i%5===0;
         option.value=String(i);
-        option.textContent=`第 ${i} 關`;
-        if(i%5===0){
+        option.textContent=isBoss ? `第 ${i} 關 ★ Boss` : `第 ${i} 關`;
+        if(isBoss){
           option.classList.add('boss-level');
           option.style.color='#ffb347';
           option.style.fontWeight='800';
