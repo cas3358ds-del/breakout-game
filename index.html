@@ -3223,8 +3223,11 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     dragonNextAttackAt=0;
     dragonDeathRayOrbs.length=0;
     dragonDeathRayBeams.length=0;
-    dragonPhase = (level===15?'awaiting':'inactive');
-    cyclopsFirstAttackAt=0;
+      dragonPhase = (level===15?'awaiting':'inactive');
+      // Reset Cyclops/dragon forced petrify trigger so level 15 always re-schedules it
+      cyclopsForcedPetrifyAt=0;
+      cyclopsForcedPetrifyFired=false;
+      cyclopsFirstAttackAt=0;
     cyclopsEventStarted=false;
     cyclopsMarqueeShown=false;
     cyclopsRowBlastIndex=-1;
