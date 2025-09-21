@@ -2029,7 +2029,9 @@ select optgroup { color: #0b1022; }
         nextCountdownTick:now+1000,
         fireIndex:0,
         fireNext:0,
-        lockedTarget:null
+        lockedTarget:null,
+        beamTravel:900,
+        beamFade:320
       };
       dragonDeathRayOrbs.length=0;
       dragonBoss.pose='deathRay';
@@ -2076,6 +2078,8 @@ select optgroup { color: #0b1022; }
       return false;
     }
     if(state.type==='deathRay'){
+      const travelDuration = state.beamTravel || 900;
+      const fadeDuration = state.beamFade || 320;
       const speed=Math.min(0.28, (dt/1000)*0.9);
       const tx=state.targetX||dragonBoss.x;
       const ty=state.targetY||dragonBoss.baseY;
@@ -2125,18 +2129,36 @@ select optgroup { color: #0b1022; }
             target={x:pr.x+pr.w/2, y:pr.y+pr.h/2};
             state.lockedTarget={...target};
           }
-          dragonDeathRayBeams.push({x1:orb.x||dragonBoss.x, y1:orb.y||dragonBoss.y, x2:target.x, y2:target.y, start:now, end:now+600});
-          spawnParticles(target.x, target.y, '#ffec8a', 36, 2.4, 4.0, 4.0);
-          dragonBursts.push({type:'flare',x:target.x,y:target.y,r0:0,r1:260,t0:now,life:900,color:'255,225,150'});
-          screenShake=Math.max(screenShake,12);
-          playSFX('fireExplosion');
-          if(now>=paddleGoneUntil){
-            paddleGoneUntil=now+3000;
-          }
+          dragonDeathRayBeams.push({
+            x1:orb.x||dragonBoss.x,
+            y1:orb.y||dragonBoss.y,
+            x2:target.x,
+            y2:target.y,
+            start:now,
+            impactAt:now+travelDuration,
+            end:now+travelDuration+fadeDuration,
+            hit:false
+          });
           state.fireNext=now+500;
         }else{
           state.phase='cooldown';
           state.cooldownUntil=now+800;
+        }
+      }
+      for(const beam of dragonDeathRayBeams){
+        if(beam.hit) continue;
+        const impactAt=beam.impactAt || beam.end;
+        if(now>=impactAt){
+          beam.hit=true;
+          const targetX=beam.x2;
+          const targetY=beam.y2;
+          spawnParticles(targetX, targetY, '#ffec8a', 36, 2.4, 4.0, 4.0);
+          dragonBursts.push({type:'flare',x:targetX,y:targetY,r0:0,r1:280,t0:now,life:900,color:'255,225,150'});
+          screenShake=Math.max(screenShake,14);
+          playSFX('fireExplosion');
+          if(now>=paddleGoneUntil){
+            paddleGoneUntil=now+3000;
+          }
         }
       }
       if(state.phase==='cooldown' && now>=state.cooldownUntil && !dragonDeathRayBeams.length){
@@ -2174,8 +2196,8 @@ select optgroup { color: #0b1022; }
       if(state.phase==='detonate'){
         if(!state.detonated){
           state.detonated=true;
-          screenShake=Math.max(screenShake,26);
-          playSFX('fireExplosion');
+          screenShake=Math.max(screenShake,36);
+          playSFX('dragonAnnihilation');
           const nowDet=now;
           for(let i=bricks.length-1;i>=0;i--){
             const b=bricks[i];
@@ -2184,8 +2206,29 @@ select optgroup { color: #0b1022; }
             dragonBursts.push({type:'spark',x:cx,y:cy,r0:0,r1:280,t0:nowDet,life:1200,color:'255,220,150'});
             bricks.splice(i,1);
           }
+          const L=layout();
+          const stageHeight=L.rows*(brickH+L.pad) - L.pad;
+          const centerX=550;
+          const centerY=L.top + stageHeight/2;
+          dragonBursts.push({type:'apocalypse',x:centerX,y:centerY,r0:140,r1:960,t0:nowDet,life:2600,color:'255,236,190'});
+          dragonBursts.push({type:'shockwave',x:centerX,y:centerY,r0:0,r1:1100,width:46,t0:nowDet,life:2200,color:'255,230,180'});
+          const emberParticles=Array.from({length:90},()=>({
+            angle:Math.random()*Math.PI*2,
+            radius:40+Math.random()*220,
+            speed:260+Math.random()*360,
+            size:10+Math.random()*18,
+            drift:(Math.random()*0.6-0.3)
+          }));
+          dragonBursts.push({type:'emberRain',x:centerX,y:centerY,t0:nowDet,life:2400,count:emberParticles.length,particles:emberParticles});
+          const aftershockDelays=[0,200,420,660,900];
+          aftershockDelays.forEach((delay, idx)=>{
+            setTimeout(()=>{
+              screenShake=Math.max(screenShake, Math.max(18, 30 - idx*4));
+              if(idx>0){ playSFX('fireExplosion'); }
+            }, delay);
+          });
           updateHUD();
-          paddleGoneUntil=Math.max(paddleGoneUntil, now+5000);
+          paddleGoneUntil=Math.max(paddleGoneUntil, now+5500);
         }
         if(now>=state.explosionEnd){
           state.phase='returning';
@@ -2939,6 +2982,46 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         g.gain.setValueAtTime(0.07, now);
         g.gain.exponentialRampToValueAtTime(0.001, now+0.2);
         o.start(now); o.stop(now+0.2); break;
+      case 'dragonAnnihilation':{
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(160, now);
+        o.frequency.exponentialRampToValueAtTime(30, now+1.2);
+        g.gain.setValueAtTime(0.12, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+1.2);
+        const sub=audioCtx.createOscillator();
+        const subGain=audioCtx.createGain();
+        sub.type='sine';
+        sub.frequency.setValueAtTime(48, now);
+        sub.frequency.exponentialRampToValueAtTime(18, now+1.4);
+        subGain.gain.setValueAtTime(0.16, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now+1.4);
+        sub.connect(subGain); subGain.connect(audioCtx.destination);
+        const shimmer=audioCtx.createOscillator();
+        const shimmerGain=audioCtx.createGain();
+        shimmer.type='triangle';
+        shimmer.frequency.setValueAtTime(960, now);
+        shimmer.frequency.exponentialRampToValueAtTime(320, now+0.9);
+        shimmerGain.gain.setValueAtTime(0.03, now);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.001, now+0.9);
+        shimmer.connect(shimmerGain); shimmerGain.connect(audioCtx.destination);
+        const buffer=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*1.2), audioCtx.sampleRate);
+        const data=buffer.getChannelData(0);
+        for(let i=0;i<data.length;i++){
+          const t=i/data.length;
+          data[i]=(Math.random()*2-1)*(1-Math.pow(t,0.45))*0.6;
+        }
+        const noise=audioCtx.createBufferSource();
+        const noiseGain=audioCtx.createGain();
+        noise.buffer=buffer;
+        noiseGain.gain.setValueAtTime(0.18, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now+1.1);
+        noise.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+1.2);
+        sub.start(now); sub.stop(now+1.4);
+        shimmer.start(now+0.05); shimmer.stop(now+0.9);
+        noise.start(now); noise.stop(now+1.2);
+        break;
+      }
       case 'fireExplosion':
         o.type='sawtooth';
         o.frequency.setValueAtTime(400, now);
@@ -3162,9 +3245,12 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     // 重置 Boss 計時
     nextBossAtkA = nextBossAtkB = bossChargeUntil = cyclopsShakeUntil = 0; bossChargeColor='';
     if(level===15){
-      // The cyclops boss takes 3 seconds to charge before firing the petrify column.
-      // Schedule the forced cast so that the beam lands exactly 5 seconds after entry.
-      cyclopsForcedPetrifyAt = performance.now() + 2000;
+      // 進入第15關時預先排程強制石化光束。
+      // 石化光束需蓄力3秒，因此預留 5 秒的進場緩衝後立即開始蓄力，
+      // 讓光束在倒數結束時（約進場 5 秒）擊中舞台、觸發真身現身。
+      const forcedDelay = 5000; // 進場後希望光束命中的時間
+      const petrifyCharge = 3000; // 光束施放所需蓄力時間
+      cyclopsForcedPetrifyAt = performance.now() + Math.max(0, forcedDelay - petrifyCharge);
     }
   }
 
@@ -6729,23 +6815,38 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     for(let i=dragonDeathRayBeams.length-1;i>=0;i--){
       const beam=dragonDeathRayBeams[i];
       if(now>=beam.end){ dragonDeathRayBeams.splice(i,1); continue; }
-      const prog = 1 - Math.max(0, (beam.end-now)/Math.max(1, beam.end-beam.start));
+      const impactAt = beam.impactAt || beam.end;
+      const travelSpan = Math.max(1, impactAt - beam.start);
+      const travelProg = Math.max(0, Math.min(1, (now - beam.start)/travelSpan));
+      const drawX = beam.hit ? beam.x2 : beam.x1 + (beam.x2 - beam.x1)*travelProg;
+      const drawY = beam.hit ? beam.y2 : beam.y1 + (beam.y2 - beam.y1)*travelProg;
+      const fadeSpan = Math.max(1, beam.end - impactAt);
+      const fadeProg = beam.hit ? Math.max(0, Math.min(1, (now - impactAt)/fadeSpan)) : 0;
+      const intensity = beam.hit ? 1 - fadeProg : Math.min(1, 0.4 + travelProg*0.6);
       const x1=beam.x1*scaleX, y1=beam.y1*scaleY;
-      const x2=beam.x2*scaleX, y2=beam.y2*scaleY;
+      const x2=drawX*scaleX, y2=drawY*scaleY;
       ctx.save();
       ctx.globalCompositeOperation='lighter';
       const outer=ctx.createLinearGradient(x1,y1,x2,y2);
-      outer.addColorStop(0,'rgba(255,230,150,'+(0.25+0.35*prog)+')');
-      outer.addColorStop(1,'rgba(255,200,120,'+(0.5+0.4*prog)+')');
+      outer.addColorStop(0,'rgba(255,230,150,'+(0.18+0.42*intensity)+')');
+      outer.addColorStop(1,'rgba(255,200,120,'+(0.45+0.4*intensity)+')');
       ctx.strokeStyle=outer;
       ctx.lineWidth=10;
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
       const core=ctx.createLinearGradient(x1,y1,x2,y2);
-      core.addColorStop(0,'rgba(255,255,230,'+(0.4+0.4*prog)+')');
-      core.addColorStop(1,'rgba(255,240,180,'+(0.6+0.3*prog)+')');
+      core.addColorStop(0,'rgba(255,255,230,'+(0.32+0.52*intensity)+')');
+      core.addColorStop(1,'rgba(255,240,180,'+(0.54+0.3*intensity)+')');
       ctx.strokeStyle=core;
       ctx.lineWidth=4;
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      if(!beam.hit){
+        const tipR=8*((scaleX+scaleY)/2)*(0.6+travelProg*0.8);
+        const tipGrad=ctx.createRadialGradient(x2,y2,0,x2,y2,tipR);
+        tipGrad.addColorStop(0,'rgba(255,255,240,'+(0.7+0.3*intensity)+')');
+        tipGrad.addColorStop(1,'rgba(255,200,100,0)');
+        ctx.fillStyle=tipGrad;
+        ctx.beginPath(); ctx.arc(x2,y2,tipR,0,Math.PI*2); ctx.fill();
+      }
       ctx.restore();
     }
     if(dragonAttackState && dragonAttackState.type==='annihilation'){
@@ -6767,9 +6868,24 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       }else if(state.phase==='detonate'){
         const span=Math.max(1, state.explosionEnd - state.detonateStart);
         const prog=1-Math.max(0, (state.explosionEnd-now)/span);
+        const centerX=550*scaleX;
+        const L=layout();
+        const stageHeight=L.rows*(brickH+L.pad) - L.pad;
+        const centerY=(L.top + stageHeight/2)*scaleY;
         ctx.save();
-        const alpha=0.35 + 0.25*Math.sin(prog*Math.PI);
-        ctx.fillStyle=`rgba(255,220,150,${alpha})`;
+        ctx.globalCompositeOperation='lighter';
+        const maxR=Math.max(canvas.width, canvas.height)*1.2;
+        const radial=ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxR);
+        radial.addColorStop(0,`rgba(255,255,240,${0.86 - 0.4*prog})`);
+        radial.addColorStop(0.35,`rgba(255,240,190,${0.75 - 0.3*prog})`);
+        radial.addColorStop(0.7,`rgba(255,210,120,${0.55 - 0.2*prog})`);
+        radial.addColorStop(1,'rgba(255,160,60,0)');
+        ctx.fillStyle=radial;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha=0.32 + 0.22*Math.sin(prog*Math.PI*3);
+        ctx.fillStyle='rgba(255,200,120,0.95)';
         ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.restore();
       }
@@ -6849,6 +6965,51 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         ctx.beginPath();
         ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2),0,Math.PI*2);
         ctx.fill();
+      }else if(fx.type==='apocalypse'){
+        const startR=fx.r0||120;
+        const endR=fx.r1||900;
+        const rad=startR + (endR-startR)*easeOut(prog);
+        const grad=ctx.createRadialGradient(fx.x*scaleX, fx.y*scaleY, 0, fx.x*scaleX, fx.y*scaleY, Math.max(60, rad*((scaleX+scaleY)/2)));
+        grad.addColorStop(0,`rgba(255,255,250,${0.96 - prog*0.4})`);
+        grad.addColorStop(0.25,`rgba(255,240,200,${0.82 - prog*0.3})`);
+        grad.addColorStop(0.6,`rgba(255,214,130,${0.65 - prog*0.25})`);
+        grad.addColorStop(1,'rgba(255,180,80,0)');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2),0,Math.PI*2);
+        ctx.fill();
+      }else if(fx.type==='shockwave'){
+        const startR=fx.r0||0;
+        const endR=fx.r1||980;
+        const rad=startR + (endR-startR)*easeOut(prog);
+        const width=(fx.width||32)*((scaleX+scaleY)/2)*(1-prog*0.5);
+        ctx.strokeStyle=`rgba(${fx.color||'255,230,190'},${0.55*(1-prog)})`;
+        ctx.lineWidth=width;
+        ctx.beginPath();
+        ctx.arc(fx.x*scaleX, fx.y*scaleY, rad*((scaleX+scaleY)/2),0,Math.PI*2);
+        ctx.stroke();
+      }else if(fx.type==='emberRain'){
+        if(!fx.particles){
+          const count=fx.count||70;
+          fx.particles=Array.from({length:count},()=>({
+            angle:Math.random()*Math.PI*2,
+            radius:30+Math.random()*200,
+            speed:220+Math.random()*320,
+            size:9+Math.random()*16,
+            drift:(Math.random()*0.6-0.3)
+          }));
+        }
+        const flicker=0.5+0.5*Math.sin(prog*Math.PI*4);
+        for(const p of fx.particles){
+          const dist = p.radius + p.speed*prog;
+          const px = fx.x + Math.cos(p.angle + p.drift*prog)*dist;
+          const py = fx.y + Math.sin(p.angle + p.drift*prog)*dist*0.65;
+          const size=p.size*((1-prog)*0.8+0.2)*((scaleX+scaleY)/2);
+          ctx.fillStyle=`rgba(255,${205+Math.round(35*flicker)},${120+Math.round(25*(1-prog))},${0.55*(1-prog)})`;
+          ctx.beginPath();
+          ctx.arc(px*scaleX, py*scaleY, size,0,Math.PI*2);
+          ctx.fill();
+        }
       }
       ctx.restore();
     }
