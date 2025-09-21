@@ -2152,12 +2152,16 @@ select optgroup { color: #0b1022; }
           beam.hit=true;
           const targetX=beam.x2;
           const targetY=beam.y2;
-          spawnParticles(targetX, targetY, '#ffec8a', 36, 2.4, 4.0, 4.0);
-          dragonBursts.push({type:'flare',x:targetX,y:targetY,r0:0,r1:280,t0:now,life:900,color:'255,225,150'});
-          screenShake=Math.max(screenShake,14);
-          playSFX('fireExplosion');
-          if(now>=paddleGoneUntil){
-            paddleGoneUntil=now+3000;
+          const pr=paddleRect();
+          const intersects = pr.w>0 && pr.h>0 && segmentIntersectsRect(beam.x1, beam.y1, targetX, targetY, pr);
+          if(intersects){
+            spawnParticles(targetX, targetY, '#ffec8a', 36, 2.4, 4.0, 4.0);
+            dragonBursts.push({type:'flare',x:targetX,y:targetY,r0:0,r1:280,t0:now,life:900,color:'255,225,150'});
+            screenShake=Math.max(screenShake,14);
+            playSFX('fireExplosion');
+            if(now>=paddleGoneUntil){
+              paddleGoneUntil=now+3000;
+            }
           }
         }
       }
