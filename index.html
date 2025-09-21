@@ -6866,7 +6866,13 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         ctx.fillStyle='rgba(255,236,190,0.92)';
         ctx.shadowColor='rgba(255,200,120,0.85)';
         ctx.shadowBlur=24*((scaleX+scaleY)/2);
-        ctx.fillText(String(sec), (1100/2)*scaleX, Math.max(20, (L.top-60))*scaleY);
+        let anchorY=Math.max(20, (L.top-60));
+        if(dragonMarquee){
+          const marqueeHeight=60;
+          const marqueeTop=Math.max(16, L.top - marqueeHeight - 14);
+          anchorY=Math.max(anchorY, marqueeTop + marqueeHeight + 12, L.top + 12);
+        }
+        ctx.fillText(String(sec), (1100/2)*scaleX, anchorY*scaleY);
         ctx.restore();
       }else if(state.phase==='detonate'){
         const span=Math.max(1, state.explosionEnd - state.detonateStart);
