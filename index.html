@@ -1239,6 +1239,7 @@ select optgroup { color: #0b1022; }
       if(typeof nextBossAtkB !== 'undefined' && nextBossAtkB){ nextBossAtkB += delta; }
       if(typeof bossChargeUntil !== 'undefined' && bossChargeUntil){ bossChargeUntil += delta; }
       if(typeof cyclopsShakeUntil !== 'undefined' && cyclopsShakeUntil){ cyclopsShakeUntil += delta; }
+      if(typeof cyclopsForcedPetrifyAt !== 'undefined' && cyclopsForcedPetrifyAt){ cyclopsForcedPetrifyAt += delta; }
       if(gatling){ gatling.chargeUntil+=delta; gatling.fireStart+=delta; gatling.fireUntil+=delta; if(gatling.lastShot) gatling.lastShot+=delta; }
       if(spaceBossRevealScheduled) spaceBossRevealScheduled += delta;
       if(spaceBossNextAttackAt) spaceBossNextAttackAt += delta;
@@ -1331,6 +1332,8 @@ select optgroup { color: #0b1022; }
   let cyclopsNextRowBlast=0;
   let cyclopsShellBurst=false;
   let cyclopsEventComplete=false;
+  let cyclopsForcedPetrifyAt=0;
+  let cyclopsForcedPetrifyFired=false;
   let reaperAfterimages=[];
   let reaperMarquee=null;
   let reaperDefeatedAt=0;
@@ -2230,6 +2233,8 @@ select optgroup { color: #0b1022; }
     cyclopsMarqueeShown=false;
     cyclopsEventStarted=false;
     cyclopsEventComplete=false;
+    cyclopsForcedPetrifyAt=0;
+    cyclopsForcedPetrifyFired=false;
     cyclopsRowBlastIndex=-1;
     cyclopsNextRowBlast=0;
     cyclopsShellBurst=false;
@@ -2301,7 +2306,14 @@ select optgroup { color: #0b1022; }
     const now=performance.now();
     if(bossLv===5){ if(now>=nextBossAtkA){ spawnLionBeam(); nextBossAtkA = now + 10000; } }
     else if(bossLv===10){ if(now>=nextBossAtkA){ spawnKnightArc(); nextBossAtkA = now + 15000; } }
-    else if(bossLv===15){ maybeStartDragonAttack(now); }
+    else if(bossLv===15){
+      if(!cyclopsForcedPetrifyFired && cyclopsForcedPetrifyAt && now>=cyclopsForcedPetrifyAt){
+        if(dragonPhase==='awaiting'){ spawnCyclopsColumn(); }
+        cyclopsForcedPetrifyFired=true;
+      }
+      if(dragonPhase!=='awaiting'){ cyclopsForcedPetrifyFired=true; cyclopsForcedPetrifyAt=0; }
+      maybeStartDragonAttack(now);
+    }
     else if(bossLv===20){ if(now>=nextBossAtkA){ spawnDemonBeam(); nextBossAtkA = now + 10000; } if(now>=nextBossAtkB){ spawnDemonClouds(); nextBossAtkB = now + 30000; } }
   }
 
@@ -3149,6 +3161,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     }
     // 重置 Boss 計時
     nextBossAtkA = nextBossAtkB = bossChargeUntil = cyclopsShakeUntil = 0; bossChargeColor='';
+    if(level===15){ cyclopsForcedPetrifyAt = performance.now() + 10000; }
   }
 
   
