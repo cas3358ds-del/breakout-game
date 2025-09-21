@@ -89,9 +89,19 @@
     }
     .level-select select{
       min-width:120px;
+      color:#d7e3ff;
+    }
+    .level-select select option{
+      background:#0b1633;
+      color:#d7e3ff;
     }
     .level-select select option.boss-level{
-      color:#ff9b4a;
+      color:#ffb347;
+      font-weight:800;
+      background:rgba(255,155,74,.22);
+    }
+    .level-select select.boss-selected{
+      color:#ffb347;
       font-weight:700;
     }
     select,input[type="range"]{background:var(--glass-2);color:#fff;border:1px solid var(--stroke);border-radius:8px;padding:6px 10px}
@@ -870,6 +880,7 @@ select optgroup { color: #0b1022; }
   const pauseBtn=document.getElementById('pauseBtn'), resetBtn=document.getElementById('resetBtn'), fsBtn=document.getElementById('fsBtn');
   const soundBtn=document.getElementById('soundBtn'), saveBtn=document.getElementById('saveBtn'), loadBtn=document.getElementById('loadBtn'), clearSaveBtn=document.getElementById('clearSaveBtn');
   const levelJumpSel=document.getElementById('levelJumpSel');
+  let refreshLevelJumpVisual=null;
   const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn'), galleryBtn=document.getElementById('galleryBtn'), rankBtn=document.getElementById('rankBtn');
   const centerNote=document.getElementById('centerNote'), noteTitle=document.getElementById('noteTitle'), noteText=document.getElementById('noteText'), noteBox=document.getElementById('noteBox');
   const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs'), promptsDock=document.getElementById('promptsDock');
@@ -7878,7 +7889,10 @@ function generateLevel(lv, L){
     // 顯示目前關卡數（level 元素）和總關卡數（totalLevels 元素）
     levelEl.textContent = level;
     if (totalLevelsEl) totalLevelsEl.textContent = GAME_CONFIG.totalLevels;
-    if (levelJumpSel) levelJumpSel.value = String(level);
+    if (levelJumpSel){
+      levelJumpSel.value = String(level);
+      if(typeof refreshLevelJumpVisual==='function') refreshLevelJumpVisual();
+    }
     // 更新生命文字與愛心
     livesEl.textContent = lives;
     if (heartsEl) {
@@ -8013,23 +8027,34 @@ function generateLevel(lv, L){
   if(ledStyleSel){ ledStyleSel.value = ledStyle; ledStyleSel.addEventListener('change', ()=>{ ledStyle = ledStyleSel.value; localStorage.setItem('led_style', ledStyle); }); }
   saveBtn.addEventListener('click',saveProgress); loadBtn.addEventListener('click',loadProgress); clearSaveBtn.addEventListener('click',clearSave);
   if(levelJumpSel){
+    const updateLevelJumpVisual = ()=>{
+      const current=levelJumpSel.options[levelJumpSel.selectedIndex]||null;
+      const isBoss=!!current && current.classList.contains('boss-level');
+      levelJumpSel.classList.toggle('boss-selected', isBoss);
+    };
+    refreshLevelJumpVisual = updateLevelJumpVisual;
     const populateLevelJumpOptions = ()=>{
       levelJumpSel.innerHTML = '';
       for(let i=1;i<=GAME_CONFIG.totalLevels;i++){
         const option=document.createElement('option');
+        const isBoss = i%5===0;
         option.value=String(i);
-        option.textContent=`第 ${i} 關`;
-        if(i%5===0){
+        option.textContent=isBoss ? `第 ${i} 關 ★ Boss` : `第 ${i} 關`;
+        if(isBoss){
           option.classList.add('boss-level');
-          option.style.color='#ff9b4a';
-          option.style.fontWeight='700';
+          option.style.color='#ffb347';
+          option.style.fontWeight='800';
+          option.style.background='rgba(255,155,74,.22)';
         }
         levelJumpSel.appendChild(option);
       }
+      updateLevelJumpVisual();
     };
     populateLevelJumpOptions();
     levelJumpSel.value = String(level);
+    updateLevelJumpVisual();
     levelJumpSel.addEventListener('change',()=>{
+      updateLevelJumpVisual();
       const target=parseInt(levelJumpSel.value,10);
       if(Number.isNaN(target)) return;
       level = Math.max(1, Math.min(GAME_CONFIG.totalLevels, target));
