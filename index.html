@@ -2430,9 +2430,10 @@ select optgroup { color: #0b1022; }
     const debris=[];
     for(const brick of row){
       const idx=bricks.indexOf(brick);
-      if(idx<0) continue;
-      revealBrickArea(brick);
-      bricks.splice(idx,1);
+      if(idx>=0){
+        revealBrickArea(brick);
+        bricks.splice(idx,1);
+      }
       demonEventCleared++;
       const baseColor = brick.treasure ? '#ffd166' : brick.boss ? '#ff4d6d' : brick.unbreakable ? '#888888' : brick.strong ? '#bb7aff' : brick.moving ? '#6ec6ff' : brick.explosive ? getVar('--expl') : brickColor(brick.colorIdx||0);
       debris.push({
@@ -2465,7 +2466,7 @@ select optgroup { color: #0b1022; }
     const cx=shell? shell.x + shell.w/2 : 1100/2;
     const cy=shell? shell.y + shell.h/2 : layout().top;
     demonEventMarquee={
-      text:'跪伏於我的力量之下吧!',
+      text:'竟然妄想踏入神之領域嗎? 真是愚蠢的人類!',
       start:now,
       fadeStart:now+5000,
       end:now+8000
@@ -2618,156 +2619,486 @@ select optgroup { color: #0b1022; }
     ctx.fill();
     ctx.restore();
 
+    const wind=Math.sin(now/420 + cloakPhase)*0.4;
+    const cloakLift=28 + Math.sin(now/260 + hoverPhase)*8;
+    const drawCloakShape=()=>{
+      ctx.beginPath();
+      ctx.moveTo(-150,-130);
+      ctx.quadraticCurveTo(-240 - wind*140,-40-cloakLift*0.4,-210,160);
+      ctx.quadraticCurveTo(-150 + wind*110,260+cloakLift*0.3,-16,220);
+      ctx.quadraticCurveTo(150 - wind*110,260+cloakLift*0.3,210,160);
+      ctx.quadraticCurveTo(240 + wind*140,-40-cloakLift*0.4,150,-130);
+      ctx.quadraticCurveTo(80,-172,0,-152-cloakLift*0.25);
+      ctx.quadraticCurveTo(-80,-172,-150,-130);
+      ctx.closePath();
+    };
+
     ctx.save();
-    const wave=Math.sin(now/480 + cloakPhase)*0.35;
-    ctx.translate(0,48);
-    ctx.beginPath();
-    ctx.moveTo(-122,-30);
-    ctx.quadraticCurveTo(-170,50+wave*50,-94,150);
-    ctx.quadraticCurveTo(0,196+wave*60,94,150);
-    ctx.quadraticCurveTo(170,50-wave*50,122,-28);
-    ctx.closePath();
-    const cloakGrad=ctx.createLinearGradient(-150,-70,150,220);
+    ctx.translate(0,68);
+    drawCloakShape();
+    const cloakGrad=ctx.createLinearGradient(-240,-160,240,260);
     if(flash){
-      cloakGrad.addColorStop(0,'rgba(255,240,255,0.92)');
-      cloakGrad.addColorStop(1,'rgba(255,170,230,0.9)');
+      cloakGrad.addColorStop(0,'rgba(255,245,255,0.96)');
+      cloakGrad.addColorStop(0.45,'rgba(240,210,255,0.94)');
+      cloakGrad.addColorStop(1,'rgba(255,190,235,0.92)');
     }else{
-      cloakGrad.addColorStop(0,'rgba(70,20,120,0.94)');
-      cloakGrad.addColorStop(0.5,'rgba(120,36,160,0.96)');
-      cloakGrad.addColorStop(1,'rgba(190,48,170,0.92)');
+      cloakGrad.addColorStop(0,'rgba(60,18,116,0.96)');
+      cloakGrad.addColorStop(0.4,'rgba(110,32,160,0.96)');
+      cloakGrad.addColorStop(0.75,'rgba(150,38,180,0.94)');
+      cloakGrad.addColorStop(1,'rgba(210,54,200,0.9)');
     }
     ctx.fillStyle=cloakGrad;
     ctx.fill();
+    drawCloakShape();
+    ctx.lineWidth=4.2;
+    ctx.strokeStyle=flash?'rgba(255,240,255,0.8)':'rgba(70,10,90,0.85)';
+    ctx.stroke();
+    drawCloakShape();
+    ctx.clip();
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha=flash?0.65:0.45;
+    const foldGrad=ctx.createLinearGradient(-220,-60,220,260);
+    foldGrad.addColorStop(0, flash?'rgba(255,255,255,0.4)':'rgba(200,150,255,0.22)');
+    foldGrad.addColorStop(0.5,'rgba(120,40,160,0.05)');
+    foldGrad.addColorStop(1, flash?'rgba(255,220,255,0.32)':'rgba(120,30,140,0.18)');
+    ctx.fillStyle=foldGrad;
+    ctx.fillRect(-260,-220,520,520);
     ctx.restore();
+    ctx.globalAlpha=1;
+    ctx.globalCompositeOperation='source-over';
 
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(-60,8);
-    ctx.quadraticCurveTo(-82,-42,0,-84);
-    ctx.quadraticCurveTo(82,-42,60,8);
-    ctx.quadraticCurveTo(40,100,0,138);
-    ctx.quadraticCurveTo(-40,100,-60,8);
+    ctx.moveTo(-72,-6);
+    ctx.bezierCurveTo(-120,-78,-46,-162,0,-166);
+    ctx.bezierCurveTo(46,-162,120,-78,72,-6);
+    ctx.quadraticCurveTo(44,148,0,174);
+    ctx.quadraticCurveTo(-44,148,-72,-6);
     ctx.closePath();
-    const armorGrad=ctx.createLinearGradient(-70,-90,70,160);
+    const armorGrad=ctx.createLinearGradient(-90,-166,90,210);
     if(flash){
-      armorGrad.addColorStop(0,'#fff3ff');
-      armorGrad.addColorStop(0.5,'#f5d6ff');
-      armorGrad.addColorStop(1,'#e8c4ff');
+      armorGrad.addColorStop(0,'rgba(255,248,255,0.98)');
+      armorGrad.addColorStop(0.35,'rgba(246,224,255,0.96)');
+      armorGrad.addColorStop(0.8,'rgba(232,206,255,0.94)');
+      armorGrad.addColorStop(1,'rgba(220,192,255,0.92)');
     }else{
-      armorGrad.addColorStop(0,'rgba(34,16,54,0.95)');
-      armorGrad.addColorStop(0.45,'rgba(74,34,110,0.96)');
-      armorGrad.addColorStop(1,'rgba(24,10,36,0.92)');
+      armorGrad.addColorStop(0,'rgba(28,14,48,0.96)');
+      armorGrad.addColorStop(0.4,'rgba(46,22,74,0.97)');
+      armorGrad.addColorStop(0.7,'rgba(76,34,116,0.96)');
+      armorGrad.addColorStop(1,'rgba(32,14,50,0.94)');
     }
     ctx.fillStyle=armorGrad;
     ctx.fill();
-    ctx.strokeStyle='rgba(210,190,255,0.6)';
-    ctx.lineWidth=3.2;
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.85)':'rgba(150,120,220,0.62)';
+    ctx.lineWidth=3.6;
     ctx.stroke();
-    ctx.restore();
 
-    ctx.save();
-    ctx.fillStyle=flash?'rgba(255,240,255,0.96)':'rgba(150,120,220,0.92)';
     ctx.beginPath();
-    ctx.moveTo(0,-34);
-    ctx.lineTo(26,0);
-    ctx.lineTo(0,48);
-    ctx.lineTo(-26,0);
+    ctx.moveTo(-46,-20);
+    ctx.quadraticCurveTo(0,-72,46,-20);
+    ctx.quadraticCurveTo(14,96,0,128);
+    ctx.quadraticCurveTo(-14,96,-46,-20);
     ctx.closePath();
+    const innerGrad=ctx.createLinearGradient(-46,-80,46,140);
+    if(flash){
+      innerGrad.addColorStop(0,'rgba(255,255,255,0.9)');
+      innerGrad.addColorStop(0.6,'rgba(238,210,255,0.88)');
+      innerGrad.addColorStop(1,'rgba(220,190,255,0.85)');
+    }else{
+      innerGrad.addColorStop(0,'rgba(80,46,140,0.95)');
+      innerGrad.addColorStop(0.6,'rgba(56,26,94,0.96)');
+      innerGrad.addColorStop(1,'rgba(36,16,66,0.92)');
+    }
+    ctx.fillStyle=innerGrad;
     ctx.fill();
-    ctx.strokeStyle='rgba(220,205,255,0.7)';
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.72)':'rgba(210,170,255,0.55)';
+    ctx.lineWidth=2.2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0,-36);
+    ctx.lineTo(20,-2);
+    ctx.lineTo(0,32);
+    ctx.lineTo(-20,-2);
+    ctx.closePath();
+    const gemGrad=ctx.createLinearGradient(-20,-36,20,32);
+    gemGrad.addColorStop(0, flash?'rgba(255,240,255,0.95)':'rgba(255,180,240,0.95)');
+    gemGrad.addColorStop(1, flash?'rgba(255,200,255,0.92)':'rgba(180,90,220,0.92)');
+    ctx.fillStyle=gemGrad;
+    ctx.fill();
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.85)':'rgba(255,210,255,0.7)';
     ctx.lineWidth=2.4;
     ctx.stroke();
     ctx.restore();
 
     ctx.save();
-    ctx.fillStyle=flash?'rgba(235,210,255,0.92)':'rgba(110,70,160,0.95)';
-    ctx.fillRect(-28,42,56,16);
-    ctx.fillRect(-34,60,68,18);
-    ctx.restore();
-
-    ctx.save();
-    const shoulderColor=flash?'rgba(250,230,255,0.95)':'rgba(80,36,130,0.95)';
-    ctx.fillStyle=shoulderColor;
+    ctx.translate(0,78);
+    const beltGrad=ctx.createLinearGradient(-90,-10,90,40);
+    beltGrad.addColorStop(0, flash?'rgba(250,236,255,0.92)':'rgba(62,30,96,0.95)');
+    beltGrad.addColorStop(0.5, flash?'rgba(240,216,255,0.95)':'rgba(88,44,132,0.96)');
+    beltGrad.addColorStop(1, flash?'rgba(250,236,255,0.92)':'rgba(62,30,96,0.95)');
     ctx.beginPath();
-    ctx.ellipse(-82,-6,36,28,0,0,Math.PI*2);
-    ctx.ellipse(82,-6,36,28,0,0,Math.PI*2);
+    ctx.moveTo(-86,-6);
+    ctx.quadraticCurveTo(0,-26,86,-6);
+    ctx.lineTo(94,32);
+    ctx.quadraticCurveTo(0,48,-94,32);
+    ctx.closePath();
+    ctx.fillStyle=beltGrad;
     ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    ctx.fillStyle=flash?'rgba(220,200,255,0.92)':'rgba(90,50,140,0.92)';
-    ctx.fillRect(-90,20,18,52);
-    ctx.fillRect(72,20,18,52);
-    ctx.restore();
-
-    ctx.save();
-    ctx.translate(0,-76);
-    const skullGrad=ctx.createLinearGradient(0,-44,0,60);
-    skullGrad.addColorStop(0, flash?'#ffffff':'#f5f5f5');
-    skullGrad.addColorStop(1, flash?'#ffffff':'#dedede');
-    ctx.fillStyle=skullGrad;
-    ctx.beginPath();
-    ctx.ellipse(0,0,40,46,0,0,Math.PI*2);
-    ctx.fill();
-    ctx.strokeStyle='rgba(60,40,90,0.6)';
-    ctx.lineWidth=4;
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':'rgba(150,110,200,0.72)';
+    ctx.lineWidth=3;
     ctx.stroke();
 
-    ctx.fillStyle='rgba(0,0,0,0.9)';
     ctx.beginPath();
-    ctx.moveTo(-18,-4);
-    ctx.quadraticCurveTo(-4,-22,-2,-4);
-    ctx.quadraticCurveTo(-8,8,-20,12);
-    ctx.closePath();
+    ctx.ellipse(0,10,34,28,0,0,Math.PI*2);
+    const buckleGrad=ctx.createLinearGradient(-34,-14,34,30);
+    buckleGrad.addColorStop(0, flash?'rgba(255,240,255,0.95)':'rgba(160,120,200,0.92)');
+    buckleGrad.addColorStop(1, flash?'rgba(240,200,255,0.9)':'rgba(80,40,120,0.92)');
+    ctx.fillStyle=buckleGrad;
     ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(18,-4);
-    ctx.quadraticCurveTo(4,-22,2,-4);
-    ctx.quadraticCurveTo(8,8,20,12);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle='rgba(255,90,150,0.85)';
-    ctx.beginPath();
-    ctx.arc(-10,-2,6,0,Math.PI*2);
-    ctx.arc(10,-2,6,0,Math.PI*2);
-    ctx.fill();
-
-    const hornPulse = 0.9 + 0.1*Math.sin(now/260 + hoverPhase);
-    ctx.strokeStyle='rgba(255,240,255,0.85)';
-    ctx.lineWidth=8;
-    ctx.beginPath();
-    ctx.moveTo(-24,-38);
-    ctx.quadraticCurveTo(-92,-120*hornPulse,-62,-168*hornPulse);
-    ctx.quadraticCurveTo(-32,-196*hornPulse,-12,-154);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(24,-38);
-    ctx.quadraticCurveTo(92,-120*hornPulse,62,-168*hornPulse);
-    ctx.quadraticCurveTo(32,-196*hornPulse,12,-154);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.save();
-    ctx.translate(78,34);
-    const swing = Math.sin(swordPhase)*0.2;
-    ctx.rotate(-Math.PI/4 + swing);
-    const bladeGrad=ctx.createLinearGradient(-8,-12,110,12);
-    bladeGrad.addColorStop(0, flash?'rgba(255,255,255,0.95)':'rgba(240,236,255,0.95)');
-    bladeGrad.addColorStop(1, flash?'rgba(255,210,255,0.85)':'rgba(210,200,255,0.85)');
-    ctx.fillStyle=bladeGrad;
-    ctx.beginPath();
-    ctx.moveTo(-8,-10);
-    ctx.lineTo(96,-10);
-    ctx.lineTo(118,0);
-    ctx.lineTo(96,10);
-    ctx.lineTo(-8,10);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle='rgba(200,200,255,0.7)';
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.85)':'rgba(210,170,255,0.75)';
     ctx.lineWidth=2.6;
     ctx.stroke();
-    ctx.fillStyle=flash?'rgba(240,220,255,0.9)':'rgba(110,70,160,0.9)';
-    ctx.fillRect(-12,-18,24,36);
+
+    ctx.beginPath();
+    ctx.ellipse(0,12,16,14,0,0,Math.PI*2);
+    const skullGrad=ctx.createLinearGradient(-16,-2,16,26);
+    skullGrad.addColorStop(0, flash?'rgba(255,255,255,0.95)':'rgba(250,240,255,0.9)');
+    skullGrad.addColorStop(1, flash?'rgba(240,220,255,0.92)':'rgba(200,150,230,0.9)');
+    ctx.fillStyle=skullGrad;
+    ctx.fill();
+    ctx.strokeStyle=flash?'rgba(140,110,200,0.65)':'rgba(80,40,120,0.75)';
+    ctx.lineWidth=1.8;
+    ctx.stroke();
+    ctx.fillStyle=flash?'rgba(180,120,220,0.9)':'rgba(90,40,130,0.9)';
+    ctx.beginPath();
+    ctx.ellipse(-6,10,4,6,0,0,Math.PI*2);
+    ctx.ellipse(6,10,4,6,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-10,18);
+    ctx.quadraticCurveTo(0,26,10,18);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(0,120);
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      const thighGrad=ctx.createLinearGradient(20,-80,80,120);
+      if(flash){
+        thighGrad.addColorStop(0,'rgba(255,250,255,0.94)');
+        thighGrad.addColorStop(1,'rgba(228,208,255,0.92)');
+      }else{
+        thighGrad.addColorStop(0,'rgba(52,26,92,0.95)');
+        thighGrad.addColorStop(1,'rgba(28,14,48,0.95)');
+      }
+      ctx.beginPath();
+      ctx.moveTo(28,-62);
+      ctx.quadraticCurveTo(70,-32,62,36);
+      ctx.quadraticCurveTo(54,110,24,132);
+      ctx.quadraticCurveTo(6,68,12,-20);
+      ctx.closePath();
+      ctx.fillStyle=thighGrad;
+      ctx.fill();
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':'rgba(120,90,190,0.65)';
+      ctx.lineWidth=2.6;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(44,32,18,22,0,0,Math.PI*2);
+      const kneeGrad=ctx.createLinearGradient(26,10,62,54);
+      kneeGrad.addColorStop(0, flash?'rgba(255,240,255,0.95)':'rgba(200,160,240,0.92)');
+      kneeGrad.addColorStop(1, flash?'rgba(238,210,255,0.9)':'rgba(120,70,160,0.9)');
+      ctx.fillStyle=kneeGrad;
+      ctx.fill();
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':'rgba(150,110,210,0.7)';
+      ctx.lineWidth=2.2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(36,88);
+      ctx.lineTo(70,120);
+      ctx.lineTo(58,170);
+      ctx.quadraticCurveTo(30,182,18,152);
+      ctx.closePath();
+      const bootGrad=ctx.createLinearGradient(28,80,80,190);
+      if(flash){
+        bootGrad.addColorStop(0,'rgba(255,248,255,0.95)');
+        bootGrad.addColorStop(1,'rgba(230,206,255,0.9)');
+      }else{
+        bootGrad.addColorStop(0,'rgba(42,20,76,0.96)');
+        bootGrad.addColorStop(1,'rgba(20,10,40,0.95)');
+      }
+      ctx.fillStyle=bootGrad;
+      ctx.fill();
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(120,90,190,0.68)';
+      ctx.lineWidth=2.4;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+    ctx.restore();
+
+    ctx.save();
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      const pauldronGrad=ctx.createLinearGradient(60,-80,150,80);
+      if(flash){
+        pauldronGrad.addColorStop(0,'rgba(255,248,255,0.96)');
+        pauldronGrad.addColorStop(1,'rgba(232,208,255,0.92)');
+      }else{
+        pauldronGrad.addColorStop(0,'rgba(70,34,120,0.96)');
+        pauldronGrad.addColorStop(1,'rgba(36,18,60,0.94)');
+      }
+      ctx.beginPath();
+      ctx.moveTo(78,-28);
+      ctx.bezierCurveTo(118,-72,156,-6,132,54);
+      ctx.quadraticCurveTo(102,102,64,70);
+      ctx.quadraticCurveTo(54,16,78,-28);
+      ctx.closePath();
+      ctx.fillStyle=pauldronGrad;
+      ctx.fill();
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(150,110,210,0.7)';
+      ctx.lineWidth=3;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(104,14);
+      ctx.lineTo(134,-4);
+      ctx.lineTo(122,42);
+      ctx.closePath();
+      ctx.fillStyle=flash?'rgba(255,255,255,0.9)':'rgba(190,150,255,0.86)';
+      ctx.fill();
+      ctx.stroke();
+
+      const armGrad=ctx.createLinearGradient(40,20,92,150);
+      if(flash){
+        armGrad.addColorStop(0,'rgba(255,246,255,0.96)');
+        armGrad.addColorStop(1,'rgba(228,208,255,0.9)');
+      }else{
+        armGrad.addColorStop(0,'rgba(60,30,96,0.95)');
+        armGrad.addColorStop(1,'rgba(34,16,60,0.94)');
+      }
+      ctx.beginPath();
+      ctx.moveTo(66,22);
+      ctx.quadraticCurveTo(92,74,70,130);
+      ctx.quadraticCurveTo(50,120,36,64);
+      ctx.quadraticCurveTo(46,26,66,22);
+      ctx.closePath();
+      ctx.fillStyle=armGrad;
+      ctx.fill();
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':'rgba(140,108,210,0.68)';
+      ctx.lineWidth=2.6;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(48,96);
+      ctx.lineTo(82,128);
+      ctx.lineTo(70,164);
+      ctx.lineTo(40,136);
+      ctx.closePath();
+      const gauntletGrad=ctx.createLinearGradient(40,96,88,170);
+      if(flash){
+        gauntletGrad.addColorStop(0,'rgba(255,246,255,0.95)');
+        gauntletGrad.addColorStop(1,'rgba(220,196,255,0.92)');
+      }else{
+        gauntletGrad.addColorStop(0,'rgba(70,34,120,0.96)');
+        gauntletGrad.addColorStop(1,'rgba(40,18,70,0.94)');
+      }
+      ctx.fillStyle=gauntletGrad;
+      ctx.fill();
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(150,110,210,0.7)';
+      ctx.lineWidth=2.4;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(0,-86);
+    const helmGrad=ctx.createLinearGradient(-60,-70,60,70);
+    if(flash){
+      helmGrad.addColorStop(0,'rgba(255,248,255,0.96)');
+      helmGrad.addColorStop(1,'rgba(230,210,255,0.94)');
+    }else{
+      helmGrad.addColorStop(0,'rgba(46,24,80,0.96)');
+      helmGrad.addColorStop(1,'rgba(24,10,40,0.94)');
+    }
+    ctx.beginPath();
+    ctx.moveTo(-48,22);
+    ctx.quadraticCurveTo(-74,-46,-20,-78);
+    ctx.quadraticCurveTo(0,-88,20,-78);
+    ctx.quadraticCurveTo(74,-46,48,22);
+    ctx.quadraticCurveTo(22,64,0,70);
+    ctx.quadraticCurveTo(-22,64,-48,22);
+    ctx.closePath();
+    ctx.fillStyle=helmGrad;
+    ctx.fill();
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(140,110,210,0.72)';
+    ctx.lineWidth=3;
+    ctx.stroke();
+
+    const skullMask=ctx.createLinearGradient(-34,-54,34,44);
+    skullMask.addColorStop(0, flash?'rgba(255,255,255,0.98)':'rgba(245,244,255,0.96)');
+    skullMask.addColorStop(1, flash?'rgba(238,230,255,0.95)':'rgba(214,210,228,0.93)');
+    ctx.beginPath();
+    ctx.ellipse(0,-4,36,44,0,0,Math.PI*2);
+    ctx.fillStyle=skullMask;
+    ctx.fill();
+    ctx.strokeStyle='rgba(60,40,90,0.55)';
+    ctx.lineWidth=3.2;
+    ctx.stroke();
+
+    ctx.fillStyle='rgba(0,0,0,0.92)';
+    ctx.beginPath();
+    ctx.moveTo(-20,-2);
+    ctx.quadraticCurveTo(-6,-26,-2,-6);
+    ctx.quadraticCurveTo(-10,10,-22,16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(20,-2);
+    ctx.quadraticCurveTo(6,-26,2,-6);
+    ctx.quadraticCurveTo(10,10,22,16);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle=flash?'rgba(255,220,255,0.95)':'rgba(255,110,170,0.92)';
+    ctx.beginPath();
+    ctx.ellipse(-10,-2,6,8,0,0,Math.PI*2);
+    ctx.ellipse(10,-2,6,8,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.strokeStyle=flash?'rgba(200,160,240,0.6)':'rgba(140,90,160,0.6)';
+    ctx.lineWidth=1.6;
+    ctx.beginPath();
+    ctx.moveTo(-12,22);
+    ctx.quadraticCurveTo(0,30,12,22);
+    ctx.stroke();
+
+    const hornPulse=0.9 + 0.12*Math.sin(now/260 + hoverPhase);
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      const hornGrad=ctx.createLinearGradient(12,-42,12,-180*hornPulse);
+      if(flash){
+        hornGrad.addColorStop(0,'rgba(255,250,255,0.95)');
+        hornGrad.addColorStop(1,'rgba(235,220,255,0.9)');
+      }else{
+        hornGrad.addColorStop(0,'rgba(220,210,240,0.95)');
+        hornGrad.addColorStop(1,'rgba(150,140,200,0.9)');
+      }
+      ctx.beginPath();
+      ctx.moveTo(16,-28);
+      ctx.quadraticCurveTo(76,-120*hornPulse,38,-192*hornPulse);
+      ctx.quadraticCurveTo(10,-226*hornPulse,-4,-154);
+      ctx.quadraticCurveTo(6,-120*hornPulse,16,-28);
+      ctx.closePath();
+      ctx.fillStyle=hornGrad;
+      ctx.fill();
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(120,100,180,0.75)';
+      ctx.lineWidth=3.4;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(108,42);
+    const swing=Math.sin(swordPhase)*0.25;
+    ctx.rotate(-Math.PI/3 + swing);
+    const bladeGrad=ctx.createLinearGradient(-20,-40,200,40);
+    bladeGrad.addColorStop(0, flash?'rgba(255,255,255,0.97)':'rgba(240,238,255,0.97)');
+    bladeGrad.addColorStop(0.5, flash?'rgba(240,230,255,0.94)':'rgba(210,208,255,0.92)');
+    bladeGrad.addColorStop(1, flash?'rgba(255,210,255,0.92)':'rgba(190,188,255,0.9)');
+    ctx.beginPath();
+    ctx.moveTo(-18,-12);
+    ctx.lineTo(126,-32);
+    ctx.lineTo(178,0);
+    ctx.lineTo(126,32);
+    ctx.lineTo(-18,12);
+    ctx.closePath();
+    ctx.fillStyle=bladeGrad;
+    ctx.fill();
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(200,200,255,0.72)';
+    ctx.lineWidth=2.8;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0,-6);
+    ctx.lineTo(132,-24);
+    ctx.lineTo(170,0);
+    ctx.lineTo(132,24);
+    ctx.lineTo(0,6);
+    ctx.closePath();
+    ctx.strokeStyle=flash?'rgba(200,180,255,0.7)':'rgba(150,150,220,0.6)';
+    ctx.lineWidth=1.6;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=flash?'rgba(255,220,255,0.7)':'rgba(200,140,255,0.6)';
+    ctx.lineWidth=1.2;
+    ctx.beginPath();
+    ctx.moveTo(20,-2);
+    ctx.lineTo(134,-22);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(20,2);
+    ctx.lineTo(134,22);
+    ctx.stroke();
+    ctx.restore();
+
+    const runeColor=flash?'rgba(255,220,255,0.9)':'rgba(220,150,255,0.85)';
+    for(let i=0;i<5;i++){
+      const t=i/4;
+      const rx=-4 + t*120;
+      const ry=-8 + Math.sin(now/300 + i)*2;
+      ctx.save();
+      ctx.translate(rx, ry);
+      ctx.rotate(0.12 - t*0.08);
+      ctx.fillStyle=runeColor;
+      ctx.fillRect(-2,-6,4,12);
+      ctx.restore();
+    }
+
+    const guardGrad=ctx.createLinearGradient(-40,20,40,60);
+    guardGrad.addColorStop(0, flash?'rgba(255,240,255,0.95)':'rgba(160,120,210,0.92)');
+    guardGrad.addColorStop(1, flash?'rgba(240,210,255,0.9)':'rgba(90,50,140,0.92)');
+    ctx.beginPath();
+    ctx.moveTo(-44,18);
+    ctx.quadraticCurveTo(0,4,44,18);
+    ctx.lineTo(36,42);
+    ctx.quadraticCurveTo(0,32,-36,42);
+    ctx.closePath();
+    ctx.fillStyle=guardGrad;
+    ctx.fill();
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(150,110,210,0.72)';
+    ctx.lineWidth=2.4;
+    ctx.stroke();
+
+    const handleGrad=ctx.createLinearGradient(0,32,0,104);
+    handleGrad.addColorStop(0, flash?'rgba(255,240,255,0.92)':'rgba(80,40,120,0.95)');
+    handleGrad.addColorStop(1, flash?'rgba(240,210,255,0.88)':'rgba(44,22,70,0.94)');
+    ctx.fillStyle=handleGrad;
+    ctx.fillRect(-10,40,20,66);
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(130,96,180,0.72)';
+    ctx.lineWidth=2;
+    ctx.strokeRect(-10,40,20,66);
+
+    ctx.beginPath();
+    ctx.arc(0,114,12,0,Math.PI*2);
+    const pommelGrad=ctx.createLinearGradient(-12,102,12,126);
+    pommelGrad.addColorStop(0, flash?'rgba(255,240,255,0.95)':'rgba(190,150,240,0.92)');
+    pommelGrad.addColorStop(1, flash?'rgba(240,210,255,0.9)':'rgba(110,70,160,0.9)');
+    ctx.fillStyle=pommelGrad;
+    ctx.fill();
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(150,110,210,0.72)';
+    ctx.lineWidth=2.2;
+    ctx.stroke();
     ctx.restore();
 
     ctx.restore();
