@@ -2997,51 +2997,104 @@ select optgroup { color: #0b1022; }
 
     // head and helmet
     ctx.save();
-    ctx.translate(0,-86);
+    ctx.translate(0,-92);
+
+    // segmented horns with aggressive silhouette
+    const hornCore=ctx.createLinearGradient(0,-236,0,-12);
+    hornCore.addColorStop(0,'rgba(12,12,18,0.96)');
+    hornCore.addColorStop(0.55,'rgba(26,24,34,0.94)');
+    hornCore.addColorStop(1,palette.horn);
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
       ctx.beginPath();
-      ctx.moveTo(16,-12);
-      ctx.bezierCurveTo(52,-136,18,-204,-16,-220);
-      ctx.bezierCurveTo(-40,-230,-48,-182,-32,-140);
-      ctx.bezierCurveTo(-18,-96,-4,-34,16,-12);
+      ctx.moveTo(18,-8);
+      ctx.bezierCurveTo(58,-112,60,-190,22,-236);
+      ctx.quadraticCurveTo(4,-254,-16,-226);
+      ctx.quadraticCurveTo(-32,-186,-24,-132);
+      ctx.quadraticCurveTo(-16,-84,18,-8);
       ctx.closePath();
-      const hornGrad=ctx.createLinearGradient(0,-220,0,-12);
-      hornGrad.addColorStop(0,'rgba(18,18,26,0.98)');
-      hornGrad.addColorStop(1,palette.horn);
-      ctx.fillStyle=hornGrad;
+      ctx.fillStyle=hornCore;
       ctx.fill();
       ctx.strokeStyle=palette.hornEdge;
-      ctx.lineWidth=2.4;
+      ctx.lineWidth=2.6;
+      ctx.stroke();
+
+      // horn ridges for sharper definition
+      ctx.beginPath();
+      ctx.moveTo(8,-178);
+      ctx.quadraticCurveTo(26,-158,10,-124);
+      ctx.quadraticCurveTo(0,-104,12,-74);
+      ctx.strokeStyle='rgba(160,150,210,'+(flash?0.55:0.3)+')';
+      ctx.lineWidth=1.4;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(4,-210);
+      ctx.quadraticCurveTo(22,-188,6,-162);
+      ctx.strokeStyle='rgba(255,100,120,'+(flash?0.5:0.28)+')';
+      ctx.lineWidth=1.2;
       ctx.stroke();
       ctx.restore();
     }
 
-    const helm=ctx.createLinearGradient(-46,-80,46,72);
+    // main helmet shell with razor edges
+    const helm=ctx.createLinearGradient(-52,-94,52,78);
     helm.addColorStop(0,palette.metalMid);
-    helm.addColorStop(1,palette.metalDark);
+    helm.addColorStop(0.58,palette.metalDark);
+    helm.addColorStop(1,'rgba(18,18,26,0.94)');
     ctx.beginPath();
-    ctx.moveTo(-44,32);
-    ctx.lineTo(-32,-56);
-    ctx.quadraticCurveTo(0,-106,32,-56);
-    ctx.lineTo(44,32);
-    ctx.quadraticCurveTo(0,62,-44,32);
+    ctx.moveTo(-54,28);
+    ctx.lineTo(-40,-82);
+    ctx.quadraticCurveTo(0,-140,40,-82);
+    ctx.lineTo(54,28);
+    ctx.quadraticCurveTo(0,70,-54,28);
     ctx.closePath();
     ctx.fillStyle=helm;
     ctx.fill();
     ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.6;
+    ctx.lineWidth=2.8;
     ctx.stroke();
 
-    const crest=ctx.createLinearGradient(-12,-70,12,40);
+    // cheek guards
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      const guard=ctx.createLinearGradient(-18,-12,26,44);
+      guard.addColorStop(0,palette.metalDark);
+      guard.addColorStop(1,palette.metalMid);
+      ctx.beginPath();
+      ctx.moveTo(30,-6);
+      ctx.lineTo(46,18);
+      ctx.lineTo(34,46);
+      ctx.lineTo(18,32);
+      ctx.quadraticCurveTo(24,8,30,-6);
+      ctx.closePath();
+      ctx.fillStyle=guard;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=1.6;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(34,16);
+      ctx.lineTo(22,30);
+      ctx.strokeStyle='rgba(255,120,140,'+(flash?0.5:0.26)+')';
+      ctx.lineWidth=1.1;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // central crest and crown
+    const crest=ctx.createLinearGradient(-14,-84,14,52);
     crest.addColorStop(0,palette.metalDark);
     crest.addColorStop(1,palette.metalMid);
     ctx.beginPath();
-    ctx.moveTo(-10,-60);
-    ctx.lineTo(0,-90);
-    ctx.lineTo(10,-60);
-    ctx.lineTo(0,6);
+    ctx.moveTo(-12,-64);
+    ctx.lineTo(0,-108);
+    ctx.lineTo(12,-64);
+    ctx.lineTo(4,38);
+    ctx.lineTo(-4,38);
     ctx.closePath();
     ctx.fillStyle=crest;
     ctx.fill();
@@ -3049,37 +3102,102 @@ select optgroup { color: #0b1022; }
     ctx.lineWidth=1.8;
     ctx.stroke();
 
-    const visor=ctx.createLinearGradient(-32,-12,32,42);
-    visor.addColorStop(0,palette.visor);
-    visor.addColorStop(1,'rgba(0,0,0,0.85)');
     ctx.beginPath();
-    ctx.moveTo(-30,-6);
-    ctx.quadraticCurveTo(0,-38,30,-6);
-    ctx.quadraticCurveTo(18,24,0,30);
-    ctx.quadraticCurveTo(-18,24,-30,-6);
+    ctx.moveTo(-26,-60);
+    ctx.quadraticCurveTo(0,-92,26,-60);
+    ctx.strokeStyle='rgba(210,180,255,'+(flash?0.6:0.38)+')';
+    ctx.lineWidth=1.3;
+    ctx.stroke();
+
+    // facial plating
+    const mask=ctx.createLinearGradient(-36,-18,36,54);
+    mask.addColorStop(0,palette.metalDark);
+    mask.addColorStop(1,palette.metalMid);
+    ctx.beginPath();
+    ctx.moveTo(-32,-14);
+    ctx.quadraticCurveTo(0,-60,32,-14);
+    ctx.lineTo(18,46);
+    ctx.quadraticCurveTo(0,58,-18,46);
+    ctx.closePath();
+    ctx.fillStyle=mask;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-18,18);
+    ctx.quadraticCurveTo(0,6,18,18);
+    ctx.strokeStyle='rgba(130,140,188,0.7)';
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-10,34);
+    ctx.lineTo(10,34);
+    ctx.strokeStyle=palette.accentGlow;
+    ctx.lineWidth=1.2;
+    ctx.stroke();
+
+    // visor slit with glowing eyes
+    const visor=ctx.createLinearGradient(-30,-10,30,32);
+    visor.addColorStop(0,palette.visor);
+    visor.addColorStop(1,'rgba(0,0,0,0.9)');
+    ctx.beginPath();
+    ctx.moveTo(-32,-2);
+    ctx.lineTo(-18,-32);
+    ctx.quadraticCurveTo(0,-44,18,-32);
+    ctx.lineTo(32,-2);
+    ctx.quadraticCurveTo(14,28,0,32);
+    ctx.quadraticCurveTo(-14,28,-32,-2);
     ctx.closePath();
     ctx.fillStyle=visor;
     ctx.fill();
 
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.fillStyle=palette.eye;
+    const eyeGlow=ctx.createRadialGradient(-14,-4,0,-14,-4,18);
+    eyeGlow.addColorStop(0,palette.eye);
+    eyeGlow.addColorStop(0.55,flash ? 'rgba(255,220,200,0.75)' : palette.accentGlow);
+    eyeGlow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=eyeGlow;
     ctx.beginPath();
-    ctx.ellipse(-12,-2,7,9,0,0,Math.PI*2);
-    ctx.ellipse(12,-2,7,9,0,0,Math.PI*2);
+    ctx.ellipse(-14,-4,10,12,0,0,Math.PI*2);
     ctx.fill();
-    ctx.fillStyle=flash ? 'rgba(255,240,220,0.6)' : 'rgba(255,70,50,0.6)';
+
+    const eyeGlowR=ctx.createRadialGradient(14,-4,0,14,-4,18);
+    eyeGlowR.addColorStop(0,palette.eye);
+    eyeGlowR.addColorStop(0.55,flash ? 'rgba(255,220,200,0.75)' : palette.accentGlow);
+    eyeGlowR.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=eyeGlowR;
     ctx.beginPath();
-    ctx.ellipse(-12,-2,12,12,0,0,Math.PI*2);
-    ctx.ellipse(12,-2,12,12,0,0,Math.PI*2);
+    ctx.ellipse(14,-4,10,12,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle=flash ? 'rgba(255,240,220,0.78)' : 'rgba(255,80,60,0.72)';
+    ctx.beginPath();
+    ctx.moveTo(-20,-4);
+    ctx.quadraticCurveTo(-14,-10,-6,-4);
+    ctx.quadraticCurveTo(-14,6,-20,-4);
+    ctx.moveTo(20,-4);
+    ctx.quadraticCurveTo(14,-10,6,-4);
+    ctx.quadraticCurveTo(14,6,20,-4);
     ctx.fill();
     ctx.restore();
 
+    // jaw vents and frame
     ctx.beginPath();
-    ctx.moveTo(-16,18);
-    ctx.quadraticCurveTo(0,8,16,18);
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=1.6;
+    ctx.moveTo(-22,12);
+    ctx.lineTo(22,12);
+    ctx.strokeStyle='rgba(90,96,140,0.9)';
+    ctx.lineWidth=1.4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-24,22);
+    ctx.lineTo(24,22);
+    ctx.strokeStyle='rgba(255,120,130,'+(flash?0.55:0.3)+')';
+    ctx.lineWidth=1.1;
     ctx.stroke();
 
     ctx.restore();
