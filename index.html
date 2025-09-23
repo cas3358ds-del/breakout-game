@@ -2469,7 +2469,8 @@ select optgroup { color: #0b1022; }
       text:'跪伏於我的力量之下吧！',
       start:now,
       fadeStart:now+5000,
-      end:now+8000
+      end:now+8000,
+      mode:'banner'
     };
     demonEventWave={x:cx, y:cy, start:now, duration:2000, maxRadius:Math.hypot(1100,700)};
     demonEventShakeUntil = now + 7000;
@@ -2541,6 +2542,7 @@ select optgroup { color: #0b1022; }
     }
   }
 
+
   function drawDemonMarquee(now){
     if(level!==20 || !demonEventMarquee) return;
     const evt=demonEventMarquee;
@@ -2549,13 +2551,68 @@ select optgroup { color: #0b1022; }
     const alpha = now<evt.fadeStart ? 1 : Math.max(0, 1 - (now-evt.fadeStart)/duration);
     if(alpha<=0) return;
     const L=layout();
-    const barHeight = 48*((scaleX+scaleY)/2);
+    const scaleAvg=(scaleX+scaleY)/2;
+    if(evt.mode==='banner'){
+      const barHeight = 96*scaleAvg;
+      const barWidth = canvas.width*0.86;
+      const barX = (canvas.width-barWidth)/2;
+      const barY = Math.max(12, L.top*scaleY - barHeight - 24);
+      ctx.save();
+      ctx.globalAlpha=alpha;
+      const bgGrad=ctx.createLinearGradient(barX, barY, barX, barY+barHeight);
+      bgGrad.addColorStop(0,'rgba(26,10,26,0.92)');
+      bgGrad.addColorStop(0.45,'rgba(48,12,28,0.92)');
+      bgGrad.addColorStop(1,'rgba(16,6,18,0.92)');
+      ctx.fillStyle=bgGrad;
+      ctx.fillRect(barX, barY, barWidth, barHeight);
+
+      ctx.strokeStyle='rgba(255,80,110,0.85)';
+      ctx.lineWidth=6*scaleAvg;
+      ctx.strokeRect(barX+4*scaleAvg, barY+4*scaleAvg, barWidth-8*scaleAvg, barHeight-8*scaleAvg);
+      ctx.strokeStyle='rgba(255,180,200,0.35)';
+      ctx.lineWidth=2.4*scaleAvg;
+      ctx.strokeRect(barX+12*scaleAvg, barY+12*scaleAvg, barWidth-24*scaleAvg, barHeight-24*scaleAvg);
+
+      const stripeHeight = 12*scaleAvg;
+      ctx.fillStyle='rgba(255,60,90,0.18)';
+      ctx.fillRect(barX, barY+stripeHeight, barWidth, stripeHeight);
+      ctx.fillRect(barX, barY+barHeight-stripeHeight*2, barWidth, stripeHeight);
+
+      const fontSize = Math.round(52*scaleAvg);
+      ctx.font=`${fontSize}px 'Noto Serif TC','Noto Sans TC',sans-serif`;
+      ctx.textBaseline='middle';
+      ctx.fillStyle='rgba(255,230,240,0.95)';
+      ctx.shadowColor='rgba(255,60,90,0.55)';
+      ctx.shadowBlur=32*scaleAvg;
+      const spacing = fontSize*1.35;
+      const offset = ((now-evt.start)*0.28*scaleAvg) % spacing;
+      const textY = barY + barHeight/2;
+      const startX = barX - spacing*2;
+      for(let x=startX; x<barX+barWidth+spacing*2; x+=spacing){
+        ctx.fillText(evt.text, x - offset, textY);
+      }
+      ctx.shadowBlur=0;
+
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle='rgba(255,90,120,0.4)';
+      ctx.lineWidth=3*scaleAvg;
+      ctx.beginPath();
+      ctx.moveTo(barX+18*scaleAvg, barY+barHeight*0.25);
+      ctx.lineTo(barX+barWidth-18*scaleAvg, barY+barHeight*0.25);
+      ctx.moveTo(barX+18*scaleAvg, barY+barHeight*0.75);
+      ctx.lineTo(barX+barWidth-18*scaleAvg, barY+barHeight*0.75);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    const barHeight = 48*scaleAvg;
     const barWidth = canvas.width*0.7;
     const barX = (canvas.width-barWidth)/2;
     const barY = Math.max(12, L.top*scaleY - barHeight - 20);
     ctx.save();
     ctx.globalAlpha=alpha;
-    const fontSize = Math.round(26*((scaleX+scaleY)/2));
+    const fontSize = Math.round(26*scaleAvg);
     ctx.font=`${fontSize}px 'Playfair Display','Noto Sans TC',sans-serif`;
     const glowGrad=ctx.createLinearGradient(barX, barY, barX+barWidth, barY);
     glowGrad.addColorStop(0,'rgba(255,240,255,0.85)');
@@ -2569,10 +2626,10 @@ select optgroup { color: #0b1022; }
     const textX = barX + barWidth + 20 - travel*t;
     const textY = barY + barHeight/2;
     ctx.shadowColor='rgba(205,160,255,0.75)';
-    ctx.shadowBlur=24*((scaleX+scaleY)/2);
+    ctx.shadowBlur=24*scaleAvg;
     ctx.fillText(evt.text, textX, textY);
     ctx.shadowBlur=0;
-    ctx.lineWidth=2*((scaleX+scaleY)/2);
+    ctx.lineWidth=2*scaleAvg;
     ctx.strokeStyle='rgba(210,160,255,0.45)';
     ctx.beginPath();
     ctx.moveTo(barX, textY + fontSize*0.36);
@@ -2580,13 +2637,15 @@ select optgroup { color: #0b1022; }
     ctx.stroke();
     ctx.globalCompositeOperation='lighter';
     ctx.strokeStyle='rgba(255,230,255,0.25)';
-    ctx.lineWidth=1.2*((scaleX+scaleY)/2);
+    ctx.lineWidth=1.2*scaleAvg;
     ctx.beginPath();
     ctx.moveTo(barX, textY - fontSize*0.42);
     ctx.lineTo(barX+barWidth, textY - fontSize*0.42);
     ctx.stroke();
     ctx.restore();
   }
+
+
 
 
   function renderDemonFigure(entity, now, opts={}){
@@ -2605,565 +2664,369 @@ select optgroup { color: #0b1022; }
 
     const flash = entity.hitFlashUntil && now<entity.hitFlashUntil;
     const hoverPhase = entity.hoverPhase||0;
-    const swordPhase = entity.swordPhase||0;
+    const motionPhase = entity.swordPhase||0;
+    const cloakPhase = entity.cloakPhase||0;
 
     const palette={
-      metalDark: flash ? 'rgba(238,234,242,0.96)' : 'rgba(24,26,34,0.96)',
-      metalMid: flash ? 'rgba(255,250,252,0.92)' : 'rgba(46,48,62,0.92)',
-      metalEdge: flash ? 'rgba(255,255,255,0.86)' : 'rgba(134,138,166,0.75)',
-      accent: flash ? 'rgba(255,200,160,0.95)' : 'rgba(210,70,40,0.92)',
-      glowCore: flash ? 'rgba(255,220,210,0.85)' : 'rgba(255,90,50,0.8)',
-      glowOuter: flash ? 'rgba(255,220,220,0.45)' : 'rgba(160,20,30,0.38)',
-      wingMembrane: flash ? 'rgba(255,210,210,0.78)' : 'rgba(110,18,30,0.78)',
-      wingEdge: flash ? 'rgba(255,230,230,0.92)' : 'rgba(230,70,60,0.9)',
-      wingVein: flash ? 'rgba(255,230,220,0.75)' : 'rgba(255,110,70,0.6)',
-      horn: flash ? 'rgba(220,210,240,0.92)' : 'rgba(44,42,62,0.92)',
-      visor: flash ? 'rgba(255,248,246,0.9)' : 'rgba(18,18,24,0.88)',
-      eye: flash ? 'rgba(255,150,110,0.95)' : 'rgba(255,50,40,0.95)'
+      metalDark: flash ? 'rgba(236,234,244,0.96)' : 'rgba(18,18,26,0.96)',
+      metalMid: flash ? 'rgba(255,252,255,0.92)' : 'rgba(36,36,48,0.92)',
+      metalEdge: flash ? 'rgba(255,255,255,0.9)' : 'rgba(138,148,182,0.78)',
+      accent: flash ? 'rgba(255,210,176,0.95)' : 'rgba(188,46,58,0.9)',
+      accentGlow: flash ? 'rgba(255,220,200,0.7)' : 'rgba(255,74,92,0.62)',
+      horn: flash ? 'rgba(232,228,244,0.94)' : 'rgba(24,22,32,0.95)',
+      hornEdge: flash ? 'rgba(255,246,255,0.88)' : 'rgba(118,110,150,0.72)',
+      visor: flash ? 'rgba(255,248,246,0.9)' : 'rgba(12,12,18,0.9)',
+      eye: flash ? 'rgba(255,170,120,0.95)' : 'rgba(255,64,40,0.96)',
+      wingBone: flash ? 'rgba(220,220,240,0.9)' : 'rgba(64,64,76,0.92)',
+      wingMembrane: flash ? 'rgba(255,220,220,0.78)' : 'rgba(148,18,32,0.78)',
+      wingFade: flash ? 'rgba(255,238,238,0.52)' : 'rgba(40,10,16,0.62)',
+      cloth: flash ? 'rgba(255,230,236,0.82)' : 'rgba(90,20,30,0.82)',
+      glowCore: flash ? 'rgba(255,220,204,0.82)' : 'rgba(230,50,42,0.72)',
+      glowOuter: flash ? 'rgba(255,224,220,0.48)' : 'rgba(82,8,16,0.46)'
     };
 
     // ground shadow
     ctx.save();
-    ctx.globalAlpha*=0.32;
-    ctx.fillStyle='rgba(0,0,0,0.6)';
-    ctx.scale(1,0.34);
+    ctx.globalAlpha*=0.34;
+    ctx.fillStyle='rgba(0,0,0,0.62)';
+    ctx.scale(1,0.36);
     ctx.beginPath();
-    ctx.ellipse(0,220,60,28,0,0,Math.PI*2);
+    ctx.ellipse(0,210,64,26,0,0,Math.PI*2);
     ctx.fill();
     ctx.restore();
 
     // aura glow
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    const auraPulse = 0.55 + 0.25*Math.sin(now/240 + hoverPhase*0.7);
+    const auraPulse = 0.55 + 0.25*Math.sin(now/230 + hoverPhase*0.7);
     ctx.globalAlpha*=0.55 + auraPulse*0.25;
-    const aura=ctx.createRadialGradient(0,20,18,0,20,190);
+    const aura=ctx.createRadialGradient(0,12,18,0,12,180);
     aura.addColorStop(0,palette.glowCore);
-    aura.addColorStop(0.45,palette.glowOuter);
+    aura.addColorStop(0.55,palette.glowOuter);
     aura.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=aura;
     ctx.beginPath();
-    ctx.ellipse(0,30,120,140,0,0,Math.PI*2);
+    ctx.ellipse(0,24,120,136,0,0,Math.PI*2);
     ctx.fill();
     ctx.restore();
 
     // demon wings
-    const wingLift = Math.sin(now/360 + hoverPhase)*8;
+    const wingLift = Math.sin(now/320 + hoverPhase)*12;
+    const wingSpread = 1.12 + 0.08*Math.sin(now/300 + cloakPhase);
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.translate(-8,-10);
+      ctx.translate(-8,-6);
+      ctx.scale(wingSpread,1);
       ctx.beginPath();
-      ctx.moveTo(20,-4);
-      ctx.bezierCurveTo(80,-70-wingLift,142,-32-wingLift*0.6,158,32);
-      ctx.bezierCurveTo(168,92,134,148,72,164);
-      ctx.lineTo(30,42);
+      ctx.moveTo(18,-6);
+      ctx.bezierCurveTo(86,-124-wingLift,180,-60-wingLift*0.5,206,62);
+      ctx.bezierCurveTo(214,134,158,196,84,212);
+      ctx.lineTo(34,42);
       ctx.closePath();
-      const wingGrad=ctx.createLinearGradient(30,-70,150,160);
-      wingGrad.addColorStop(0,palette.wingEdge);
-      wingGrad.addColorStop(0.5,palette.wingMembrane);
-      wingGrad.addColorStop(1,'rgba(26,8,14,0.85)');
+      const wingGrad=ctx.createLinearGradient(36,-90,186,220);
+      wingGrad.addColorStop(0,'rgba(54,54,70,0.95)');
+      wingGrad.addColorStop(0.38,palette.wingMembrane);
+      wingGrad.addColorStop(1,palette.wingFade);
       ctx.fillStyle=wingGrad;
       ctx.fill();
-      ctx.strokeStyle=flash ? 'rgba(255,240,240,0.85)' : 'rgba(40,10,12,0.82)';
-      ctx.lineWidth=4;
+      ctx.lineWidth=5;
+      ctx.strokeStyle=palette.wingBone;
       ctx.stroke();
 
-      // inner membrane glow
-      ctx.save();
-      ctx.globalCompositeOperation='screen';
-      const membrane=ctx.createLinearGradient(48,-40,140,150);
-      membrane.addColorStop(0,'rgba(255,150,120,0.18)');
-      membrane.addColorStop(1,'rgba(255,60,40,0.35)');
-      ctx.fillStyle=membrane;
-      ctx.beginPath();
-      ctx.moveTo(32,8);
-      ctx.quadraticCurveTo(116,-34-wingLift*0.5,146,34);
-      ctx.quadraticCurveTo(118,110,72,128);
-      ctx.quadraticCurveTo(52,92,32,30);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-
-      // wing veins
       ctx.save();
       ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=palette.wingVein;
-      ctx.lineWidth=3;
+      ctx.strokeStyle=palette.accentGlow;
+      ctx.lineWidth=3.4;
       ctx.beginPath();
-      ctx.moveTo(34,16);
-      ctx.quadraticCurveTo(116,-8-wingLift*0.4,148,64);
+      ctx.moveTo(34,24);
+      ctx.quadraticCurveTo(150,-36-wingLift*0.4,186,66);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(38,34);
-      ctx.quadraticCurveTo(124,54-wingLift*0.2,128,122);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(58,70);
-      ctx.quadraticCurveTo(104,76-wingLift*0.15,108,136);
+      ctx.moveTo(38,48);
+      ctx.quadraticCurveTo(148,48-wingLift*0.2,150,148);
       ctx.stroke();
       ctx.restore();
+
       ctx.restore();
     }
 
-    // lower tabard and waist armour
-    ctx.save();
-    ctx.translate(0,54);
-    const tabard=ctx.createLinearGradient(0,-36,0,120);
-    tabard.addColorStop(0, flash ? 'rgba(255,228,228,0.82)' : 'rgba(70,18,30,0.86)');
-    tabard.addColorStop(1, flash ? 'rgba(255,210,210,0.7)' : 'rgba(34,8,14,0.76)');
-    ctx.fillStyle=tabard;
-    ctx.beginPath();
-    ctx.moveTo(-28,-12);
-    ctx.quadraticCurveTo(0,-46,28,-12);
-    ctx.quadraticCurveTo(14,124,0,140);
-    ctx.quadraticCurveTo(-14,124,-28,-12);
-    ctx.closePath();
-    ctx.fill();
-    ctx.lineWidth=2.2;
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.stroke();
-
-    const waist=ctx.createLinearGradient(-60,-40,60,60);
-    waist.addColorStop(0,palette.metalMid);
-    waist.addColorStop(1,palette.metalDark);
-    ctx.fillStyle=waist;
-    ctx.beginPath();
-    ctx.moveTo(-70,-20);
-    ctx.quadraticCurveTo(0,-64,70,-20);
-    ctx.lineTo(52,58);
-    ctx.quadraticCurveTo(0,78,-52,58);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=palette.accent;
-    ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.moveTo(-40,-2);
-    ctx.quadraticCurveTo(0,-24,40,-2);
-    ctx.moveTo(-36,36);
-    ctx.quadraticCurveTo(0,54,36,36);
-    ctx.stroke();
-    ctx.restore();
-    ctx.restore();
-
-    // legs and greaves
+    // lower body and legs
     ctx.save();
     ctx.translate(0,86);
+    const legPulse = Math.sin(now/420 + hoverPhase*0.5);
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      const thigh=ctx.createLinearGradient(18,-60,74,150);
+      const thigh=ctx.createLinearGradient(16,-68,72,156);
       thigh.addColorStop(0,palette.metalMid);
       thigh.addColorStop(1,palette.metalDark);
       ctx.beginPath();
-      ctx.moveTo(22,-64);
-      ctx.quadraticCurveTo(58,-32,52,32);
-      ctx.quadraticCurveTo(40,104,16,128);
-      ctx.quadraticCurveTo(6,40,8,-24);
+      ctx.moveTo(18,-72);
+      ctx.lineTo(70,-22-legPulse*3);
+      ctx.quadraticCurveTo(56,72,18,132);
+      ctx.quadraticCurveTo(6,40,10,-34);
       ctx.closePath();
       ctx.fillStyle=thigh;
-      ctx.fill();
-      ctx.strokeStyle=palette.metalEdge;
-      ctx.lineWidth=2.4;
-      ctx.stroke();
-
-      ctx.save();
-      ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=palette.accent;
-      ctx.lineWidth=2;
-      ctx.beginPath();
-      ctx.moveTo(38,-10);
-      ctx.lineTo(46,74);
-      ctx.stroke();
-      ctx.restore();
-
-      const boot=ctx.createLinearGradient(18,60,72,190);
-      boot.addColorStop(0,palette.metalDark);
-      boot.addColorStop(1,'rgba(12,12,18,0.9)');
-      ctx.beginPath();
-      ctx.moveTo(24,92);
-      ctx.quadraticCurveTo(70,130,58,174);
-      ctx.quadraticCurveTo(30,190,6,176);
-      ctx.quadraticCurveTo(0,150,10,120);
-      ctx.closePath();
-      ctx.fillStyle=boot;
       ctx.fill();
       ctx.strokeStyle=palette.metalEdge;
       ctx.lineWidth=2.2;
       ctx.stroke();
 
       ctx.beginPath();
+      ctx.moveTo(32,-16);
+      ctx.quadraticCurveTo(58,18,28,70);
+      ctx.strokeStyle=palette.accentGlow;
+      ctx.lineWidth=1.8;
+      ctx.stroke();
+
+      const greave=ctx.createLinearGradient(16,32,82,196);
+      greave.addColorStop(0,palette.metalDark);
+      greave.addColorStop(1,'rgba(10,10,16,0.92)');
+      ctx.beginPath();
+      ctx.moveTo(20,70);
+      ctx.quadraticCurveTo(82,118,58,182);
+      ctx.quadraticCurveTo(26,204,6,180);
+      ctx.quadraticCurveTo(2,138,20,70);
+      ctx.closePath();
+      ctx.fillStyle=greave;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2.1;
+      ctx.stroke();
+
+      ctx.beginPath();
       ctx.moveTo(18,126);
-      ctx.quadraticCurveTo(38,142,12,158);
-      ctx.strokeStyle=flash ? 'rgba(255,200,160,0.75)' : 'rgba(80,24,20,0.65)';
+      ctx.quadraticCurveTo(46,150,10,166);
+      ctx.strokeStyle='rgba(255,120,120,'+(flash?0.55:0.32)+')';
+      ctx.lineWidth=1.4;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // waist armour and core
+    ctx.save();
+    ctx.translate(0,28);
+    const waist=ctx.createLinearGradient(-70,-60,70,80);
+    waist.addColorStop(0,palette.metalMid);
+    waist.addColorStop(1,palette.metalDark);
+    ctx.beginPath();
+    ctx.moveTo(-74,-28);
+    ctx.quadraticCurveTo(0,-82,74,-28);
+    ctx.lineTo(56,46);
+    ctx.quadraticCurveTo(0,70,-56,46);
+    ctx.closePath();
+    ctx.fillStyle=waist;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.4;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=palette.accent;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(-44,-6);
+    ctx.quadraticCurveTo(0,-36,44,-6);
+    ctx.moveTo(-40,30);
+    ctx.quadraticCurveTo(0,48,40,30);
+    ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+
+    // torso armour
+    ctx.save();
+    ctx.translate(0,-10);
+    const torso=ctx.createLinearGradient(-60,-150,60,110);
+    torso.addColorStop(0,palette.metalMid);
+    torso.addColorStop(1,palette.metalDark);
+    ctx.beginPath();
+    ctx.moveTo(-58,-32);
+    ctx.lineTo(-32,-132);
+    ctx.quadraticCurveTo(0,-172,32,-132);
+    ctx.lineTo(58,-32);
+    ctx.quadraticCurveTo(0,46,-58,-32);
+    ctx.closePath();
+    ctx.fillStyle=torso;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.6;
+    ctx.stroke();
+
+    const breastplate=ctx.createLinearGradient(-32,-116,32,40);
+    breastplate.addColorStop(0,palette.metalDark);
+    breastplate.addColorStop(1,palette.metalMid);
+    ctx.beginPath();
+    ctx.moveTo(-28,-26);
+    ctx.quadraticCurveTo(0,-88,28,-26);
+    ctx.quadraticCurveTo(0,18,-28,-26);
+    ctx.closePath();
+    ctx.fillStyle=breastplate;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=palette.accentGlow;
+    ctx.beginPath();
+    ctx.moveTo(0,-48);
+    ctx.quadraticCurveTo(-8,-20,0,4);
+    ctx.quadraticCurveTo(8,-20,0,-48);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // shoulder plates
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      ctx.translate(48,-60);
+      const paul=ctx.createLinearGradient(-40,-32,40,40);
+      paul.addColorStop(0,palette.metalMid);
+      paul.addColorStop(1,palette.metalDark);
+      ctx.beginPath();
+      ctx.moveTo(-42,12);
+      ctx.quadraticCurveTo(0,-48,42,12);
+      ctx.quadraticCurveTo(6,38,-32,38);
+      ctx.closePath();
+      ctx.fillStyle=paul;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2.2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-12,16);
+      ctx.lineTo(24,-18);
+      ctx.strokeStyle=palette.accentGlow;
       ctx.lineWidth=1.6;
       ctx.stroke();
       ctx.restore();
     }
     ctx.restore();
 
-    // torso armour layers
+    // arms
     ctx.save();
-    ctx.translate(0,-8);
-    const chest=ctx.createLinearGradient(-60,-120,60,100);
-    chest.addColorStop(0,palette.metalMid);
-    chest.addColorStop(1,palette.metalDark);
-    ctx.fillStyle=chest;
-    ctx.beginPath();
-    ctx.moveTo(-46,-44);
-    ctx.quadraticCurveTo(0,-86,46,-44);
-    ctx.lineTo(58,26);
-    ctx.quadraticCurveTo(0,56,-58,26);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=3;
-    ctx.stroke();
-
-    const breastplate=ctx.createLinearGradient(-42,-80,42,40);
-    breastplate.addColorStop(0,palette.metalDark);
-    breastplate.addColorStop(1,palette.metalMid);
-    ctx.fillStyle=breastplate;
-    ctx.beginPath();
-    ctx.moveTo(-32,-24);
-    ctx.quadraticCurveTo(0,-60,32,-24);
-    ctx.lineTo(24,30);
-    ctx.quadraticCurveTo(0,44,-24,30);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.4;
-    ctx.stroke();
-
-    const abdomen=ctx.createLinearGradient(-30,-10,30,70);
-    abdomen.addColorStop(0,palette.metalMid);
-    abdomen.addColorStop(1,palette.metalDark);
-    ctx.fillStyle=abdomen;
-    ctx.beginPath();
-    ctx.moveTo(-26,6);
-    ctx.lineTo(26,6);
-    ctx.quadraticCurveTo(16,52,0,68);
-    ctx.quadraticCurveTo(-16,52,-26,6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.2;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=palette.accent;
-    ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.moveTo(0,-40);
-    ctx.lineTo(0,60);
-    ctx.moveTo(-16,24);
-    ctx.lineTo(16,24);
-    ctx.stroke();
-    ctx.restore();
-    ctx.restore();
-
-    // left arm
-    ctx.save();
-    ctx.translate(0,-18);
-    const leftShoulder=ctx.createLinearGradient(-140,-40,-40,90);
-    leftShoulder.addColorStop(0,palette.metalMid);
-    leftShoulder.addColorStop(1,palette.metalDark);
-    ctx.beginPath();
-    ctx.moveTo(-58,-12);
-    ctx.quadraticCurveTo(-112,-56,-130,-6);
-    ctx.quadraticCurveTo(-114,50,-66,46);
-    ctx.closePath();
-    ctx.fillStyle=leftShoulder;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=3;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.translate(-70,16);
-    ctx.rotate(-0.08 + Math.sin(hoverPhase*0.8)*0.05);
-    const leftUpper=ctx.createLinearGradient(-30,-20,40,120);
-    leftUpper.addColorStop(0,palette.metalMid);
-    leftUpper.addColorStop(1,palette.metalDark);
-    ctx.beginPath();
-    ctx.moveTo(-14,-18);
-    ctx.quadraticCurveTo(-46,18,-36,74);
-    ctx.quadraticCurveTo(-16,108,10,96);
-    ctx.quadraticCurveTo(-4,48,-6,-10);
-    ctx.closePath();
-    ctx.fillStyle=leftUpper;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.4;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.translate(-12,86);
-    ctx.rotate(-0.25 + Math.sin(now/260 + hoverPhase)*0.1);
-    const leftFore=ctx.createLinearGradient(-26,-18,30,120);
-    leftFore.addColorStop(0,palette.metalMid);
-    leftFore.addColorStop(1,palette.metalDark);
-    ctx.beginPath();
-    ctx.moveTo(-12,-14);
-    ctx.quadraticCurveTo(-38,20,-18,70);
-    ctx.quadraticCurveTo(10,82,20,44);
-    ctx.quadraticCurveTo(6,2,-12,-14);
-    ctx.closePath();
-    ctx.fillStyle=leftFore;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.2;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=palette.accent;
-    ctx.lineWidth=1.8;
-    ctx.beginPath();
-    ctx.moveTo(-8,10);
-    ctx.lineTo(-4,54);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.beginPath();
-    ctx.moveTo(-18,66);
-    ctx.quadraticCurveTo(-32,88,-8,94);
-    ctx.quadraticCurveTo(4,82,-2,70);
-    ctx.closePath();
-    ctx.fillStyle=flash ? 'rgba(255,220,210,0.9)' : 'rgba(46,20,24,0.9)';
-    ctx.fill();
-    ctx.restore();
-    ctx.restore();
-
-    // right arm and sword
-    ctx.save();
-    ctx.translate(0,-18);
-    const rightShoulder=ctx.createLinearGradient(40,-40,140,90);
-    rightShoulder.addColorStop(0,palette.metalMid);
-    rightShoulder.addColorStop(1,palette.metalDark);
-    ctx.beginPath();
-    ctx.moveTo(58,-12);
-    ctx.quadraticCurveTo(112,-56,130,-6);
-    ctx.quadraticCurveTo(114,50,66,46);
-    ctx.closePath();
-    ctx.fillStyle=rightShoulder;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=3;
-    ctx.stroke();
-
-    const swing=Math.sin(swordPhase);
-    ctx.save();
-    ctx.translate(64,16);
-    ctx.rotate(0.18 + swing*0.12);
-    const upper=ctx.createLinearGradient(-24,-24,34,120);
-    upper.addColorStop(0,palette.metalMid);
-    upper.addColorStop(1,palette.metalDark);
-    ctx.beginPath();
-    ctx.moveTo(-12,-20);
-    ctx.quadraticCurveTo(30,-6,26,64);
-    ctx.quadraticCurveTo(8,98,-16,96);
-    ctx.quadraticCurveTo(-26,36,-18,-10);
-    ctx.closePath();
-    ctx.fillStyle=upper;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.4;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.translate(8,88);
-    ctx.rotate(0.52 + swing*0.22);
-    const fore=ctx.createLinearGradient(-24,-20,32,120);
-    fore.addColorStop(0,palette.metalMid);
-    fore.addColorStop(1,palette.metalDark);
-    ctx.beginPath();
-    ctx.moveTo(-12,-18);
-    ctx.quadraticCurveTo(26,-8,24,60);
-    ctx.quadraticCurveTo(10,94,-16,92);
-    ctx.quadraticCurveTo(-28,34,-12,-18);
-    ctx.closePath();
-    ctx.fillStyle=fore;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.2;
-    ctx.stroke();
-
-    const gauntlet=ctx.createLinearGradient(-18,40,24,120);
-    gauntlet.addColorStop(0,palette.metalDark);
-    gauntlet.addColorStop(1,palette.metalMid);
-    ctx.beginPath();
-    ctx.moveTo(-16,42);
-    ctx.lineTo(18,42);
-    ctx.quadraticCurveTo(24,74,0,90);
-    ctx.quadraticCurveTo(-22,74,-16,42);
-    ctx.closePath();
-    ctx.fillStyle=gauntlet;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.2;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=palette.accent;
-    ctx.lineWidth=1.8;
-    ctx.beginPath();
-    ctx.moveTo(-4,10);
-    ctx.lineTo(6,60);
-    ctx.stroke();
-    ctx.restore();
-
-    // sword
-    ctx.save();
-    ctx.translate(0,84);
-    ctx.rotate(-Math.PI/2.5 + swing*0.4);
-    const blade=ctx.createLinearGradient(-20,-40,220,60);
-    blade.addColorStop(0, flash ? 'rgba(255,242,234,0.95)' : 'rgba(70,74,104,0.96)');
-    blade.addColorStop(0.4, flash ? 'rgba(255,226,210,0.92)' : 'rgba(150,30,28,0.94)');
-    blade.addColorStop(0.75, flash ? 'rgba(240,210,198,0.88)' : 'rgba(255,110,40,0.88)');
-    blade.addColorStop(1, flash ? 'rgba(230,206,198,0.86)' : 'rgba(80,20,16,0.8)');
-    ctx.beginPath();
-    ctx.moveTo(-14,-12);
-    ctx.lineTo(156,-50);
-    ctx.lineTo(220,0);
-    ctx.lineTo(156,50);
-    ctx.lineTo(-14,12);
-    ctx.closePath();
-    ctx.fillStyle=blade;
-    ctx.fill();
-    ctx.strokeStyle=flash ? 'rgba(255,255,255,0.85)' : 'rgba(255,150,90,0.78)';
-    ctx.lineWidth=2.6;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=flash ? 'rgba(255,230,210,0.85)' : 'rgba(255,120,60,0.7)';
-    ctx.lineWidth=1.4;
-    ctx.beginPath();
-    ctx.moveTo(10,-6);
-    ctx.lineTo(142,-30);
-    ctx.moveTo(10,6);
-    ctx.lineTo(142,30);
-    ctx.stroke();
-
-    ctx.strokeStyle=flash ? 'rgba(255,220,200,0.7)' : 'rgba(255,90,40,0.58)';
-    ctx.lineWidth=1.2;
-    for(let i=0;i<5;i++){
-      const t=i/4;
-      const rx=26 + t*110;
-      const jitter=Math.sin(now/140 + i*0.9)*4;
-      ctx.beginPath();
-      ctx.moveTo(rx,-10-jitter*0.2);
-      ctx.lineTo(rx+16,-2-jitter*0.1);
-      ctx.lineTo(rx+4,10+jitter*0.3);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    const runeColor=flash ? 'rgba(255,240,210,0.92)' : 'rgba(255,190,100,0.88)';
-    for(let i=0;i<5;i++){
-      const t=i/4;
-      const rx=-2 + t*140;
-      const ry=-10 + Math.sin(now/220 + i)*3;
+    ctx.translate(0,-24);
+    const armSpread = 88 + Math.sin(now/420 + motionPhase)*6;
+    const armLift = 10*Math.sin(now/360 + hoverPhase);
+    for(const side of [-1,1]){
       ctx.save();
-      ctx.translate(rx, ry);
-      ctx.rotate(0.12 - t*0.12);
-      ctx.fillStyle=runeColor;
-      ctx.fillRect(-3,-8,6,16);
+      ctx.scale(side,1);
+      ctx.translate(armSpread, -6-armLift*0.2);
+      ctx.rotate(-0.3 + 0.08*Math.sin(now/320 + motionPhase));
+      const upper=ctx.createLinearGradient(-24,-20,64,48);
+      upper.addColorStop(0,palette.metalMid);
+      upper.addColorStop(1,palette.metalDark);
+      ctx.beginPath();
+      ctx.moveTo(-24,-16);
+      ctx.lineTo(64,-32);
+      ctx.lineTo(68,12);
+      ctx.quadraticCurveTo(8,32,-22,18);
+      ctx.closePath();
+      ctx.fillStyle=upper;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2.1;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(68,-10);
+      ctx.rotate(0.48 + 0.12*Math.sin(now/340 + motionPhase + side));
+      const fore=ctx.createLinearGradient(-18,-12,54,96);
+      fore.addColorStop(0,palette.metalMid);
+      fore.addColorStop(1,palette.metalDark);
+      ctx.beginPath();
+      ctx.moveTo(-12,-10);
+      ctx.lineTo(54,-6);
+      ctx.lineTo(48,64);
+      ctx.quadraticCurveTo(4,82,-18,40);
+      ctx.closePath();
+      ctx.fillStyle=fore;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2;
+      ctx.stroke();
+
+      const hand=ctx.createLinearGradient(18,18,68,78);
+      hand.addColorStop(0,palette.metalDark);
+      hand.addColorStop(1,'rgba(26,22,30,0.94)');
+      ctx.beginPath();
+      ctx.moveTo(34,20);
+      ctx.lineTo(76,30);
+      ctx.lineTo(72,64);
+      ctx.lineTo(30,56);
+      ctx.quadraticCurveTo(12,38,34,20);
+      ctx.closePath();
+      ctx.fillStyle=hand;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=1.8;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(60,38);
+      ctx.lineTo(70,54);
+      ctx.lineTo(56,58);
+      ctx.strokeStyle=palette.accentGlow;
+      ctx.lineWidth=1.4;
+      ctx.stroke();
+
+      ctx.restore();
       ctx.restore();
     }
-
-    const guard=ctx.createLinearGradient(-50,10,50,70);
-    guard.addColorStop(0,palette.metalDark);
-    guard.addColorStop(1,palette.metalMid);
-    ctx.beginPath();
-    ctx.moveTo(-46,14);
-    ctx.quadraticCurveTo(0,-4,46,14);
-    ctx.lineTo(36,42);
-    ctx.quadraticCurveTo(0,32,-36,42);
-    ctx.closePath();
-    ctx.fillStyle=guard;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2;
-    ctx.stroke();
-
-    const handle=ctx.createLinearGradient(0,30,0,98);
-    handle.addColorStop(0,palette.metalDark);
-    handle.addColorStop(1,'rgba(28,18,26,0.92)');
-    ctx.fillStyle=handle;
-    ctx.fillRect(-10,32,20,64);
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2;
-    ctx.strokeRect(-10,32,20,64);
-
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=palette.accent;
-    ctx.lineWidth=1.6;
-    ctx.beginPath();
-    ctx.moveTo(-10,52);
-    ctx.lineTo(10,52);
-    ctx.moveTo(-10,78);
-    ctx.lineTo(10,78);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.beginPath();
-    ctx.arc(0,110,12,0,Math.PI*2);
-    const pommel=ctx.createLinearGradient(-12,96,12,124);
-    pommel.addColorStop(0,palette.metalDark);
-    pommel.addColorStop(1,palette.metalMid);
-    ctx.fillStyle=pommel;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2;
-    ctx.stroke();
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.fillStyle=palette.accent;
-    ctx.beginPath();
-    ctx.arc(0,110,5,0,Math.PI*2);
-    ctx.fill();
-    ctx.restore();
-    ctx.restore();
-
-    ctx.restore();
-    ctx.restore();
     ctx.restore();
 
     // chest core glow
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.translate(0,24);
-    const core=ctx.createRadialGradient(0,0,4,0,0,30);
+    ctx.translate(0,12);
+    const core=ctx.createRadialGradient(0,0,4,0,0,28);
     core.addColorStop(0,palette.glowCore);
     core.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=core;
     ctx.beginPath();
-    ctx.arc(0,0,24,0,Math.PI*2);
+    ctx.arc(0,0,22,0,Math.PI*2);
     ctx.fill();
     ctx.restore();
 
-    // helmet and horns
+    // head and helmet
     ctx.save();
-    ctx.translate(0,-60);
-    const helm=ctx.createLinearGradient(-36,-70,36,70);
+    ctx.translate(0,-86);
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      ctx.beginPath();
+      ctx.moveTo(16,-12);
+      ctx.bezierCurveTo(52,-136,18,-204,-16,-220);
+      ctx.bezierCurveTo(-40,-230,-48,-182,-32,-140);
+      ctx.bezierCurveTo(-18,-96,-4,-34,16,-12);
+      ctx.closePath();
+      const hornGrad=ctx.createLinearGradient(0,-220,0,-12);
+      hornGrad.addColorStop(0,'rgba(18,18,26,0.98)');
+      hornGrad.addColorStop(1,palette.horn);
+      ctx.fillStyle=hornGrad;
+      ctx.fill();
+      ctx.strokeStyle=palette.hornEdge;
+      ctx.lineWidth=2.4;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    const helm=ctx.createLinearGradient(-46,-80,46,72);
     helm.addColorStop(0,palette.metalMid);
     helm.addColorStop(1,palette.metalDark);
     ctx.beginPath();
-    ctx.moveTo(-34,26);
-    ctx.quadraticCurveTo(-52,-28,-18,-74);
-    ctx.quadraticCurveTo(0,-88,18,-74);
-    ctx.quadraticCurveTo(52,-28,34,26);
-    ctx.quadraticCurveTo(0,58,-34,26);
+    ctx.moveTo(-44,32);
+    ctx.lineTo(-32,-56);
+    ctx.quadraticCurveTo(0,-106,32,-56);
+    ctx.lineTo(44,32);
+    ctx.quadraticCurveTo(0,62,-44,32);
     ctx.closePath();
     ctx.fillStyle=helm;
     ctx.fill();
@@ -3171,144 +3034,98 @@ select optgroup { color: #0b1022; }
     ctx.lineWidth=2.6;
     ctx.stroke();
 
-    const visor=ctx.createLinearGradient(-28,-20,28,40);
+    const crest=ctx.createLinearGradient(-12,-70,12,40);
+    crest.addColorStop(0,palette.metalDark);
+    crest.addColorStop(1,palette.metalMid);
+    ctx.beginPath();
+    ctx.moveTo(-10,-60);
+    ctx.lineTo(0,-90);
+    ctx.lineTo(10,-60);
+    ctx.lineTo(0,6);
+    ctx.closePath();
+    ctx.fillStyle=crest;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=1.8;
+    ctx.stroke();
+
+    const visor=ctx.createLinearGradient(-32,-12,32,42);
     visor.addColorStop(0,palette.visor);
     visor.addColorStop(1,'rgba(0,0,0,0.85)');
     ctx.beginPath();
-    ctx.moveTo(-24,-4);
-    ctx.quadraticCurveTo(0,-32,24,-4);
-    ctx.quadraticCurveTo(16,22,0,28);
-    ctx.quadraticCurveTo(-16,22,-24,-4);
+    ctx.moveTo(-30,-6);
+    ctx.quadraticCurveTo(0,-38,30,-6);
+    ctx.quadraticCurveTo(18,24,0,30);
+    ctx.quadraticCurveTo(-18,24,-30,-6);
     ctx.closePath();
     ctx.fillStyle=visor;
     ctx.fill();
 
-    ctx.fillStyle=palette.eye;
-    ctx.beginPath();
-    ctx.ellipse(-10,-2,6,8,0,0,Math.PI*2);
-    ctx.ellipse(10,-2,6,8,0,0,Math.PI*2);
-    ctx.fill();
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.fillStyle=flash ? 'rgba(255,240,220,0.6)' : 'rgba(255,60,40,0.6)';
+    ctx.fillStyle=palette.eye;
     ctx.beginPath();
-    ctx.ellipse(-10,-2,12,12,0,0,Math.PI*2);
-    ctx.ellipse(10,-2,12,12,0,0,Math.PI*2);
+    ctx.ellipse(-12,-2,7,9,0,0,Math.PI*2);
+    ctx.ellipse(12,-2,7,9,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle=flash ? 'rgba(255,240,220,0.6)' : 'rgba(255,70,50,0.6)';
+    ctx.beginPath();
+    ctx.ellipse(-12,-2,12,12,0,0,Math.PI*2);
+    ctx.ellipse(12,-2,12,12,0,0,Math.PI*2);
     ctx.fill();
     ctx.restore();
 
     ctx.beginPath();
-    ctx.moveTo(-12,18);
-    ctx.quadraticCurveTo(0,6,12,18);
+    ctx.moveTo(-16,18);
+    ctx.quadraticCurveTo(0,8,16,18);
     ctx.strokeStyle=palette.metalEdge;
     ctx.lineWidth=1.6;
     ctx.stroke();
 
-    ctx.save();
-    ctx.fillStyle=flash ? 'rgba(255,236,226,0.88)' : 'rgba(120,60,40,0.88)';
-    ctx.beginPath();
-    ctx.moveTo(-10,-44);
-    ctx.lineTo(0,-70);
-    ctx.lineTo(10,-44);
-    ctx.closePath();
-    ctx.fill();
     ctx.restore();
-
-    for(const side of [-1,1]){
-      ctx.save();
-      ctx.scale(side,1);
-      ctx.beginPath();
-      ctx.moveTo(12,-20);
-      ctx.bezierCurveTo(42,-88,12,-134,-6,-156);
-      ctx.bezierCurveTo(-28,-170,-34,-136,-24,-110);
-      ctx.bezierCurveTo(-12,-80,2,-34,12,-20);
-      ctx.closePath();
-      const hornGrad=ctx.createLinearGradient(8,-20,8,-150);
-      hornGrad.addColorStop(0,palette.horn);
-      hornGrad.addColorStop(1,flash ? 'rgba(255,248,248,0.92)' : 'rgba(80,78,104,0.88)');
-      ctx.fillStyle=hornGrad;
-      ctx.fill();
-      ctx.strokeStyle=palette.metalEdge;
-      ctx.lineWidth=2.4;
-      ctx.stroke();
-      ctx.save();
-      ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=palette.accent;
-      ctx.lineWidth=1.4;
-      ctx.beginPath();
-      ctx.moveTo(10,-60);
-      ctx.lineTo(6,-120);
-      ctx.stroke();
-      ctx.restore();
-      ctx.restore();
-    }
-    ctx.restore();
-
-    ctx.restore();
-
     ctx.restore();
   }
 
 
   function renderDemonAfterimageFigure(state, now, alpha){
     if(!state) return;
+    const fade=Math.max(0, Math.min(1, alpha));
+    if(fade<=0) return;
     const scaleAvg=(scaleX+scaleY)/2;
     const baseSize=state.h||state.w||150;
     const size=baseSize/150;
+    const hoverPhase=state.hoverPhase||0;
     const t0=state.t0||now;
     const elapsed=Math.max(0, now-t0);
-    const hoverPhase=state.hoverPhase||0;
-    const swordPhase=state.swordPhase||0;
+
     ctx.save();
     ctx.translate(state.x*scaleX, state.y*scaleY);
     ctx.scale(scaleAvg*size, scaleAvg*size);
-    ctx.globalAlpha *= alpha;
-
-    const auraPulse = 0.55 + 0.35*Math.sin(elapsed/220 + hoverPhase*0.6);
-    ctx.fillStyle = `rgba(190,140,255,${0.22*auraPulse})`;
+    const pulse=0.25+0.15*Math.sin(elapsed/200 + hoverPhase*0.6);
+    ctx.globalAlpha=fade*0.55;
+    ctx.fillStyle=`rgba(190,140,255,${pulse})`;
     ctx.beginPath();
-    ctx.ellipse(0,24,84,130,0,0,Math.PI*2);
+    ctx.ellipse(0,28,90,134,0,0,Math.PI*2);
     ctx.fill();
-
-    const wingLift = Math.sin(elapsed/320 + hoverPhase)*6;
-    ctx.fillStyle='rgba(210,150,255,0.18)';
-    ctx.strokeStyle='rgba(230,200,255,0.16)';
-    ctx.lineWidth=2.5;
-    for(const side of [-1,1]){
-      ctx.save();
-      ctx.scale(side,1);
-      ctx.beginPath();
-      ctx.moveTo(18,-8);
-      ctx.quadraticCurveTo(108,-48-wingLift,140,46);
-      ctx.quadraticCurveTo(110,124,48,152);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    ctx.fillStyle='rgba(220,170,255,0.26)';
+    ctx.strokeStyle=`rgba(220,200,255,${0.28+0.12*pulse})`;
+    ctx.lineWidth=3;
     ctx.beginPath();
-    ctx.moveTo(-24,-18);
-    ctx.quadraticCurveTo(0,-68,24,-18);
-    ctx.quadraticCurveTo(10,112,0,138);
-    ctx.quadraticCurveTo(-10,112,-24,-18);
-    ctx.closePath();
-    ctx.fill();
-
-    const swordSway = Math.sin(swordPhase + elapsed*0.003)*0.25;
-    ctx.strokeStyle='rgba(240,220,255,0.32)';
-    ctx.lineWidth=5;
-    ctx.beginPath();
-    ctx.moveTo(swordSway*-20,-26);
-    ctx.lineTo(swordSway*24,-148);
+    ctx.ellipse(0,28,92,136,0,0,Math.PI*2);
     ctx.stroke();
-
-    ctx.fillStyle='rgba(255,220,255,0.3)';
-    ctx.beginPath();
-    ctx.arc(0,-40,24,0,Math.PI*2);
-    ctx.fill();
     ctx.restore();
+
+    const ghostEntity={
+      x:state.x,
+      y:state.y,
+      w:state.w,
+      h:state.h,
+      hoverPhase:state.hoverPhase,
+      swordPhase:state.swordPhase,
+      cloakPhase:state.cloakPhase,
+      hitFlashUntil:0,
+      deathFade:fade
+    };
+    renderDemonFigure(ghostEntity, now, {alpha:fade*0.85, ghost:true});
   }
 
   function drawDemonAfterimages(now){
@@ -3325,7 +3142,9 @@ select optgroup { color: #0b1022; }
         h:ghost.h,
         hoverPhase:ghost.hoverPhase,
         swordPhase:ghost.swordPhase,
-        t0:ghost.t0
+        cloakPhase:ghost.cloakPhase,
+        t0:ghost.t0,
+        fade:ghost.fade
       };
       const fadeAlpha = ghost.fade ? alpha*alpha : alpha;
       renderDemonAfterimageFigure(ghostState, now, fadeAlpha);
@@ -3371,8 +3190,8 @@ select optgroup { color: #0b1022; }
       x:cx,
       y:baseY,
       baseY,
-      w:150,
-      h:150,
+      w:75,
+      h:75,
       hp:90,
       maxHp:90,
       hoverPhase:0,
@@ -3418,7 +3237,7 @@ select optgroup { color: #0b1022; }
     demonPhase='dying';
     demonDeathAnim={start:now, duration:2200, vanishAt:now+900, lastSpark:0, centerX:centerX, centerY:centerY};
     demonEventWave={x:centerX,y:centerY,start:now,duration:2600,maxRadius:Math.hypot(1100,700)};
-    demonEventMarquee={text:'成功擊殺Boss: 魔王埃裡赫曼!', start:now, fadeStart:now+5000, end:now+5000};
+    demonEventMarquee={text:'成功擊殺Boss: 魔王埃里赫曼!', start:now, fadeStart:now+5000, end:now+5000};
     if(demonBoss){
       demonBoss.hp=0;
       demonBoss.hitFlashUntil=now+260;
@@ -3498,6 +3317,7 @@ select optgroup { color: #0b1022; }
       if(now-ghost.t0>=life){ demonAfterimages.splice(i,1); }
     }
   }
+
 
   function demonClampPoint(x, y){
     const bounds=getDemonBounds();
@@ -8532,7 +8352,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.font=`${Math.round(18*((scaleX+scaleY)/2))}px 'Playfair Display','Noto Sans TC',sans-serif`;
     ctx.textAlign='center';
     ctx.textBaseline='bottom';
-    ctx.fillText('BOSS 魔王埃裡赫曼', (x+width/2)*scaleX, (y-6)*scaleY);
+    ctx.fillText('BOSS 魔王埃里赫曼', (x+width/2)*scaleX, (y-6)*scaleY);
     ctx.font=`${Math.round(14*((scaleX+scaleY)/2))}px 'Noto Sans TC',sans-serif`;
     ctx.textBaseline='middle';
     ctx.fillText(`${demonBoss.hp}/${demonBoss.maxHp}`, (x+width/2)*scaleX, (y+height/2)*scaleY);
