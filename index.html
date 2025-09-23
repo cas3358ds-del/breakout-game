@@ -2584,13 +2584,22 @@ select optgroup { color: #0b1022; }
       ctx.fillStyle='rgba(255,230,240,0.95)';
       ctx.shadowColor='rgba(255,60,90,0.55)';
       ctx.shadowBlur=32*scaleAvg;
-      const spacing = fontSize*1.35;
+
+      const textMetrics = ctx.measureText(evt.text);
+      const measuredWidth = textMetrics.width || (fontSize * evt.text.length);
+      const spacing = measuredWidth + fontSize*0.8;
       const offset = ((now-evt.start)*0.28*scaleAvg) % spacing;
       const textY = barY + barHeight/2;
-      const startX = barX - spacing*2;
-      for(let x=startX; x<barX+barWidth+spacing*2; x+=spacing){
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(barX, barY, barWidth, barHeight);
+      ctx.clip();
+      const startX = barX - spacing;
+      for(let x=startX; x<barX+barWidth+spacing; x+=spacing){
         ctx.fillText(evt.text, x - offset, textY);
       }
+      ctx.restore();
       ctx.shadowBlur=0;
 
       ctx.globalCompositeOperation='lighter';
@@ -2713,41 +2722,61 @@ select optgroup { color: #0b1022; }
     ctx.restore();
 
     // demon wings
-    const wingLift = Math.sin(now/320 + hoverPhase)*12;
-    const wingSpread = 1.12 + 0.08*Math.sin(now/300 + cloakPhase);
+    const wingLift = Math.sin(now/320 + hoverPhase)*18;
+    const wingSpread = 1.18 + 0.12*Math.sin(now/300 + cloakPhase);
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.translate(-8,-6);
+      ctx.translate(-12,-10);
       ctx.scale(wingSpread,1);
-      ctx.beginPath();
-      ctx.moveTo(18,-6);
-      ctx.bezierCurveTo(86,-124-wingLift,180,-60-wingLift*0.5,206,62);
-      ctx.bezierCurveTo(214,134,158,196,84,212);
-      ctx.lineTo(34,42);
-      ctx.closePath();
-      const wingGrad=ctx.createLinearGradient(36,-90,186,220);
-      wingGrad.addColorStop(0,'rgba(28,28,32,0.96)');
-      wingGrad.addColorStop(0.38,palette.wingMembrane);
+
+      const wingGrad=ctx.createLinearGradient(24,-140,260,240);
+      wingGrad.addColorStop(0,'rgba(24,24,32,0.98)');
+      wingGrad.addColorStop(0.35,palette.wingMembrane);
       wingGrad.addColorStop(1,palette.wingFade);
+
+      ctx.beginPath();
+      ctx.moveTo(24,8);
+      ctx.bezierCurveTo(120,-148-wingLift,252,-72-wingLift*0.6,286,62);
+      ctx.quadraticCurveTo(302,160,230,230);
+      ctx.quadraticCurveTo(148,272,64,226);
+      ctx.lineTo(22,38);
+      ctx.closePath();
       ctx.fillStyle=wingGrad;
       ctx.fill();
-      ctx.lineWidth=5;
       ctx.strokeStyle=palette.wingBone;
+      ctx.lineWidth=6.2;
       ctx.stroke();
 
+      // wing bone structure
       ctx.save();
+      ctx.strokeStyle=flash ? 'rgba(255,210,190,0.58)' : 'rgba(255,86,86,0.42)';
+      ctx.lineWidth=4.2;
+      ctx.beginPath();
+      ctx.moveTo(32,26);
+      ctx.quadraticCurveTo(156,-60-wingLift*0.35,210,48);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(36,44);
+      ctx.quadraticCurveTo(164,-2-wingLift*0.2,228,122);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(40,64);
+      ctx.quadraticCurveTo(162,48-wingLift*0.14,190,198);
+      ctx.stroke();
+
       ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=flash ? 'rgba(255,210,190,0.6)' : 'rgba(255,72,72,0.42)';
-      ctx.lineWidth=3.4;
-      ctx.beginPath();
-      ctx.moveTo(34,24);
-      ctx.quadraticCurveTo(150,-36-wingLift*0.4,186,66);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(38,48);
-      ctx.quadraticCurveTo(148,48-wingLift*0.2,150,148);
-      ctx.stroke();
+      ctx.lineWidth=2.6;
+      ctx.strokeStyle=flash ? 'rgba(255,230,210,0.5)' : 'rgba(255,120,120,0.36)';
+      for(let i=0;i<3;i++){
+        const t=i/2.5;
+        ctx.beginPath();
+        ctx.moveTo(42,60 + i*22);
+        ctx.quadraticCurveTo(148 + t*36,110 + wingLift*0.05 - i*10,208,200 - i*14);
+        ctx.stroke();
+      }
       ctx.restore();
 
       ctx.restore();
@@ -2760,48 +2789,78 @@ select optgroup { color: #0b1022; }
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      const thigh=ctx.createLinearGradient(16,-68,72,156);
+      const thigh=ctx.createLinearGradient(28,-96,96,212);
       thigh.addColorStop(0,palette.metalMid);
-      thigh.addColorStop(1,palette.metalDark);
+      thigh.addColorStop(0.55,palette.metalDark);
+      thigh.addColorStop(1,'rgba(18,18,26,0.94)');
       ctx.beginPath();
-      ctx.moveTo(18,-72);
-      ctx.lineTo(70,-22-legPulse*3);
-      ctx.quadraticCurveTo(56,72,18,132);
-      ctx.quadraticCurveTo(6,40,10,-34);
+      ctx.moveTo(26,-92);
+      ctx.quadraticCurveTo(96,-48-legPulse*4,86,84);
+      ctx.quadraticCurveTo(48,212,-8,182);
+      ctx.quadraticCurveTo(-2,34,26,-92);
       ctx.closePath();
       ctx.fillStyle=thigh;
       ctx.fill();
       ctx.strokeStyle=palette.metalEdge;
-      ctx.lineWidth=2.2;
+      ctx.lineWidth=3.2;
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(32,-16);
-      ctx.quadraticCurveTo(58,18,28,70);
-      ctx.strokeStyle=flash ? 'rgba(255,210,190,0.6)' : 'rgba(255,72,72,0.42)';
-      ctx.lineWidth=1.8;
+      ctx.moveTo(32,-32);
+      ctx.quadraticCurveTo(74,-4,54,84);
+      ctx.strokeStyle=flash ? 'rgba(255,216,200,0.58)' : 'rgba(255,90,90,0.42)';
+      ctx.lineWidth=2.4;
       ctx.stroke();
 
-      const greave=ctx.createLinearGradient(16,32,82,196);
+      ctx.beginPath();
+      ctx.moveTo(30,32);
+      ctx.quadraticCurveTo(62,86,28,160);
+      ctx.strokeStyle='rgba(255,214,150,'+(flash?0.55:0.34)+')';
+      ctx.lineWidth=2.1;
+      ctx.stroke();
+
+      const kneeGuard=ctx.createLinearGradient(10,12,84,148);
+      kneeGuard.addColorStop(0,palette.metalDark);
+      kneeGuard.addColorStop(1,palette.metalMid);
+      ctx.beginPath();
+      ctx.moveTo(24,24);
+      ctx.quadraticCurveTo(84,68,72,116);
+      ctx.quadraticCurveTo(40,136,12,116);
+      ctx.closePath();
+      ctx.fillStyle=kneeGuard;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2.6;
+      ctx.stroke();
+
+      const greave=ctx.createLinearGradient(24,70,102,256);
       greave.addColorStop(0,palette.metalDark);
+      greave.addColorStop(0.5,'rgba(22,22,30,0.94)');
       greave.addColorStop(1,'rgba(10,10,16,0.92)');
       ctx.beginPath();
-      ctx.moveTo(20,70);
-      ctx.quadraticCurveTo(82,118,58,182);
-      ctx.quadraticCurveTo(26,204,6,180);
-      ctx.quadraticCurveTo(2,138,20,70);
+      ctx.moveTo(22,86);
+      ctx.quadraticCurveTo(102,154,74,226);
+      ctx.quadraticCurveTo(34,256,2,214);
+      ctx.quadraticCurveTo(0,164,22,86);
       ctx.closePath();
       ctx.fillStyle=greave;
       ctx.fill();
       ctx.strokeStyle=palette.metalEdge;
-      ctx.lineWidth=2.1;
+      ctx.lineWidth=2.8;
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(18,126);
-      ctx.quadraticCurveTo(46,150,10,166);
-      ctx.strokeStyle='rgba(255,214,150,'+(flash?0.55:0.32)+')';
-      ctx.lineWidth=1.4;
+      ctx.moveTo(24,122);
+      ctx.quadraticCurveTo(72,174,36,228);
+      ctx.strokeStyle=flash ? 'rgba(255,220,206,0.54)' : 'rgba(255,96,96,0.38)';
+      ctx.lineWidth=2.2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(12,184);
+      ctx.quadraticCurveTo(54,190,10,214);
+      ctx.strokeStyle='rgba(255,214,150,'+(flash?0.55:0.34)+')';
+      ctx.lineWidth=2;
       ctx.stroke();
 
       ctx.restore();
@@ -2810,31 +2869,63 @@ select optgroup { color: #0b1022; }
 
     // waist armour and core
     ctx.save();
-    ctx.translate(0,28);
-    const waist=ctx.createLinearGradient(-70,-60,70,80);
-    waist.addColorStop(0,palette.metalMid);
-    waist.addColorStop(1,palette.metalDark);
+    ctx.translate(0,26);
+    const waistOuter=ctx.createLinearGradient(-92,-88,92,98);
+    waistOuter.addColorStop(0,palette.metalMid);
+    waistOuter.addColorStop(0.6,palette.metalDark);
+    waistOuter.addColorStop(1,'rgba(24,22,30,0.92)');
     ctx.beginPath();
-    ctx.moveTo(-74,-28);
-    ctx.quadraticCurveTo(0,-82,74,-28);
-    ctx.lineTo(56,46);
-    ctx.quadraticCurveTo(0,70,-56,46);
+    ctx.moveTo(-92,-36);
+    ctx.quadraticCurveTo(0,-110,92,-36);
+    ctx.lineTo(74,58);
+    ctx.quadraticCurveTo(0,94,-74,58);
     ctx.closePath();
-    ctx.fillStyle=waist;
+    ctx.fillStyle=waistOuter;
     ctx.fill();
     ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.4;
+    ctx.lineWidth=3.2;
+    ctx.stroke();
+
+    const waistInner=ctx.createLinearGradient(-72,-48,72,72);
+    waistInner.addColorStop(0,palette.metalDark);
+    waistInner.addColorStop(1,palette.metalMid);
+    ctx.beginPath();
+    ctx.moveTo(-72,-12);
+    ctx.quadraticCurveTo(0,-66,72,-12);
+    ctx.lineTo(54,38);
+    ctx.quadraticCurveTo(0,62,-54,38);
+    ctx.closePath();
+    ctx.fillStyle=waistInner;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.6;
+    ctx.stroke();
+
+    const belt=ctx.createLinearGradient(-80,4,80,32);
+    belt.addColorStop(0,'rgba(32,24,32,0.96)');
+    belt.addColorStop(0.5,'rgba(58,46,58,0.9)');
+    belt.addColorStop(1,'rgba(32,24,32,0.96)');
+    ctx.beginPath();
+    ctx.moveTo(-76,4);
+    ctx.lineTo(76,4);
+    ctx.lineTo(66,28);
+    ctx.lineTo(-66,28);
+    ctx.closePath();
+    ctx.fillStyle=belt;
+    ctx.fill();
+    ctx.strokeStyle='rgba(170,120,200,0.45)';
+    ctx.lineWidth=2.2;
     ctx.stroke();
 
     ctx.save();
     ctx.globalCompositeOperation='lighter';
     ctx.strokeStyle=palette.accent;
-    ctx.lineWidth=2;
+    ctx.lineWidth=2.6;
     ctx.beginPath();
-    ctx.moveTo(-44,-6);
-    ctx.quadraticCurveTo(0,-36,44,-6);
-    ctx.moveTo(-40,30);
-    ctx.quadraticCurveTo(0,48,40,30);
+    ctx.moveTo(-58,-12);
+    ctx.quadraticCurveTo(0,-48,58,-12);
+    ctx.moveTo(-46,32);
+    ctx.quadraticCurveTo(0,54,46,32);
     ctx.stroke();
     ctx.restore();
     ctx.restore();
@@ -2872,44 +2963,100 @@ select optgroup { color: #0b1022; }
 
     // torso armour
     ctx.save();
-    ctx.translate(0,-10);
-    const torso=ctx.createLinearGradient(-60,-150,60,110);
-    torso.addColorStop(0,palette.metalMid);
-    torso.addColorStop(1,palette.metalDark);
+    ctx.translate(0,-18);
+    const torsoOuter=ctx.createLinearGradient(-84,-188,84,136);
+    torsoOuter.addColorStop(0,palette.metalMid);
+    torsoOuter.addColorStop(0.58,palette.metalDark);
+    torsoOuter.addColorStop(1,'rgba(26,24,34,0.94)');
     ctx.beginPath();
-    ctx.moveTo(-58,-32);
-    ctx.lineTo(-32,-132);
-    ctx.quadraticCurveTo(0,-172,32,-132);
-    ctx.lineTo(58,-32);
-    ctx.quadraticCurveTo(0,46,-58,-32);
+    ctx.moveTo(-88,-40);
+    ctx.lineTo(-54,-164);
+    ctx.quadraticCurveTo(0,-232,54,-164);
+    ctx.lineTo(88,-40);
+    ctx.quadraticCurveTo(0,108,-88,-40);
     ctx.closePath();
-    ctx.fillStyle=torso;
+    ctx.fillStyle=torsoOuter;
     ctx.fill();
     ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.6;
+    ctx.lineWidth=3.4;
     ctx.stroke();
 
-    const breastplate=ctx.createLinearGradient(-32,-116,32,40);
-    breastplate.addColorStop(0,palette.metalDark);
-    breastplate.addColorStop(1,palette.metalMid);
+    const chestPlate=ctx.createLinearGradient(-64,-148,64,68);
+    chestPlate.addColorStop(0,palette.metalDark);
+    chestPlate.addColorStop(1,palette.metalMid);
     ctx.beginPath();
-    ctx.moveTo(-28,-26);
-    ctx.quadraticCurveTo(0,-88,28,-26);
-    ctx.quadraticCurveTo(0,18,-28,-26);
+    ctx.moveTo(-64,-18);
+    ctx.lineTo(-36,-128);
+    ctx.quadraticCurveTo(0,-192,36,-128);
+    ctx.lineTo(64,-18);
+    ctx.quadraticCurveTo(0,74,-64,-18);
     ctx.closePath();
-    ctx.fillStyle=breastplate;
+    ctx.fillStyle=chestPlate;
     ctx.fill();
     ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2;
+    ctx.lineWidth=2.8;
+    ctx.stroke();
+
+    // sculpted pectoral plates
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      const pectoral=ctx.createLinearGradient(-36,-112,36,24);
+      pectoral.addColorStop(0,palette.metalDark);
+      pectoral.addColorStop(1,palette.metalMid);
+      ctx.beginPath();
+      ctx.moveTo(-48,-32);
+      ctx.quadraticCurveTo(-12,-108,-6,-36);
+      ctx.quadraticCurveTo(-16,36,-50,22);
+      ctx.closePath();
+      ctx.fillStyle=pectoral;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2.2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-40,-12);
+      ctx.quadraticCurveTo(-8,-54,-4,12);
+      ctx.strokeStyle='rgba(255,214,150,'+(flash?0.6:0.36)+')';
+      ctx.lineWidth=1.8;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // layered abdominal plating
+    const abdomen=ctx.createLinearGradient(-48,-52,48,86);
+    abdomen.addColorStop(0,palette.metalDark);
+    abdomen.addColorStop(1,palette.metalMid);
+    ctx.beginPath();
+    ctx.moveTo(-44,12);
+    ctx.quadraticCurveTo(-14,-24,0,-18);
+    ctx.quadraticCurveTo(14,-24,44,12);
+    ctx.lineTo(28,84);
+    ctx.quadraticCurveTo(0,112,-28,84);
+    ctx.closePath();
+    ctx.fillStyle=abdomen;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-22,24);
+    ctx.quadraticCurveTo(0,6,22,24);
+    ctx.moveTo(-18,54);
+    ctx.quadraticCurveTo(0,72,18,54);
+    ctx.strokeStyle='rgba(170,180,210,0.7)';
+    ctx.lineWidth=2.2;
     ctx.stroke();
 
     ctx.save();
     ctx.globalCompositeOperation='lighter';
     ctx.fillStyle=palette.accentGlow;
     ctx.beginPath();
-    ctx.moveTo(0,-48);
-    ctx.quadraticCurveTo(-8,-20,0,4);
-    ctx.quadraticCurveTo(8,-20,0,-48);
+    ctx.moveTo(0,-66);
+    ctx.quadraticCurveTo(-10,-22,0,16);
+    ctx.quadraticCurveTo(10,-22,0,-66);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -2918,26 +3065,58 @@ select optgroup { color: #0b1022; }
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.translate(48,-60);
-      const paul=ctx.createLinearGradient(-40,-32,40,40);
-      paul.addColorStop(0,palette.metalMid);
-      paul.addColorStop(1,palette.metalDark);
+      ctx.translate(60,-74);
+
+      const outerPaul=ctx.createLinearGradient(-58,-42,58,56);
+      outerPaul.addColorStop(0,palette.metalMid);
+      outerPaul.addColorStop(0.65,palette.metalDark);
+      outerPaul.addColorStop(1,'rgba(28,26,36,0.94)');
       ctx.beginPath();
-      ctx.moveTo(-42,12);
-      ctx.quadraticCurveTo(0,-48,42,12);
-      ctx.quadraticCurveTo(6,38,-32,38);
+      ctx.moveTo(-60,24);
+      ctx.quadraticCurveTo(0,-64,60,24);
+      ctx.quadraticCurveTo(20,64,-40,60);
       ctx.closePath();
-      ctx.fillStyle=paul;
+      ctx.fillStyle=outerPaul;
       ctx.fill();
       ctx.strokeStyle=palette.metalEdge;
-      ctx.lineWidth=2.2;
+      ctx.lineWidth=3.2;
+      ctx.stroke();
+
+      const innerPaul=ctx.createLinearGradient(-40,-28,40,48);
+      innerPaul.addColorStop(0,palette.metalDark);
+      innerPaul.addColorStop(1,palette.metalMid);
+      ctx.beginPath();
+      ctx.moveTo(-38,8);
+      ctx.quadraticCurveTo(0,-38,38,8);
+      ctx.quadraticCurveTo(10,40,-26,40);
+      ctx.closePath();
+      ctx.fillStyle=innerPaul;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2.4;
+      ctx.stroke();
+
+      // collar plate bridging arm and torso
+      const collar=ctx.createLinearGradient(-24,-18,32,36);
+      collar.addColorStop(0,palette.metalDark);
+      collar.addColorStop(1,palette.metalMid);
+      ctx.beginPath();
+      ctx.moveTo(-10,-4);
+      ctx.lineTo(26,-18);
+      ctx.lineTo(32,14);
+      ctx.lineTo(-2,30);
+      ctx.closePath();
+      ctx.fillStyle=collar;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2;
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(-12,16);
-      ctx.lineTo(24,-18);
+      ctx.moveTo(-8,6);
+      ctx.lineTo(22,-14);
       ctx.strokeStyle=palette.accentGlow;
-      ctx.lineWidth=1.6;
+      ctx.lineWidth=2;
       ctx.stroke();
       ctx.restore();
     }
@@ -2945,113 +3124,145 @@ select optgroup { color: #0b1022; }
 
     // arms
     ctx.save();
-    ctx.translate(0,-24);
-    const armSpread = 88 + Math.sin(now/420 + motionPhase)*6;
-    const armLift = 10*Math.sin(now/360 + hoverPhase);
+    ctx.translate(0,-30);
+    const armSpread = 72 + Math.sin(now/420 + motionPhase)*6;
+    const raisePhase = 0.5 + 0.5*Math.sin(now/360 + motionPhase + hoverPhase*0.2);
+    const armRotation = -0.36 + raisePhase*1.08;
+    const armLift = raisePhase*22;
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.translate(armSpread, -6-armLift*0.2);
-      ctx.rotate(-0.3 + 0.08*Math.sin(now/320 + motionPhase));
-      const upper=ctx.createLinearGradient(-24,-20,64,48);
+      ctx.translate(armSpread, -12 - armLift);
+      ctx.rotate(armRotation);
+
+      const coupler=ctx.createLinearGradient(-28,-18,40,32);
+      coupler.addColorStop(0,palette.metalDark);
+      coupler.addColorStop(1,palette.metalMid);
+      ctx.beginPath();
+      ctx.moveTo(-28,-10);
+      ctx.lineTo(38,-26);
+      ctx.lineTo(40,18);
+      ctx.lineTo(-30,28);
+      ctx.closePath();
+      ctx.fillStyle=coupler;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2.2;
+      ctx.stroke();
+
+      const upper=ctx.createLinearGradient(-28,-40,78,76);
       upper.addColorStop(0,palette.metalMid);
       upper.addColorStop(1,palette.metalDark);
       ctx.beginPath();
-      ctx.moveTo(-24,-16);
-      ctx.lineTo(64,-32);
-      ctx.lineTo(68,12);
-      ctx.quadraticCurveTo(8,32,-22,18);
+      ctx.moveTo(-30,-26);
+      ctx.lineTo(70,-44);
+      ctx.lineTo(82,36);
+      ctx.quadraticCurveTo(18,70,-26,48);
       ctx.closePath();
       ctx.fillStyle=upper;
       ctx.fill();
       ctx.strokeStyle=palette.metalEdge;
-      ctx.lineWidth=2.1;
+      ctx.lineWidth=2.6;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-10,-6);
+      ctx.quadraticCurveTo(32,-22,48,32);
+      ctx.strokeStyle=flash ? 'rgba(255,210,196,0.58)' : 'rgba(255,96,96,0.38)';
+      ctx.lineWidth=2;
       ctx.stroke();
 
       ctx.save();
-      ctx.translate(68,-10);
-      ctx.rotate(0.48 + 0.12*Math.sin(now/340 + motionPhase + side));
-      const fore=ctx.createLinearGradient(-18,-12,54,96);
+      ctx.translate(80,6);
+      const foreSwing = 0.52 + 0.42*Math.sin(now/360 + motionPhase + side*0.3 + raisePhase*0.6);
+      ctx.rotate(foreSwing);
+      const fore=ctx.createLinearGradient(-24,-28,68,132);
       fore.addColorStop(0,palette.metalMid);
-      fore.addColorStop(1,palette.metalDark);
+      fore.addColorStop(0.6,palette.metalDark);
+      fore.addColorStop(1,'rgba(26,24,32,0.96)');
       ctx.beginPath();
-      ctx.moveTo(-12,-10);
-      ctx.lineTo(54,-6);
-      ctx.lineTo(48,64);
-      ctx.quadraticCurveTo(4,82,-18,40);
+      ctx.moveTo(-24,-22);
+      ctx.lineTo(62,-12);
+      ctx.lineTo(58,96);
+      ctx.quadraticCurveTo(4,132,-30,72);
       ctx.closePath();
       ctx.fillStyle=fore;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2.4;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-6,18);
+      ctx.quadraticCurveTo(44,10,28,80);
+      ctx.strokeStyle='rgba(255,214,150,'+(flash?0.54:0.34)+')';
+      ctx.lineWidth=1.9;
+      ctx.stroke();
+
+      const gauntlet=ctx.createLinearGradient(12,18,72,102);
+      gauntlet.addColorStop(0,palette.metalDark);
+      gauntlet.addColorStop(1,'rgba(30,26,36,0.94)');
+      ctx.beginPath();
+      ctx.moveTo(18,24);
+      ctx.lineTo(72,36);
+      ctx.lineTo(70,86);
+      ctx.quadraticCurveTo(20,102,0,70);
+      ctx.closePath();
+      ctx.fillStyle=gauntlet;
       ctx.fill();
       ctx.strokeStyle=palette.metalEdge;
       ctx.lineWidth=2;
       ctx.stroke();
 
-      const hand=ctx.createLinearGradient(18,18,68,78);
-      hand.addColorStop(0,palette.metalDark);
-      hand.addColorStop(1,'rgba(26,22,30,0.94)');
       ctx.beginPath();
-      ctx.moveTo(34,20);
-      ctx.lineTo(76,30);
-      ctx.lineTo(72,64);
-      ctx.lineTo(30,56);
-      ctx.quadraticCurveTo(12,38,34,20);
-      ctx.closePath();
-      ctx.fillStyle=hand;
-      ctx.fill();
-      ctx.strokeStyle=palette.metalEdge;
+      ctx.moveTo(58,48);
+      ctx.lineTo(68,70);
+      ctx.lineTo(52,74);
+      ctx.strokeStyle=palette.accentGlow;
       ctx.lineWidth=1.8;
       ctx.stroke();
 
-      ctx.beginPath();
-      ctx.moveTo(60,38);
-      ctx.lineTo(70,54);
-      ctx.lineTo(56,58);
-      ctx.strokeStyle=palette.accentGlow;
-      ctx.lineWidth=1.4;
-      ctx.stroke();
-
-      // infernal greatsword
+      // infernal greatsword with adjustable raise
       ctx.save();
-      ctx.translate(70,54);
-      const swing=Math.sin(now/340 + motionPhase + side*0.8)*0.18;
-      ctx.rotate(1.32 + swing);
-      const blade=ctx.createLinearGradient(0,-12,0,186);
+      ctx.translate(64,72);
+      const swordRaise = 0.96 + 0.72*raisePhase + 0.14*Math.sin(now/380 + motionPhase + side);
+      ctx.rotate(swordRaise);
+      const blade=ctx.createLinearGradient(0,-16,0,206);
       blade.addColorStop(0,'rgba(238,240,248,0.95)');
       blade.addColorStop(0.45,'rgba(204,206,220,0.92)');
       blade.addColorStop(1,'rgba(122,126,150,0.9)');
       ctx.beginPath();
-      ctx.moveTo(-6,-8);
-      ctx.lineTo(0,-22);
-      ctx.lineTo(12,164);
-      ctx.quadraticCurveTo(0,188,-12,164);
+      ctx.moveTo(-6,-12);
+      ctx.lineTo(2,-28);
+      ctx.lineTo(14,186);
+      ctx.quadraticCurveTo(0,212,-14,186);
       ctx.closePath();
       ctx.fillStyle=blade;
       ctx.fill();
       ctx.strokeStyle='rgba(246,248,255,0.7)';
-      ctx.lineWidth=1.3;
+      ctx.lineWidth=1.4;
       ctx.stroke();
 
       ctx.fillStyle=palette.accent;
       ctx.beginPath();
-      ctx.moveTo(-16,-4);
-      ctx.quadraticCurveTo(0,-16,16,-4);
-      ctx.lineTo(14,10);
-      ctx.quadraticCurveTo(0,-2,-14,10);
+      ctx.moveTo(-18,-6);
+      ctx.quadraticCurveTo(0,-20,18,-6);
+      ctx.lineTo(16,12);
+      ctx.quadraticCurveTo(0,-4,-16,12);
       ctx.closePath();
       ctx.fill();
 
       ctx.fillStyle='rgba(28,22,34,0.96)';
-      ctx.fillRect(-4,-4,8,44);
+      ctx.fillRect(-4,-6,8,52);
 
       ctx.strokeStyle='rgba(255,86,86,0.45)';
-      ctx.lineWidth=1.1;
+      ctx.lineWidth=1.2;
       ctx.beginPath();
-      ctx.moveTo(0,-10);
-      ctx.lineTo(0,156);
+      ctx.moveTo(0,-16);
+      ctx.lineTo(0,176);
       ctx.stroke();
 
       ctx.restore();
-
       ctx.restore();
       ctx.restore();
     }
@@ -3073,206 +3284,207 @@ select optgroup { color: #0b1022; }
     // head and helmet
     ctx.save();
     ctx.translate(0,-92);
+    ctx.scale(0.6,0.6);
 
-    // segmented horns with aggressive silhouette
-    const hornCore=ctx.createLinearGradient(0,-236,0,-12);
-    hornCore.addColorStop(0,'rgba(12,12,18,0.96)');
-    hornCore.addColorStop(0.55,'rgba(26,24,34,0.94)');
+    // demon horns with sharp upward tilt
+    const hornCore=ctx.createLinearGradient(0,-280,0,-40);
+    hornCore.addColorStop(0,'rgba(16,16,24,0.97)');
+    hornCore.addColorStop(0.55,'rgba(30,28,38,0.95)');
     hornCore.addColorStop(1,palette.horn);
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
       ctx.beginPath();
-      ctx.moveTo(18,-8);
-      ctx.bezierCurveTo(58,-112,60,-190,22,-236);
-      ctx.quadraticCurveTo(4,-254,-16,-226);
-      ctx.quadraticCurveTo(-32,-186,-24,-132);
-      ctx.quadraticCurveTo(-16,-84,18,-8);
+      ctx.moveTo(48,-24);
+      ctx.quadraticCurveTo(132,-184,74,-270);
+      ctx.quadraticCurveTo(18,-300,0,-252);
+      ctx.quadraticCurveTo(22,-194,-14,-90);
+      ctx.lineTo(6,-28);
+      ctx.lineTo(42,-10);
       ctx.closePath();
       ctx.fillStyle=hornCore;
       ctx.fill();
       ctx.strokeStyle=palette.hornEdge;
+      ctx.lineWidth=4.2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(12,-222);
+      ctx.quadraticCurveTo(44,-176,20,-104);
+      ctx.strokeStyle='rgba(220,200,160,'+(flash?0.52:0.32)+')';
       ctx.lineWidth=2.6;
       ctx.stroke();
 
-      // horn ridges for sharper definition
       ctx.beginPath();
-      ctx.moveTo(8,-178);
-      ctx.quadraticCurveTo(26,-158,10,-124);
-      ctx.quadraticCurveTo(0,-104,12,-74);
-      ctx.strokeStyle='rgba(220,200,160,'+(flash?0.55:0.3)+')';
-      ctx.lineWidth=1.4;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(4,-210);
-      ctx.quadraticCurveTo(22,-188,6,-162);
-      ctx.strokeStyle='rgba(255,196,130,'+(flash?0.5:0.28)+')';
-      ctx.lineWidth=1.2;
+      ctx.moveTo(6,-244);
+      ctx.quadraticCurveTo(34,-210,10,-148);
+      ctx.strokeStyle='rgba(255,196,130,'+(flash?0.48:0.28)+')';
+      ctx.lineWidth=2.2;
       ctx.stroke();
       ctx.restore();
     }
 
-    // main helmet shell with razor edges
-    const helm=ctx.createLinearGradient(-52,-94,52,78);
+    // outer helmet shell tapered downward
+    const helm=ctx.createLinearGradient(-96,-148,96,124);
     helm.addColorStop(0,palette.metalMid);
-    helm.addColorStop(0.58,palette.metalDark);
+    helm.addColorStop(0.6,palette.metalDark);
     helm.addColorStop(1,'rgba(18,18,26,0.94)');
     ctx.beginPath();
-    ctx.moveTo(-54,28);
-    ctx.lineTo(-40,-82);
-    ctx.quadraticCurveTo(0,-140,40,-82);
-    ctx.lineTo(54,28);
-    ctx.quadraticCurveTo(0,70,-54,28);
+    ctx.moveTo(-92,52);
+    ctx.lineTo(-56,-72);
+    ctx.quadraticCurveTo(0,-156,56,-72);
+    ctx.lineTo(92,52);
+    ctx.quadraticCurveTo(0,132,-92,52);
     ctx.closePath();
     ctx.fillStyle=helm;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=4.6;
+    ctx.stroke();
+
+    // layered crown ridge
+    const crestGrad=ctx.createLinearGradient(-18,-96,18,24);
+    crestGrad.addColorStop(0,palette.metalDark);
+    crestGrad.addColorStop(1,palette.metalMid);
+    ctx.beginPath();
+    ctx.moveTo(-18,-96);
+    ctx.quadraticCurveTo(0,-140,18,-96);
+    ctx.lineTo(12,24);
+    ctx.lineTo(-12,24);
+    ctx.closePath();
+    ctx.fillStyle=crestGrad;
     ctx.fill();
     ctx.strokeStyle=palette.metalEdge;
     ctx.lineWidth=2.8;
     ctx.stroke();
 
-    // cheek guards
+    ctx.beginPath();
+    ctx.moveTo(-70,-30);
+    ctx.quadraticCurveTo(0,-120,70,-30);
+    ctx.strokeStyle='rgba(255,220,160,'+(flash?0.62:0.4)+')';
+    ctx.lineWidth=3;
+    ctx.stroke();
+
+    // sculpted cheek plates blending into helmet
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      const guard=ctx.createLinearGradient(-18,-12,26,44);
+      const guard=ctx.createLinearGradient(-32,-18,44,78);
       guard.addColorStop(0,palette.metalDark);
       guard.addColorStop(1,palette.metalMid);
       ctx.beginPath();
-      ctx.moveTo(30,-6);
-      ctx.lineTo(46,18);
-      ctx.lineTo(34,46);
-      ctx.lineTo(18,32);
-      ctx.quadraticCurveTo(24,8,30,-6);
+      ctx.moveTo(52,-4);
+      ctx.lineTo(74,36);
+      ctx.lineTo(46,88);
+      ctx.lineTo(18,52);
+      ctx.quadraticCurveTo(30,10,52,-4);
       ctx.closePath();
       ctx.fillStyle=guard;
       ctx.fill();
       ctx.strokeStyle=palette.metalEdge;
-      ctx.lineWidth=1.6;
+      ctx.lineWidth=3.2;
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(34,16);
-      ctx.lineTo(22,30);
-      ctx.strokeStyle='rgba(255,220,150,'+(flash?0.5:0.26)+')';
-      ctx.lineWidth=1.1;
+      ctx.moveTo(44,32);
+      ctx.lineTo(24,62);
+      ctx.strokeStyle='rgba(255,220,150,'+(flash?0.52:0.3)+')';
+      ctx.lineWidth=2.4;
       ctx.stroke();
       ctx.restore();
     }
 
-    // central crest and crown
-    const crest=ctx.createLinearGradient(-14,-84,14,52);
-    crest.addColorStop(0,palette.metalDark);
-    crest.addColorStop(1,palette.metalMid);
-    ctx.beginPath();
-    ctx.moveTo(-12,-64);
-    ctx.lineTo(0,-108);
-    ctx.lineTo(12,-64);
-    ctx.lineTo(4,38);
-    ctx.lineTo(-4,38);
-    ctx.closePath();
-    ctx.fillStyle=crest;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=1.8;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(-26,-60);
-    ctx.quadraticCurveTo(0,-92,26,-60);
-    ctx.strokeStyle='rgba(255,220,160,'+(flash?0.6:0.38)+')';
-    ctx.lineWidth=1.3;
-    ctx.stroke();
-
-    // facial plating
-    const mask=ctx.createLinearGradient(-36,-18,36,54);
+    // face mask with sharp chin
+    const mask=ctx.createLinearGradient(-60,-24,60,110);
     mask.addColorStop(0,palette.metalDark);
     mask.addColorStop(1,palette.metalMid);
     ctx.beginPath();
-    ctx.moveTo(-32,-14);
-    ctx.quadraticCurveTo(0,-60,32,-14);
-    ctx.lineTo(18,46);
-    ctx.quadraticCurveTo(0,58,-18,46);
+    ctx.moveTo(-58,-6);
+    ctx.lineTo(-28,-92);
+    ctx.quadraticCurveTo(0,-128,28,-92);
+    ctx.lineTo(58,-6);
+    ctx.lineTo(34,86);
+    ctx.lineTo(0,128);
+    ctx.lineTo(-34,86);
     ctx.closePath();
     ctx.fillStyle=mask;
     ctx.fill();
     ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.2;
+    ctx.lineWidth=4;
     ctx.stroke();
 
-    ctx.beginPath();
-    ctx.moveTo(-18,18);
-    ctx.quadraticCurveTo(0,6,18,18);
-    ctx.strokeStyle='rgba(170,180,210,0.7)';
-    ctx.lineWidth=1.5;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(-10,34);
-    ctx.lineTo(10,34);
-    ctx.strokeStyle=palette.accentGlow;
-    ctx.lineWidth=1.2;
-    ctx.stroke();
-
-    // visor slit with glowing eyes
-    const visor=ctx.createLinearGradient(-30,-10,30,32);
+    // visor recessed window
+    const visor=ctx.createLinearGradient(-62,-32,62,48);
     visor.addColorStop(0,palette.visor);
-    visor.addColorStop(1,'rgba(0,0,0,0.9)');
+    visor.addColorStop(1,'rgba(0,0,0,0.92)');
     ctx.beginPath();
-    ctx.moveTo(-32,-2);
-    ctx.lineTo(-18,-32);
-    ctx.quadraticCurveTo(0,-44,18,-32);
-    ctx.lineTo(32,-2);
-    ctx.quadraticCurveTo(14,28,0,32);
-    ctx.quadraticCurveTo(-14,28,-32,-2);
+    ctx.moveTo(-64,-6);
+    ctx.quadraticCurveTo(-26,-70,0,-82);
+    ctx.quadraticCurveTo(26,-70,64,-6);
+    ctx.lineTo(38,38);
+    ctx.quadraticCurveTo(0,56,-38,38);
     ctx.closePath();
     ctx.fillStyle=visor;
     ctx.fill();
 
+    // inverted triangular eyes with demonic glow
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    const eyeGlow=ctx.createRadialGradient(-14,-4,0,-14,-4,18);
-    eyeGlow.addColorStop(0,palette.eye);
-    eyeGlow.addColorStop(0.55,flash ? 'rgba(255,220,200,0.75)' : palette.accentGlow);
-    eyeGlow.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=eyeGlow;
+    const leftGlow=ctx.createRadialGradient(-36,-12,0,-36,-12,44);
+    leftGlow.addColorStop(0,palette.eye);
+    leftGlow.addColorStop(0.55,flash ? 'rgba(255,220,200,0.75)' : palette.accentGlow);
+    leftGlow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=leftGlow;
     ctx.beginPath();
-    ctx.ellipse(-14,-4,10,12,0,0,Math.PI*2);
+    ctx.moveTo(-62,-6);
+    ctx.lineTo(-26,24);
+    ctx.lineTo(-70,36);
+    ctx.closePath();
     ctx.fill();
 
-    const eyeGlowR=ctx.createRadialGradient(14,-4,0,14,-4,18);
-    eyeGlowR.addColorStop(0,palette.eye);
-    eyeGlowR.addColorStop(0.55,flash ? 'rgba(255,220,200,0.75)' : palette.accentGlow);
-    eyeGlowR.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=eyeGlowR;
+    const rightGlow=ctx.createRadialGradient(36,-12,0,36,-12,44);
+    rightGlow.addColorStop(0,palette.eye);
+    rightGlow.addColorStop(0.55,flash ? 'rgba(255,220,200,0.75)' : palette.accentGlow);
+    rightGlow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=rightGlow;
     ctx.beginPath();
-    ctx.ellipse(14,-4,10,12,0,0,Math.PI*2);
+    ctx.moveTo(62,-6);
+    ctx.lineTo(26,24);
+    ctx.lineTo(70,36);
+    ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle=flash ? 'rgba(255,210,200,0.78)' : 'rgba(255,43,43,0.76)';
+    ctx.fillStyle=flash ? 'rgba(255,214,204,0.8)' : 'rgba(255,60,60,0.78)';
     ctx.beginPath();
-    ctx.moveTo(-20,-4);
-    ctx.quadraticCurveTo(-14,-10,-6,-4);
-    ctx.quadraticCurveTo(-14,6,-20,-4);
-    ctx.moveTo(20,-4);
-    ctx.quadraticCurveTo(14,-10,6,-4);
-    ctx.quadraticCurveTo(14,6,20,-4);
+    ctx.moveTo(-56,-4);
+    ctx.lineTo(-22,18);
+    ctx.lineTo(-68,28);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(56,-4);
+    ctx.lineTo(22,18);
+    ctx.lineTo(68,28);
+    ctx.closePath();
     ctx.fill();
     ctx.restore();
 
-    // jaw vents and frame
+    // layered cheek ridges (mouth removed)
     ctx.beginPath();
-    ctx.moveTo(-22,12);
-    ctx.lineTo(22,12);
-    ctx.strokeStyle='rgba(90,96,140,0.9)';
-    ctx.lineWidth=1.4;
+    ctx.moveTo(-16,26);
+    ctx.lineTo(-8,90);
+    ctx.moveTo(16,26);
+    ctx.lineTo(8,90);
+    ctx.strokeStyle='rgba(90,96,140,0.82)';
+    ctx.lineWidth=2.4;
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(-24,22);
-    ctx.lineTo(24,22);
-    ctx.strokeStyle='rgba(255,220,150,'+(flash?0.55:0.3)+')';
-    ctx.lineWidth=1.1;
+    ctx.moveTo(0,24);
+    ctx.lineTo(0,102);
+    ctx.strokeStyle='rgba(255,220,150,'+(flash?0.58:0.34)+')';
+    ctx.lineWidth=2.1;
     ctx.stroke();
 
     ctx.restore();
