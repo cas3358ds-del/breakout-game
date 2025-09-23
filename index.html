@@ -2588,10 +2588,12 @@ select optgroup { color: #0b1022; }
     ctx.restore();
   }
 
+
   function renderDemonFigure(entity, now, opts={}){
     if(!entity) return;
     const scaleAvg=(scaleX+scaleY)/2;
-    const size=(entity.w||220)/220;
+    const baseSize=entity.h||entity.w||150;
+    const size=baseSize/150;
     let alpha = opts.alpha!=null ? opts.alpha : 1;
     if(entity.deathFade!=null) alpha*=entity.deathFade;
     if(alpha<=0) return;
@@ -2605,599 +2607,471 @@ select optgroup { color: #0b1022; }
     const hoverPhase = entity.hoverPhase||0;
     const swordPhase = entity.swordPhase||0;
 
-    // 魔王埃裡赫曼重製：深紅黑鎧甲、符文光暈、血紅翼膜與鍛紋巨劍
-    const palette = {
-      auraInner: flash ? 'rgba(255,230,220,0.85)' : 'rgba(255,110,70,0.82)',
-      auraMid: flash ? 'rgba(255,210,200,0.42)' : 'rgba(130,20,40,0.38)',
-      auraOuter: flash ? 'rgba(220,170,200,0)' : 'rgba(30,6,20,0)',
-      wingOuter: flash ? 'rgba(255,220,220,0.95)' : 'rgba(220,40,40,0.9)',
-      wingInner: flash ? 'rgba(255,190,190,0.9)' : 'rgba(120,12,20,0.88)',
-      wingVein: flash ? 'rgba(255,230,230,0.78)' : 'rgba(255,110,70,0.62)',
-      cloakDark: flash ? 'rgba(200,160,170,0.85)' : 'rgba(22,8,26,0.85)',
-      cloakLight: flash ? 'rgba(240,210,220,0.6)' : 'rgba(120,18,60,0.55)',
-      armorBase0: flash ? 'rgba(255,248,248,0.98)' : 'rgba(36,32,48,0.98)',
-      armorBase1: flash ? 'rgba(232,222,232,0.94)' : 'rgba(18,16,28,0.94)',
-      trim: flash ? 'rgba(255,240,230,0.82)' : 'rgba(180,120,70,0.7)',
-      accentRune: flash ? 'rgba(255,240,240,0.95)' : 'rgba(255,140,70,0.92)'
+    const palette={
+      metalDark: flash ? 'rgba(238,234,242,0.96)' : 'rgba(24,26,34,0.96)',
+      metalMid: flash ? 'rgba(255,250,252,0.92)' : 'rgba(46,48,62,0.92)',
+      metalEdge: flash ? 'rgba(255,255,255,0.86)' : 'rgba(134,138,166,0.75)',
+      accent: flash ? 'rgba(255,200,160,0.95)' : 'rgba(210,70,40,0.92)',
+      glowCore: flash ? 'rgba(255,220,210,0.85)' : 'rgba(255,90,50,0.8)',
+      glowOuter: flash ? 'rgba(255,220,220,0.45)' : 'rgba(160,20,30,0.38)',
+      wingMembrane: flash ? 'rgba(255,210,210,0.78)' : 'rgba(110,18,30,0.78)',
+      wingEdge: flash ? 'rgba(255,230,230,0.92)' : 'rgba(230,70,60,0.9)',
+      wingVein: flash ? 'rgba(255,230,220,0.75)' : 'rgba(255,110,70,0.6)',
+      horn: flash ? 'rgba(220,210,240,0.92)' : 'rgba(44,42,62,0.92)',
+      visor: flash ? 'rgba(255,248,246,0.9)' : 'rgba(18,18,24,0.88)',
+      eye: flash ? 'rgba(255,150,110,0.95)' : 'rgba(255,50,40,0.95)'
     };
 
-    const auraPulse = 0.55 + 0.35*Math.sin(now/220 + hoverPhase);
+    // ground shadow
     ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.globalAlpha*=0.6 + auraPulse*0.1;
-    const aura=ctx.createRadialGradient(0,56,14,0,60,260);
-    aura.addColorStop(0, palette.auraInner);
-    aura.addColorStop(0.45, palette.auraMid);
-    aura.addColorStop(1, palette.auraOuter);
-    ctx.fillStyle=aura;
+    ctx.globalAlpha*=0.32;
+    ctx.fillStyle='rgba(0,0,0,0.6)';
+    ctx.scale(1,0.34);
     ctx.beginPath();
-    ctx.ellipse(0,70,150,78,0,0,Math.PI*2);
+    ctx.ellipse(0,220,60,28,0,0,Math.PI*2);
     ctx.fill();
     ctx.restore();
 
+    // aura glow
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    const runePulse = 0.45 + 0.35*Math.sin(now/180 + hoverPhase*0.5);
-    const runeRadOuter = 220 + 16*Math.sin(now/340 + hoverPhase*0.8);
-    const runeRadInner = runeRadOuter*0.74;
-    ctx.strokeStyle=`rgba(255,120,60,${0.25 + runePulse*0.4})`;
-    ctx.lineWidth=6;
+    const auraPulse = 0.55 + 0.25*Math.sin(now/240 + hoverPhase*0.7);
+    ctx.globalAlpha*=0.55 + auraPulse*0.25;
+    const aura=ctx.createRadialGradient(0,20,18,0,20,190);
+    aura.addColorStop(0,palette.glowCore);
+    aura.addColorStop(0.45,palette.glowOuter);
+    aura.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=aura;
     ctx.beginPath();
-    ctx.ellipse(0,40,runeRadOuter,runeRadInner,0,0,Math.PI*2);
-    ctx.stroke();
-    ctx.lineWidth=3;
-    ctx.strokeStyle=`rgba(255,180,120,${0.18 + runePulse*0.2})`;
-    ctx.beginPath();
-    ctx.ellipse(0,40,runeRadOuter*0.86,runeRadInner*0.86,0,0,Math.PI*2);
-    ctx.stroke();
+    ctx.ellipse(0,30,120,140,0,0,Math.PI*2);
+    ctx.fill();
     ctx.restore();
 
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    const glyphCount=8;
-    for(let i=0;i<glyphCount;i++){
-      const ang=(Math.PI*2/glyphCount)*i + hoverPhase*0.08;
-      const radius=168 + 6*Math.sin(now/260 + i*0.9);
-      const gx=Math.cos(ang)*radius;
-      const gy=40 + Math.sin(ang)*radius*0.72;
-      ctx.save();
-      ctx.translate(gx, gy);
-      ctx.rotate(ang + Math.PI/2);
-      const glyphAlpha=0.45 + 0.35*Math.sin(now/160 + i*1.2);
-      ctx.fillStyle=`rgba(255,140,70,${glyphAlpha})`;
-      ctx.fillRect(-6,-20,12,40);
-      ctx.fillRect(-2,-36,4,16);
-      ctx.fillRect(-2,20,4,16);
-      ctx.restore();
-    }
-    ctx.restore();
-
-    const wingFlap=Math.sin(now/320 + hoverPhase)*18;
+    // demon wings
+    const wingLift = Math.sin(now/360 + hoverPhase)*8;
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.translate(-16,20);
+      ctx.translate(-8,-10);
       ctx.beginPath();
-      ctx.moveTo(30,-30);
-      ctx.quadraticCurveTo(140,-120-wingFlap,240,-40-wingFlap*0.6);
-      ctx.quadraticCurveTo(280,20-wingFlap*0.2,260,80);
-      ctx.quadraticCurveTo(244,150,180,180);
-      ctx.quadraticCurveTo(110,150,60,110);
-      ctx.lineTo(42,34);
+      ctx.moveTo(20,-4);
+      ctx.bezierCurveTo(80,-70-wingLift,142,-32-wingLift*0.6,158,32);
+      ctx.bezierCurveTo(168,92,134,148,72,164);
+      ctx.lineTo(30,42);
       ctx.closePath();
-      const wingGrad=ctx.createLinearGradient(40,-120,220,180);
-      wingGrad.addColorStop(0,palette.wingOuter);
-      wingGrad.addColorStop(0.45,palette.wingInner);
-      wingGrad.addColorStop(1,'rgba(36,10,18,0.85)');
+      const wingGrad=ctx.createLinearGradient(30,-70,150,160);
+      wingGrad.addColorStop(0,palette.wingEdge);
+      wingGrad.addColorStop(0.5,palette.wingMembrane);
+      wingGrad.addColorStop(1,'rgba(26,8,14,0.85)');
       ctx.fillStyle=wingGrad;
       ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,240,240,0.82)':'rgba(40,8,8,0.8)';
-      ctx.lineWidth=5;
+      ctx.strokeStyle=flash ? 'rgba(255,240,240,0.85)' : 'rgba(40,10,12,0.82)';
+      ctx.lineWidth=4;
       ctx.stroke();
 
+      // inner membrane glow
       ctx.save();
       ctx.globalCompositeOperation='screen';
-      const membraneGrad=ctx.createLinearGradient(60,-80,200,160);
-      membraneGrad.addColorStop(0,'rgba(255,180,120,0.18)');
-      membraneGrad.addColorStop(1,'rgba(255,60,40,0.32)');
-      ctx.fillStyle=membraneGrad;
+      const membrane=ctx.createLinearGradient(48,-40,140,150);
+      membrane.addColorStop(0,'rgba(255,150,120,0.18)');
+      membrane.addColorStop(1,'rgba(255,60,40,0.35)');
+      ctx.fillStyle=membrane;
       ctx.beginPath();
-      ctx.moveTo(46,0);
-      ctx.quadraticCurveTo(162,-64-wingFlap*0.35,232,36-wingFlap*0.2);
-      ctx.quadraticCurveTo(180,96,120,122);
-      ctx.quadraticCurveTo(82,96,46,28);
+      ctx.moveTo(32,8);
+      ctx.quadraticCurveTo(116,-34-wingLift*0.5,146,34);
+      ctx.quadraticCurveTo(118,110,72,128);
+      ctx.quadraticCurveTo(52,92,32,30);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
 
+      // wing veins
       ctx.save();
       ctx.globalCompositeOperation='lighter';
       ctx.strokeStyle=palette.wingVein;
-      ctx.lineWidth=3.2;
+      ctx.lineWidth=3;
       ctx.beginPath();
-      ctx.moveTo(70,10);
-      ctx.quadraticCurveTo(150,-40-wingFlap*0.4,210,40-wingFlap*0.1);
+      ctx.moveTo(34,16);
+      ctx.quadraticCurveTo(116,-8-wingLift*0.4,148,64);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(64,44);
-      ctx.quadraticCurveTo(150,0-wingFlap*0.4,220,86);
+      ctx.moveTo(38,34);
+      ctx.quadraticCurveTo(124,54-wingLift*0.2,128,122);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(58,80);
-      ctx.quadraticCurveTo(140,40-wingFlap*0.4,200,130);
+      ctx.moveTo(58,70);
+      ctx.quadraticCurveTo(104,76-wingLift*0.15,108,136);
       ctx.stroke();
       ctx.restore();
       ctx.restore();
     }
 
+    // lower tabard and waist armour
     ctx.save();
-    ctx.globalCompositeOperation='multiply';
-    const cloakGrad=ctx.createRadialGradient(0,120,60,0,120,280);
-    cloakGrad.addColorStop(0,palette.cloakLight);
-    cloakGrad.addColorStop(1,palette.cloakDark);
-    ctx.fillStyle=cloakGrad;
+    ctx.translate(0,54);
+    const tabard=ctx.createLinearGradient(0,-36,0,120);
+    tabard.addColorStop(0, flash ? 'rgba(255,228,228,0.82)' : 'rgba(70,18,30,0.86)');
+    tabard.addColorStop(1, flash ? 'rgba(255,210,210,0.7)' : 'rgba(34,8,14,0.76)');
+    ctx.fillStyle=tabard;
     ctx.beginPath();
-    ctx.moveTo(-156,-56);
-    ctx.quadraticCurveTo(-238,110,-176,270);
-    ctx.quadraticCurveTo(-26,326,0,248);
-    ctx.quadraticCurveTo(26,326,176,270);
-    ctx.quadraticCurveTo(238,110,156,-56);
-    ctx.quadraticCurveTo(0,-142,-156,-56);
+    ctx.moveTo(-28,-12);
+    ctx.quadraticCurveTo(0,-46,28,-12);
+    ctx.quadraticCurveTo(14,124,0,140);
+    ctx.quadraticCurveTo(-14,124,-28,-12);
     ctx.closePath();
     ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(-84,-30);
-    ctx.quadraticCurveTo(-120,-160,-26,-188);
-    ctx.quadraticCurveTo(0,-200,26,-188);
-    ctx.quadraticCurveTo(120,-160,84,-30);
-    ctx.quadraticCurveTo(60,160,0,196);
-    ctx.quadraticCurveTo(-60,160,-84,-30);
-    ctx.closePath();
-    const torsoGrad=ctx.createLinearGradient(-110,-220,110,230);
-    torsoGrad.addColorStop(0,palette.armorBase0);
-    torsoGrad.addColorStop(0.55,'rgba(28,26,36,0.96)');
-    torsoGrad.addColorStop(1,palette.armorBase1);
-    ctx.fillStyle=torsoGrad;
-    ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(120,120,160,0.68)';
-    ctx.lineWidth=4;
+    ctx.lineWidth=2.2;
+    ctx.strokeStyle=palette.metalEdge;
     ctx.stroke();
 
-    const plateColor=flash?'rgba(255,240,240,0.9)':'rgba(70,72,86,0.9)';
-    ctx.lineWidth=2.6;
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':palette.trim;
-    ctx.fillStyle=plateColor;
+    const waist=ctx.createLinearGradient(-60,-40,60,60);
+    waist.addColorStop(0,palette.metalMid);
+    waist.addColorStop(1,palette.metalDark);
+    ctx.fillStyle=waist;
     ctx.beginPath();
-    ctx.moveTo(-60,-30);
-    ctx.lineTo(0,-88);
-    ctx.lineTo(60,-30);
-    ctx.lineTo(22,38);
-    ctx.lineTo(-22,38);
+    ctx.moveTo(-70,-20);
+    ctx.quadraticCurveTo(0,-64,70,-20);
+    ctx.lineTo(52,58);
+    ctx.quadraticCurveTo(0,78,-52,58);
     ctx.closePath();
     ctx.fill();
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(-54,20);
-    ctx.lineTo(54,20);
-    ctx.lineTo(36,92);
-    ctx.quadraticCurveTo(0,110,-36,92);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(-46,88);
-    ctx.lineTo(46,88);
-    ctx.lineTo(26,146);
-    ctx.quadraticCurveTo(0,166,-26,146);
-    ctx.closePath();
-    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
     ctx.stroke();
 
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    const chestGlow=ctx.createLinearGradient(-24,-40,24,120);
-    chestGlow.addColorStop(0,'rgba(255,120,60,0.48)');
-    chestGlow.addColorStop(0.5,'rgba(255,80,40,0.18)');
-    chestGlow.addColorStop(1,'rgba(255,60,40,0.05)');
-    ctx.strokeStyle=palette.accentRune;
-    ctx.lineWidth=3.2;
-    ctx.beginPath();
-    ctx.moveTo(0,-74);
-    ctx.lineTo(0,108);
-    ctx.stroke();
-    ctx.fillStyle=flash?'rgba(255,210,190,0.35)':chestGlow;
-    ctx.beginPath();
-    ctx.moveTo(0,-88);
-    ctx.quadraticCurveTo(18,-34,0,24);
-    ctx.quadraticCurveTo(-18,-34,0,-88);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-
-    ctx.fillStyle=flash?'rgba(255,220,180,0.95)':'rgba(200,110,40,0.92)';
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.85)':palette.accentRune;
-    ctx.lineWidth=3;
-    ctx.beginPath();
-    ctx.moveTo(-18,-16);
-    ctx.quadraticCurveTo(0,-40,18,-16);
-    ctx.quadraticCurveTo(0,8,-18,-16);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.save();
-    ctx.translate(0,104);
-    const tassetGrad=ctx.createLinearGradient(-120,-40,120,180);
-    tassetGrad.addColorStop(0, flash?'rgba(255,244,244,0.94)':'rgba(46,44,58,0.96)');
-    tassetGrad.addColorStop(0.6, flash?'rgba(238,226,226,0.9)':'rgba(28,26,38,0.94)');
-    tassetGrad.addColorStop(1, flash?'rgba(232,220,220,0.88)':'rgba(20,18,26,0.92)');
-    ctx.fillStyle=tassetGrad;
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':palette.trim;
-    ctx.lineWidth=3.2;
-    ctx.beginPath();
-    ctx.moveTo(-96,-10);
-    ctx.quadraticCurveTo(-24,-54,0,-36);
-    ctx.quadraticCurveTo(24,-54,96,-10);
-    ctx.lineTo(78,126);
-    ctx.quadraticCurveTo(0,156,-78,126);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=palette.accentRune;
-    ctx.lineWidth=2.4;
-    ctx.beginPath();
-    ctx.moveTo(-58,10);
-    ctx.quadraticCurveTo(0,-18,58,10);
-    ctx.moveTo(-50,74);
-    ctx.quadraticCurveTo(0,92,50,74);
-    ctx.stroke();
-    ctx.restore();
-
-    const tabardGrad=ctx.createLinearGradient(0,-40,0,200);
-    tabardGrad.addColorStop(0,'rgba(120,20,40,0.92)');
-    tabardGrad.addColorStop(0.6,'rgba(60,10,26,0.9)');
-    tabardGrad.addColorStop(1,'rgba(26,6,16,0.88)');
-    ctx.fillStyle=flash?'rgba(180,120,140,0.85)':tabardGrad;
-    ctx.beginPath();
-    ctx.moveTo(-36,-6);
-    ctx.quadraticCurveTo(0,-40,36,-6);
-    ctx.quadraticCurveTo(18,132,0,190);
-    ctx.quadraticCurveTo(-18,132,-36,-6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=palette.accentRune;
+    ctx.strokeStyle=palette.accent;
     ctx.lineWidth=2;
     ctx.beginPath();
-    ctx.moveTo(0,-14);
-    ctx.lineTo(0,170);
-    ctx.moveTo(-16,40);
-    ctx.lineTo(16,40);
-    ctx.moveTo(-12,112);
-    ctx.lineTo(12,112);
+    ctx.moveTo(-40,-2);
+    ctx.quadraticCurveTo(0,-24,40,-2);
+    ctx.moveTo(-36,36);
+    ctx.quadraticCurveTo(0,54,36,36);
     ctx.stroke();
     ctx.restore();
     ctx.restore();
 
+    // legs and greaves
     ctx.save();
-    ctx.translate(0,124);
+    ctx.translate(0,86);
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      const legGrad=ctx.createLinearGradient(22,-90,92,210);
-      legGrad.addColorStop(0, flash?'rgba(255,244,244,0.94)':'rgba(54,56,76,0.96)');
-      legGrad.addColorStop(0.55, flash?'rgba(242,232,232,0.92)':'rgba(26,28,38,0.94)');
-      legGrad.addColorStop(1, flash?'rgba(232,220,220,0.9)':'rgba(18,18,24,0.92)');
+      const thigh=ctx.createLinearGradient(18,-60,74,150);
+      thigh.addColorStop(0,palette.metalMid);
+      thigh.addColorStop(1,palette.metalDark);
       ctx.beginPath();
-      ctx.moveTo(30,-74);
-      ctx.quadraticCurveTo(78,-32,66,44);
-      ctx.quadraticCurveTo(54,118,24,172);
-      ctx.quadraticCurveTo(6,80,12,-22);
+      ctx.moveTo(22,-64);
+      ctx.quadraticCurveTo(58,-32,52,32);
+      ctx.quadraticCurveTo(40,104,16,128);
+      ctx.quadraticCurveTo(6,40,8,-24);
       ctx.closePath();
-      ctx.fillStyle=legGrad;
+      ctx.fillStyle=thigh;
       ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':palette.trim;
-      ctx.lineWidth=2.8;
-      ctx.stroke();
-
-      ctx.save();
-      ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=palette.accentRune;
-      ctx.lineWidth=2.2;
-      ctx.beginPath();
-      ctx.moveTo(48,-20);
-      ctx.lineTo(70,98);
-      ctx.stroke();
-      ctx.restore();
-
-      ctx.beginPath();
-      ctx.moveTo(36,102);
-      ctx.lineTo(90,150);
-      ctx.quadraticCurveTo(72,208,16,208);
-      ctx.quadraticCurveTo(6,178,18,150);
-      ctx.closePath();
-      const bootGrad=ctx.createLinearGradient(28,100,96,220);
-      bootGrad.addColorStop(0, flash?'rgba(255,244,244,0.94)':'rgba(30,22,34,0.96)');
-      bootGrad.addColorStop(1, flash?'rgba(230,220,220,0.88)':'rgba(12,10,18,0.9)');
-      ctx.fillStyle=bootGrad;
-      ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
-      ctx.lineWidth=2.6;
-      ctx.stroke();
-      ctx.save();
-      ctx.globalCompositeOperation='lighter';
-      ctx.fillStyle=`rgba(255,90,50,${flash?0.55:0.35})`;
-      ctx.beginPath();
-      ctx.ellipse(44,158,10,18,0,0,Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-      ctx.restore();
-    }
-    ctx.restore();
-
-    ctx.save();
-    for(const side of [-1,1]){
-      ctx.save();
-      ctx.scale(side,1);
-      const shoulderGrad=ctx.createLinearGradient(60,-90,160,100);
-      shoulderGrad.addColorStop(0, flash?'rgba(255,246,246,0.96)':'rgba(62,62,78,0.96)');
-      shoulderGrad.addColorStop(0.6, flash?'rgba(238,226,226,0.92)':'rgba(30,30,42,0.94)');
-      shoulderGrad.addColorStop(1, flash?'rgba(230,220,220,0.9)':'rgba(22,24,32,0.9)');
-      ctx.beginPath();
-      ctx.moveTo(86,-20);
-      ctx.quadraticCurveTo(150,-94,186,-8);
-      ctx.quadraticCurveTo(158,86,92,70);
-      ctx.quadraticCurveTo(70,18,86,-20);
-      ctx.closePath();
-      ctx.fillStyle=shoulderGrad;
-      ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
-      ctx.lineWidth=3.4;
-      ctx.stroke();
-
-      ctx.save();
-      ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=palette.accentRune;
+      ctx.strokeStyle=palette.metalEdge;
       ctx.lineWidth=2.4;
-      ctx.beginPath();
-      ctx.moveTo(118,-36);
-      ctx.lineTo(142,30);
-      ctx.stroke();
-      ctx.restore();
-
-      const armGrad=ctx.createLinearGradient(42,10,110,180);
-      armGrad.addColorStop(0, flash?'rgba(255,246,246,0.96)':'rgba(46,46,60,0.96)');
-      armGrad.addColorStop(1, flash?'rgba(232,220,220,0.9)':'rgba(24,24,32,0.92)');
-      ctx.beginPath();
-      ctx.moveTo(72,18);
-      ctx.quadraticCurveTo(110,78,82,146);
-      ctx.quadraticCurveTo(52,130,34,70);
-      ctx.quadraticCurveTo(50,26,72,18);
-      ctx.closePath();
-      ctx.fillStyle=armGrad;
-      ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':palette.trim;
-      ctx.lineWidth=2.8;
       ctx.stroke();
 
       ctx.save();
       ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=palette.accentRune;
+      ctx.strokeStyle=palette.accent;
       ctx.lineWidth=2;
       ctx.beginPath();
-      ctx.moveTo(66,52);
-      ctx.quadraticCurveTo(96,90,68,132);
+      ctx.moveTo(38,-10);
+      ctx.lineTo(46,74);
       ctx.stroke();
       ctx.restore();
 
-      const gauntletGrad=ctx.createLinearGradient(38,90,104,190);
-      gauntletGrad.addColorStop(0, flash?'rgba(255,244,244,0.95)':'rgba(44,42,54,0.96)');
-      gauntletGrad.addColorStop(1, flash?'rgba(228,216,216,0.9)':'rgba(22,20,26,0.92)');
+      const boot=ctx.createLinearGradient(18,60,72,190);
+      boot.addColorStop(0,palette.metalDark);
+      boot.addColorStop(1,'rgba(12,12,18,0.9)');
       ctx.beginPath();
-      ctx.moveTo(48,96);
-      ctx.lineTo(88,136);
-      ctx.lineTo(70,182);
-      ctx.lineTo(40,150);
+      ctx.moveTo(24,92);
+      ctx.quadraticCurveTo(70,130,58,174);
+      ctx.quadraticCurveTo(30,190,6,176);
+      ctx.quadraticCurveTo(0,150,10,120);
       ctx.closePath();
-      ctx.fillStyle=gauntletGrad;
+      ctx.fillStyle=boot;
       ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':palette.trim;
-      ctx.lineWidth=2.6;
-      ctx.stroke();
-      ctx.save();
-      ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=palette.accentRune;
+      ctx.strokeStyle=palette.metalEdge;
       ctx.lineWidth=2.2;
-      ctx.beginPath();
-      ctx.moveTo(58,128);
-      ctx.lineTo(78,156);
       ctx.stroke();
-      ctx.fillStyle=`rgba(255,120,60,${flash?0.55:0.4})`;
+
       ctx.beginPath();
-      ctx.arc(64,142,8,0,Math.PI*2);
-      ctx.fill();
-      ctx.restore();
+      ctx.moveTo(18,126);
+      ctx.quadraticCurveTo(38,142,12,158);
+      ctx.strokeStyle=flash ? 'rgba(255,200,160,0.75)' : 'rgba(80,24,20,0.65)';
+      ctx.lineWidth=1.6;
+      ctx.stroke();
       ctx.restore();
     }
     ctx.restore();
 
+    // torso armour layers
     ctx.save();
-    ctx.translate(0,-96);
-    const helmGrad=ctx.createLinearGradient(-70,-90,70,90);
-    helmGrad.addColorStop(0, flash?'rgba(255,246,246,0.96)':'rgba(56,54,70,0.97)');
-    helmGrad.addColorStop(0.6, flash?'rgba(238,226,226,0.94)':'rgba(30,28,40,0.95)');
-    helmGrad.addColorStop(1, flash?'rgba(232,222,222,0.94)':'rgba(24,22,32,0.94)');
+    ctx.translate(0,-8);
+    const chest=ctx.createLinearGradient(-60,-120,60,100);
+    chest.addColorStop(0,palette.metalMid);
+    chest.addColorStop(1,palette.metalDark);
+    ctx.fillStyle=chest;
     ctx.beginPath();
-    ctx.moveTo(-56,32);
-    ctx.quadraticCurveTo(-96,-60,-24,-102);
-    ctx.quadraticCurveTo(0,-116,24,-102);
-    ctx.quadraticCurveTo(96,-60,56,32);
-    ctx.quadraticCurveTo(20,84,0,90);
-    ctx.quadraticCurveTo(-20,84,-56,32);
+    ctx.moveTo(-46,-44);
+    ctx.quadraticCurveTo(0,-86,46,-44);
+    ctx.lineTo(58,26);
+    ctx.quadraticCurveTo(0,56,-58,26);
     ctx.closePath();
-    ctx.fillStyle=helmGrad;
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
-    ctx.lineWidth=3.4;
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=3;
     ctx.stroke();
 
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=palette.accentRune;
+    const breastplate=ctx.createLinearGradient(-42,-80,42,40);
+    breastplate.addColorStop(0,palette.metalDark);
+    breastplate.addColorStop(1,palette.metalMid);
+    ctx.fillStyle=breastplate;
+    ctx.beginPath();
+    ctx.moveTo(-32,-24);
+    ctx.quadraticCurveTo(0,-60,32,-24);
+    ctx.lineTo(24,30);
+    ctx.quadraticCurveTo(0,44,-24,30);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.4;
+    ctx.stroke();
+
+    const abdomen=ctx.createLinearGradient(-30,-10,30,70);
+    abdomen.addColorStop(0,palette.metalMid);
+    abdomen.addColorStop(1,palette.metalDark);
+    ctx.fillStyle=abdomen;
+    ctx.beginPath();
+    ctx.moveTo(-26,6);
+    ctx.lineTo(26,6);
+    ctx.quadraticCurveTo(16,52,0,68);
+    ctx.quadraticCurveTo(-16,52,-26,6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
     ctx.lineWidth=2.2;
-    ctx.beginPath();
-    ctx.moveTo(-32,-40);
-    ctx.quadraticCurveTo(0,-66,32,-40);
     ctx.stroke();
-    ctx.restore();
 
     ctx.save();
-    ctx.fillStyle=flash?'rgba(255,240,220,0.82)':'rgba(180,120,60,0.78)';
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=palette.accent;
+    ctx.lineWidth=2;
     ctx.beginPath();
-    ctx.moveTo(-18,-86);
-    ctx.lineTo(-6,-108);
-    ctx.lineTo(0,-86);
-    ctx.lineTo(6,-108);
-    ctx.lineTo(18,-86);
-    ctx.closePath();
-    ctx.fill();
+    ctx.moveTo(0,-40);
+    ctx.lineTo(0,60);
+    ctx.moveTo(-16,24);
+    ctx.lineTo(16,24);
+    ctx.stroke();
+    ctx.restore();
     ctx.restore();
 
-    const visorGrad=ctx.createLinearGradient(-36,-64,36,48);
-    visorGrad.addColorStop(0, flash?'rgba(255,240,240,0.96)':'rgba(90,94,108,0.95)');
-    visorGrad.addColorStop(1, flash?'rgba(230,220,220,0.94)':'rgba(46,48,60,0.94)');
+    // left arm
+    ctx.save();
+    ctx.translate(0,-18);
+    const leftShoulder=ctx.createLinearGradient(-140,-40,-40,90);
+    leftShoulder.addColorStop(0,palette.metalMid);
+    leftShoulder.addColorStop(1,palette.metalDark);
     ctx.beginPath();
-    ctx.ellipse(0,-4,40,46,0,0,Math.PI*2);
-    ctx.fillStyle=visorGrad;
+    ctx.moveTo(-58,-12);
+    ctx.quadraticCurveTo(-112,-56,-130,-6);
+    ctx.quadraticCurveTo(-114,50,-66,46);
+    ctx.closePath();
+    ctx.fillStyle=leftShoulder;
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(24,16,18,0.6)';
+    ctx.strokeStyle=palette.metalEdge;
     ctx.lineWidth=3;
     ctx.stroke();
 
-    ctx.fillStyle='rgba(0,0,0,0.92)';
+    ctx.save();
+    ctx.translate(-70,16);
+    ctx.rotate(-0.08 + Math.sin(hoverPhase*0.8)*0.05);
+    const leftUpper=ctx.createLinearGradient(-30,-20,40,120);
+    leftUpper.addColorStop(0,palette.metalMid);
+    leftUpper.addColorStop(1,palette.metalDark);
     ctx.beginPath();
-    ctx.moveTo(-22,-10);
-    ctx.quadraticCurveTo(-8,-36,-6,-12);
-    ctx.quadraticCurveTo(-12,12,-26,22);
+    ctx.moveTo(-14,-18);
+    ctx.quadraticCurveTo(-46,18,-36,74);
+    ctx.quadraticCurveTo(-16,108,10,96);
+    ctx.quadraticCurveTo(-4,48,-6,-10);
     ctx.closePath();
+    ctx.fillStyle=leftUpper;
     ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(22,-10);
-    ctx.quadraticCurveTo(8,-36,6,-12);
-    ctx.quadraticCurveTo(12,12,26,22);
-    ctx.closePath();
-    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.4;
+    ctx.stroke();
 
-    const eyeGlow=flash?'rgba(255,240,240,0.95)':'rgba(255,120,50,0.95)';
-    ctx.fillStyle=eyeGlow;
+    ctx.save();
+    ctx.translate(-12,86);
+    ctx.rotate(-0.25 + Math.sin(now/260 + hoverPhase)*0.1);
+    const leftFore=ctx.createLinearGradient(-26,-18,30,120);
+    leftFore.addColorStop(0,palette.metalMid);
+    leftFore.addColorStop(1,palette.metalDark);
     ctx.beginPath();
-    ctx.ellipse(-12,-6,8,10,0,0,Math.PI*2);
-    ctx.ellipse(12,-6,8,10,0,0,Math.PI*2);
+    ctx.moveTo(-12,-14);
+    ctx.quadraticCurveTo(-38,20,-18,70);
+    ctx.quadraticCurveTo(10,82,20,44);
+    ctx.quadraticCurveTo(6,2,-12,-14);
+    ctx.closePath();
+    ctx.fillStyle=leftFore;
     ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.2;
+    ctx.stroke();
+
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.fillStyle=flash?'rgba(255,240,240,0.6)':'rgba(255,80,30,0.6)';
+    ctx.strokeStyle=palette.accent;
+    ctx.lineWidth=1.8;
     ctx.beginPath();
-    ctx.ellipse(-12,-6,14,14,0,0,Math.PI*2);
-    ctx.ellipse(12,-6,14,14,0,0,Math.PI*2);
+    ctx.moveTo(-8,10);
+    ctx.lineTo(-4,54);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.moveTo(-18,66);
+    ctx.quadraticCurveTo(-32,88,-8,94);
+    ctx.quadraticCurveTo(4,82,-2,70);
+    ctx.closePath();
+    ctx.fillStyle=flash ? 'rgba(255,220,210,0.9)' : 'rgba(46,20,24,0.9)';
     ctx.fill();
     ctx.restore();
-
-    const hornPulse=1.0 + 0.14*Math.sin(now/260 + hoverPhase);
-    for(const side of [-1,1]){
-      ctx.save();
-      ctx.scale(side,1);
-      ctx.beginPath();
-      ctx.moveTo(18,-12);
-      ctx.quadraticCurveTo(102,-160*hornPulse,44,-240*hornPulse);
-      ctx.quadraticCurveTo(16,-276*hornPulse,-6,-182);
-      ctx.quadraticCurveTo(8,-146*hornPulse,18,-12);
-      ctx.closePath();
-      const hornGrad=ctx.createLinearGradient(12,-30,12,-220*hornPulse);
-      hornGrad.addColorStop(0, flash?'rgba(255,248,248,0.96)':'rgba(120,110,140,0.95)');
-      hornGrad.addColorStop(0.65, flash?'rgba(240,226,226,0.94)':'rgba(80,70,100,0.92)');
-      hornGrad.addColorStop(1, flash?'rgba(230,220,220,0.92)':'rgba(50,46,70,0.88)');
-      ctx.fillStyle=hornGrad;
-      ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
-      ctx.lineWidth=3.6;
-      ctx.stroke();
-      ctx.save();
-      ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=palette.accentRune;
-      ctx.lineWidth=1.8;
-      ctx.beginPath();
-      ctx.moveTo(22,-60);
-      ctx.lineTo(28,-140*hornPulse);
-      ctx.stroke();
-      ctx.restore();
-      ctx.restore();
-    }
     ctx.restore();
 
+    // right arm and sword
     ctx.save();
-    ctx.translate(120,48);
-    const swing=Math.sin(swordPhase)*0.26;
-    ctx.rotate(-Math.PI/3.4 + swing);
-    const bladeGrad=ctx.createLinearGradient(-40,-60,240,80);
-    bladeGrad.addColorStop(0, flash?'rgba(255,252,248,0.98)':'rgba(90,96,126,0.98)');
-    bladeGrad.addColorStop(0.35, flash?'rgba(255,236,224,0.95)':'rgba(150,40,40,0.94)');
-    bladeGrad.addColorStop(0.7, flash?'rgba(240,220,210,0.92)':'rgba(255,110,40,0.9)');
-    bladeGrad.addColorStop(1, flash?'rgba(230,210,200,0.9)':'rgba(80,16,12,0.85)');
+    ctx.translate(0,-18);
+    const rightShoulder=ctx.createLinearGradient(40,-40,140,90);
+    rightShoulder.addColorStop(0,palette.metalMid);
+    rightShoulder.addColorStop(1,palette.metalDark);
     ctx.beginPath();
-    ctx.moveTo(-18,-14);
-    ctx.lineTo(148,-46);
+    ctx.moveTo(58,-12);
+    ctx.quadraticCurveTo(112,-56,130,-6);
+    ctx.quadraticCurveTo(114,50,66,46);
+    ctx.closePath();
+    ctx.fillStyle=rightShoulder;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=3;
+    ctx.stroke();
+
+    const swing=Math.sin(swordPhase);
+    ctx.save();
+    ctx.translate(64,16);
+    ctx.rotate(0.18 + swing*0.12);
+    const upper=ctx.createLinearGradient(-24,-24,34,120);
+    upper.addColorStop(0,palette.metalMid);
+    upper.addColorStop(1,palette.metalDark);
+    ctx.beginPath();
+    ctx.moveTo(-12,-20);
+    ctx.quadraticCurveTo(30,-6,26,64);
+    ctx.quadraticCurveTo(8,98,-16,96);
+    ctx.quadraticCurveTo(-26,36,-18,-10);
+    ctx.closePath();
+    ctx.fillStyle=upper;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.4;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(8,88);
+    ctx.rotate(0.52 + swing*0.22);
+    const fore=ctx.createLinearGradient(-24,-20,32,120);
+    fore.addColorStop(0,palette.metalMid);
+    fore.addColorStop(1,palette.metalDark);
+    ctx.beginPath();
+    ctx.moveTo(-12,-18);
+    ctx.quadraticCurveTo(26,-8,24,60);
+    ctx.quadraticCurveTo(10,94,-16,92);
+    ctx.quadraticCurveTo(-28,34,-12,-18);
+    ctx.closePath();
+    ctx.fillStyle=fore;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.2;
+    ctx.stroke();
+
+    const gauntlet=ctx.createLinearGradient(-18,40,24,120);
+    gauntlet.addColorStop(0,palette.metalDark);
+    gauntlet.addColorStop(1,palette.metalMid);
+    ctx.beginPath();
+    ctx.moveTo(-16,42);
+    ctx.lineTo(18,42);
+    ctx.quadraticCurveTo(24,74,0,90);
+    ctx.quadraticCurveTo(-22,74,-16,42);
+    ctx.closePath();
+    ctx.fillStyle=gauntlet;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.2;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=palette.accent;
+    ctx.lineWidth=1.8;
+    ctx.beginPath();
+    ctx.moveTo(-4,10);
+    ctx.lineTo(6,60);
+    ctx.stroke();
+    ctx.restore();
+
+    // sword
+    ctx.save();
+    ctx.translate(0,84);
+    ctx.rotate(-Math.PI/2.5 + swing*0.4);
+    const blade=ctx.createLinearGradient(-20,-40,220,60);
+    blade.addColorStop(0, flash ? 'rgba(255,242,234,0.95)' : 'rgba(70,74,104,0.96)');
+    blade.addColorStop(0.4, flash ? 'rgba(255,226,210,0.92)' : 'rgba(150,30,28,0.94)');
+    blade.addColorStop(0.75, flash ? 'rgba(240,210,198,0.88)' : 'rgba(255,110,40,0.88)');
+    blade.addColorStop(1, flash ? 'rgba(230,206,198,0.86)' : 'rgba(80,20,16,0.8)');
+    ctx.beginPath();
+    ctx.moveTo(-14,-12);
+    ctx.lineTo(156,-50);
     ctx.lineTo(220,0);
-    ctx.lineTo(148,46);
-    ctx.lineTo(-18,14);
+    ctx.lineTo(156,50);
+    ctx.lineTo(-14,12);
     ctx.closePath();
-    ctx.fillStyle=bladeGrad;
+    ctx.fillStyle=blade;
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.85)':'rgba(255,150,90,0.78)';
-    ctx.lineWidth=3;
+    ctx.strokeStyle=flash ? 'rgba(255,255,255,0.85)' : 'rgba(255,150,90,0.78)';
+    ctx.lineWidth=2.6;
     ctx.stroke();
 
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=flash?'rgba(255,240,220,0.82)':'rgba(255,140,50,0.75)';
-    ctx.lineWidth=1.6;
+    ctx.strokeStyle=flash ? 'rgba(255,230,210,0.85)' : 'rgba(255,120,60,0.7)';
+    ctx.lineWidth=1.4;
     ctx.beginPath();
-    ctx.moveTo(16,-6);
-    ctx.lineTo(160,-30);
+    ctx.moveTo(10,-6);
+    ctx.lineTo(142,-30);
+    ctx.moveTo(10,6);
+    ctx.lineTo(142,30);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(16,6);
-    ctx.lineTo(160,30);
-    ctx.stroke();
+
+    ctx.strokeStyle=flash ? 'rgba(255,220,200,0.7)' : 'rgba(255,90,40,0.58)';
     ctx.lineWidth=1.2;
-    ctx.strokeStyle=flash?'rgba(255,240,220,0.68)':'rgba(255,90,40,0.62)';
     for(let i=0;i<5;i++){
       const t=i/4;
-      const ex=40 + t*120;
-      const jitter=Math.sin(now/120 + i*0.8)*6;
+      const rx=26 + t*110;
+      const jitter=Math.sin(now/140 + i*0.9)*4;
       ctx.beginPath();
-      ctx.moveTo(ex,-12-jitter*0.2);
-      ctx.lineTo(ex+18,-2-jitter*0.1);
-      ctx.lineTo(ex+4,10+jitter*0.3);
+      ctx.moveTo(rx,-10-jitter*0.2);
+      ctx.lineTo(rx+16,-2-jitter*0.1);
+      ctx.lineTo(rx+4,10+jitter*0.3);
       ctx.stroke();
     }
     ctx.restore();
 
-    const runeColor=flash?'rgba(255,240,220,0.92)':'rgba(255,190,100,0.88)';
+    const runeColor=flash ? 'rgba(255,240,210,0.92)' : 'rgba(255,190,100,0.88)';
     for(let i=0;i<5;i++){
       const t=i/4;
       const rx=-2 + t*140;
-      const ry=-10 + Math.sin(now/260 + i)*3;
+      const ry=-10 + Math.sin(now/220 + i)*3;
       ctx.save();
       ctx.translate(rx, ry);
       ctx.rotate(0.12 - t*0.12);
@@ -3206,83 +3080,173 @@ select optgroup { color: #0b1022; }
       ctx.restore();
     }
 
+    const guard=ctx.createLinearGradient(-50,10,50,70);
+    guard.addColorStop(0,palette.metalDark);
+    guard.addColorStop(1,palette.metalMid);
+    ctx.beginPath();
+    ctx.moveTo(-46,14);
+    ctx.quadraticCurveTo(0,-4,46,14);
+    ctx.lineTo(36,42);
+    ctx.quadraticCurveTo(0,32,-36,42);
+    ctx.closePath();
+    ctx.fillStyle=guard;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2;
+    ctx.stroke();
+
+    const handle=ctx.createLinearGradient(0,30,0,98);
+    handle.addColorStop(0,palette.metalDark);
+    handle.addColorStop(1,'rgba(28,18,26,0.92)');
+    ctx.fillStyle=handle;
+    ctx.fillRect(-10,32,20,64);
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2;
+    ctx.strokeRect(-10,32,20,64);
+
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=flash?'rgba(255,230,200,0.6)':'rgba(255,100,40,0.48)';
-    ctx.lineWidth=3.6;
+    ctx.strokeStyle=palette.accent;
+    ctx.lineWidth=1.6;
     ctx.beginPath();
-    ctx.moveTo(-4,0);
-    ctx.lineTo(172,0);
+    ctx.moveTo(-10,52);
+    ctx.lineTo(10,52);
+    ctx.moveTo(-10,78);
+    ctx.lineTo(10,78);
     ctx.stroke();
     ctx.restore();
 
-    const guardGrad=ctx.createLinearGradient(-50,20,50,80);
-    guardGrad.addColorStop(0, flash?'rgba(255,244,244,0.95)':'rgba(90,50,60,0.95)');
-    guardGrad.addColorStop(1, flash?'rgba(230,220,220,0.92)':'rgba(36,20,28,0.9)');
     ctx.beginPath();
-    ctx.moveTo(-48,18);
-    ctx.quadraticCurveTo(0,-2,48,18);
-    ctx.lineTo(36,52);
-    ctx.quadraticCurveTo(0,40,-36,52);
-    ctx.closePath();
-    ctx.fillStyle=guardGrad;
+    ctx.arc(0,110,12,0,Math.PI*2);
+    const pommel=ctx.createLinearGradient(-12,96,12,124);
+    pommel.addColorStop(0,palette.metalDark);
+    pommel.addColorStop(1,palette.metalMid);
+    ctx.fillStyle=pommel;
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2;
+    ctx.stroke();
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=palette.accent;
+    ctx.beginPath();
+    ctx.arc(0,110,5,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+    ctx.restore();
+
+    ctx.restore();
+    ctx.restore();
+    ctx.restore();
+
+    // chest core glow
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.translate(0,24);
+    const core=ctx.createRadialGradient(0,0,4,0,0,30);
+    core.addColorStop(0,palette.glowCore);
+    core.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=core;
+    ctx.beginPath();
+    ctx.arc(0,0,24,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // helmet and horns
+    ctx.save();
+    ctx.translate(0,-60);
+    const helm=ctx.createLinearGradient(-36,-70,36,70);
+    helm.addColorStop(0,palette.metalMid);
+    helm.addColorStop(1,palette.metalDark);
+    ctx.beginPath();
+    ctx.moveTo(-34,26);
+    ctx.quadraticCurveTo(-52,-28,-18,-74);
+    ctx.quadraticCurveTo(0,-88,18,-74);
+    ctx.quadraticCurveTo(52,-28,34,26);
+    ctx.quadraticCurveTo(0,58,-34,26);
+    ctx.closePath();
+    ctx.fillStyle=helm;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
     ctx.lineWidth=2.6;
     ctx.stroke();
 
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=palette.accentRune;
-    ctx.lineWidth=2;
+    const visor=ctx.createLinearGradient(-28,-20,28,40);
+    visor.addColorStop(0,palette.visor);
+    visor.addColorStop(1,'rgba(0,0,0,0.85)');
     ctx.beginPath();
-    ctx.moveTo(-30,26);
-    ctx.quadraticCurveTo(0,10,30,26);
-    ctx.stroke();
-    ctx.restore();
-
-    const handleGrad=ctx.createLinearGradient(0,32,0,120);
-    handleGrad.addColorStop(0, flash?'rgba(255,244,244,0.94)':'rgba(40,20,28,0.94)');
-    handleGrad.addColorStop(1, flash?'rgba(230,220,220,0.9)':'rgba(18,12,18,0.9)');
-    ctx.fillStyle=handleGrad;
-    ctx.fillRect(-12,44,24,74);
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
-    ctx.lineWidth=2.2;
-    ctx.strokeRect(-12,44,24,74);
-
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=palette.accentRune;
-    ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.moveTo(-12,72);
-    ctx.lineTo(12,72);
-    ctx.moveTo(-12,96);
-    ctx.lineTo(12,96);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.beginPath();
-    ctx.arc(0,132,14,0,Math.PI*2);
-    const pommelGrad=ctx.createLinearGradient(-14,118,14,140);
-    pommelGrad.addColorStop(0, flash?'rgba(255,244,244,0.95)':'rgba(90,50,60,0.95)');
-    pommelGrad.addColorStop(1, flash?'rgba(230,220,220,0.9)':'rgba(30,20,26,0.9)');
-    ctx.fillStyle=pommelGrad;
+    ctx.moveTo(-24,-4);
+    ctx.quadraticCurveTo(0,-32,24,-4);
+    ctx.quadraticCurveTo(16,22,0,28);
+    ctx.quadraticCurveTo(-16,22,-24,-4);
+    ctx.closePath();
+    ctx.fillStyle=visor;
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
-    ctx.lineWidth=2.4;
-    ctx.stroke();
+
+    ctx.fillStyle=palette.eye;
+    ctx.beginPath();
+    ctx.ellipse(-10,-2,6,8,0,0,Math.PI*2);
+    ctx.ellipse(10,-2,6,8,0,0,Math.PI*2);
+    ctx.fill();
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.fillStyle=palette.accentRune;
+    ctx.fillStyle=flash ? 'rgba(255,240,220,0.6)' : 'rgba(255,60,40,0.6)';
     ctx.beginPath();
-    ctx.arc(0,132,6,0,Math.PI*2);
+    ctx.ellipse(-10,-2,12,12,0,0,Math.PI*2);
+    ctx.ellipse(10,-2,12,12,0,0,Math.PI*2);
     ctx.fill();
     ctx.restore();
+
+    ctx.beginPath();
+    ctx.moveTo(-12,18);
+    ctx.quadraticCurveTo(0,6,12,18);
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=1.6;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.fillStyle=flash ? 'rgba(255,236,226,0.88)' : 'rgba(120,60,40,0.88)';
+    ctx.beginPath();
+    ctx.moveTo(-10,-44);
+    ctx.lineTo(0,-70);
+    ctx.lineTo(10,-44);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      ctx.beginPath();
+      ctx.moveTo(12,-20);
+      ctx.bezierCurveTo(42,-88,12,-134,-6,-156);
+      ctx.bezierCurveTo(-28,-170,-34,-136,-24,-110);
+      ctx.bezierCurveTo(-12,-80,2,-34,12,-20);
+      ctx.closePath();
+      const hornGrad=ctx.createLinearGradient(8,-20,8,-150);
+      hornGrad.addColorStop(0,palette.horn);
+      hornGrad.addColorStop(1,flash ? 'rgba(255,248,248,0.92)' : 'rgba(80,78,104,0.88)');
+      ctx.fillStyle=hornGrad;
+      ctx.fill();
+      ctx.strokeStyle=palette.metalEdge;
+      ctx.lineWidth=2.4;
+      ctx.stroke();
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle=palette.accent;
+      ctx.lineWidth=1.4;
+      ctx.beginPath();
+      ctx.moveTo(10,-60);
+      ctx.lineTo(6,-120);
+      ctx.stroke();
+      ctx.restore();
+      ctx.restore();
+    }
     ctx.restore();
 
     ctx.restore();
   }
+
 
   function drawDemonAfterimages(now){
     if(!demonAfterimages.length) return;
@@ -3345,8 +3309,8 @@ select optgroup { color: #0b1022; }
       x:cx,
       y:baseY,
       baseY,
-      w:220,
-      h:220,
+      w:150,
+      h:150,
       hp:90,
       maxHp:90,
       hoverPhase:0,
