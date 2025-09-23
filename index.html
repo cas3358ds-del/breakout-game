@@ -2466,11 +2466,11 @@ select optgroup { color: #0b1022; }
     const cx=shell? shell.x + shell.w/2 : 1100/2;
     const cy=shell? shell.y + shell.h/2 : layout().top;
     demonEventMarquee={
-      text:'跪伏於我的力量之下吧！',
+      text:'跪伏於我的力量之下吧!',
       start:now,
       fadeStart:now+5000,
       end:now+8000,
-      mode:'banner'
+      mode:'entryMarquee'
     };
     demonEventWave={x:cx, y:cy, start:now, duration:2000, maxRadius:Math.hypot(1100,700)};
     demonEventShakeUntil = now + 7000;
@@ -2547,110 +2547,93 @@ select optgroup { color: #0b1022; }
     if(level!==20 || !demonEventMarquee) return;
     const evt=demonEventMarquee;
     if(now<evt.start) return;
-    const duration=Math.max(1, evt.end-evt.fadeStart);
-    const alpha = now<evt.fadeStart ? 1 : Math.max(0, 1 - (now-evt.fadeStart)/duration);
+    const fadeStart = evt.fadeStart!=null ? evt.fadeStart : evt.end;
+    const duration=Math.max(1, evt.end-fadeStart);
+    const alpha = now<fadeStart ? 1 : Math.max(0, 1 - (now-fadeStart)/duration);
     if(alpha<=0) return;
     const L=layout();
     const scaleAvg=(scaleX+scaleY)/2;
-    if(evt.mode==='banner'){
-      const barHeight = 96*scaleAvg;
-      const barWidth = canvas.width*0.86;
-      const barX = (canvas.width-barWidth)/2;
-      const barY = Math.max(12, L.top*scaleY - barHeight - 24);
-      ctx.save();
-      ctx.globalAlpha=alpha;
-      const bgGrad=ctx.createLinearGradient(barX, barY, barX, barY+barHeight);
-      bgGrad.addColorStop(0,'rgba(26,10,26,0.92)');
-      bgGrad.addColorStop(0.45,'rgba(48,12,28,0.92)');
-      bgGrad.addColorStop(1,'rgba(16,6,18,0.92)');
-      ctx.fillStyle=bgGrad;
-      ctx.fillRect(barX, barY, barWidth, barHeight);
+    const baselineY = Math.max(16, L.top*scaleY - 56*scaleAvg);
 
-      ctx.strokeStyle='rgba(255,80,110,0.85)';
-      ctx.lineWidth=6*scaleAvg;
-      ctx.strokeRect(barX+4*scaleAvg, barY+4*scaleAvg, barWidth-8*scaleAvg, barHeight-8*scaleAvg);
-      ctx.strokeStyle='rgba(255,180,200,0.35)';
-      ctx.lineWidth=2.4*scaleAvg;
-      ctx.strokeRect(barX+12*scaleAvg, barY+12*scaleAvg, barWidth-24*scaleAvg, barHeight-24*scaleAvg);
+    ctx.save();
+    ctx.globalAlpha*=alpha;
 
-      const stripeHeight = 12*scaleAvg;
-      ctx.fillStyle='rgba(255,60,90,0.18)';
-      ctx.fillRect(barX, barY+stripeHeight, barWidth, stripeHeight);
-      ctx.fillRect(barX, barY+barHeight-stripeHeight*2, barWidth, stripeHeight);
-
-      const fontSize = Math.round(52*scaleAvg);
-      ctx.font=`${fontSize}px 'Noto Serif TC','Noto Sans TC',sans-serif`;
+    if(evt.mode==='entryMarquee'){
+      const fontSize = Math.round(32*scaleAvg);
+      ctx.font=`${fontSize}px 'Playfair Display','Noto Sans TC',sans-serif`;
       ctx.textBaseline='middle';
-      ctx.fillStyle='rgba(255,230,240,0.95)';
-      ctx.shadowColor='rgba(255,60,90,0.55)';
-      ctx.shadowBlur=32*scaleAvg;
-
-      const textMetrics = ctx.measureText(evt.text);
-      const measuredWidth = textMetrics.width || (fontSize * evt.text.length);
-      const spacing = measuredWidth + fontSize*0.8;
-      const offset = ((now-evt.start)*0.28*scaleAvg) % spacing;
-      const textY = barY + barHeight/2;
+      ctx.textAlign='center';
+      const textWidth = ctx.measureText(evt.text).width;
+      const travel = canvas.width + textWidth + 120*scaleAvg;
+      const progress = Math.min(1, Math.max(0, (now-evt.start)/5000));
+      const centerY = baselineY;
+      const textX = canvas.width + textWidth/2 - travel*progress;
+      const trackWidth = Math.min(canvas.width*0.84, textWidth + 360*scaleAvg);
+      const trackX = (canvas.width-trackWidth)/2;
 
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(barX, barY, barWidth, barHeight);
-      ctx.clip();
-      const startX = barX - spacing;
-      for(let x=startX; x<barX+barWidth+spacing; x+=spacing){
-        ctx.fillText(evt.text, x - offset, textY);
-      }
+      ctx.globalAlpha*=0.55;
+      const ribbon=ctx.createLinearGradient(trackX, centerY, trackX+trackWidth, centerY);
+      ribbon.addColorStop(0,'rgba(110,70,180,0.25)');
+      ribbon.addColorStop(0.5,'rgba(210,160,255,0.35)');
+      ribbon.addColorStop(1,'rgba(110,70,180,0.25)');
+      ctx.fillStyle=ribbon;
+      ctx.fillRect(trackX, centerY-fontSize*0.42, trackWidth, fontSize*0.84);
       ctx.restore();
+
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle='rgba(210,160,255,0.55)';
+      ctx.lineWidth=1.6*scaleAvg;
+      ctx.beginPath();
+      ctx.moveTo(trackX, centerY-fontSize*0.48);
+      ctx.lineTo(trackX+trackWidth, centerY-fontSize*0.48);
+      ctx.moveTo(trackX, centerY+fontSize*0.48);
+      ctx.lineTo(trackX+trackWidth, centerY+fontSize*0.48);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle='rgba(255,236,250,0.96)';
+      ctx.shadowColor='rgba(200,150,255,0.55)';
+      ctx.shadowBlur=22*scaleAvg;
+      const spacing = textWidth + fontSize*1.8;
+      for(let offset=-spacing; offset<=spacing; offset+=spacing){
+        const drawX = textX + offset;
+        if(drawX + textWidth/2 < trackX-40*scaleAvg || drawX - textWidth/2 > trackX+trackWidth+40*scaleAvg) continue;
+        ctx.fillText(evt.text, drawX, centerY);
+      }
       ctx.shadowBlur=0;
 
-      ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle='rgba(255,90,120,0.4)';
-      ctx.lineWidth=3*scaleAvg;
-      ctx.beginPath();
-      ctx.moveTo(barX+18*scaleAvg, barY+barHeight*0.25);
-      ctx.lineTo(barX+barWidth-18*scaleAvg, barY+barHeight*0.25);
-      ctx.moveTo(barX+18*scaleAvg, barY+barHeight*0.75);
-      ctx.lineTo(barX+barWidth-18*scaleAvg, barY+barHeight*0.75);
-      ctx.stroke();
       ctx.restore();
       return;
     }
 
-    const barHeight = 48*scaleAvg;
-    const barWidth = canvas.width*0.7;
-    const barX = (canvas.width-barWidth)/2;
-    const barY = Math.max(12, L.top*scaleY - barHeight - 20);
-    ctx.save();
-    ctx.globalAlpha=alpha;
     const fontSize = Math.round(26*scaleAvg);
     ctx.font=`${fontSize}px 'Playfair Display','Noto Sans TC',sans-serif`;
-    const glowGrad=ctx.createLinearGradient(barX, barY, barX+barWidth, barY);
-    glowGrad.addColorStop(0,'rgba(255,240,255,0.85)');
-    glowGrad.addColorStop(0.5,'rgba(220,190,255,0.95)');
-    glowGrad.addColorStop(1,'rgba(255,240,255,0.85)');
-    ctx.fillStyle=glowGrad;
     ctx.textBaseline='middle';
+    ctx.textAlign='center';
     const textWidth=ctx.measureText(evt.text).width;
-    const travel=barWidth + textWidth + 40;
-    const t=Math.min(1, (now-evt.start)/5000);
-    const textX = barX + barWidth + 20 - travel*t;
-    const textY = barY + barHeight/2;
-    ctx.shadowColor='rgba(205,160,255,0.75)';
-    ctx.shadowBlur=24*scaleAvg;
-    ctx.fillText(evt.text, textX, textY);
+    const centerX = canvas.width/2;
+    const trackHalf = textWidth/2 + 70*scaleAvg;
+
+    ctx.save();
+    ctx.globalAlpha*=0.45;
+    ctx.strokeStyle='rgba(210,160,255,0.38)';
+    ctx.lineWidth=1.4*scaleAvg;
+    ctx.beginPath();
+    ctx.moveTo(centerX-trackHalf, baselineY-fontSize*0.46);
+    ctx.lineTo(centerX+trackHalf, baselineY-fontSize*0.46);
+    ctx.moveTo(centerX-trackHalf, baselineY+fontSize*0.46);
+    ctx.lineTo(centerX+trackHalf, baselineY+fontSize*0.46);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle='rgba(255,236,250,0.94)';
+    ctx.shadowColor='rgba(205,160,255,0.5)';
+    ctx.shadowBlur=18*scaleAvg;
+    ctx.fillText(evt.text, centerX, baselineY);
     ctx.shadowBlur=0;
-    ctx.lineWidth=2*scaleAvg;
-    ctx.strokeStyle='rgba(210,160,255,0.45)';
-    ctx.beginPath();
-    ctx.moveTo(barX, textY + fontSize*0.36);
-    ctx.lineTo(barX+barWidth, textY + fontSize*0.36);
-    ctx.stroke();
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle='rgba(255,230,255,0.25)';
-    ctx.lineWidth=1.2*scaleAvg;
-    ctx.beginPath();
-    ctx.moveTo(barX, textY - fontSize*0.42);
-    ctx.lineTo(barX+barWidth, textY - fontSize*0.42);
-    ctx.stroke();
+
     ctx.restore();
   }
 
@@ -2686,9 +2669,9 @@ select optgroup { color: #0b1022; }
       hornEdge: flash ? 'rgba(255,244,236,0.88)' : 'rgba(140,126,92,0.75)',
       visor: flash ? 'rgba(42,36,50,0.92)' : 'rgba(8,8,12,0.92)',
       eye: flash ? 'rgba(255,120,120,0.95)' : 'rgba(255,43,43,0.96)',
-      wingBone: flash ? 'rgba(230,228,240,0.92)' : 'rgba(34,34,40,0.95)',
-      wingMembrane: flash ? 'rgba(255,176,176,0.78)' : 'rgba(140,20,28,0.78)',
-      wingFade: flash ? 'rgba(255,210,210,0.55)' : 'rgba(30,4,8,0.65)',
+      wingBone: flash ? 'rgba(240,234,244,0.9)' : 'rgba(118,52,56,0.95)',
+      wingMembrane: flash ? 'rgba(255,186,186,0.78)' : 'rgba(96,8,18,0.82)',
+      wingFade: flash ? 'rgba(255,210,210,0.6)' : 'rgba(26,6,10,0.7)',
       cloth: flash ? 'rgba(216,96,112,0.86)' : 'rgba(123,15,23,0.88)',
       clothDeep: flash ? 'rgba(180,60,76,0.82)' : 'rgba(68,6,10,0.85)',
       clothHighlight: flash ? 'rgba(255,170,180,0.9)' : 'rgba(168,24,32,0.9)',
@@ -2722,62 +2705,72 @@ select optgroup { color: #0b1022; }
     ctx.restore();
 
     // demon wings
-    const wingLift = Math.sin(now/320 + hoverPhase)*18;
-    const wingSpread = 1.18 + 0.12*Math.sin(now/300 + cloakPhase);
+    const wingLift = Math.sin(now/320 + hoverPhase)*14;
+    const wingStretch = 1.14 + 0.1*Math.sin(now/360 + cloakPhase*0.8);
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.translate(-12,-10);
-      ctx.scale(wingSpread,1);
+      ctx.translate(-18,-16 + wingLift*0.25);
+      ctx.scale(wingStretch,1);
 
-      const wingGrad=ctx.createLinearGradient(24,-140,260,240);
-      wingGrad.addColorStop(0,'rgba(24,24,32,0.98)');
-      wingGrad.addColorStop(0.35,palette.wingMembrane);
+      const wingGrad=ctx.createLinearGradient(32,-150,312,230);
+      wingGrad.addColorStop(0,'rgba(40,8,12,0.92)');
+      wingGrad.addColorStop(0.4,palette.wingMembrane);
       wingGrad.addColorStop(1,palette.wingFade);
 
       ctx.beginPath();
-      ctx.moveTo(24,8);
-      ctx.bezierCurveTo(120,-148-wingLift,252,-72-wingLift*0.6,286,62);
-      ctx.quadraticCurveTo(302,160,230,230);
-      ctx.quadraticCurveTo(148,272,64,226);
-      ctx.lineTo(22,38);
+      ctx.moveTo(32,12);
+      ctx.quadraticCurveTo(138,-78-wingLift,240,-16-wingLift*0.55);
+      ctx.quadraticCurveTo(302,46,312,124);
+      ctx.quadraticCurveTo(228,182,156,204);
+      ctx.quadraticCurveTo(88,206,34,146);
       ctx.closePath();
       ctx.fillStyle=wingGrad;
       ctx.fill();
+      ctx.strokeStyle='rgba(54,12,18,0.75)';
+      ctx.lineWidth=3.2;
+      ctx.stroke();
+
+      const joints=[
+        {x:32,y:12},
+        {x:158,y:-56-wingLift*0.6},
+        {x:248,y:6-wingLift*0.35},
+        {x:304,y:124}
+      ];
+
       ctx.strokeStyle=palette.wingBone;
-      ctx.lineWidth=6.2;
+      ctx.lineCap='round';
+      ctx.lineJoin='round';
+      ctx.lineWidth=8;
+      ctx.beginPath();
+      ctx.moveTo(joints[0].x,joints[0].y);
+      for(let i=1;i<joints.length;i++){
+        ctx.lineTo(joints[i].x,joints[i].y);
+      }
       ctx.stroke();
 
-      // wing bone structure
-      ctx.save();
-      ctx.strokeStyle=flash ? 'rgba(255,210,190,0.58)' : 'rgba(255,86,86,0.42)';
-      ctx.lineWidth=4.2;
+      ctx.lineWidth=6;
       ctx.beginPath();
-      ctx.moveTo(32,26);
-      ctx.quadraticCurveTo(156,-60-wingLift*0.35,210,48);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(36,44);
-      ctx.quadraticCurveTo(164,-2-wingLift*0.2,228,122);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(40,64);
-      ctx.quadraticCurveTo(162,48-wingLift*0.14,190,198);
+      ctx.moveTo(joints[0].x,joints[0].y);
+      ctx.lineTo(214,156);
+      ctx.moveTo(joints[1].x,joints[1].y);
+      ctx.lineTo(246,168);
+      ctx.moveTo(joints[2].x,joints[2].y);
+      ctx.lineTo(182,192);
       ctx.stroke();
 
       ctx.globalCompositeOperation='lighter';
-      ctx.lineWidth=2.6;
-      ctx.strokeStyle=flash ? 'rgba(255,230,210,0.5)' : 'rgba(255,120,120,0.36)';
-      for(let i=0;i<3;i++){
-        const t=i/2.5;
-        ctx.beginPath();
-        ctx.moveTo(42,60 + i*22);
-        ctx.quadraticCurveTo(148 + t*36,110 + wingLift*0.05 - i*10,208,200 - i*14);
-        ctx.stroke();
-      }
-      ctx.restore();
+      ctx.lineWidth=3;
+      ctx.strokeStyle=flash ? 'rgba(255,220,210,0.48)' : 'rgba(162,32,44,0.42)';
+      ctx.beginPath();
+      ctx.moveTo(34,18);
+      ctx.quadraticCurveTo(140,-70-wingLift*0.7,234,-22-wingLift*0.45);
+      ctx.quadraticCurveTo(296,42,300,118);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(46,120);
+      ctx.quadraticCurveTo(122,188,182,200);
+      ctx.stroke();
 
       ctx.restore();
     }
@@ -2789,15 +2782,16 @@ select optgroup { color: #0b1022; }
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
+      ctx.translate(34,0);
       const thigh=ctx.createLinearGradient(28,-96,96,212);
       thigh.addColorStop(0,palette.metalMid);
       thigh.addColorStop(0.55,palette.metalDark);
       thigh.addColorStop(1,'rgba(18,18,26,0.94)');
       ctx.beginPath();
-      ctx.moveTo(26,-92);
-      ctx.quadraticCurveTo(96,-48-legPulse*4,86,84);
-      ctx.quadraticCurveTo(48,212,-8,182);
-      ctx.quadraticCurveTo(-2,34,26,-92);
+      ctx.moveTo(32,-96);
+      ctx.quadraticCurveTo(110,-54-legPulse*4,98,86);
+      ctx.quadraticCurveTo(58,220,-4,188);
+      ctx.quadraticCurveTo(4,38,32,-96);
       ctx.closePath();
       ctx.fillStyle=thigh;
       ctx.fill();
@@ -2806,15 +2800,15 @@ select optgroup { color: #0b1022; }
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(32,-32);
-      ctx.quadraticCurveTo(74,-4,54,84);
+      ctx.moveTo(34,-36);
+      ctx.quadraticCurveTo(82,-6,60,90);
       ctx.strokeStyle=flash ? 'rgba(255,216,200,0.58)' : 'rgba(255,90,90,0.42)';
       ctx.lineWidth=2.4;
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(30,32);
-      ctx.quadraticCurveTo(62,86,28,160);
+      ctx.moveTo(32,28);
+      ctx.quadraticCurveTo(70,92,34,166);
       ctx.strokeStyle='rgba(255,214,150,'+(flash?0.55:0.34)+')';
       ctx.lineWidth=2.1;
       ctx.stroke();
@@ -2823,9 +2817,9 @@ select optgroup { color: #0b1022; }
       kneeGuard.addColorStop(0,palette.metalDark);
       kneeGuard.addColorStop(1,palette.metalMid);
       ctx.beginPath();
-      ctx.moveTo(24,24);
-      ctx.quadraticCurveTo(84,68,72,116);
-      ctx.quadraticCurveTo(40,136,12,116);
+      ctx.moveTo(28,20);
+      ctx.quadraticCurveTo(94,68,80,122);
+      ctx.quadraticCurveTo(42,144,16,122);
       ctx.closePath();
       ctx.fillStyle=kneeGuard;
       ctx.fill();
@@ -2838,10 +2832,10 @@ select optgroup { color: #0b1022; }
       greave.addColorStop(0.5,'rgba(22,22,30,0.94)');
       greave.addColorStop(1,'rgba(10,10,16,0.92)');
       ctx.beginPath();
-      ctx.moveTo(22,86);
-      ctx.quadraticCurveTo(102,154,74,226);
-      ctx.quadraticCurveTo(34,256,2,214);
-      ctx.quadraticCurveTo(0,164,22,86);
+      ctx.moveTo(26,90);
+      ctx.quadraticCurveTo(118,158,84,234);
+      ctx.quadraticCurveTo(38,268,6,220);
+      ctx.quadraticCurveTo(6,170,26,90);
       ctx.closePath();
       ctx.fillStyle=greave;
       ctx.fill();
@@ -2850,17 +2844,33 @@ select optgroup { color: #0b1022; }
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(24,122);
-      ctx.quadraticCurveTo(72,174,36,228);
+      ctx.moveTo(28,128);
+      ctx.quadraticCurveTo(80,182,42,236);
       ctx.strokeStyle=flash ? 'rgba(255,220,206,0.54)' : 'rgba(255,96,96,0.38)';
       ctx.lineWidth=2.2;
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(12,184);
-      ctx.quadraticCurveTo(54,190,10,214);
+      ctx.moveTo(14,188);
+      ctx.quadraticCurveTo(60,194,16,222);
       ctx.strokeStyle='rgba(255,214,150,'+(flash?0.55:0.34)+')';
       ctx.lineWidth=2;
+      ctx.stroke();
+
+      const shoe=ctx.createLinearGradient(-24,200,56,250);
+      shoe.addColorStop(0,'rgba(32,28,42,0.96)');
+      shoe.addColorStop(0.55,'rgba(58,48,64,0.9)');
+      shoe.addColorStop(1,'rgba(18,16,26,0.94)');
+      ctx.beginPath();
+      ctx.moveTo(-6,208);
+      ctx.quadraticCurveTo(52,206,72,224);
+      ctx.quadraticCurveTo(30,248,-16,236);
+      ctx.quadraticCurveTo(-12,220,-6,208);
+      ctx.closePath();
+      ctx.fillStyle=shoe;
+      ctx.fill();
+      ctx.strokeStyle='rgba(170,168,198,0.58)';
+      ctx.lineWidth=2.2;
       ctx.stroke();
 
       ctx.restore();
@@ -2964,16 +2974,16 @@ select optgroup { color: #0b1022; }
     // torso armour
     ctx.save();
     ctx.translate(0,-18);
-    const torsoOuter=ctx.createLinearGradient(-84,-188,84,136);
+    const torsoOuter=ctx.createLinearGradient(-92,-204,92,148);
     torsoOuter.addColorStop(0,palette.metalMid);
-    torsoOuter.addColorStop(0.58,palette.metalDark);
+    torsoOuter.addColorStop(0.52,palette.metalDark);
     torsoOuter.addColorStop(1,'rgba(26,24,34,0.94)');
     ctx.beginPath();
-    ctx.moveTo(-88,-40);
-    ctx.lineTo(-54,-164);
-    ctx.quadraticCurveTo(0,-232,54,-164);
-    ctx.lineTo(88,-40);
-    ctx.quadraticCurveTo(0,108,-88,-40);
+    ctx.moveTo(-98,-48);
+    ctx.lineTo(-62,-182);
+    ctx.quadraticCurveTo(0,-252,62,-182);
+    ctx.lineTo(98,-48);
+    ctx.quadraticCurveTo(0,128,-98,-48);
     ctx.closePath();
     ctx.fillStyle=torsoOuter;
     ctx.fill();
@@ -2981,15 +2991,16 @@ select optgroup { color: #0b1022; }
     ctx.lineWidth=3.4;
     ctx.stroke();
 
-    const chestPlate=ctx.createLinearGradient(-64,-148,64,68);
+    const chestPlate=ctx.createLinearGradient(-72,-168,72,84);
     chestPlate.addColorStop(0,palette.metalDark);
-    chestPlate.addColorStop(1,palette.metalMid);
+    chestPlate.addColorStop(0.6,palette.metalMid);
+    chestPlate.addColorStop(1,'rgba(44,42,56,0.94)');
     ctx.beginPath();
-    ctx.moveTo(-64,-18);
-    ctx.lineTo(-36,-128);
-    ctx.quadraticCurveTo(0,-192,36,-128);
-    ctx.lineTo(64,-18);
-    ctx.quadraticCurveTo(0,74,-64,-18);
+    ctx.moveTo(-74,-12);
+    ctx.lineTo(-42,-138);
+    ctx.quadraticCurveTo(0,-208,42,-138);
+    ctx.lineTo(74,-12);
+    ctx.quadraticCurveTo(0,92,-74,-12);
     ctx.closePath();
     ctx.fillStyle=chestPlate;
     ctx.fill();
@@ -2997,17 +3008,42 @@ select optgroup { color: #0b1022; }
     ctx.lineWidth=2.8;
     ctx.stroke();
 
+    const filigree=ctx.createLinearGradient(-60,-120,60,48);
+    filigree.addColorStop(0,palette.accent);
+    filigree.addColorStop(1,palette.accentGlow);
+    ctx.beginPath();
+    ctx.moveTo(-60,-28);
+    ctx.quadraticCurveTo(0,-114,60,-28);
+    ctx.lineTo(48,48);
+    ctx.quadraticCurveTo(0,78,-48,48);
+    ctx.closePath();
+    ctx.strokeStyle='rgba(255,214,150,'+(flash?0.68:0.45)+')';
+    ctx.lineWidth=2.4;
+    ctx.stroke();
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=`rgba(255,188,120,${flash?0.32:0.22})`;
+    ctx.beginPath();
+    ctx.moveTo(-32,-40);
+    ctx.quadraticCurveTo(0,-92,32,-40);
+    ctx.lineTo(22,24);
+    ctx.quadraticCurveTo(0,42,-22,24);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
     // sculpted pectoral plates
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      const pectoral=ctx.createLinearGradient(-36,-112,36,24);
+      const pectoral=ctx.createLinearGradient(-42,-128,38,38);
       pectoral.addColorStop(0,palette.metalDark);
-      pectoral.addColorStop(1,palette.metalMid);
+      pectoral.addColorStop(0.6,palette.metalMid);
+      pectoral.addColorStop(1,'rgba(54,52,66,0.9)');
       ctx.beginPath();
-      ctx.moveTo(-48,-32);
-      ctx.quadraticCurveTo(-12,-108,-6,-36);
-      ctx.quadraticCurveTo(-16,36,-50,22);
+      ctx.moveTo(-56,-26);
+      ctx.quadraticCurveTo(-10,-126,-4,-48);
+      ctx.quadraticCurveTo(-20,52,-56,30);
       ctx.closePath();
       ctx.fillStyle=pectoral;
       ctx.fill();
@@ -3016,13 +3052,24 @@ select optgroup { color: #0b1022; }
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(-40,-12);
-      ctx.quadraticCurveTo(-8,-54,-4,12);
-      ctx.strokeStyle='rgba(255,214,150,'+(flash?0.6:0.36)+')';
-      ctx.lineWidth=1.8;
+      ctx.moveTo(-44,-6);
+      ctx.quadraticCurveTo(-10,-60,-2,18);
+      ctx.strokeStyle='rgba(255,214,150,'+(flash?0.64:0.38)+')';
+      ctx.lineWidth=2;
       ctx.stroke();
       ctx.restore();
     }
+
+    const crestJewel=ctx.createRadialGradient(0,-32,0,0,-32,32);
+    crestJewel.addColorStop(0,'rgba(255,188,120,'+(flash?0.9:0.7)+')');
+    crestJewel.addColorStop(1,'rgba(120,60,10,0)');
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=crestJewel;
+    ctx.beginPath();
+    ctx.ellipse(0,-32,18,26,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
 
     // layered abdominal plating
     const abdomen=ctx.createLinearGradient(-48,-52,48,86);
@@ -3124,25 +3171,22 @@ select optgroup { color: #0b1022; }
 
     // arms
     ctx.save();
-    ctx.translate(0,-30);
-    const armSpread = 72 + Math.sin(now/420 + motionPhase)*6;
-    const raisePhase = 0.5 + 0.5*Math.sin(now/360 + motionPhase + hoverPhase*0.2);
-    const armRotation = -0.36 + raisePhase*1.08;
-    const armLift = raisePhase*22;
+    ctx.translate(0,-28);
+    const armSpread = 68;
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.translate(armSpread, -12 - armLift);
-      ctx.rotate(armRotation);
+      ctx.translate(armSpread, -10);
+      ctx.rotate(0.12);
 
-      const coupler=ctx.createLinearGradient(-28,-18,40,32);
+      const coupler=ctx.createLinearGradient(-32,-32,32,40);
       coupler.addColorStop(0,palette.metalDark);
       coupler.addColorStop(1,palette.metalMid);
       ctx.beginPath();
-      ctx.moveTo(-28,-10);
-      ctx.lineTo(38,-26);
-      ctx.lineTo(40,18);
-      ctx.lineTo(-30,28);
+      ctx.moveTo(-32,-14);
+      ctx.quadraticCurveTo(0,-46,32,-14);
+      ctx.lineTo(26,22);
+      ctx.lineTo(-26,22);
       ctx.closePath();
       ctx.fillStyle=coupler;
       ctx.fill();
@@ -3150,14 +3194,14 @@ select optgroup { color: #0b1022; }
       ctx.lineWidth=2.2;
       ctx.stroke();
 
-      const upper=ctx.createLinearGradient(-28,-40,78,76);
+      const upper=ctx.createLinearGradient(-26,-52,54,156);
       upper.addColorStop(0,palette.metalMid);
       upper.addColorStop(1,palette.metalDark);
       ctx.beginPath();
-      ctx.moveTo(-30,-26);
-      ctx.lineTo(70,-44);
-      ctx.lineTo(82,36);
-      ctx.quadraticCurveTo(18,70,-26,48);
+      ctx.moveTo(-24,-24);
+      ctx.quadraticCurveTo(46,-42,54,72);
+      ctx.quadraticCurveTo(20,166,-18,148);
+      ctx.quadraticCurveTo(-40,58,-24,-24);
       ctx.closePath();
       ctx.fillStyle=upper;
       ctx.fill();
@@ -3166,25 +3210,24 @@ select optgroup { color: #0b1022; }
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(-10,-6);
-      ctx.quadraticCurveTo(32,-22,48,32);
+      ctx.moveTo(-10,0);
+      ctx.quadraticCurveTo(30,-18,40,86);
       ctx.strokeStyle=flash ? 'rgba(255,210,196,0.58)' : 'rgba(255,96,96,0.38)';
       ctx.lineWidth=2;
       ctx.stroke();
 
       ctx.save();
-      ctx.translate(80,6);
-      const foreSwing = 0.52 + 0.42*Math.sin(now/360 + motionPhase + side*0.3 + raisePhase*0.6);
-      ctx.rotate(foreSwing);
-      const fore=ctx.createLinearGradient(-24,-28,68,132);
+      ctx.translate(6,124);
+      ctx.rotate(0.18);
+      const fore=ctx.createLinearGradient(-22,-28,48,158);
       fore.addColorStop(0,palette.metalMid);
-      fore.addColorStop(0.6,palette.metalDark);
+      fore.addColorStop(0.65,palette.metalDark);
       fore.addColorStop(1,'rgba(26,24,32,0.96)');
       ctx.beginPath();
-      ctx.moveTo(-24,-22);
-      ctx.lineTo(62,-12);
-      ctx.lineTo(58,96);
-      ctx.quadraticCurveTo(4,132,-30,72);
+      ctx.moveTo(-18,-6);
+      ctx.quadraticCurveTo(42,-18,48,96);
+      ctx.quadraticCurveTo(20,168,-16,154);
+      ctx.quadraticCurveTo(-28,64,-18,-6);
       ctx.closePath();
       ctx.fillStyle=fore;
       ctx.fill();
@@ -3193,20 +3236,20 @@ select optgroup { color: #0b1022; }
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(-6,18);
-      ctx.quadraticCurveTo(44,10,28,80);
+      ctx.moveTo(-6,24);
+      ctx.quadraticCurveTo(40,18,26,96);
       ctx.strokeStyle='rgba(255,214,150,'+(flash?0.54:0.34)+')';
       ctx.lineWidth=1.9;
       ctx.stroke();
 
-      const gauntlet=ctx.createLinearGradient(12,18,72,102);
+      const gauntlet=ctx.createLinearGradient(-16,72,48,132);
       gauntlet.addColorStop(0,palette.metalDark);
       gauntlet.addColorStop(1,'rgba(30,26,36,0.94)');
       ctx.beginPath();
-      ctx.moveTo(18,24);
-      ctx.lineTo(72,36);
-      ctx.lineTo(70,86);
-      ctx.quadraticCurveTo(20,102,0,70);
+      ctx.moveTo(-18,74);
+      ctx.quadraticCurveTo(42,58,44,98);
+      ctx.lineTo(38,134);
+      ctx.quadraticCurveTo(-6,150,-26,116);
       ctx.closePath();
       ctx.fillStyle=gauntlet;
       ctx.fill();
@@ -3215,27 +3258,26 @@ select optgroup { color: #0b1022; }
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(58,48);
-      ctx.lineTo(68,70);
-      ctx.lineTo(52,74);
+      ctx.moveTo(32,96);
+      ctx.lineTo(18,118);
+      ctx.lineTo(42,122);
       ctx.strokeStyle=palette.accentGlow;
       ctx.lineWidth=1.8;
       ctx.stroke();
 
-      // infernal greatsword with adjustable raise
       ctx.save();
-      ctx.translate(64,72);
-      const swordRaise = 0.96 + 0.72*raisePhase + 0.14*Math.sin(now/380 + motionPhase + side);
-      ctx.rotate(swordRaise);
-      const blade=ctx.createLinearGradient(0,-16,0,206);
-      blade.addColorStop(0,'rgba(238,240,248,0.95)');
-      blade.addColorStop(0.45,'rgba(204,206,220,0.92)');
-      blade.addColorStop(1,'rgba(122,126,150,0.9)');
+      ctx.translate(48,100);
+      ctx.rotate(-0.16);
+      const blade=ctx.createLinearGradient(0,-14,218,14);
+      blade.addColorStop(0,'rgba(238,240,248,0.96)');
+      blade.addColorStop(0.45,'rgba(206,208,222,0.92)');
+      blade.addColorStop(1,'rgba(114,118,146,0.9)');
       ctx.beginPath();
-      ctx.moveTo(-6,-12);
-      ctx.lineTo(2,-28);
-      ctx.lineTo(14,186);
-      ctx.quadraticCurveTo(0,212,-14,186);
+      ctx.moveTo(-6,-10);
+      ctx.lineTo(176,-16);
+      ctx.lineTo(218,0);
+      ctx.lineTo(176,16);
+      ctx.lineTo(-6,10);
       ctx.closePath();
       ctx.fillStyle=blade;
       ctx.fill();
@@ -3245,24 +3287,24 @@ select optgroup { color: #0b1022; }
 
       ctx.fillStyle=palette.accent;
       ctx.beginPath();
-      ctx.moveTo(-18,-6);
-      ctx.quadraticCurveTo(0,-20,18,-6);
-      ctx.lineTo(16,12);
-      ctx.quadraticCurveTo(0,-4,-16,12);
+      ctx.moveTo(-18,-8);
+      ctx.quadraticCurveTo(0,-22,18,-8);
+      ctx.lineTo(16,10);
+      ctx.quadraticCurveTo(0,-2,-16,10);
       ctx.closePath();
       ctx.fill();
 
       ctx.fillStyle='rgba(28,22,34,0.96)';
-      ctx.fillRect(-4,-6,8,52);
+      ctx.fillRect(-4,-6,8,36);
 
       ctx.strokeStyle='rgba(255,86,86,0.45)';
       ctx.lineWidth=1.2;
       ctx.beginPath();
-      ctx.moveTo(0,-16);
-      ctx.lineTo(0,176);
+      ctx.moveTo(0,-12);
+      ctx.lineTo(180,0);
       ctx.stroke();
-
       ctx.restore();
+
       ctx.restore();
       ctx.restore();
     }
@@ -3286,43 +3328,50 @@ select optgroup { color: #0b1022; }
     ctx.translate(0,-92);
     ctx.scale(0.6,0.6);
 
-    // demon horns with sharp upward tilt
-    const hornCore=ctx.createLinearGradient(0,-280,0,-40);
-    hornCore.addColorStop(0,'rgba(16,16,24,0.97)');
-    hornCore.addColorStop(0.55,'rgba(30,28,38,0.95)');
+    // reworked horned crown: twin triangular spikes in a V
+    const hornCore=ctx.createLinearGradient(0,-280,0,-120);
+    hornCore.addColorStop(0,'rgba(18,18,28,0.98)');
+    hornCore.addColorStop(0.55,'rgba(32,30,42,0.96)');
     hornCore.addColorStop(1,palette.horn);
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
       ctx.beginPath();
-      ctx.moveTo(48,-24);
-      ctx.quadraticCurveTo(132,-184,74,-270);
-      ctx.quadraticCurveTo(18,-300,0,-252);
-      ctx.quadraticCurveTo(22,-194,-14,-90);
-      ctx.lineTo(6,-28);
-      ctx.lineTo(42,-10);
+      ctx.moveTo(0,-150);
+      ctx.lineTo(92,-258);
+      ctx.lineTo(136,-122);
       ctx.closePath();
       ctx.fillStyle=hornCore;
       ctx.fill();
       ctx.strokeStyle=palette.hornEdge;
-      ctx.lineWidth=4.2;
+      ctx.lineWidth=3.8;
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(12,-222);
-      ctx.quadraticCurveTo(44,-176,20,-104);
-      ctx.strokeStyle='rgba(220,200,160,'+(flash?0.52:0.32)+')';
-      ctx.lineWidth=2.6;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(6,-244);
-      ctx.quadraticCurveTo(34,-210,10,-148);
-      ctx.strokeStyle='rgba(255,196,130,'+(flash?0.48:0.28)+')';
-      ctx.lineWidth=2.2;
+      ctx.moveTo(12,-206);
+      ctx.lineTo(24,-142);
+      ctx.lineTo(64,-142);
+      ctx.strokeStyle='rgba(220,200,160,'+(flash?0.5:0.32)+')';
+      ctx.lineWidth=2.4;
       ctx.stroke();
       ctx.restore();
     }
+
+    const hornBridge=ctx.createLinearGradient(-28,-172,28,-96);
+    hornBridge.addColorStop(0,palette.metalDark);
+    hornBridge.addColorStop(1,palette.metalMid);
+    ctx.beginPath();
+    ctx.moveTo(-34,-112);
+    ctx.lineTo(0,-162);
+    ctx.lineTo(34,-112);
+    ctx.lineTo(22,-84);
+    ctx.lineTo(-22,-84);
+    ctx.closePath();
+    ctx.fillStyle=hornBridge;
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=3;
+    ctx.stroke();
 
     // outer helmet shell tapered downward
     const helm=ctx.createLinearGradient(-96,-148,96,124);
@@ -3340,29 +3389,6 @@ select optgroup { color: #0b1022; }
     ctx.fill();
     ctx.strokeStyle=palette.metalEdge;
     ctx.lineWidth=4.6;
-    ctx.stroke();
-
-    // layered crown ridge
-    const crestGrad=ctx.createLinearGradient(-18,-96,18,24);
-    crestGrad.addColorStop(0,palette.metalDark);
-    crestGrad.addColorStop(1,palette.metalMid);
-    ctx.beginPath();
-    ctx.moveTo(-18,-96);
-    ctx.quadraticCurveTo(0,-140,18,-96);
-    ctx.lineTo(12,24);
-    ctx.lineTo(-12,24);
-    ctx.closePath();
-    ctx.fillStyle=crestGrad;
-    ctx.fill();
-    ctx.strokeStyle=palette.metalEdge;
-    ctx.lineWidth=2.8;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(-70,-30);
-    ctx.quadraticCurveTo(0,-120,70,-30);
-    ctx.strokeStyle='rgba(255,220,160,'+(flash?0.62:0.4)+')';
-    ctx.lineWidth=3;
     ctx.stroke();
 
     // sculpted cheek plates blending into helmet
@@ -3430,42 +3456,42 @@ select optgroup { color: #0b1022; }
     // inverted triangular eyes with demonic glow
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    const leftGlow=ctx.createRadialGradient(-36,-12,0,-36,-12,44);
+    const leftGlow=ctx.createRadialGradient(-36,6,0,-36,6,46);
     leftGlow.addColorStop(0,palette.eye);
     leftGlow.addColorStop(0.55,flash ? 'rgba(255,220,200,0.75)' : palette.accentGlow);
     leftGlow.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=leftGlow;
     ctx.beginPath();
-    ctx.moveTo(-62,-6);
-    ctx.lineTo(-26,24);
-    ctx.lineTo(-70,36);
+    ctx.moveTo(-66,32);
+    ctx.lineTo(-26,0);
+    ctx.lineTo(-72,-12);
     ctx.closePath();
     ctx.fill();
 
-    const rightGlow=ctx.createRadialGradient(36,-12,0,36,-12,44);
+    const rightGlow=ctx.createRadialGradient(36,6,0,36,6,46);
     rightGlow.addColorStop(0,palette.eye);
     rightGlow.addColorStop(0.55,flash ? 'rgba(255,220,200,0.75)' : palette.accentGlow);
     rightGlow.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=rightGlow;
     ctx.beginPath();
-    ctx.moveTo(62,-6);
-    ctx.lineTo(26,24);
-    ctx.lineTo(70,36);
+    ctx.moveTo(66,32);
+    ctx.lineTo(26,0);
+    ctx.lineTo(72,-12);
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle=flash ? 'rgba(255,214,204,0.8)' : 'rgba(255,60,60,0.78)';
     ctx.beginPath();
-    ctx.moveTo(-56,-4);
-    ctx.lineTo(-22,18);
-    ctx.lineTo(-68,28);
+    ctx.moveTo(-58,26);
+    ctx.lineTo(-22,4);
+    ctx.lineTo(-68,-8);
     ctx.closePath();
     ctx.fill();
 
     ctx.beginPath();
-    ctx.moveTo(56,-4);
-    ctx.lineTo(22,18);
-    ctx.lineTo(68,28);
+    ctx.moveTo(58,26);
+    ctx.lineTo(22,4);
+    ctx.lineTo(68,-8);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
