@@ -3248,10 +3248,71 @@ select optgroup { color: #0b1022; }
   }
 
 
+  function renderDemonAfterimageFigure(state, now, alpha){
+    if(!state) return;
+    const scaleAvg=(scaleX+scaleY)/2;
+    const baseSize=state.h||state.w||150;
+    const size=baseSize/150;
+    const t0=state.t0||now;
+    const elapsed=Math.max(0, now-t0);
+    const hoverPhase=state.hoverPhase||0;
+    const swordPhase=state.swordPhase||0;
+    ctx.save();
+    ctx.translate(state.x*scaleX, state.y*scaleY);
+    ctx.scale(scaleAvg*size, scaleAvg*size);
+    ctx.globalAlpha *= alpha;
+
+    const auraPulse = 0.55 + 0.35*Math.sin(elapsed/220 + hoverPhase*0.6);
+    ctx.fillStyle = `rgba(190,140,255,${0.22*auraPulse})`;
+    ctx.beginPath();
+    ctx.ellipse(0,24,84,130,0,0,Math.PI*2);
+    ctx.fill();
+
+    const wingLift = Math.sin(elapsed/320 + hoverPhase)*6;
+    ctx.fillStyle='rgba(210,150,255,0.18)';
+    ctx.strokeStyle='rgba(230,200,255,0.16)';
+    ctx.lineWidth=2.5;
+    for(const side of [-1,1]){
+      ctx.save();
+      ctx.scale(side,1);
+      ctx.beginPath();
+      ctx.moveTo(18,-8);
+      ctx.quadraticCurveTo(108,-48-wingLift,140,46);
+      ctx.quadraticCurveTo(110,124,48,152);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.fillStyle='rgba(220,170,255,0.26)';
+    ctx.beginPath();
+    ctx.moveTo(-24,-18);
+    ctx.quadraticCurveTo(0,-68,24,-18);
+    ctx.quadraticCurveTo(10,112,0,138);
+    ctx.quadraticCurveTo(-10,112,-24,-18);
+    ctx.closePath();
+    ctx.fill();
+
+    const swordSway = Math.sin(swordPhase + elapsed*0.003)*0.25;
+    ctx.strokeStyle='rgba(240,220,255,0.32)';
+    ctx.lineWidth=5;
+    ctx.beginPath();
+    ctx.moveTo(swordSway*-20,-26);
+    ctx.lineTo(swordSway*24,-148);
+    ctx.stroke();
+
+    ctx.fillStyle='rgba(255,220,255,0.3)';
+    ctx.beginPath();
+    ctx.arc(0,-40,24,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawDemonAfterimages(now){
     if(!demonAfterimages.length) return;
     for(const ghost of demonAfterimages){
-      const life=ghost.life||520;
+      const life=ghost.life||420;
       const age=now-ghost.t0;
       const alpha=Math.max(0, 1 - age/life);
       if(alpha<=0) continue;
@@ -3261,12 +3322,11 @@ select optgroup { color: #0b1022; }
         w:ghost.w,
         h:ghost.h,
         hoverPhase:ghost.hoverPhase,
-        cloakPhase:ghost.cloakPhase,
         swordPhase:ghost.swordPhase,
-        hitFlashUntil:0,
-        deathFade:ghost.fade?alpha:1
+        t0:ghost.t0
       };
-      renderDemonFigure(ghostState, now, {ghost:true, alpha});
+      const fadeAlpha = ghost.fade ? alpha*alpha : alpha;
+      renderDemonAfterimageFigure(ghostState, now, fadeAlpha);
     }
   }
 
@@ -3397,8 +3457,9 @@ select optgroup { color: #0b1022; }
       demonBoss.cloakPhase += dt*0.0018;
       demonBoss.swordPhase += dt*0.0035;
       demonBoss.y = demonBoss.baseY + Math.sin(demonBoss.hoverPhase)*14;
-      if(!demonBoss.lastAfterimage || now - demonBoss.lastAfterimage > 90){
-        demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, swordPhase:demonBoss.swordPhase, t0:now, life:520});
+      if(!demonBoss.lastAfterimage || now - demonBoss.lastAfterimage > 140){
+        demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, swordPhase:demonBoss.swordPhase, t0:now, life:420});
+        if(demonAfterimages.length>6){ demonAfterimages.splice(0, demonAfterimages.length-6); }
         demonBoss.lastAfterimage=now;
       }
     }else if(demonPhase==='dying' && demonDeathAnim){
@@ -3418,7 +3479,8 @@ select optgroup { color: #0b1022; }
           anim.lastSpark=now;
         }
         if(elapsed>=fadeDuration){
-          demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, swordPhase:demonBoss.swordPhase, t0:now, life:720, fade:true});
+          demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, swordPhase:demonBoss.swordPhase, t0:now, life:600, fade:true});
+          if(demonAfterimages.length>8){ demonAfterimages.splice(0, demonAfterimages.length-8); }
           demonBoss=null;
         }
       }
