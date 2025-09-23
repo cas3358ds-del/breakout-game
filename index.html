@@ -2648,11 +2648,11 @@ select optgroup { color: #0b1022; }
 
 
 
+  const DEMON_BASE_HEIGHT = 440;
   function renderDemonFigure(entity, now, opts={}){
     if(!entity) return;
     const scaleAvg=(scaleX+scaleY)/2;
-    const baseSize=entity.h||entity.w||150;
-    const size=baseSize/150;
+    const size=((entity.h||DEMON_BASE_HEIGHT)/DEMON_BASE_HEIGHT);
     let alpha = opts.alpha!=null ? opts.alpha : 1;
     if(entity.deathFade!=null) alpha*=entity.deathFade;
     if(alpha<=0) return;
@@ -2668,21 +2668,23 @@ select optgroup { color: #0b1022; }
     const cloakPhase = entity.cloakPhase||0;
 
     const palette={
-      metalDark: flash ? 'rgba(236,234,244,0.96)' : 'rgba(18,18,26,0.96)',
-      metalMid: flash ? 'rgba(255,252,255,0.92)' : 'rgba(36,36,48,0.92)',
-      metalEdge: flash ? 'rgba(255,255,255,0.9)' : 'rgba(138,148,182,0.78)',
-      accent: flash ? 'rgba(255,210,176,0.95)' : 'rgba(188,46,58,0.9)',
-      accentGlow: flash ? 'rgba(255,220,200,0.7)' : 'rgba(255,74,92,0.62)',
-      horn: flash ? 'rgba(232,228,244,0.94)' : 'rgba(24,22,32,0.95)',
-      hornEdge: flash ? 'rgba(255,246,255,0.88)' : 'rgba(118,110,150,0.72)',
-      visor: flash ? 'rgba(255,248,246,0.9)' : 'rgba(12,12,18,0.9)',
-      eye: flash ? 'rgba(255,170,120,0.95)' : 'rgba(255,64,40,0.96)',
-      wingBone: flash ? 'rgba(220,220,240,0.9)' : 'rgba(64,64,76,0.92)',
-      wingMembrane: flash ? 'rgba(255,220,220,0.78)' : 'rgba(148,18,32,0.78)',
-      wingFade: flash ? 'rgba(255,238,238,0.52)' : 'rgba(40,10,16,0.62)',
-      cloth: flash ? 'rgba(255,230,236,0.82)' : 'rgba(90,20,30,0.82)',
-      glowCore: flash ? 'rgba(255,220,204,0.82)' : 'rgba(230,50,42,0.72)',
-      glowOuter: flash ? 'rgba(255,224,220,0.48)' : 'rgba(82,8,16,0.46)'
+      metalDark: flash ? 'rgba(238,236,246,0.96)' : 'rgba(30,30,34,0.96)',
+      metalMid: flash ? 'rgba(250,248,255,0.92)' : 'rgba(52,52,60,0.92)',
+      metalEdge: flash ? 'rgba(255,240,255,0.86)' : 'rgba(176,176,200,0.78)',
+      accent: flash ? 'rgba(255,226,170,0.92)' : 'rgba(181,138,44,0.92)',
+      accentGlow: flash ? 'rgba(255,236,190,0.75)' : 'rgba(255,210,130,0.72)',
+      horn: flash ? 'rgba(232,228,244,0.94)' : 'rgba(22,20,28,0.96)',
+      hornEdge: flash ? 'rgba(255,244,236,0.88)' : 'rgba(140,126,92,0.75)',
+      visor: flash ? 'rgba(42,36,50,0.92)' : 'rgba(8,8,12,0.92)',
+      eye: flash ? 'rgba(255,120,120,0.95)' : 'rgba(255,43,43,0.96)',
+      wingBone: flash ? 'rgba(230,228,240,0.92)' : 'rgba(34,34,40,0.95)',
+      wingMembrane: flash ? 'rgba(255,176,176,0.78)' : 'rgba(140,20,28,0.78)',
+      wingFade: flash ? 'rgba(255,210,210,0.55)' : 'rgba(30,4,8,0.65)',
+      cloth: flash ? 'rgba(216,96,112,0.86)' : 'rgba(123,15,23,0.88)',
+      clothDeep: flash ? 'rgba(180,60,76,0.82)' : 'rgba(68,6,10,0.85)',
+      clothHighlight: flash ? 'rgba(255,170,180,0.9)' : 'rgba(168,24,32,0.9)',
+      glowCore: flash ? 'rgba(255,184,168,0.82)' : 'rgba(255,43,43,0.76)',
+      glowOuter: flash ? 'rgba(255,210,198,0.5)' : 'rgba(80,8,12,0.5)'
     };
 
     // ground shadow
@@ -2725,7 +2727,7 @@ select optgroup { color: #0b1022; }
       ctx.lineTo(34,42);
       ctx.closePath();
       const wingGrad=ctx.createLinearGradient(36,-90,186,220);
-      wingGrad.addColorStop(0,'rgba(54,54,70,0.95)');
+      wingGrad.addColorStop(0,'rgba(28,28,32,0.96)');
       wingGrad.addColorStop(0.38,palette.wingMembrane);
       wingGrad.addColorStop(1,palette.wingFade);
       ctx.fillStyle=wingGrad;
@@ -2736,7 +2738,7 @@ select optgroup { color: #0b1022; }
 
       ctx.save();
       ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=palette.accentGlow;
+      ctx.strokeStyle=flash ? 'rgba(255,210,190,0.6)' : 'rgba(255,72,72,0.42)';
       ctx.lineWidth=3.4;
       ctx.beginPath();
       ctx.moveTo(34,24);
@@ -2776,7 +2778,7 @@ select optgroup { color: #0b1022; }
       ctx.beginPath();
       ctx.moveTo(32,-16);
       ctx.quadraticCurveTo(58,18,28,70);
-      ctx.strokeStyle=palette.accentGlow;
+      ctx.strokeStyle=flash ? 'rgba(255,210,190,0.6)' : 'rgba(255,72,72,0.42)';
       ctx.lineWidth=1.8;
       ctx.stroke();
 
@@ -2798,7 +2800,7 @@ select optgroup { color: #0b1022; }
       ctx.beginPath();
       ctx.moveTo(18,126);
       ctx.quadraticCurveTo(46,150,10,166);
-      ctx.strokeStyle='rgba(255,120,120,'+(flash?0.55:0.32)+')';
+      ctx.strokeStyle='rgba(255,214,150,'+(flash?0.55:0.32)+')';
       ctx.lineWidth=1.4;
       ctx.stroke();
 
@@ -2833,6 +2835,37 @@ select optgroup { color: #0b1022; }
     ctx.quadraticCurveTo(0,-36,44,-6);
     ctx.moveTo(-40,30);
     ctx.quadraticCurveTo(0,48,40,30);
+    ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+
+    // crimson tabard cloak
+    ctx.save();
+    ctx.translate(0,54);
+    const tabard=ctx.createLinearGradient(0,-40,0,168);
+    tabard.addColorStop(0,palette.clothHighlight||palette.cloth);
+    tabard.addColorStop(0.4,palette.cloth);
+    tabard.addColorStop(1,palette.clothDeep||palette.cloth);
+    ctx.beginPath();
+    ctx.moveTo(-46,-32);
+    ctx.quadraticCurveTo(0,-74,46,-32);
+    ctx.lineTo(64,118);
+    ctx.quadraticCurveTo(0,168,-64,118);
+    ctx.closePath();
+    ctx.fillStyle=tabard;
+    ctx.fill();
+    ctx.strokeStyle='rgba(40,6,10,0.7)';
+    ctx.lineWidth=2.4;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle='rgba(255,66,66,0.38)';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(0,-16);
+    ctx.quadraticCurveTo(-10,44,0,120);
+    ctx.quadraticCurveTo(10,44,0,-16);
     ctx.stroke();
     ctx.restore();
     ctx.restore();
@@ -2977,6 +3010,48 @@ select optgroup { color: #0b1022; }
       ctx.lineWidth=1.4;
       ctx.stroke();
 
+      // infernal greatsword
+      ctx.save();
+      ctx.translate(70,54);
+      const swing=Math.sin(now/340 + motionPhase + side*0.8)*0.18;
+      ctx.rotate(1.32 + swing);
+      const blade=ctx.createLinearGradient(0,-12,0,186);
+      blade.addColorStop(0,'rgba(238,240,248,0.95)');
+      blade.addColorStop(0.45,'rgba(204,206,220,0.92)');
+      blade.addColorStop(1,'rgba(122,126,150,0.9)');
+      ctx.beginPath();
+      ctx.moveTo(-6,-8);
+      ctx.lineTo(0,-22);
+      ctx.lineTo(12,164);
+      ctx.quadraticCurveTo(0,188,-12,164);
+      ctx.closePath();
+      ctx.fillStyle=blade;
+      ctx.fill();
+      ctx.strokeStyle='rgba(246,248,255,0.7)';
+      ctx.lineWidth=1.3;
+      ctx.stroke();
+
+      ctx.fillStyle=palette.accent;
+      ctx.beginPath();
+      ctx.moveTo(-16,-4);
+      ctx.quadraticCurveTo(0,-16,16,-4);
+      ctx.lineTo(14,10);
+      ctx.quadraticCurveTo(0,-2,-14,10);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle='rgba(28,22,34,0.96)';
+      ctx.fillRect(-4,-4,8,44);
+
+      ctx.strokeStyle='rgba(255,86,86,0.45)';
+      ctx.lineWidth=1.1;
+      ctx.beginPath();
+      ctx.moveTo(0,-10);
+      ctx.lineTo(0,156);
+      ctx.stroke();
+
+      ctx.restore();
+
       ctx.restore();
       ctx.restore();
     }
@@ -3025,14 +3100,14 @@ select optgroup { color: #0b1022; }
       ctx.moveTo(8,-178);
       ctx.quadraticCurveTo(26,-158,10,-124);
       ctx.quadraticCurveTo(0,-104,12,-74);
-      ctx.strokeStyle='rgba(160,150,210,'+(flash?0.55:0.3)+')';
+      ctx.strokeStyle='rgba(220,200,160,'+(flash?0.55:0.3)+')';
       ctx.lineWidth=1.4;
       ctx.stroke();
 
       ctx.beginPath();
       ctx.moveTo(4,-210);
       ctx.quadraticCurveTo(22,-188,6,-162);
-      ctx.strokeStyle='rgba(255,100,120,'+(flash?0.5:0.28)+')';
+      ctx.strokeStyle='rgba(255,196,130,'+(flash?0.5:0.28)+')';
       ctx.lineWidth=1.2;
       ctx.stroke();
       ctx.restore();
@@ -3079,7 +3154,7 @@ select optgroup { color: #0b1022; }
       ctx.beginPath();
       ctx.moveTo(34,16);
       ctx.lineTo(22,30);
-      ctx.strokeStyle='rgba(255,120,140,'+(flash?0.5:0.26)+')';
+      ctx.strokeStyle='rgba(255,220,150,'+(flash?0.5:0.26)+')';
       ctx.lineWidth=1.1;
       ctx.stroke();
       ctx.restore();
@@ -3105,7 +3180,7 @@ select optgroup { color: #0b1022; }
     ctx.beginPath();
     ctx.moveTo(-26,-60);
     ctx.quadraticCurveTo(0,-92,26,-60);
-    ctx.strokeStyle='rgba(210,180,255,'+(flash?0.6:0.38)+')';
+    ctx.strokeStyle='rgba(255,220,160,'+(flash?0.6:0.38)+')';
     ctx.lineWidth=1.3;
     ctx.stroke();
 
@@ -3128,7 +3203,7 @@ select optgroup { color: #0b1022; }
     ctx.beginPath();
     ctx.moveTo(-18,18);
     ctx.quadraticCurveTo(0,6,18,18);
-    ctx.strokeStyle='rgba(130,140,188,0.7)';
+    ctx.strokeStyle='rgba(170,180,210,0.7)';
     ctx.lineWidth=1.5;
     ctx.stroke();
 
@@ -3174,7 +3249,7 @@ select optgroup { color: #0b1022; }
     ctx.ellipse(14,-4,10,12,0,0,Math.PI*2);
     ctx.fill();
 
-    ctx.fillStyle=flash ? 'rgba(255,240,220,0.78)' : 'rgba(255,80,60,0.72)';
+    ctx.fillStyle=flash ? 'rgba(255,210,200,0.78)' : 'rgba(255,43,43,0.76)';
     ctx.beginPath();
     ctx.moveTo(-20,-4);
     ctx.quadraticCurveTo(-14,-10,-6,-4);
@@ -3196,7 +3271,7 @@ select optgroup { color: #0b1022; }
     ctx.beginPath();
     ctx.moveTo(-24,22);
     ctx.lineTo(24,22);
-    ctx.strokeStyle='rgba(255,120,130,'+(flash?0.55:0.3)+')';
+    ctx.strokeStyle='rgba(255,220,150,'+(flash?0.55:0.3)+')';
     ctx.lineWidth=1.1;
     ctx.stroke();
 
@@ -3210,8 +3285,8 @@ select optgroup { color: #0b1022; }
     const fade=Math.max(0, Math.min(1, alpha));
     if(fade<=0) return;
     const scaleAvg=(scaleX+scaleY)/2;
-    const baseSize=state.h||state.w||150;
-    const size=baseSize/150;
+    const baseSize=state.h||DEMON_BASE_HEIGHT;
+    const size=baseSize/DEMON_BASE_HEIGHT;
     const hoverPhase=state.hoverPhase||0;
     const t0=state.t0||now;
     const elapsed=Math.max(0, now-t0);
@@ -3221,11 +3296,11 @@ select optgroup { color: #0b1022; }
     ctx.scale(scaleAvg*size, scaleAvg*size);
     const pulse=0.25+0.15*Math.sin(elapsed/200 + hoverPhase*0.6);
     ctx.globalAlpha=fade*0.55;
-    ctx.fillStyle=`rgba(190,140,255,${pulse})`;
+    ctx.fillStyle=`rgba(255,78,90,${pulse})`;
     ctx.beginPath();
     ctx.ellipse(0,28,90,134,0,0,Math.PI*2);
     ctx.fill();
-    ctx.strokeStyle=`rgba(220,200,255,${0.28+0.12*pulse})`;
+    ctx.strokeStyle=`rgba(255,168,120,${0.28+0.12*pulse})`;
     ctx.lineWidth=3;
     ctx.beginPath();
     ctx.ellipse(0,28,92,136,0,0,Math.PI*2);
@@ -3304,12 +3379,18 @@ select optgroup { color: #0b1022; }
     const L=layout();
     const cx=1100/2;
     const baseY=L.top + 160;
+    const demonHeight=(L.h||GAME_CONFIG.bricks.brickHeight)*5;
+    const cols = L.cols || GAME_CONFIG.bricks.cols;
+    const pad = L.pad || GAME_CONFIG.bricks.padding;
+    const effectiveWidth = 1100 - (cols+1)*pad;
+    const brickWidth = brickW || Math.floor(effectiveWidth/cols);
+    const demonWidth = brickWidth*3;
     demonBoss={
       x:cx,
       y:baseY,
       baseY,
-      w:75,
-      h:75,
+      w:demonWidth,
+      h:demonHeight,
       hp:90,
       maxHp:90,
       hoverPhase:0,
