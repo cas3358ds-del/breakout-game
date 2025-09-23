@@ -9919,8 +9919,9 @@ function generateLevel(lv, L){
     ctx.restore(); if(now>=t.tEnd) phoenixAnim=null; }
 
   function draw(){
-    if(screenShake>0){ const s=screenShake*0.6; ctx.save(); ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); screenShake*=0.9; }
+    ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(screenShake>0){ const s=screenShake*0.6; ctx.save(); ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); screenShake*=0.9; }
     const now=performance.now();
     drawBGDecor();
     drawDemonWave(now);
