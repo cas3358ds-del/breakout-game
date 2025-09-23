@@ -2605,18 +2605,71 @@ select optgroup { color: #0b1022; }
     const hoverPhase = entity.hoverPhase||0;
     const swordPhase = entity.swordPhase||0;
 
+    // 魔王埃裡赫曼重製：深紅黑鎧甲、符文光暈、血紅翼膜與鍛紋巨劍
+    const palette = {
+      auraInner: flash ? 'rgba(255,230,220,0.85)' : 'rgba(255,110,70,0.82)',
+      auraMid: flash ? 'rgba(255,210,200,0.42)' : 'rgba(130,20,40,0.38)',
+      auraOuter: flash ? 'rgba(220,170,200,0)' : 'rgba(30,6,20,0)',
+      wingOuter: flash ? 'rgba(255,220,220,0.95)' : 'rgba(220,40,40,0.9)',
+      wingInner: flash ? 'rgba(255,190,190,0.9)' : 'rgba(120,12,20,0.88)',
+      wingVein: flash ? 'rgba(255,230,230,0.78)' : 'rgba(255,110,70,0.62)',
+      cloakDark: flash ? 'rgba(200,160,170,0.85)' : 'rgba(22,8,26,0.85)',
+      cloakLight: flash ? 'rgba(240,210,220,0.6)' : 'rgba(120,18,60,0.55)',
+      armorBase0: flash ? 'rgba(255,248,248,0.98)' : 'rgba(36,32,48,0.98)',
+      armorBase1: flash ? 'rgba(232,222,232,0.94)' : 'rgba(18,16,28,0.94)',
+      trim: flash ? 'rgba(255,240,230,0.82)' : 'rgba(180,120,70,0.7)',
+      accentRune: flash ? 'rgba(255,240,240,0.95)' : 'rgba(255,140,70,0.92)'
+    };
+
     const auraPulse = 0.55 + 0.35*Math.sin(now/220 + hoverPhase);
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.globalAlpha*=0.65;
-    const aura=ctx.createRadialGradient(0,60,10,0,60,240);
-    aura.addColorStop(0,`rgba(255,120,80,${0.4 + auraPulse*0.25})`);
-    aura.addColorStop(0.6,'rgba(140,20,20,0.28)');
-    aura.addColorStop(1,'rgba(40,10,10,0)');
+    ctx.globalAlpha*=0.6 + auraPulse*0.1;
+    const aura=ctx.createRadialGradient(0,56,14,0,60,260);
+    aura.addColorStop(0, palette.auraInner);
+    aura.addColorStop(0.45, palette.auraMid);
+    aura.addColorStop(1, palette.auraOuter);
     ctx.fillStyle=aura;
     ctx.beginPath();
     ctx.ellipse(0,70,150,78,0,0,Math.PI*2);
     ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    const runePulse = 0.45 + 0.35*Math.sin(now/180 + hoverPhase*0.5);
+    const runeRadOuter = 220 + 16*Math.sin(now/340 + hoverPhase*0.8);
+    const runeRadInner = runeRadOuter*0.74;
+    ctx.strokeStyle=`rgba(255,120,60,${0.25 + runePulse*0.4})`;
+    ctx.lineWidth=6;
+    ctx.beginPath();
+    ctx.ellipse(0,40,runeRadOuter,runeRadInner,0,0,Math.PI*2);
+    ctx.stroke();
+    ctx.lineWidth=3;
+    ctx.strokeStyle=`rgba(255,180,120,${0.18 + runePulse*0.2})`;
+    ctx.beginPath();
+    ctx.ellipse(0,40,runeRadOuter*0.86,runeRadInner*0.86,0,0,Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    const glyphCount=8;
+    for(let i=0;i<glyphCount;i++){
+      const ang=(Math.PI*2/glyphCount)*i + hoverPhase*0.08;
+      const radius=168 + 6*Math.sin(now/260 + i*0.9);
+      const gx=Math.cos(ang)*radius;
+      const gy=40 + Math.sin(ang)*radius*0.72;
+      ctx.save();
+      ctx.translate(gx, gy);
+      ctx.rotate(ang + Math.PI/2);
+      const glyphAlpha=0.45 + 0.35*Math.sin(now/160 + i*1.2);
+      ctx.fillStyle=`rgba(255,140,70,${glyphAlpha})`;
+      ctx.fillRect(-6,-20,12,40);
+      ctx.fillRect(-2,-36,4,16);
+      ctx.fillRect(-2,20,4,16);
+      ctx.restore();
+    }
     ctx.restore();
 
     const wingFlap=Math.sin(now/320 + hoverPhase)*18;
@@ -2633,14 +2686,9 @@ select optgroup { color: #0b1022; }
       ctx.lineTo(42,34);
       ctx.closePath();
       const wingGrad=ctx.createLinearGradient(40,-120,220,180);
-      if(flash){
-        wingGrad.addColorStop(0,'rgba(255,220,220,0.95)');
-        wingGrad.addColorStop(1,'rgba(255,170,120,0.9)');
-      }else{
-        wingGrad.addColorStop(0,'rgba(90,20,20,0.95)');
-        wingGrad.addColorStop(0.4,'rgba(120,16,24,0.92)');
-        wingGrad.addColorStop(1,'rgba(210,40,30,0.88)');
-      }
+      wingGrad.addColorStop(0,palette.wingOuter);
+      wingGrad.addColorStop(0.45,palette.wingInner);
+      wingGrad.addColorStop(1,'rgba(36,10,18,0.85)');
       ctx.fillStyle=wingGrad;
       ctx.fill();
       ctx.strokeStyle=flash?'rgba(255,240,240,0.82)':'rgba(40,8,8,0.8)';
@@ -2648,8 +2696,23 @@ select optgroup { color: #0b1022; }
       ctx.stroke();
 
       ctx.save();
+      ctx.globalCompositeOperation='screen';
+      const membraneGrad=ctx.createLinearGradient(60,-80,200,160);
+      membraneGrad.addColorStop(0,'rgba(255,180,120,0.18)');
+      membraneGrad.addColorStop(1,'rgba(255,60,40,0.32)');
+      ctx.fillStyle=membraneGrad;
+      ctx.beginPath();
+      ctx.moveTo(46,0);
+      ctx.quadraticCurveTo(162,-64-wingFlap*0.35,232,36-wingFlap*0.2);
+      ctx.quadraticCurveTo(180,96,120,122);
+      ctx.quadraticCurveTo(82,96,46,28);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
       ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=flash?'rgba(255,220,200,0.75)':'rgba(255,90,40,0.55)';
+      ctx.strokeStyle=palette.wingVein;
       ctx.lineWidth=3.2;
       ctx.beginPath();
       ctx.moveTo(70,10);
@@ -2668,6 +2731,23 @@ select optgroup { color: #0b1022; }
     }
 
     ctx.save();
+    ctx.globalCompositeOperation='multiply';
+    const cloakGrad=ctx.createRadialGradient(0,120,60,0,120,280);
+    cloakGrad.addColorStop(0,palette.cloakLight);
+    cloakGrad.addColorStop(1,palette.cloakDark);
+    ctx.fillStyle=cloakGrad;
+    ctx.beginPath();
+    ctx.moveTo(-156,-56);
+    ctx.quadraticCurveTo(-238,110,-176,270);
+    ctx.quadraticCurveTo(-26,326,0,248);
+    ctx.quadraticCurveTo(26,326,176,270);
+    ctx.quadraticCurveTo(238,110,156,-56);
+    ctx.quadraticCurveTo(0,-142,-156,-56);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
     ctx.beginPath();
     ctx.moveTo(-84,-30);
     ctx.quadraticCurveTo(-120,-160,-26,-188);
@@ -2677,17 +2757,9 @@ select optgroup { color: #0b1022; }
     ctx.quadraticCurveTo(-60,160,-84,-30);
     ctx.closePath();
     const torsoGrad=ctx.createLinearGradient(-110,-220,110,230);
-    if(flash){
-      torsoGrad.addColorStop(0,'rgba(255,248,248,0.98)');
-      torsoGrad.addColorStop(0.35,'rgba(240,228,240,0.96)');
-      torsoGrad.addColorStop(0.8,'rgba(224,216,240,0.94)');
-      torsoGrad.addColorStop(1,'rgba(210,204,230,0.92)');
-    }else{
-      torsoGrad.addColorStop(0,'rgba(34,36,46,0.98)');
-      torsoGrad.addColorStop(0.35,'rgba(24,26,32,0.96)');
-      torsoGrad.addColorStop(0.7,'rgba(18,18,22,0.95)');
-      torsoGrad.addColorStop(1,'rgba(20,18,24,0.94)');
-    }
+    torsoGrad.addColorStop(0,palette.armorBase0);
+    torsoGrad.addColorStop(0.55,'rgba(28,26,36,0.96)');
+    torsoGrad.addColorStop(1,palette.armorBase1);
     ctx.fillStyle=torsoGrad;
     ctx.fill();
     ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(120,120,160,0.68)';
@@ -2696,7 +2768,7 @@ select optgroup { color: #0b1022; }
 
     const plateColor=flash?'rgba(255,240,240,0.9)':'rgba(70,72,86,0.9)';
     ctx.lineWidth=2.6;
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':'rgba(160,120,90,0.55)';
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':palette.trim;
     ctx.fillStyle=plateColor;
     ctx.beginPath();
     ctx.moveTo(-60,-30);
@@ -2726,8 +2798,29 @@ select optgroup { color: #0b1022; }
     ctx.fill();
     ctx.stroke();
 
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    const chestGlow=ctx.createLinearGradient(-24,-40,24,120);
+    chestGlow.addColorStop(0,'rgba(255,120,60,0.48)');
+    chestGlow.addColorStop(0.5,'rgba(255,80,40,0.18)');
+    chestGlow.addColorStop(1,'rgba(255,60,40,0.05)');
+    ctx.strokeStyle=palette.accentRune;
+    ctx.lineWidth=3.2;
+    ctx.beginPath();
+    ctx.moveTo(0,-74);
+    ctx.lineTo(0,108);
+    ctx.stroke();
+    ctx.fillStyle=flash?'rgba(255,210,190,0.35)':chestGlow;
+    ctx.beginPath();
+    ctx.moveTo(0,-88);
+    ctx.quadraticCurveTo(18,-34,0,24);
+    ctx.quadraticCurveTo(-18,-34,0,-88);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
     ctx.fillStyle=flash?'rgba(255,220,180,0.95)':'rgba(200,110,40,0.92)';
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.85)':'rgba(160,60,20,0.8)';
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.85)':palette.accentRune;
     ctx.lineWidth=3;
     ctx.beginPath();
     ctx.moveTo(-18,-16);
@@ -2741,15 +2834,11 @@ select optgroup { color: #0b1022; }
     ctx.save();
     ctx.translate(0,104);
     const tassetGrad=ctx.createLinearGradient(-120,-40,120,180);
-    if(flash){
-      tassetGrad.addColorStop(0,'rgba(255,244,244,0.94)');
-      tassetGrad.addColorStop(1,'rgba(232,220,220,0.9)');
-    }else{
-      tassetGrad.addColorStop(0,'rgba(46,48,60,0.96)');
-      tassetGrad.addColorStop(1,'rgba(24,24,30,0.94)');
-    }
+    tassetGrad.addColorStop(0, flash?'rgba(255,244,244,0.94)':'rgba(46,44,58,0.96)');
+    tassetGrad.addColorStop(0.6, flash?'rgba(238,226,226,0.9)':'rgba(28,26,38,0.94)');
+    tassetGrad.addColorStop(1, flash?'rgba(232,220,220,0.88)':'rgba(20,18,26,0.92)');
     ctx.fillStyle=tassetGrad;
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':'rgba(160,120,80,0.6)';
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':palette.trim;
     ctx.lineWidth=3.2;
     ctx.beginPath();
     ctx.moveTo(-96,-10);
@@ -2761,14 +2850,43 @@ select optgroup { color: #0b1022; }
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle=flash?'rgba(80,40,26,0.9)':'rgba(40,18,18,0.9)';
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=palette.accentRune;
+    ctx.lineWidth=2.4;
+    ctx.beginPath();
+    ctx.moveTo(-58,10);
+    ctx.quadraticCurveTo(0,-18,58,10);
+    ctx.moveTo(-50,74);
+    ctx.quadraticCurveTo(0,92,50,74);
+    ctx.stroke();
+    ctx.restore();
+
+    const tabardGrad=ctx.createLinearGradient(0,-40,0,200);
+    tabardGrad.addColorStop(0,'rgba(120,20,40,0.92)');
+    tabardGrad.addColorStop(0.6,'rgba(60,10,26,0.9)');
+    tabardGrad.addColorStop(1,'rgba(26,6,16,0.88)');
+    ctx.fillStyle=flash?'rgba(180,120,140,0.85)':tabardGrad;
     ctx.beginPath();
     ctx.moveTo(-36,-6);
     ctx.quadraticCurveTo(0,-40,36,-6);
-    ctx.quadraticCurveTo(12,126,-12,184);
-    ctx.quadraticCurveTo(-20,120,-36,-6);
+    ctx.quadraticCurveTo(18,132,0,190);
+    ctx.quadraticCurveTo(-18,132,-36,-6);
     ctx.closePath();
     ctx.fill();
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=palette.accentRune;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(0,-14);
+    ctx.lineTo(0,170);
+    ctx.moveTo(-16,40);
+    ctx.lineTo(16,40);
+    ctx.moveTo(-12,112);
+    ctx.lineTo(12,112);
+    ctx.stroke();
+    ctx.restore();
     ctx.restore();
 
     ctx.save();
@@ -2777,13 +2895,9 @@ select optgroup { color: #0b1022; }
       ctx.save();
       ctx.scale(side,1);
       const legGrad=ctx.createLinearGradient(22,-90,92,210);
-      if(flash){
-        legGrad.addColorStop(0,'rgba(255,244,244,0.94)');
-        legGrad.addColorStop(1,'rgba(232,220,220,0.9)');
-      }else{
-        legGrad.addColorStop(0,'rgba(48,50,62,0.96)');
-        legGrad.addColorStop(1,'rgba(20,22,28,0.94)');
-      }
+      legGrad.addColorStop(0, flash?'rgba(255,244,244,0.94)':'rgba(54,56,76,0.96)');
+      legGrad.addColorStop(0.55, flash?'rgba(242,232,232,0.92)':'rgba(26,28,38,0.94)');
+      legGrad.addColorStop(1, flash?'rgba(232,220,220,0.9)':'rgba(18,18,24,0.92)');
       ctx.beginPath();
       ctx.moveTo(30,-74);
       ctx.quadraticCurveTo(78,-32,66,44);
@@ -2792,9 +2906,19 @@ select optgroup { color: #0b1022; }
       ctx.closePath();
       ctx.fillStyle=legGrad;
       ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':'rgba(140,110,90,0.62)';
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':palette.trim;
       ctx.lineWidth=2.8;
       ctx.stroke();
+
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle=palette.accentRune;
+      ctx.lineWidth=2.2;
+      ctx.beginPath();
+      ctx.moveTo(48,-20);
+      ctx.lineTo(70,98);
+      ctx.stroke();
+      ctx.restore();
 
       ctx.beginPath();
       ctx.moveTo(36,102);
@@ -2803,18 +2927,20 @@ select optgroup { color: #0b1022; }
       ctx.quadraticCurveTo(6,178,18,150);
       ctx.closePath();
       const bootGrad=ctx.createLinearGradient(28,100,96,220);
-      if(flash){
-        bootGrad.addColorStop(0,'rgba(255,244,244,0.94)');
-        bootGrad.addColorStop(1,'rgba(230,220,220,0.88)');
-      }else{
-        bootGrad.addColorStop(0,'rgba(24,26,34,0.96)');
-        bootGrad.addColorStop(1,'rgba(12,12,18,0.94)');
-      }
+      bootGrad.addColorStop(0, flash?'rgba(255,244,244,0.94)':'rgba(30,22,34,0.96)');
+      bootGrad.addColorStop(1, flash?'rgba(230,220,220,0.88)':'rgba(12,10,18,0.9)');
       ctx.fillStyle=bootGrad;
       ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(120,100,80,0.65)';
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
       ctx.lineWidth=2.6;
       ctx.stroke();
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.fillStyle=`rgba(255,90,50,${flash?0.55:0.35})`;
+      ctx.beginPath();
+      ctx.ellipse(44,158,10,18,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
       ctx.restore();
     }
     ctx.restore();
@@ -2824,13 +2950,9 @@ select optgroup { color: #0b1022; }
       ctx.save();
       ctx.scale(side,1);
       const shoulderGrad=ctx.createLinearGradient(60,-90,160,100);
-      if(flash){
-        shoulderGrad.addColorStop(0,'rgba(255,246,246,0.96)');
-        shoulderGrad.addColorStop(1,'rgba(230,220,220,0.9)');
-      }else{
-        shoulderGrad.addColorStop(0,'rgba(60,62,74,0.96)');
-        shoulderGrad.addColorStop(1,'rgba(22,26,32,0.94)');
-      }
+      shoulderGrad.addColorStop(0, flash?'rgba(255,246,246,0.96)':'rgba(62,62,78,0.96)');
+      shoulderGrad.addColorStop(0.6, flash?'rgba(238,226,226,0.92)':'rgba(30,30,42,0.94)');
+      shoulderGrad.addColorStop(1, flash?'rgba(230,220,220,0.9)':'rgba(22,24,32,0.9)');
       ctx.beginPath();
       ctx.moveTo(86,-20);
       ctx.quadraticCurveTo(150,-94,186,-8);
@@ -2839,18 +2961,23 @@ select optgroup { color: #0b1022; }
       ctx.closePath();
       ctx.fillStyle=shoulderGrad;
       ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(150,120,90,0.7)';
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
       ctx.lineWidth=3.4;
       ctx.stroke();
 
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle=palette.accentRune;
+      ctx.lineWidth=2.4;
+      ctx.beginPath();
+      ctx.moveTo(118,-36);
+      ctx.lineTo(142,30);
+      ctx.stroke();
+      ctx.restore();
+
       const armGrad=ctx.createLinearGradient(42,10,110,180);
-      if(flash){
-        armGrad.addColorStop(0,'rgba(255,246,246,0.96)');
-        armGrad.addColorStop(1,'rgba(232,220,220,0.9)');
-      }else{
-        armGrad.addColorStop(0,'rgba(46,48,60,0.96)');
-        armGrad.addColorStop(1,'rgba(24,26,34,0.94)');
-      }
+      armGrad.addColorStop(0, flash?'rgba(255,246,246,0.96)':'rgba(46,46,60,0.96)');
+      armGrad.addColorStop(1, flash?'rgba(232,220,220,0.9)':'rgba(24,24,32,0.92)');
       ctx.beginPath();
       ctx.moveTo(72,18);
       ctx.quadraticCurveTo(110,78,82,146);
@@ -2859,18 +2986,23 @@ select optgroup { color: #0b1022; }
       ctx.closePath();
       ctx.fillStyle=armGrad;
       ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':'rgba(150,120,90,0.65)';
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':palette.trim;
       ctx.lineWidth=2.8;
       ctx.stroke();
 
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle=palette.accentRune;
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(66,52);
+      ctx.quadraticCurveTo(96,90,68,132);
+      ctx.stroke();
+      ctx.restore();
+
       const gauntletGrad=ctx.createLinearGradient(38,90,104,190);
-      if(flash){
-        gauntletGrad.addColorStop(0,'rgba(255,244,244,0.95)');
-        gauntletGrad.addColorStop(1,'rgba(228,216,216,0.9)');
-      }else{
-        gauntletGrad.addColorStop(0,'rgba(44,44,54,0.96)');
-        gauntletGrad.addColorStop(1,'rgba(22,22,28,0.94)');
-      }
+      gauntletGrad.addColorStop(0, flash?'rgba(255,244,244,0.95)':'rgba(44,42,54,0.96)');
+      gauntletGrad.addColorStop(1, flash?'rgba(228,216,216,0.9)':'rgba(22,20,26,0.92)');
       ctx.beginPath();
       ctx.moveTo(48,96);
       ctx.lineTo(88,136);
@@ -2879,9 +3011,22 @@ select optgroup { color: #0b1022; }
       ctx.closePath();
       ctx.fillStyle=gauntletGrad;
       ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':'rgba(140,110,90,0.65)';
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.8)':palette.trim;
       ctx.lineWidth=2.6;
       ctx.stroke();
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle=palette.accentRune;
+      ctx.lineWidth=2.2;
+      ctx.beginPath();
+      ctx.moveTo(58,128);
+      ctx.lineTo(78,156);
+      ctx.stroke();
+      ctx.fillStyle=`rgba(255,120,60,${flash?0.55:0.4})`;
+      ctx.beginPath();
+      ctx.arc(64,142,8,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
       ctx.restore();
     }
     ctx.restore();
@@ -2889,13 +3034,9 @@ select optgroup { color: #0b1022; }
     ctx.save();
     ctx.translate(0,-96);
     const helmGrad=ctx.createLinearGradient(-70,-90,70,90);
-    if(flash){
-      helmGrad.addColorStop(0,'rgba(255,246,246,0.96)');
-      helmGrad.addColorStop(1,'rgba(232,222,222,0.94)');
-    }else{
-      helmGrad.addColorStop(0,'rgba(54,56,70,0.97)');
-      helmGrad.addColorStop(1,'rgba(24,24,30,0.95)');
-    }
+    helmGrad.addColorStop(0, flash?'rgba(255,246,246,0.96)':'rgba(56,54,70,0.97)');
+    helmGrad.addColorStop(0.6, flash?'rgba(238,226,226,0.94)':'rgba(30,28,40,0.95)');
+    helmGrad.addColorStop(1, flash?'rgba(232,222,222,0.94)':'rgba(24,22,32,0.94)');
     ctx.beginPath();
     ctx.moveTo(-56,32);
     ctx.quadraticCurveTo(-96,-60,-24,-102);
@@ -2906,9 +3047,31 @@ select optgroup { color: #0b1022; }
     ctx.closePath();
     ctx.fillStyle=helmGrad;
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(150,120,90,0.7)';
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
     ctx.lineWidth=3.4;
     ctx.stroke();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=palette.accentRune;
+    ctx.lineWidth=2.2;
+    ctx.beginPath();
+    ctx.moveTo(-32,-40);
+    ctx.quadraticCurveTo(0,-66,32,-40);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle=flash?'rgba(255,240,220,0.82)':'rgba(180,120,60,0.78)';
+    ctx.beginPath();
+    ctx.moveTo(-18,-86);
+    ctx.lineTo(-6,-108);
+    ctx.lineTo(0,-86);
+    ctx.lineTo(6,-108);
+    ctx.lineTo(18,-86);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
 
     const visorGrad=ctx.createLinearGradient(-36,-64,36,48);
     visorGrad.addColorStop(0, flash?'rgba(255,240,240,0.96)':'rgba(90,94,108,0.95)');
@@ -2935,7 +3098,7 @@ select optgroup { color: #0b1022; }
     ctx.closePath();
     ctx.fill();
 
-    const eyeGlow=flash?'rgba(255,240,240,0.95)':'rgba(255,80,40,0.95)';
+    const eyeGlow=flash?'rgba(255,240,240,0.95)':'rgba(255,120,50,0.95)';
     ctx.fillStyle=eyeGlow;
     ctx.beginPath();
     ctx.ellipse(-12,-6,8,10,0,0,Math.PI*2);
@@ -2943,7 +3106,7 @@ select optgroup { color: #0b1022; }
     ctx.fill();
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.fillStyle=flash?'rgba(255,240,240,0.6)':'rgba(255,60,20,0.6)';
+    ctx.fillStyle=flash?'rgba(255,240,240,0.6)':'rgba(255,80,30,0.6)';
     ctx.beginPath();
     ctx.ellipse(-12,-6,14,14,0,0,Math.PI*2);
     ctx.ellipse(12,-6,14,14,0,0,Math.PI*2);
@@ -2961,18 +3124,23 @@ select optgroup { color: #0b1022; }
       ctx.quadraticCurveTo(8,-146*hornPulse,18,-12);
       ctx.closePath();
       const hornGrad=ctx.createLinearGradient(12,-30,12,-220*hornPulse);
-      if(flash){
-        hornGrad.addColorStop(0,'rgba(255,248,248,0.96)');
-        hornGrad.addColorStop(1,'rgba(230,220,220,0.92)');
-      }else{
-        hornGrad.addColorStop(0,'rgba(120,110,130,0.95)');
-        hornGrad.addColorStop(1,'rgba(60,60,80,0.9)');
-      }
+      hornGrad.addColorStop(0, flash?'rgba(255,248,248,0.96)':'rgba(120,110,140,0.95)');
+      hornGrad.addColorStop(0.65, flash?'rgba(240,226,226,0.94)':'rgba(80,70,100,0.92)');
+      hornGrad.addColorStop(1, flash?'rgba(230,220,220,0.92)':'rgba(50,46,70,0.88)');
       ctx.fillStyle=hornGrad;
       ctx.fill();
-      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(80,60,60,0.7)';
+      ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
       ctx.lineWidth=3.6;
       ctx.stroke();
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle=palette.accentRune;
+      ctx.lineWidth=1.8;
+      ctx.beginPath();
+      ctx.moveTo(22,-60);
+      ctx.lineTo(28,-140*hornPulse);
+      ctx.stroke();
+      ctx.restore();
       ctx.restore();
     }
     ctx.restore();
@@ -2981,16 +3149,11 @@ select optgroup { color: #0b1022; }
     ctx.translate(120,48);
     const swing=Math.sin(swordPhase)*0.26;
     ctx.rotate(-Math.PI/3.4 + swing);
-    const bladeGrad=ctx.createLinearGradient(-20,-50,220,60);
-    if(flash){
-      bladeGrad.addColorStop(0,'rgba(255,252,252,0.97)');
-      bladeGrad.addColorStop(0.4,'rgba(250,240,240,0.95)');
-      bladeGrad.addColorStop(1,'rgba(240,228,228,0.92)');
-    }else{
-      bladeGrad.addColorStop(0,'rgba(120,126,150,0.97)');
-      bladeGrad.addColorStop(0.5,'rgba(200,110,30,0.92)');
-      bladeGrad.addColorStop(1,'rgba(255,120,40,0.88)');
-    }
+    const bladeGrad=ctx.createLinearGradient(-40,-60,240,80);
+    bladeGrad.addColorStop(0, flash?'rgba(255,252,248,0.98)':'rgba(90,96,126,0.98)');
+    bladeGrad.addColorStop(0.35, flash?'rgba(255,236,224,0.95)':'rgba(150,40,40,0.94)');
+    bladeGrad.addColorStop(0.7, flash?'rgba(240,220,210,0.92)':'rgba(255,110,40,0.9)');
+    bladeGrad.addColorStop(1, flash?'rgba(230,210,200,0.9)':'rgba(80,16,12,0.85)');
     ctx.beginPath();
     ctx.moveTo(-18,-14);
     ctx.lineTo(148,-46);
@@ -3000,45 +3163,62 @@ select optgroup { color: #0b1022; }
     ctx.closePath();
     ctx.fillStyle=bladeGrad;
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.85)':'rgba(255,150,80,0.75)';
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.85)':'rgba(255,150,90,0.78)';
     ctx.lineWidth=3;
     ctx.stroke();
 
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=flash?'rgba(255,230,220,0.8)':'rgba(255,120,40,0.7)';
-    ctx.lineWidth=1.4;
+    ctx.strokeStyle=flash?'rgba(255,240,220,0.82)':'rgba(255,140,50,0.75)';
+    ctx.lineWidth=1.6;
     ctx.beginPath();
-    ctx.moveTo(20,-4);
-    ctx.lineTo(156,-32);
+    ctx.moveTo(16,-6);
+    ctx.lineTo(160,-30);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(20,4);
-    ctx.lineTo(156,32);
+    ctx.moveTo(16,6);
+    ctx.lineTo(160,30);
     ctx.stroke();
+    ctx.lineWidth=1.2;
+    ctx.strokeStyle=flash?'rgba(255,240,220,0.68)':'rgba(255,90,40,0.62)';
+    for(let i=0;i<5;i++){
+      const t=i/4;
+      const ex=40 + t*120;
+      const jitter=Math.sin(now/120 + i*0.8)*6;
+      ctx.beginPath();
+      ctx.moveTo(ex,-12-jitter*0.2);
+      ctx.lineTo(ex+18,-2-jitter*0.1);
+      ctx.lineTo(ex+4,10+jitter*0.3);
+      ctx.stroke();
+    }
     ctx.restore();
 
-    const runeColor=flash?'rgba(255,240,220,0.92)':'rgba(255,180,80,0.88)';
+    const runeColor=flash?'rgba(255,240,220,0.92)':'rgba(255,190,100,0.88)';
     for(let i=0;i<5;i++){
       const t=i/4;
       const rx=-2 + t*140;
       const ry=-10 + Math.sin(now/260 + i)*3;
       ctx.save();
       ctx.translate(rx, ry);
-      ctx.rotate(0.1 - t*0.1);
+      ctx.rotate(0.12 - t*0.12);
       ctx.fillStyle=runeColor;
-      ctx.fillRect(-2,-6,4,14);
+      ctx.fillRect(-3,-8,6,16);
       ctx.restore();
     }
 
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=flash?'rgba(255,230,200,0.6)':'rgba(255,100,40,0.48)';
+    ctx.lineWidth=3.6;
+    ctx.beginPath();
+    ctx.moveTo(-4,0);
+    ctx.lineTo(172,0);
+    ctx.stroke();
+    ctx.restore();
+
     const guardGrad=ctx.createLinearGradient(-50,20,50,80);
-    if(flash){
-      guardGrad.addColorStop(0,'rgba(255,244,244,0.95)');
-      guardGrad.addColorStop(1,'rgba(230,220,220,0.92)');
-    }else{
-      guardGrad.addColorStop(0,'rgba(70,70,82,0.95)');
-      guardGrad.addColorStop(1,'rgba(30,28,36,0.92)');
-    }
+    guardGrad.addColorStop(0, flash?'rgba(255,244,244,0.95)':'rgba(90,50,60,0.95)');
+    guardGrad.addColorStop(1, flash?'rgba(230,220,220,0.92)':'rgba(36,20,28,0.9)');
     ctx.beginPath();
     ctx.moveTo(-48,18);
     ctx.quadraticCurveTo(0,-2,48,18);
@@ -3047,39 +3227,58 @@ select optgroup { color: #0b1022; }
     ctx.closePath();
     ctx.fillStyle=guardGrad;
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(160,120,90,0.7)';
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
     ctx.lineWidth=2.6;
     ctx.stroke();
 
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=palette.accentRune;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(-30,26);
+    ctx.quadraticCurveTo(0,10,30,26);
+    ctx.stroke();
+    ctx.restore();
+
     const handleGrad=ctx.createLinearGradient(0,32,0,120);
-    if(flash){
-      handleGrad.addColorStop(0,'rgba(255,244,244,0.94)');
-      handleGrad.addColorStop(1,'rgba(230,220,220,0.9)');
-    }else{
-      handleGrad.addColorStop(0,'rgba(32,24,28,0.94)');
-      handleGrad.addColorStop(1,'rgba(20,16,20,0.9)');
-    }
+    handleGrad.addColorStop(0, flash?'rgba(255,244,244,0.94)':'rgba(40,20,28,0.94)');
+    handleGrad.addColorStop(1, flash?'rgba(230,220,220,0.9)':'rgba(18,12,18,0.9)');
     ctx.fillStyle=handleGrad;
     ctx.fillRect(-12,44,24,74);
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(120,90,70,0.7)';
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
     ctx.lineWidth=2.2;
     ctx.strokeRect(-12,44,24,74);
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=palette.accentRune;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(-12,72);
+    ctx.lineTo(12,72);
+    ctx.moveTo(-12,96);
+    ctx.lineTo(12,96);
+    ctx.stroke();
+    ctx.restore();
 
     ctx.beginPath();
     ctx.arc(0,132,14,0,Math.PI*2);
     const pommelGrad=ctx.createLinearGradient(-14,118,14,140);
-    if(flash){
-      pommelGrad.addColorStop(0,'rgba(255,244,244,0.95)');
-      pommelGrad.addColorStop(1,'rgba(230,220,220,0.9)');
-    }else{
-      pommelGrad.addColorStop(0,'rgba(70,72,82,0.95)');
-      pommelGrad.addColorStop(1,'rgba(26,24,30,0.9)');
-    }
+    pommelGrad.addColorStop(0, flash?'rgba(255,244,244,0.95)':'rgba(90,50,60,0.95)');
+    pommelGrad.addColorStop(1, flash?'rgba(230,220,220,0.9)':'rgba(30,20,26,0.9)');
     ctx.fillStyle=pommelGrad;
     ctx.fill();
-    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':'rgba(150,120,90,0.7)';
+    ctx.strokeStyle=flash?'rgba(255,255,255,0.82)':palette.trim;
     ctx.lineWidth=2.4;
     ctx.stroke();
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=palette.accentRune;
+    ctx.beginPath();
+    ctx.arc(0,132,6,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
     ctx.restore();
 
     ctx.restore();
