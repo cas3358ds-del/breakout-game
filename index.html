@@ -6249,6 +6249,8 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       bigBang:false,
       lastX:rb.x,
       lastY:rb.y,
+      lastW:rb.w,
+      lastH:rb.h,
       dropSpawned:false
     };
     reaperBursts.push({type:'ring',x:rb.x,y:rb.y,r0:60,r1:560,width:26,t0:now,life:2200,color:'255,170,230'});
@@ -6308,20 +6310,25 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     }else if(reaperAttackState && reaperAttackState.current){
       updateReaperAttacks(now);
     }
-    if(reaperPhase==='dying' && reaperBoss){
+    if(reaperPhase==='dying'){
       const anim=reaperDeathAnim;
       if(anim){
+        const bossSprite=reaperBoss;
         const elapsed=now-anim.start;
         const prog=Math.max(0, Math.min(1, elapsed/anim.fallDuration));
-        reaperBoss.y = anim.startY + anim.dropDistance*prog;
-        reaperBoss.vx = 0;
-        anim.lastX = reaperBoss.x;
-        anim.lastY = reaperBoss.y;
-        if(now-anim.lastBurst>=(anim.smallBurstInterval||220) && now<anim.bigExplosionStart){
+        if(bossSprite){
+          bossSprite.y = anim.startY + anim.dropDistance*prog;
+          bossSprite.vx = 0;
+          anim.lastX = bossSprite.x;
+          anim.lastY = bossSprite.y;
+          anim.lastW = bossSprite.w;
+          anim.lastH = bossSprite.h;
+        }
+        if(now-anim.lastBurst>=(anim.smallBurstInterval||220) && now<anim.bigExplosionStart && bossSprite){
           anim.lastBurst=now;
           anim.smallBurstInterval=140+Math.random()*120;
-          const sx=reaperBoss.x + (Math.random()-0.5)*reaperBoss.w*0.7;
-          const sy=reaperBoss.y + (Math.random()-0.5)*reaperBoss.h*0.7;
+          const sx=bossSprite.x + (Math.random()-0.5)*bossSprite.w*0.7;
+          const sy=bossSprite.y + (Math.random()-0.5)*bossSprite.h*0.7;
           reaperBursts.push({type:'spark',x:sx,y:sy,r0:0,r1:200,t0:now,life:920,color:'255,170,220'});
           reaperBursts.push({type:'flare',x:sx,y:sy,r0:0,r1:280,t0:now,life:700,color:'200,120,255'});
           spawnParticles(sx, sy, '#ffd9f1', 34, 1.8, 3.2, 3.6);
@@ -6344,17 +6351,19 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         }
         if(anim.bigBang && now<anim.bigExplosionEnd){
           const theta=Math.random()*Math.PI*2;
-          const dist=reaperBoss.w*0.5 + Math.random()*reaperBoss.w*0.5;
+          const spanW=(bossSprite?bossSprite.w:(anim.lastW||120));
+          const dist=spanW*0.5 + Math.random()*spanW*0.5;
           const px=anim.lastX + Math.cos(theta)*dist;
           const py=anim.lastY + Math.sin(theta)*dist;
           reaperBursts.push({type:'spark',x:px,y:py,r0:0,r1:320,t0:now,life:860,color:'255,190,240'});
         }
-        if(now>=anim.vanishAt){
+        if(bossSprite && now>=anim.vanishAt){
           reaperBoss=null;
         }
         if(now>=anim.finishAt){
           reaperPhase='defeated';
           reaperDefeatedAt=now;
+          reaperDeathAnim=null;
         }
       }
     }
