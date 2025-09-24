@@ -2666,39 +2666,57 @@ select optgroup { color: #0b1022; }
     ctx.fill();
     ctx.restore();
 
-    // layered back mantle replacing wings
+    // deep crimson cloak with ragged hem
     ctx.save();
-    ctx.translate(0,-18);
-    const mantle=ctx.createLinearGradient(0,-80,0,210);
-    mantle.addColorStop(0, flash ? 'rgba(255,228,240,0.38)' : 'rgba(44,16,60,0.78)');
-    mantle.addColorStop(0.5, flash ? 'rgba(255,210,230,0.32)' : 'rgba(28,10,44,0.74)');
-    mantle.addColorStop(1, flash ? 'rgba(255,196,220,0.28)' : 'rgba(18,6,28,0.7)');
-    for(const side of [-1,1]){
-      ctx.save();
-      ctx.scale(side,1);
-      ctx.beginPath();
-      ctx.moveTo(-12,-24);
-      ctx.quadraticCurveTo(-120,-120, -148,38);
-      ctx.quadraticCurveTo(-130,192,-42,238);
-      ctx.quadraticCurveTo(-22,132,-12,-24);
-      ctx.closePath();
-      ctx.fillStyle=mantle;
-      ctx.fill();
-      ctx.strokeStyle=flash ? 'rgba(255,236,248,0.68)' : 'rgba(72,32,110,0.62)';
-      ctx.lineWidth=3.6;
-      ctx.stroke();
-
-      ctx.save();
-      ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=flash ? 'rgba(255,220,240,0.5)' : 'rgba(210,120,220,0.32)';
-      ctx.lineWidth=2.4;
-      ctx.beginPath();
-      ctx.moveTo(-54,-32);
-      ctx.quadraticCurveTo(-120,32,-94,198);
-      ctx.stroke();
-      ctx.restore();
-      ctx.restore();
+    ctx.translate(0,-26);
+    const cloakPhase=entity.cloakPhase||0;
+    const cloakSwayStrength = entity.cloakSway!=null ? entity.cloakSway : 0.18;
+    const hoverLift = Math.sin(hoverPhase*0.7)*4;
+    const swayLeft = Math.sin(cloakPhase)* (10 + 26*cloakSwayStrength);
+    const swayRight = Math.sin(cloakPhase + Math.PI*0.6)* (12 + 28*cloakSwayStrength);
+    const ragAmplitude = 12 + 34*cloakSwayStrength;
+    const cloak=ctx.createLinearGradient(0,-140,0,260);
+    cloak.addColorStop(0, flash ? 'rgba(255,220,220,0.5)' : 'rgba(96,8,18,0.96)');
+    cloak.addColorStop(0.45, flash ? 'rgba(255,200,200,0.42)' : 'rgba(140,0,18,0.94)');
+    cloak.addColorStop(1, flash ? 'rgba(255,190,190,0.36)' : 'rgba(70,0,10,0.9)');
+    ctx.beginPath();
+    ctx.moveTo(-118,-64 + hoverLift*0.4);
+    ctx.bezierCurveTo(-188,-12 - swayLeft*0.35, -200,118 + hoverLift*0.2, -174,222 + hoverLift);
+    const hemBase = 244 + hoverLift*0.15;
+    ctx.lineTo(-174, hemBase + Math.sin(cloakPhase + hoverPhase*0.45)*ragAmplitude - ragAmplitude*0.55);
+    for(let i=1;i<9;i++){
+      const t=i/9;
+      const x=-174 + 348*t;
+      const wave=Math.sin(cloakPhase + t*Math.PI*1.6 + hoverPhase*0.45)*ragAmplitude;
+      const jag=(i%2===0 ? -ragAmplitude*0.6 : ragAmplitude*0.3);
+      ctx.lineTo(x, hemBase + wave + jag);
     }
+    ctx.lineTo(174, hemBase + Math.sin(cloakPhase + Math.PI*1.6 + hoverPhase*0.45)*ragAmplitude - ragAmplitude*0.55);
+    ctx.bezierCurveTo(200,118 + hoverLift*0.2, 188,-12 - swayRight*0.35, 118,-64 + hoverLift*0.4);
+    ctx.quadraticCurveTo(40,-140 + swayRight*0.12, 0,-148);
+    ctx.quadraticCurveTo(-40,-140 + swayLeft*0.12, -118,-64 + hoverLift*0.4);
+    ctx.closePath();
+    ctx.fillStyle=cloak;
+    ctx.fill();
+    ctx.strokeStyle=flash ? 'rgba(255,226,220,0.58)' : 'rgba(54,0,8,0.72)';
+    ctx.lineWidth=3.8;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=flash ? 'rgba(255,230,224,0.65)' : 'rgba(200,40,40,0.46)';
+    ctx.lineWidth=2.4;
+    ctx.beginPath();
+    ctx.moveTo(-52,-90 + hoverLift*0.3);
+    ctx.quadraticCurveTo(-40,42 + swayLeft*0.06,-20,208 + swayLeft*0.04);
+    ctx.moveTo(52,-90 + hoverLift*0.3);
+    ctx.quadraticCurveTo(40,42 + swayRight*0.06,20,208 + swayRight*0.04);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0,-138 + hoverLift*0.3);
+    ctx.quadraticCurveTo(-4,28 + (swayLeft+swayRight)*0.02,0,216 + (swayLeft+swayRight)*0.02);
+    ctx.stroke();
+    ctx.restore();
     ctx.restore();
 
     // lower tabard, battle skirt and waist armour
@@ -3028,17 +3046,34 @@ select optgroup { color: #0b1022; }
     ctx.lineWidth=2.6;
     ctx.stroke();
 
+    const waistExtension=ctx.createLinearGradient(-38,18,38,160);
+    waistExtension.addColorStop(0,palette.metalDark);
+    waistExtension.addColorStop(1,palette.metalMid);
+    ctx.fillStyle=waistExtension;
+    ctx.beginPath();
+    ctx.moveTo(-38,32);
+    ctx.lineTo(38,32);
+    ctx.quadraticCurveTo(26,138,0,158);
+    ctx.quadraticCurveTo(-26,138,-38,32);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle=palette.metalEdge;
+    ctx.lineWidth=2.4;
+    ctx.stroke();
+
     ctx.save();
     ctx.globalCompositeOperation='lighter';
     ctx.strokeStyle=palette.accent;
     ctx.lineWidth=2.4;
     ctx.beginPath();
     ctx.moveTo(0,-52);
-    ctx.lineTo(0,98);
+    ctx.lineTo(0,138);
     ctx.moveTo(-18,34);
     ctx.lineTo(18,34);
     ctx.moveTo(-16,-4);
     ctx.lineTo(16,-4);
+    ctx.moveTo(-16,96);
+    ctx.lineTo(16,96);
     ctx.stroke();
     ctx.restore();
     ctx.restore();
@@ -3399,15 +3434,13 @@ select optgroup { color: #0b1022; }
 
     ctx.fillStyle=palette.eye;
     ctx.beginPath();
-    ctx.moveTo(-30,-4);
-    ctx.lineTo(-6,18);
-    ctx.lineTo(-10,26);
-    ctx.lineTo(-36,4);
+    ctx.moveTo(-40,-8);
+    ctx.lineTo(-4,-16);
+    ctx.lineTo(-20,6);
     ctx.closePath();
-    ctx.moveTo(30,-4);
-    ctx.lineTo(6,18);
-    ctx.lineTo(10,26);
-    ctx.lineTo(36,4);
+    ctx.moveTo(40,-8);
+    ctx.lineTo(4,-16);
+    ctx.lineTo(20,6);
     ctx.closePath();
     ctx.fill();
 
@@ -3416,15 +3449,13 @@ select optgroup { color: #0b1022; }
     const eyeGlow=flash ? 'rgba(255,220,210,0.6)' : 'rgba(255,70,40,0.55)';
     ctx.fillStyle=eyeGlow;
     ctx.beginPath();
-    ctx.moveTo(-26,0);
-    ctx.lineTo(-4,18);
-    ctx.lineTo(-8,24);
-    ctx.lineTo(-30,4);
+    ctx.moveTo(-34,-2);
+    ctx.lineTo(-8,-14);
+    ctx.lineTo(-18,10);
     ctx.closePath();
-    ctx.moveTo(26,0);
-    ctx.lineTo(4,18);
-    ctx.lineTo(8,24);
-    ctx.lineTo(30,4);
+    ctx.moveTo(34,-2);
+    ctx.lineTo(8,-14);
+    ctx.lineTo(18,10);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -3515,40 +3546,65 @@ select optgroup { color: #0b1022; }
     ctx.ellipse(0,34,92,164,0,0,Math.PI*2);
     ctx.fill();
 
-    // mantle glow
-    ctx.fillStyle='rgba(210,160,255,0.18)';
-    ctx.strokeStyle='rgba(240,210,255,0.16)';
-    ctx.lineWidth=2.4;
-    for(const side of [-1,1]){
-      ctx.save();
-      ctx.scale(side,1);
-      ctx.beginPath();
-      ctx.moveTo(-14,-18);
-      ctx.quadraticCurveTo(-112,-110,-136,42);
-      ctx.quadraticCurveTo(-118,198,-44,238);
-      ctx.quadraticCurveTo(-26,124,-14,-18);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
+    const cloakPhase=state.cloakPhase||0;
+    const cloakSwayStrength=state.cloakSway!=null?state.cloakSway:0.2;
+    const ragAmplitude=10 + 28*cloakSwayStrength;
+    const hoverLift=Math.sin(hoverPhase*0.7 + elapsed*0.0012)*3;
+
+    // spectral cloak trail
+    ctx.fillStyle=`rgba(220,60,90,${0.14 + 0.06*Math.sin(elapsed/240)})`;
+    ctx.strokeStyle=`rgba(255,120,160,${0.12 + 0.04*Math.sin(elapsed/200)})`;
+    ctx.lineWidth=2.2;
+    ctx.beginPath();
+    ctx.moveTo(-112,-52 + hoverLift*0.4);
+    ctx.bezierCurveTo(-174,-6, -182,110 + hoverLift*0.2, -156,212 + hoverLift);
+    const hemBase=230 + hoverLift*0.12;
+    ctx.lineTo(-156, hemBase + Math.sin(cloakPhase + hoverPhase*0.45)*ragAmplitude - ragAmplitude*0.55);
+    for(let i=1;i<8;i++){
+      const t=i/8;
+      const x=-156 + 312*t;
+      const wave=Math.sin(cloakPhase + t*Math.PI*1.6 + hoverPhase*0.45)*ragAmplitude;
+      const jag=(i%2===0?-ragAmplitude*0.55:ragAmplitude*0.28);
+      ctx.lineTo(x, hemBase + wave + jag);
     }
+    ctx.lineTo(156, hemBase + Math.sin(cloakPhase + Math.PI*1.6 + hoverPhase*0.45)*ragAmplitude - ragAmplitude*0.55);
+    ctx.bezierCurveTo(182,110 + hoverLift*0.2, 174,-6, 112,-52 + hoverLift*0.4);
+    ctx.quadraticCurveTo(36,-126,0,-134);
+    ctx.quadraticCurveTo(-36,-126,-112,-52 + hoverLift*0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=`rgba(255,160,200,${0.1 + 0.04*Math.sin(elapsed/180)})`;
+    ctx.lineWidth=1.8;
+    ctx.beginPath();
+    ctx.moveTo(-46,-60 + hoverLift*0.3);
+    ctx.quadraticCurveTo(-32,36, -18,208 + hoverLift*0.1);
+    ctx.moveTo(46,-60 + hoverLift*0.3);
+    ctx.quadraticCurveTo(32,36, 18,208 + hoverLift*0.1);
+    ctx.moveTo(0,-120 + hoverLift*0.3);
+    ctx.quadraticCurveTo(-6,18,0,216 + hoverLift*0.1);
+    ctx.stroke();
+    ctx.restore();
 
     // elongated armour silhouette
     ctx.fillStyle='rgba(220,170,255,0.26)';
     ctx.beginPath();
-    ctx.moveTo(-28,-26);
-    ctx.quadraticCurveTo(0,-108,28,-26);
-    ctx.quadraticCurveTo(16,128,0,164);
-    ctx.quadraticCurveTo(-16,128,-28,-26);
+    ctx.moveTo(-30,-28);
+    ctx.quadraticCurveTo(0,-118,30,-28);
+    ctx.quadraticCurveTo(18,164,0,198);
+    ctx.quadraticCurveTo(-18,164,-30,-28);
     ctx.closePath();
     ctx.fill();
 
     // battle skirt glow
     ctx.beginPath();
-    ctx.moveTo(-48,14);
-    ctx.quadraticCurveTo(-8,-84,48,14);
-    ctx.quadraticCurveTo(26,210,0,244);
-    ctx.quadraticCurveTo(-26,210,-48,14);
+    ctx.moveTo(-50,10);
+    ctx.quadraticCurveTo(-10,-94,50,10);
+    ctx.quadraticCurveTo(28,226,0,262);
+    ctx.quadraticCurveTo(-28,226,-50,10);
     ctx.closePath();
     ctx.fillStyle='rgba(210,150,255,0.22)';
     ctx.fill();
@@ -3584,6 +3640,8 @@ select optgroup { color: #0b1022; }
         w:ghost.w,
         h:ghost.h,
         hoverPhase:ghost.hoverPhase,
+        cloakPhase:ghost.cloakPhase,
+        cloakSway:ghost.cloakSway,
         t0:ghost.t0
       };
       const fadeAlpha = ghost.fade ? alpha*alpha : alpha;
@@ -3636,6 +3694,7 @@ select optgroup { color: #0b1022; }
       maxHp:90,
       hoverPhase:0,
       cloakPhase:Math.random()*Math.PI*2,
+      cloakSway:0,
       hitFlashUntil:0,
       hitCooldownUntil:0,
       lastUpdate:now,
@@ -3704,6 +3763,8 @@ select optgroup { color: #0b1022; }
     if(demonPhase==='active' && demonBoss){
       const dt = now - (demonBoss.lastUpdate||now);
       demonBoss.lastUpdate=now;
+      const prevX=demonBoss.x;
+      const prevBaseY=demonBoss.baseY;
       if(!demonBoss.moveTarget || now>=demonBoss.nextMove){
         const L=layout();
         const minX=210;
@@ -3720,9 +3781,13 @@ select optgroup { color: #0b1022; }
       }
       demonBoss.hoverPhase += dt*0.0026;
       demonBoss.cloakPhase += dt*0.0018;
+      const moveDelta=Math.hypot(demonBoss.x-prevX, demonBoss.baseY-prevBaseY);
+      const baseSway=0.16 + Math.abs(Math.sin(demonBoss.hoverPhase))*0.1;
+      const swayTarget=Math.min(1.1, baseSway + moveDelta*14);
+      demonBoss.cloakSway = (demonBoss.cloakSway||0) + (swayTarget - (demonBoss.cloakSway||0))*0.35;
       demonBoss.y = demonBoss.baseY + Math.sin(demonBoss.hoverPhase)*14;
       if(!demonBoss.lastAfterimage || now - demonBoss.lastAfterimage > 140){
-        demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, t0:now, life:420});
+        demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, cloakSway:demonBoss.cloakSway, t0:now, life:420});
         if(demonAfterimages.length>6){ demonAfterimages.splice(0, demonAfterimages.length-6); }
         demonBoss.lastAfterimage=now;
       }
@@ -3743,7 +3808,7 @@ select optgroup { color: #0b1022; }
           anim.lastSpark=now;
         }
         if(elapsed>=fadeDuration){
-          demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, t0:now, life:600, fade:true});
+          demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, cloakSway:demonBoss.cloakSway, t0:now, life:600, fade:true});
           if(demonAfterimages.length>8){ demonAfterimages.splice(0, demonAfterimages.length-8); }
           demonBoss=null;
         }
