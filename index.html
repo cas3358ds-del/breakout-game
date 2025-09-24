@@ -2669,9 +2669,9 @@ select optgroup { color: #0b1022; }
       hornEdge: flash ? 'rgba(255,244,236,0.88)' : 'rgba(140,126,92,0.75)',
       visor: flash ? 'rgba(42,36,50,0.92)' : 'rgba(8,8,12,0.92)',
       eye: flash ? 'rgba(255,120,120,0.95)' : 'rgba(255,43,43,0.96)',
-      wingBone: flash ? 'rgba(240,234,244,0.9)' : 'rgba(118,52,56,0.95)',
-      wingMembrane: flash ? 'rgba(255,186,186,0.78)' : 'rgba(96,8,18,0.82)',
-      wingFade: flash ? 'rgba(255,210,210,0.6)' : 'rgba(26,6,10,0.7)',
+      wingBone: flash ? 'rgba(236,234,244,0.9)' : 'rgba(14,14,20,0.98)',
+      wingMembrane: flash ? 'rgba(255,210,210,0.82)' : 'rgba(186,16,32,0.92)',
+      wingFade: flash ? 'rgba(255,138,138,0.6)' : 'rgba(96,6,14,0.78)',
       cloth: flash ? 'rgba(216,96,112,0.86)' : 'rgba(123,15,23,0.88)',
       clothDeep: flash ? 'rgba(180,60,76,0.82)' : 'rgba(68,6,10,0.85)',
       clothHighlight: flash ? 'rgba(255,170,180,0.9)' : 'rgba(168,24,32,0.9)',
@@ -2713,64 +2713,75 @@ select optgroup { color: #0b1022; }
       ctx.translate(-18,-16 + wingLift*0.25);
       ctx.scale(wingStretch,1);
 
-      const wingGrad=ctx.createLinearGradient(32,-150,312,230);
-      wingGrad.addColorStop(0,'rgba(40,8,12,0.92)');
-      wingGrad.addColorStop(0.4,palette.wingMembrane);
-      wingGrad.addColorStop(1,palette.wingFade);
-
-      ctx.beginPath();
-      ctx.moveTo(32,12);
-      ctx.quadraticCurveTo(138,-78-wingLift,240,-16-wingLift*0.55);
-      ctx.quadraticCurveTo(302,46,312,124);
-      ctx.quadraticCurveTo(228,182,156,204);
-      ctx.quadraticCurveTo(88,206,34,146);
-      ctx.closePath();
-      ctx.fillStyle=wingGrad;
-      ctx.fill();
-      ctx.strokeStyle='rgba(54,12,18,0.75)';
-      ctx.lineWidth=3.2;
-      ctx.stroke();
-
-      const joints=[
-        {x:32,y:12},
-        {x:158,y:-56-wingLift*0.6},
-        {x:248,y:6-wingLift*0.35},
-        {x:304,y:124}
-      ];
-
-      ctx.strokeStyle=palette.wingBone;
+      const spineColor=palette.wingBone;
+      ctx.strokeStyle=spineColor;
       ctx.lineCap='round';
       ctx.lineJoin='round';
-      ctx.lineWidth=8;
+      ctx.lineWidth=12;
       ctx.beginPath();
-      ctx.moveTo(joints[0].x,joints[0].y);
-      for(let i=1;i<joints.length;i++){
-        ctx.lineTo(joints[i].x,joints[i].y);
+      ctx.moveTo(30,18);
+      ctx.quadraticCurveTo(148,-136-wingLift*0.85,284,-22-wingLift*0.45);
+      ctx.quadraticCurveTo(320,126,266,210);
+      ctx.stroke();
+
+      const branchAnchors=[
+        {from:[72,-32-wingLift*0.5], to:[216,-70-wingLift*0.35]},
+        {from:[84,42-wingLift*0.2], to:[244,70-wingLift*0.1]},
+        {from:[70,134], to:[232,188]}
+      ];
+      ctx.lineWidth=10;
+      for(const branch of branchAnchors){
+        ctx.beginPath();
+        ctx.moveTo(32,18);
+        ctx.quadraticCurveTo(branch.from[0], branch.from[1], branch.to[0], branch.to[1]);
+        ctx.stroke();
       }
-      ctx.stroke();
 
-      ctx.lineWidth=6;
-      ctx.beginPath();
-      ctx.moveTo(joints[0].x,joints[0].y);
-      ctx.lineTo(214,156);
-      ctx.moveTo(joints[1].x,joints[1].y);
-      ctx.lineTo(246,168);
-      ctx.moveTo(joints[2].x,joints[2].y);
-      ctx.lineTo(182,192);
-      ctx.stroke();
+      const segments=[
+        {
+          outline:[[30,16],[132,-148-wingLift*0.9],[288,-64-wingLift*0.6],[240,-12-wingLift*0.32],[108,-28],[74,-6]],
+          gradient:[30,16,288,-64-wingLift*0.6]
+        },
+        {
+          outline=[[34,54],[200,-6-wingLift*0.28],[306,80],[234,112],[110,76],[82,62]],
+          gradient:[34,54,306,80]
+        },
+        {
+          outline=[[32,112],[214,146],[288,220],[196,220],[96,154],[64,132]],
+          gradient:[32,112,288,220]
+        }
+      ];
 
-      ctx.globalCompositeOperation='lighter';
-      ctx.lineWidth=3;
-      ctx.strokeStyle=flash ? 'rgba(255,220,210,0.48)' : 'rgba(162,32,44,0.42)';
-      ctx.beginPath();
-      ctx.moveTo(34,18);
-      ctx.quadraticCurveTo(140,-70-wingLift*0.7,234,-22-wingLift*0.45);
-      ctx.quadraticCurveTo(296,42,300,118);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(46,120);
-      ctx.quadraticCurveTo(122,188,182,200);
-      ctx.stroke();
+      for(const seg of segments){
+        const grad=ctx.createLinearGradient(seg.gradient[0], seg.gradient[1], seg.gradient[2], seg.gradient[3]);
+        grad.addColorStop(0,'rgba(70,8,12,0.82)');
+        grad.addColorStop(0.45,palette.wingMembrane);
+        grad.addColorStop(1,palette.wingFade);
+
+        ctx.beginPath();
+        const pts=seg.outline;
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        ctx.quadraticCurveTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1]);
+        ctx.quadraticCurveTo(pts[3][0], pts[3][1], pts[4][0], pts[4][1]);
+        ctx.quadraticCurveTo(pts[5][0], pts[5][1], pts[0][0], pts[0][1]);
+        ctx.closePath();
+        ctx.fillStyle=grad;
+        ctx.fill();
+
+        ctx.strokeStyle='rgba(32,4,6,0.92)';
+        ctx.lineWidth=3.4;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        ctx.strokeStyle=flash ? 'rgba(255,228,220,0.5)' : 'rgba(220,52,68,0.42)';
+        ctx.lineWidth=2.4;
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        ctx.quadraticCurveTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1]);
+        ctx.stroke();
+        ctx.restore();
+      }
 
       ctx.restore();
     }
@@ -3112,7 +3123,7 @@ select optgroup { color: #0b1022; }
     for(const side of [-1,1]){
       ctx.save();
       ctx.scale(side,1);
-      ctx.translate(60,-74);
+      ctx.translate(68,-74);
 
       const outerPaul=ctx.createLinearGradient(-58,-42,58,56);
       outerPaul.addColorStop(0,palette.metalMid);
@@ -3194,14 +3205,14 @@ select optgroup { color: #0b1022; }
       ctx.lineWidth=2.2;
       ctx.stroke();
 
-      const upper=ctx.createLinearGradient(-26,-52,54,156);
+      const upper=ctx.createLinearGradient(-24,-68,60,188);
       upper.addColorStop(0,palette.metalMid);
       upper.addColorStop(1,palette.metalDark);
       ctx.beginPath();
-      ctx.moveTo(-24,-24);
-      ctx.quadraticCurveTo(46,-42,54,72);
-      ctx.quadraticCurveTo(20,166,-18,148);
-      ctx.quadraticCurveTo(-40,58,-24,-24);
+      ctx.moveTo(-22,-28);
+      ctx.quadraticCurveTo(36,-62,58,60);
+      ctx.quadraticCurveTo(54,196,6,202);
+      ctx.quadraticCurveTo(-30,92,-22,-28);
       ctx.closePath();
       ctx.fillStyle=upper;
       ctx.fill();
@@ -3210,24 +3221,23 @@ select optgroup { color: #0b1022; }
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(-10,0);
-      ctx.quadraticCurveTo(30,-18,40,86);
+      ctx.moveTo(-8,-2);
+      ctx.quadraticCurveTo(34,-28,46,86);
       ctx.strokeStyle=flash ? 'rgba(255,210,196,0.58)' : 'rgba(255,96,96,0.38)';
       ctx.lineWidth=2;
       ctx.stroke();
 
       ctx.save();
-      ctx.translate(6,124);
-      ctx.rotate(0.18);
-      const fore=ctx.createLinearGradient(-22,-28,48,158);
+      ctx.translate(18,148);
+      const fore=ctx.createLinearGradient(-24,-40,44,186);
       fore.addColorStop(0,palette.metalMid);
       fore.addColorStop(0.65,palette.metalDark);
-      fore.addColorStop(1,'rgba(26,24,32,0.96)');
+      fore.addColorStop(1,'rgba(28,26,34,0.96)');
       ctx.beginPath();
-      ctx.moveTo(-18,-6);
-      ctx.quadraticCurveTo(42,-18,48,96);
-      ctx.quadraticCurveTo(20,168,-16,154);
-      ctx.quadraticCurveTo(-28,64,-18,-6);
+      ctx.moveTo(-18,-16);
+      ctx.quadraticCurveTo(34,-32,42,90);
+      ctx.quadraticCurveTo(32,196,-10,190);
+      ctx.quadraticCurveTo(-34,70,-18,-16);
       ctx.closePath();
       ctx.fillStyle=fore;
       ctx.fill();
@@ -3236,20 +3246,20 @@ select optgroup { color: #0b1022; }
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(-6,24);
-      ctx.quadraticCurveTo(40,18,26,96);
+      ctx.moveTo(-4,12);
+      ctx.quadraticCurveTo(38,12,28,106);
       ctx.strokeStyle='rgba(255,214,150,'+(flash?0.54:0.34)+')';
       ctx.lineWidth=1.9;
       ctx.stroke();
 
-      const gauntlet=ctx.createLinearGradient(-16,72,48,132);
+      const gauntlet=ctx.createLinearGradient(-18,78,40,150);
       gauntlet.addColorStop(0,palette.metalDark);
       gauntlet.addColorStop(1,'rgba(30,26,36,0.94)');
       ctx.beginPath();
-      ctx.moveTo(-18,74);
-      ctx.quadraticCurveTo(42,58,44,98);
-      ctx.lineTo(38,134);
-      ctx.quadraticCurveTo(-6,150,-26,116);
+      ctx.moveTo(-20,82);
+      ctx.quadraticCurveTo(36,64,40,112);
+      ctx.lineTo(32,152);
+      ctx.quadraticCurveTo(-6,166,-28,134);
       ctx.closePath();
       ctx.fillStyle=gauntlet;
       ctx.fill();
@@ -3258,26 +3268,24 @@ select optgroup { color: #0b1022; }
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(32,96);
-      ctx.lineTo(18,118);
-      ctx.lineTo(42,122);
+      ctx.moveTo(-10,134);
+      ctx.lineTo(-2,170);
+      ctx.lineTo(18,172);
       ctx.strokeStyle=palette.accentGlow;
       ctx.lineWidth=1.8;
       ctx.stroke();
 
       ctx.save();
-      ctx.translate(48,100);
-      ctx.rotate(-0.16);
-      const blade=ctx.createLinearGradient(0,-14,218,14);
+      ctx.translate(10,164);
+      const blade=ctx.createLinearGradient(0,-18,0,212);
       blade.addColorStop(0,'rgba(238,240,248,0.96)');
       blade.addColorStop(0.45,'rgba(206,208,222,0.92)');
       blade.addColorStop(1,'rgba(114,118,146,0.9)');
       ctx.beginPath();
-      ctx.moveTo(-6,-10);
-      ctx.lineTo(176,-16);
-      ctx.lineTo(218,0);
-      ctx.lineTo(176,16);
-      ctx.lineTo(-6,10);
+      ctx.moveTo(-6,-14);
+      ctx.lineTo(18,-14);
+      ctx.lineTo(34,206);
+      ctx.lineTo(6,206);
       ctx.closePath();
       ctx.fillStyle=blade;
       ctx.fill();
@@ -3287,23 +3295,34 @@ select optgroup { color: #0b1022; }
 
       ctx.fillStyle=palette.accent;
       ctx.beginPath();
-      ctx.moveTo(-18,-8);
-      ctx.quadraticCurveTo(0,-22,18,-8);
-      ctx.lineTo(16,10);
-      ctx.quadraticCurveTo(0,-2,-16,10);
+      ctx.moveTo(-14,-12);
+      ctx.quadraticCurveTo(0,-28,14,-12);
+      ctx.lineTo(12,6);
+      ctx.quadraticCurveTo(0,-6,-12,6);
       ctx.closePath();
       ctx.fill();
 
       ctx.fillStyle='rgba(28,22,34,0.96)';
-      ctx.fillRect(-4,-6,8,36);
+      ctx.fillRect(-4,-10,8,38);
 
       ctx.strokeStyle='rgba(255,86,86,0.45)';
       ctx.lineWidth=1.2;
       ctx.beginPath();
-      ctx.moveTo(0,-12);
-      ctx.lineTo(180,0);
+      ctx.moveTo(0,-20);
+      ctx.lineTo(20,206);
       ctx.stroke();
       ctx.restore();
+
+      ctx.beginPath();
+      ctx.moveTo(-18,136);
+      ctx.quadraticCurveTo(-4,184,14,196);
+      ctx.quadraticCurveTo(-8,200,-24,172);
+      ctx.closePath();
+      ctx.fillStyle='rgba(40,32,46,0.96)';
+      ctx.fill();
+      ctx.strokeStyle='rgba(120,110,150,0.6)';
+      ctx.lineWidth=1.6;
+      ctx.stroke();
 
       ctx.restore();
       ctx.restore();
@@ -3453,47 +3472,67 @@ select optgroup { color: #0b1022; }
     ctx.fillStyle=visor;
     ctx.fill();
 
-    // inverted triangular eyes with demonic glow
+    // razor V-shaped visor eyes inspired by reference helm
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    const leftGlow=ctx.createRadialGradient(-36,6,0,-36,6,46);
-    leftGlow.addColorStop(0,palette.eye);
-    leftGlow.addColorStop(0.55,flash ? 'rgba(255,220,200,0.75)' : palette.accentGlow);
-    leftGlow.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=leftGlow;
+
+    const vAura=ctx.createRadialGradient(0,-18,10,0,-18,96);
+    vAura.addColorStop(0,flash ? 'rgba(255,168,150,0.65)' : 'rgba(255,72,72,0.58)');
+    vAura.addColorStop(0.55,flash ? 'rgba(255,210,196,0.4)' : 'rgba(180,36,40,0.32)');
+    vAura.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=vAura;
     ctx.beginPath();
-    ctx.moveTo(-66,32);
-    ctx.lineTo(-26,0);
-    ctx.lineTo(-72,-12);
+    ctx.ellipse(0,-6,92,72,0,0,Math.PI*2);
+    ctx.fill();
+
+    const leftEdge=ctx.createLinearGradient(-84,-60,-8,-18);
+    leftEdge.addColorStop(0,flash ? 'rgba(255,190,176,0.85)' : 'rgba(120,18,22,0.82)');
+    leftEdge.addColorStop(0.5,flash ? 'rgba(255,150,140,0.9)' : palette.eye);
+    leftEdge.addColorStop(1,flash ? 'rgba(255,236,220,0.86)' : 'rgba(255,210,160,0.76)');
+    ctx.fillStyle=leftEdge;
+    ctx.beginPath();
+    ctx.moveTo(-78,18);
+    ctx.lineTo(-14,-38);
+    ctx.lineTo(-80,-58);
+    ctx.quadraticCurveTo(-54,-30,-78,18);
     ctx.closePath();
     ctx.fill();
 
-    const rightGlow=ctx.createRadialGradient(36,6,0,36,6,46);
-    rightGlow.addColorStop(0,palette.eye);
-    rightGlow.addColorStop(0.55,flash ? 'rgba(255,220,200,0.75)' : palette.accentGlow);
-    rightGlow.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=rightGlow;
+    const rightEdge=ctx.createLinearGradient(84,-60,8,-18);
+    rightEdge.addColorStop(0,flash ? 'rgba(255,190,176,0.85)' : 'rgba(120,18,22,0.82)');
+    rightEdge.addColorStop(0.5,flash ? 'rgba(255,150,140,0.9)' : palette.eye);
+    rightEdge.addColorStop(1,flash ? 'rgba(255,236,220,0.86)' : 'rgba(255,210,160,0.76)');
+    ctx.fillStyle=rightEdge;
     ctx.beginPath();
-    ctx.moveTo(66,32);
-    ctx.lineTo(26,0);
-    ctx.lineTo(72,-12);
+    ctx.moveTo(78,18);
+    ctx.lineTo(14,-38);
+    ctx.lineTo(80,-58);
+    ctx.quadraticCurveTo(54,-30,78,18);
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle=flash ? 'rgba(255,214,204,0.8)' : 'rgba(255,60,60,0.78)';
+    const centerCore=ctx.createLinearGradient(0,-82,0,54);
+    centerCore.addColorStop(0,flash ? 'rgba(255,218,204,0.88)' : 'rgba(255,120,110,0.82)');
+    centerCore.addColorStop(0.45,flash ? 'rgba(255,134,126,0.9)' : 'rgba(255,38,38,0.86)');
+    centerCore.addColorStop(1,'rgba(140,0,10,0.6)');
+    ctx.fillStyle=centerCore;
     ctx.beginPath();
-    ctx.moveTo(-58,26);
-    ctx.lineTo(-22,4);
-    ctx.lineTo(-68,-8);
+    ctx.moveTo(-10,-74);
+    ctx.lineTo(0,-48);
+    ctx.lineTo(10,-74);
+    ctx.lineTo(14,50);
+    ctx.quadraticCurveTo(0,68,-14,50);
     ctx.closePath();
     ctx.fill();
 
+    ctx.strokeStyle=flash ? 'rgba(255,240,236,0.9)' : 'rgba(255,120,96,0.85)';
+    ctx.lineWidth=3;
     ctx.beginPath();
-    ctx.moveTo(58,26);
-    ctx.lineTo(22,4);
-    ctx.lineTo(68,-8);
-    ctx.closePath();
-    ctx.fill();
+    ctx.moveTo(-72,14);
+    ctx.quadraticCurveTo(-10,-40,0,-48);
+    ctx.quadraticCurveTo(10,-40,72,14);
+    ctx.stroke();
+
     ctx.restore();
 
     // layered cheek ridges (mouth removed)
