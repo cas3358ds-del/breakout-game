@@ -648,6 +648,37 @@ select optgroup { color: #0b1022; }
 <script>
 (() => {
 
+  const localStorage = (() => {
+    if (window.__breakoutStorage) return window.__breakoutStorage;
+    try {
+      const ls = window.localStorage;
+      const testKey = '__breakout_storage_test__';
+      ls.setItem(testKey, '1');
+      ls.removeItem(testKey);
+      window.__breakoutStorage = ls;
+      return ls;
+    } catch (err) {
+      console.warn('localStorage unavailable, falling back to memory store', err);
+      const memory = {};
+      const fallback = {
+        getItem(key) {
+          return Object.prototype.hasOwnProperty.call(memory, key) ? memory[key] : null;
+        },
+        setItem(key, value) {
+          memory[key] = String(value);
+        },
+        removeItem(key) {
+          delete memory[key];
+        },
+        clear() {
+          for (const k of Object.keys(memory)) delete memory[k];
+        }
+      };
+      window.__breakoutStorage = fallback;
+      return fallback;
+    }
+  })();
+
   // Google Apps Script 部署後的 Web App URL，需替換為您自己的網址
   const RANK_API = 'https://script.google.com/macros/s/AKfycbwuIqqynB0ohVwnMhcA3u2Gv9GimGqUvfCJ_Nw_UnoCuEMCHG_rGhlKA_pxOO51HHU/exec';
   // 逾時毫秒數：避免網路不穩或後端未回應導致 Promise 卡住
