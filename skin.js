@@ -1,4 +1,34 @@
 (() => {
+  const localStorage = (() => {
+    if (window.__breakoutStorage) return window.__breakoutStorage;
+    try {
+      const ls = window.localStorage;
+      const testKey = '__breakout_storage_test__';
+      ls.setItem(testKey, '1');
+      ls.removeItem(testKey);
+      window.__breakoutStorage = ls;
+      return ls;
+    } catch (err) {
+      console.warn('localStorage unavailable, falling back to memory store', err);
+      const memory = {};
+      const fallback = {
+        getItem(key) {
+          return Object.prototype.hasOwnProperty.call(memory, key) ? memory[key] : null;
+        },
+        setItem(key, value) {
+          memory[key] = String(value);
+        },
+        removeItem(key) {
+          delete memory[key];
+        },
+        clear() {
+          for (const k of Object.keys(memory)) delete memory[k];
+        }
+      };
+      window.__breakoutStorage = fallback;
+      return fallback;
+    }
+  })();
   const SKINS = {
     classic: {
       label: '經典風格',
