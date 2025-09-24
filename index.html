@@ -1848,6 +1848,13 @@ select optgroup { color: #0b1022; }
     score += Math.round(base * mul);
   }
   function scoreForBrick(b){ return b.boss ? 3000 : (b.elite ? 100 : 10); }
+  const BOSS_DEFEAT_SCORE = {
+    space: 5000,
+    reaper: 10000,
+    dragon: 20000,
+    demon: 50000
+  };
+  const BOSS_HIT_SCORE = 30;
   function renderStatsHtml(){
     const fd = (stats.fastestDeath===Infinity)? '-' : stats.fastestDeath.toFixed(1);
     const ld = (stats.longestLife===0)? '-' : stats.longestLife.toFixed(1);
@@ -3415,6 +3422,10 @@ select optgroup { color: #0b1022; }
     if(demonBoss.hitCooldownUntil && now<demonBoss.hitCooldownUntil) return false;
     demonBoss.hitCooldownUntil=now+140;
     demonBoss.hp=Math.max(0, demonBoss.hp-amount);
+    if(source==='ball'){
+      addScore(BOSS_HIT_SCORE);
+      updateHUD();
+    }
     demonBoss.hitFlashUntil=now+220;
     const ix=(impact&&impact.x!=null)?impact.x:demonBoss.x;
     const iy=(impact&&impact.y!=null)?impact.y:demonBoss.y;
@@ -3439,6 +3450,7 @@ select optgroup { color: #0b1022; }
       demonBoss.hp=0;
       demonBoss.hitFlashUntil=now+260;
     }
+    addScore(BOSS_DEFEAT_SCORE.demon);
     stats.bossKills++;
     updateHUD();
     screenShake=Math.max(screenShake,24);
@@ -4683,6 +4695,10 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(!dmg) return false;
     spaceBoss.hitCooldownUntil = now + 140;
     spaceBoss.hp = Math.max(0, spaceBoss.hp - dmg);
+    if(source==='ball'){
+      addScore(BOSS_HIT_SCORE);
+      updateHUD();
+    }
     spaceBoss.hitFlashUntil = now + 220;
     const jitterX=(Math.random()-0.5)*spaceBoss.w*0.4;
     const jitterY=(Math.random()-0.5)*spaceBoss.h*0.3;
@@ -4715,7 +4731,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const sb=spaceBoss;
     const fake={x:sb.x-sb.w/2,y:sb.y-sb.h/2,w:sb.w,h:sb.h};
     bossKillEffect(fake,{dropNineCat:'always'});
-    addScore(scoreForBrick({boss:true}));
+    addScore(BOSS_DEFEAT_SCORE.space);
     stats.bossKills++;
     updateHUD();
     spawnParticles(sb.x, sb.y, '#ffe9b2', 160, 3.2, 5.6, 6.0);
@@ -5872,6 +5888,10 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(!dmg) return false;
     reaperBoss.hitCooldownUntil = now + 160;
     reaperBoss.hp = Math.max(0, reaperBoss.hp - dmg);
+    if(source==='ball'){
+      addScore(BOSS_HIT_SCORE);
+      updateHUD();
+    }
     reaperBoss.hitFlashUntil = now + 260;
     const jitterX=(Math.random()-0.5)*reaperBoss.w*0.35;
     const jitterY=(Math.random()-0.5)*reaperBoss.h*0.25;
@@ -5903,7 +5923,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(reaperPhase!=='active' || !reaperBoss) return;
     const now=performance.now();
     const rb=reaperBoss;
-    addScore(scoreForBrick({boss:true}));
+    addScore(BOSS_DEFEAT_SCORE.reaper);
     stats.bossKills++;
     updateHUD();
     reaperAttackState=null;
@@ -6834,6 +6854,10 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(dragonBoss.hitCooldownUntil && now<dragonBoss.hitCooldownUntil) return false;
     dragonBoss.hitCooldownUntil=now+140;
     dragonBoss.hp=Math.max(0, dragonBoss.hp-amount);
+    if(source==='ball'){
+      addScore(BOSS_HIT_SCORE);
+      updateHUD();
+    }
     dragonBoss.hitFlashUntil=now+220;
     const ix=(impact&&impact.x!=null)?impact.x:dragonBoss.x;
     const iy=(impact&&impact.y!=null)?impact.y:dragonBoss.y;
@@ -6859,6 +6883,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       dragonBursts.push({type:'flare',x:cx,y:cy,r0:0,r1:360,t0:now,life:1500,color:'255,220,150'});
       dragonBursts.push({type:'ring',x:cx,y:cy,r0:60,r1:520,width:26,t0:now,life:1800,color:'255,210,130'});
     }
+    addScore(BOSS_DEFEAT_SCORE.dragon);
     stats.bossKills++;
     updateHUD();
     screenShake=Math.max(screenShake,20);
