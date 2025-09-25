@@ -6111,8 +6111,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const textPrimary=palette.textPrimary||'#f0f4ff';
     const textSecondary=palette.textSecondary||'#f7f9ff';
     const glow=palette.glow||'rgba(120,180,255,0.45)';
-    const centerX=(x + barW/2)*scaleX;
-    const labelAnchor=centerX - 24*scaleAvg;
+    const safeLeft=24*scaleAvg;
+    const safeRight=canvas.width - 28*scaleAvg;
+    const labelAnchor=(x - 18)*scaleX;
     ctx.save();
     ctx.textAlign='left';
 
@@ -6122,7 +6123,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.fillStyle=textPrimary;
     ctx.shadowColor=glow;
     ctx.shadowBlur=6*scaleAvg;
-    ctx.fillText(name, labelAnchor, (y - 8)*scaleY);
+    const nameMetrics=ctx.measureText(name);
+    let nameX=Math.max(safeLeft, Math.min(labelAnchor, safeRight - nameMetrics.width));
+    ctx.fillText(name, nameX, (y - 8)*scaleY);
     ctx.shadowBlur=0;
 
     const hpFont=Math.max(12, Math.round(12*1.5*scaleAvg));
@@ -6130,7 +6133,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.textBaseline='top';
     ctx.fillStyle=textSecondary;
     const hpText=`${hp.toLocaleString()}/${maxHp.toLocaleString()}`;
-    ctx.fillText(hpText, labelAnchor, (y + barH + 8)*scaleY);
+    const hpMetrics=ctx.measureText(hpText);
+    let hpX=Math.max(safeLeft, Math.min(labelAnchor, safeRight - hpMetrics.width));
+    ctx.fillText(hpText, hpX, (y + barH + 8)*scaleY);
     ctx.restore();
   }
 
