@@ -1775,6 +1775,12 @@ select optgroup { color: #0b1022; }
     ball.demonCloakStoredSpeed=Math.max(Math.hypot(ball.vx, ball.vy), 4);
     ball.demonCloakStayStart=0;
     ball.demonCloakInside=true;
+    const wrapRadius=Math.max(36, Math.min(120, Math.hypot(anchor.dx, anchor.dy)));
+    ball.demonCloakWrapRadius=wrapRadius;
+    ball.demonCloakWrapPhase=Math.atan2(anchor.dy, anchor.dx);
+    ball.demonCloakWrapProgress=0;
+    ball.demonCloakWrapDuration=900+Math.random()*400;
+    ball.demonCloakLastUpdate=now;
     ball.vx=0;
     ball.vy=0;
     return true;
@@ -1787,14 +1793,32 @@ select optgroup { color: #0b1022; }
       ball.x=center.x + anchor.dx;
       ball.y=center.y + anchor.dy;
     }
-    const dirX=anchor.dx>=0?1:-1;
-    const speed=ball.speedCap||GAME_CONFIG.caps.ballSpeedMax;
-    const diag=Math.SQRT1_2;
-    ball.vx=dirX*speed*diag;
-    ball.vy=speed*diag;
+    const speedCap=ball.speedCap||GAME_CONFIG.caps.ballSpeedMax;
+    const stored=Math.max(ball.demonCloakStoredSpeed||speedCap, 4);
+    const speed=Math.min(speedCap, stored*1.2);
+    const phase=ball.demonCloakWrapPhase||Math.atan2(anchor.dy, anchor.dx||1);
+    const tangent={
+      x:-Math.sin(phase),
+      y:Math.abs(Math.cos(phase))*0.75 + 0.35
+    };
+    const dirX=tangent.x>=0?1:-1;
+    const len=Math.hypot(tangent.x, tangent.y)||1;
+    ball.vx=(tangent.x/len)*speed;
+    ball.vy=(tangent.y/len)*speed;
     ball.demonCloakState='launched';
     ball.demonCloakReleaseAt=0;
     ball.demonCloakCapturedAt=0;
+    ball.demonCloakWrapProgress=0;
+    ball.demonCloakWrapRadius=0;
+    ball.demonCloakLastUpdate=0;
+    if(demonBoss){
+      const now=performance.now();
+      demonBoss.cloakWhipStart=now;
+      demonBoss.cloakWhipDuration=420;
+      demonBoss.cloakWhipUntil=now+420;
+      demonBoss.cloakWhipStrength=Math.min(1.4, 0.7+(ball.demonCloakStoredSpeed?Math.min(ball.demonCloakStoredSpeed/10,0.8):0));
+      demonBoss.cloakWhipDir=dirX||1;
+    }
   }
 
   function handleDemonCloakState(ball, now){
@@ -1811,6 +1835,9 @@ select optgroup { color: #0b1022; }
       ball.demonCloakAnchor=null;
       ball.demonCloakStayStart=0;
       ball.demonCloakInside=false;
+      ball.demonCloakWrapProgress=0;
+      ball.demonCloakWrapRadius=0;
+      ball.demonCloakLastUpdate=0;
       return false;
     }
 
@@ -1818,9 +1845,24 @@ select optgroup { color: #0b1022; }
       const center=demonCloakCenter();
       if(center){
         const anchor=ball.demonCloakAnchor||{dx:0,dy:0};
-        const sway=Math.sin((now-(ball.demonCloakCapturedAt||now))/240)*4;
-        ball.x=center.x + anchor.dx;
-        ball.y=center.y + anchor.dy + sway;
+        const dt=now-(ball.demonCloakLastUpdate||now);
+        const wrapDuration=ball.demonCloakWrapDuration||1000;
+        const progress=Math.max(0, Math.min(1, (ball.demonCloakWrapProgress||0) + (wrapDuration>0?dt/wrapDuration:0)));
+        ball.demonCloakWrapProgress=progress;
+        const baseRadius=ball.demonCloakWrapRadius||Math.max(36, Math.hypot(anchor.dx, anchor.dy));
+        const eased=Math.pow(progress,0.85);
+        const radius=Math.max(18, baseRadius*(1-eased) + 18*eased);
+        const swirlSpeed=0.006 + 0.006*progress;
+        ball.demonCloakWrapPhase=(ball.demonCloakWrapPhase||Math.atan2(anchor.dy, anchor.dx||1)) + dt*swirlSpeed;
+        const phase=ball.demonCloakWrapPhase;
+        const lift=Math.sin(progress*Math.PI*1.2)*10;
+        const dx=Math.cos(phase)*radius;
+        const dy=Math.sin(phase)*radius*0.65 + lift;
+        const sway=Math.sin((now-(ball.demonCloakCapturedAt||now))/260)*3;
+        ball.demonCloakAnchor={dx, dy:dy+sway};
+        ball.x=center.x + dx;
+        ball.y=center.y + dy + sway;
+        ball.demonCloakLastUpdate=now;
       }
       ball.vx=0;
       ball.vy=0;
@@ -2815,6 +2857,16 @@ select optgroup { color: #0b1022; }
 
     const flash = entity.hitFlashUntil && now<entity.hitFlashUntil;
     const hoverPhase = entity.hoverPhase||0;
+    const whipActive = entity.cloakWhipUntil && now<entity.cloakWhipUntil;
+    let whipStrength=0;
+    let whipDir=entity.cloakWhipDir||1;
+    if(whipActive){
+      const duration=Math.max(1, (entity.cloakWhipDuration||360));
+      const start=entity.cloakWhipStart|| (entity.cloakWhipUntil-duration);
+      const total=Math.max(1, entity.cloakWhipUntil-start);
+      const phase=Math.max(0, Math.min(1, 1-((entity.cloakWhipUntil-now)/total)));
+      whipStrength=(entity.cloakWhipStrength||1)*Math.sin(phase*Math.PI);
+    }
 
     const palette={
       metalDark: flash ? 'rgba(238,234,242,0.96)' : 'rgba(24,26,34,0.96)',
@@ -2858,12 +2910,14 @@ select optgroup { color: #0b1022; }
     ctx.save();
     ctx.translate(0,-12);
     const cloakPhase=entity.cloakPhase||0;
-    const cloakSwayStrength = entity.cloakSway!=null ? entity.cloakSway : 0.18;
+    const baseCloakSway = entity.cloakSway!=null ? entity.cloakSway : 0.18;
+    const cloakSwayStrength = baseCloakSway + (whipStrength?0.35*whipStrength:0);
     const hoverLift = Math.sin(hoverPhase*0.7)*4;
-    const anchorLift = Math.sin(cloakPhase*0.5 + hoverPhase*0.45)*6*cloakSwayStrength;
-    const swayLeft = Math.sin(cloakPhase)* (16 + 34*cloakSwayStrength);
-    const swayRight = Math.sin(cloakPhase + Math.PI*0.65)* (18 + 36*cloakSwayStrength);
-    const ragAmplitude = 26 + 48*cloakSwayStrength;
+    const whipSwing=whipStrength?whipDir*(32+60*cloakSwayStrength)*whipStrength:0;
+    const anchorLift = Math.sin(cloakPhase*0.5 + hoverPhase*0.45)*6*cloakSwayStrength + whipStrength*10;
+    const swayLeft = Math.sin(cloakPhase - whipStrength*0.4)* (16 + 34*cloakSwayStrength) - whipSwing;
+    const swayRight = Math.sin(cloakPhase + Math.PI*0.65 + whipStrength*0.4)* (18 + 36*cloakSwayStrength) + whipSwing;
+    const ragAmplitude = 26 + 48*cloakSwayStrength + (whipStrength?38*whipStrength:0);
     const hemBase = 288 + hoverLift*0.25;
     const hemDrift = (t)=>Math.sin(cloakPhase + t*Math.PI*1.9 + hoverPhase*0.5)*ragAmplitude;
     const ragJut = (i)=> (i%2===0 ? -ragAmplitude*0.85 : ragAmplitude*0.3);
@@ -3893,6 +3947,95 @@ select optgroup { color: #0b1022; }
       ctx.beginPath();
       ctx.arc(cx,cy,outer,0,Math.PI*2);
       ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawDemonCloakWraps(now, layer='front'){
+    if(level!==20 || demonPhase!=='active' || !demonBoss) return;
+    if(!Array.isArray(balls) || !balls.length) return;
+    const captured=balls.filter(b=>b && b.demonCloakState==='captured');
+    if(!captured.length) return;
+    const center=demonCloakCenter();
+    if(!center) return;
+    const scaleAvg=(scaleX+scaleY)/2;
+    const centerX=center.x*scaleX;
+    const centerY=center.y*scaleY;
+    for(const ball of captured){
+      const progress=Math.max(0, Math.min(1, ball.demonCloakWrapProgress||0));
+      const ballX=ball.x*scaleX;
+      const ballY=ball.y*scaleY;
+      const anchor=ball.demonCloakAnchor||{dx:0,dy:0};
+      const wrapRadius=Math.max(ball.r*scaleAvg*1.8, Math.hypot((anchor.dx||0)*scaleX, (anchor.dy||0)*scaleY)*0.6, 22*scaleAvg);
+      const dx=ballX-centerX;
+      const dy=ballY-centerY;
+      const baseAngle=Math.atan2(dy, dx);
+      const swirl=ball.demonCloakWrapPhase||baseAngle;
+      if(layer==='behind'){
+        ctx.save();
+        ctx.globalAlpha=0.45 + 0.25*progress;
+        ctx.lineCap='round';
+        ctx.lineJoin='round';
+        ctx.strokeStyle=`rgba(140,0,28,${0.55+0.3*progress})`;
+        ctx.lineWidth=(16 + 18*progress)*scaleAvg;
+        const ctrlX=centerX + dx*0.45 + Math.cos(swirl)*wrapRadius*0.55;
+        const ctrlY=centerY + dy*0.45 + Math.sin(swirl)*wrapRadius*0.45;
+        const tailX=ballX - Math.cos(baseAngle)*wrapRadius*0.55;
+        const tailY=ballY - Math.sin(baseAngle)*wrapRadius*0.35;
+        ctx.beginPath();
+        ctx.moveTo(centerX - 18*scaleAvg, centerY - 28*scaleAvg);
+        ctx.quadraticCurveTo(ctrlX, ctrlY, tailX, tailY);
+        ctx.stroke();
+        ctx.restore();
+        continue;
+      }
+      if(layer!=='front') continue;
+      ctx.save();
+      ctx.translate(ballX, ballY);
+      ctx.rotate(baseAngle + Math.PI/2);
+      const flapW=wrapRadius*(0.85 + 0.45*progress);
+      const flapLen=wrapRadius*(1.28 + 0.55*progress);
+      const topLift=wrapRadius*(0.68 + 0.24*progress);
+      ctx.beginPath();
+      ctx.moveTo(-flapW*0.62, -wrapRadius*0.24);
+      ctx.quadraticCurveTo(-flapW*1.05, flapLen*0.18, -flapW*0.2, flapLen*0.82);
+      ctx.quadraticCurveTo(0, flapLen*(1.1+0.22*progress), flapW*0.2, flapLen*0.82);
+      ctx.quadraticCurveTo(flapW*1.05, flapLen*0.18, flapW*0.62, -wrapRadius*0.24);
+      ctx.quadraticCurveTo(flapW*0.18, -topLift, 0, -topLift*1.08);
+      ctx.quadraticCurveTo(-flapW*0.18, -topLift, -flapW*0.62, -wrapRadius*0.24);
+      ctx.closePath();
+      const grad=ctx.createLinearGradient(0,-topLift*1.1,0,flapLen*(1.12+0.2*progress));
+      grad.addColorStop(0,`rgba(200,48,58,${0.55+0.2*progress})`);
+      grad.addColorStop(0.5,`rgba(140,0,24,${0.78+0.18*progress})`);
+      grad.addColorStop(1,`rgba(70,0,12,${0.92+0.06*progress})`);
+      ctx.fillStyle=grad;
+      ctx.shadowColor=`rgba(255,120,150,${0.18+0.22*progress})`;
+      ctx.shadowBlur=26*scaleAvg*progress;
+      ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.strokeStyle=`rgba(255,200,210,${0.18+0.18*progress})`;
+      ctx.lineWidth=2.4*scaleAvg;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(0, -topLift*0.82);
+      ctx.quadraticCurveTo(-flapW*0.12, flapLen*0.34, 0, flapLen*0.96);
+      ctx.strokeStyle=`rgba(255,180,200,${0.18+0.2*progress})`;
+      ctx.lineWidth=1.2*scaleAvg;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, -topLift*0.82);
+      ctx.quadraticCurveTo(flapW*0.12, flapLen*0.34, 0, flapLen*0.96);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle=`rgba(255,120,140,${0.18+0.24*progress})`;
+      ctx.lineWidth=3.2*scaleAvg;
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, wrapRadius*0.72, baseAngle-0.5, baseAngle+1.05);
+      ctx.stroke();
       ctx.restore();
     }
   }
@@ -5969,24 +6112,25 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const textSecondary=palette.textSecondary||'#f7f9ff';
     const glow=palette.glow||'rgba(120,180,255,0.45)';
     const centerX=(x + barW/2)*scaleX;
+    const labelAnchor=centerX - 24*scaleAvg;
     ctx.save();
-    ctx.textAlign='center';
+    ctx.textAlign='left';
 
-    const nameFont=Math.max(10, Math.round(13*scaleAvg));
+    const nameFont=Math.max(10, Math.round(13*1.2*scaleAvg));
     ctx.font=`${nameFont}px 'Noto Sans TC','Playfair Display',sans-serif`;
     ctx.textBaseline='bottom';
     ctx.fillStyle=textPrimary;
     ctx.shadowColor=glow;
     ctx.shadowBlur=6*scaleAvg;
-    ctx.fillText(name, centerX, (y - 8)*scaleY);
+    ctx.fillText(name, labelAnchor, (y - 8)*scaleY);
     ctx.shadowBlur=0;
 
-    const hpFont=Math.max(9, Math.round(12*scaleAvg));
+    const hpFont=Math.max(12, Math.round(12*1.5*scaleAvg));
     ctx.font=`${hpFont}px 'Playfair Display','Noto Sans TC',sans-serif`;
     ctx.textBaseline='top';
     ctx.fillStyle=textSecondary;
     const hpText=`${hp.toLocaleString()}/${maxHp.toLocaleString()}`;
-    ctx.fillText(hpText, centerX, (y + barH + 8)*scaleY);
+    ctx.fillText(hpText, labelAnchor, (y + barH + 8)*scaleY);
     ctx.restore();
   }
 
@@ -10665,6 +10809,7 @@ function generateLevel(lv, L){
     drawReaperLayer();
     drawDragonLayer();
     drawDemonLayer(now);
+    drawDemonCloakWraps(now,'behind');
     drawPlasmas(); drawHoly(); drawPhoenix(); drawSwords();
 
       // Boss wind-up glow
@@ -10746,11 +10891,14 @@ function generateLevel(lv, L){
         ctx.fillStyle=color; ctx.beginPath(); ctx.arc(p.x*scaleX,p.y*scaleY,(b.r*0.7)*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill();
       }
       const bx=b.x*scaleX, by=b.y*scaleY, br=b.r*((scaleX+scaleY)/2); const grad=ctx.createRadialGradient(bx-3,by-4,2,bx,by,br);
-      let edge=(b.piercing||(b.rampageUntil&&nowT<b.rampageUntil))?'#9ff':(buffs.FAST.active?'#ff9a66':'#cbd4ff'); if(buffs.PLASMA.active) edge='#aff'; if(buffs.FREEZE.active) edge='#e8f8ff'; if(buffs.HOLY.active) edge='#fff0a0'; if(buffs.FIRE.active) edge='#ff6600'; if(buffs.POISON.active) edge='#55ff55'; if(buffs.BLINK.active) edge='#a0b0ff'; if(buffs.GODSPEED.active) edge='#ffe066'; if(buffs.SWORD.active) edge='#d0bbff'; if(buffs.BLACKHOLE.active) edge='#444'; if(buffs.ANNIHIL.active) edge='#ffb347';
+      let edge=(b.piercing||(b.rampageUntil&&nowT<b.rampageUntil))?'#9ff':(buffs.FAST.active?'#ff9a66':'#cbd4ff');
+      if(buffs.PLASMA.active) edge='#aff'; if(buffs.FREEZE.active) edge='#e8f8ff'; if(buffs.HOLY.active) edge='#fff0a0'; if(buffs.FIRE.active) edge='#ff6600'; if(buffs.POISON.active) edge='#55ff55'; if(buffs.BLINK.active) edge='#a0b0ff'; if(buffs.GODSPEED.active) edge='#ffe066'; if(buffs.SWORD.active) edge='#d0bbff'; if(buffs.BLACKHOLE.active) edge='#444'; if(buffs.ANNIHIL.active) edge='#ffb347';
+      if(b.demonCloakState==='captured') edge='#ff758b';
       grad.addColorStop(0,'#fff'); grad.addColorStop(1, edge); ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(bx,by,br,0,Math.PI*2); ctx.fill();
       if(buffs.WAVY.active){ ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1; const r1=br+2+2*Math.sin((nowT/100)+b.x*0.02); ctx.beginPath(); ctx.arc(bx,by,r1,0,Math.PI*2); ctx.stroke(); }
       if(b.stuck && !orientLeft){ ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.fillRect((paddle.x+paddle.w/2-12)*scaleX,(paddle.y-6)*scaleY,24*scaleX,4*scaleY); }
     }
+    drawDemonCloakWraps(nowT,'front');
 
     // 黑洞特效
     for(let i=blackHoles.length-1;i>=0;i--){
