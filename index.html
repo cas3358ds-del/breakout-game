@@ -3437,8 +3437,9 @@ select optgroup { color: #0b1022; }
     ctx.stroke();
     ctx.restore();
 
-    const eyeBase=28;
-    const eyeLength=66;
+    const eyeScale=0.7;
+    const eyeBase=28*eyeScale;
+    const eyeLength=66*eyeScale;
     const eyeTilt=Math.PI/4;
     ctx.fillStyle=palette.eye;
     ctx.save();
