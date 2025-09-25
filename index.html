@@ -6117,7 +6117,8 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.save();
     ctx.textAlign='left';
 
-    const nameFont=Math.max(10, Math.round(13*1.2*scaleAvg));
+    const baseNameFont=Math.max(10, Math.round(13*1.2*scaleAvg));
+    const nameFont=Math.max(10, Math.round(baseNameFont*1.5));
     ctx.font=`${nameFont}px 'Noto Sans TC','Playfair Display',sans-serif`;
     ctx.textBaseline='bottom';
     ctx.fillStyle=textPrimary;
@@ -6132,9 +6133,14 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     ctx.font=`${hpFont}px 'Playfair Display','Noto Sans TC',sans-serif`;
     ctx.textBaseline='top';
     ctx.fillStyle=textSecondary;
+    ctx.textAlign='center';
     const hpText=`${hp.toLocaleString()}/${maxHp.toLocaleString()}`;
     const hpMetrics=ctx.measureText(hpText);
-    let hpX=Math.max(safeLeft, Math.min(labelAnchor, safeRight - hpMetrics.width));
+    const barCenter=(x + barW/2)*scaleX;
+    const halfWidth=hpMetrics.width/2;
+    const minCenter=safeLeft + halfWidth;
+    const maxCenter=safeRight - halfWidth;
+    const hpX=Math.max(minCenter, Math.min(barCenter, maxCenter));
     ctx.fillText(hpText, hpX, (y + barH + 8)*scaleY);
     ctx.restore();
   }
