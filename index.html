@@ -1774,6 +1774,7 @@ select optgroup { color: #0b1022; }
     ball.demonCloakAnchor=anchor;
     ball.demonCloakStoredSpeed=Math.max(Math.hypot(ball.vx, ball.vy), 4);
     ball.demonCloakStayStart=0;
+    ball.demonCloakInside=true;
     ball.vx=0;
     ball.vy=0;
     return true;
@@ -1809,6 +1810,7 @@ select optgroup { color: #0b1022; }
       ball.demonCloakStoredSpeed=0;
       ball.demonCloakAnchor=null;
       ball.demonCloakStayStart=0;
+      ball.demonCloakInside=false;
       return false;
     }
 
@@ -1831,18 +1833,19 @@ select optgroup { color: #0b1022; }
     const cloakBounds=getDemonCloakBounds();
     if(!cloakBounds) return false;
     const inCloak=(ball.x>=cloakBounds.x && ball.x<=cloakBounds.x+cloakBounds.w && ball.y>=cloakBounds.y && ball.y<=cloakBounds.y+cloakBounds.h);
+    const wasInside=!!ball.demonCloakInside;
+    ball.demonCloakInside=inCloak;
     if(inCloak && ball.demonCloakState!=='launched' && !demonPointInHitArea(ball.x, ball.y)){
-      if(!ball.demonCloakStayStart){ ball.demonCloakStayStart=now; }
-      if(now-ball.demonCloakStayStart>=1000){
-        if(Math.random()<0.1){
+      if(!wasInside){
+        ball.demonCloakStayStart=now;
+        if(Math.random()<0.05){
           if(captureBallInCloak(ball, now)){
             return true;
           }
         }
-        ball.demonCloakStayStart=now;
       }
-    }else{
-      if(!inCloak){ ball.demonCloakStayStart=0; }
+    }else if(!inCloak){
+      if(wasInside){ ball.demonCloakStayStart=0; }
       if(ball.demonCloakState!=='launched'){ ball.demonCloakState=null; }
     }
     return false;
@@ -5962,63 +5965,28 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
 
   function drawBossNameplate(name, hp, maxHp, x, y, barW, barH, palette){
     const scaleAvg=(scaleX+scaleY)/2;
-    const labelW=180;
-    const labelH=82;
-    const gap=16;
-    const L=layout();
-    const baseX=x-labelW-gap;
-    let labelX=Math.max(18, baseX);
-    const centerY=y+barH/2;
-    let labelY=centerY-labelH/2;
-    const minY=(L.top||0)+6;
-    const maxY=700-labelH-12;
-    labelY=Math.max(minY, Math.min(maxY, labelY));
-    const gradTop=palette.bgTop||'rgba(24,36,72,0.94)';
-    const gradBottom=palette.bgBottom||'rgba(12,22,48,0.9)';
-    const stroke=palette.frame||'rgba(180,210,255,0.65)';
-    const glow=palette.glow||'rgba(120,180,255,0.45)';
     const textPrimary=palette.textPrimary||'#f0f4ff';
     const textSecondary=palette.textSecondary||'#f7f9ff';
-    const divider=palette.divider||'rgba(255,255,255,0.18)';
-
+    const glow=palette.glow||'rgba(120,180,255,0.45)';
+    const centerX=(x + barW/2)*scaleX;
     ctx.save();
-    ctx.globalAlpha=0.97;
-    drawRoundedRect(labelX, labelY, labelW, labelH, 16);
-    const grad=ctx.createLinearGradient(labelX*scaleX, labelY*scaleY, labelX*scaleX, (labelY+labelH)*scaleY);
-    grad.addColorStop(0, gradTop);
-    grad.addColorStop(1, gradBottom);
-    ctx.fillStyle=grad;
-    ctx.fill();
-    ctx.strokeStyle=stroke;
-    ctx.lineWidth=2;
-    drawRoundedRect(labelX, labelY, labelW, labelH, 16);
-    ctx.stroke();
-
-    const centerX=(labelX+labelW/2)*scaleX;
     ctx.textAlign='center';
 
-    const nameFont=Math.max(20, Math.round(26*scaleAvg));
+    const nameFont=Math.max(10, Math.round(13*scaleAvg));
     ctx.font=`${nameFont}px 'Noto Sans TC','Playfair Display',sans-serif`;
-    ctx.textBaseline='top';
+    ctx.textBaseline='bottom';
     ctx.fillStyle=textPrimary;
     ctx.shadowColor=glow;
-    ctx.shadowBlur=10*scaleAvg;
-    ctx.fillText(name, centerX, (labelY+14)*scaleY);
+    ctx.shadowBlur=6*scaleAvg;
+    ctx.fillText(name, centerX, (y - 8)*scaleY);
     ctx.shadowBlur=0;
 
-    ctx.strokeStyle=divider;
-    ctx.lineWidth=1.2;
-    ctx.beginPath();
-    ctx.moveTo((labelX+26)*scaleX, (labelY+labelH/2)*scaleY);
-    ctx.lineTo((labelX+labelW-26)*scaleX, (labelY+labelH/2)*scaleY);
-    ctx.stroke();
-
-    const hpFont=Math.max(18, Math.round(24*scaleAvg));
+    const hpFont=Math.max(9, Math.round(12*scaleAvg));
     ctx.font=`${hpFont}px 'Playfair Display','Noto Sans TC',sans-serif`;
-    ctx.textBaseline='bottom';
+    ctx.textBaseline='top';
     ctx.fillStyle=textSecondary;
     const hpText=`${hp.toLocaleString()}/${maxHp.toLocaleString()}`;
-    ctx.fillText(hpText, centerX, (labelY+labelH-14)*scaleY);
+    ctx.fillText(hpText, centerX, (y + barH + 8)*scaleY);
     ctx.restore();
   }
 
