@@ -1297,6 +1297,7 @@ select optgroup { color: #0b1022; }
   // === 狀態 ===
   let running=false, paused=true, level=1, score=0, lives=3, soundsOn=false;
   let nineCatEaten=0;
+  const bossNineCatDrops=new Set();
   let fireEnergy=0;
   let gameOver=false;
   let combo=0;
@@ -1391,6 +1392,10 @@ select optgroup { color: #0b1022; }
   let demonAfterimages=[];
   let demonDeathAnim=null;
   let demonDefeatedAt=0;
+  const DEMON_DESCENT_DURATION=20000;
+  const DEMON_ASCENT_DURATION=2600;
+  const DEMON_RECOVERY_DURATION=4000;
+  const DEMON_LOW_KNOCKBACK_WINDOW=5000;
 
   function isSpaceBossActive(){
     return level===5 && spaceBossPhase==='active' && !!spaceBoss;
@@ -1762,6 +1767,76 @@ select optgroup { color: #0b1022; }
       }
     }
     return best;
+  }
+
+  function startDemonAscent(now){
+    if(!demonBoss || demonPhase!=='active') return;
+    if(demonBoss.mode==='bloodDrain') return;
+    if(demonBoss.mode==='ascending') return;
+    demonBoss.mode='ascending';
+    demonBoss.ascentStart=now;
+    demonBoss.ascentDuration=DEMON_ASCENT_DURATION;
+    demonBoss.moveTarget=null;
+    demonBoss.knockbackVX=0;
+    demonBoss.knockbackVY=0;
+  }
+
+  function applyDemonKnockback(dirX, dirY){
+    if(!demonBoss || demonPhase!=='active') return;
+    if(demonBoss.mode==='bloodDrain') return;
+    const now=performance.now();
+    if(dirX){
+      demonBoss.knockbackVX = (demonBoss.knockbackVX||0) + dirX*2.8;
+    }
+    if(dirY){
+      demonBoss.knockbackVY = (demonBoss.knockbackVY||0) + dirY*3.4;
+    }
+    if(demonBoss.mode==='low'){
+      if(demonBoss.lastKnockbackAt && now - demonBoss.lastKnockbackAt <= DEMON_LOW_KNOCKBACK_WINDOW){
+        demonBoss.lowKnockbacks = (demonBoss.lowKnockbacks||0) + 1;
+      }else{
+        demonBoss.lowKnockbacks = 1;
+      }
+      demonBoss.lastKnockbackAt=now;
+      if(demonBoss.lowKnockbacks>=3){
+        startDemonAscent(now);
+      }
+    }else{
+      demonBoss.lowKnockbacks=0;
+      demonBoss.lastKnockbackAt=now;
+    }
+  }
+
+  function triggerDemonBloodDrain(now, pr){
+    if(!demonBoss || demonPhase!=='active') return;
+    if(demonBoss.mode==='bloodDrain') return;
+    const centerX = pr.x + pr.w/2;
+    const centerY = pr.y + pr.h/2;
+    const L=layout();
+    const normalBase = demonBoss.normalBaseY ?? demonBoss.baseY;
+    const targetY = Math.max(L.top+90, normalBase-90);
+    demonBoss.mode='bloodDrain';
+    demonBoss.bloodDrain={
+      start:now,
+      grabX:centerX,
+      grabY:centerY,
+      ascendDuration:900,
+      burstAt:now+900,
+      end:now+2300,
+      burstDone:false,
+      targetY
+    };
+    demonBoss.moveTarget=null;
+    demonBoss.knockbackVX=0;
+    demonBoss.knockbackVY=0;
+    demonBoss.lowKnockbacks=0;
+    demonBoss.lastKnockbackAt=0;
+    demonEventMarquee={text:'魔王埃里赫曼施展鮮血吸取!', start:now, fadeStart:now+3000, end:now+3000, style:'elegant'};
+    spawnParticles(centerX, centerY, '#7a0820', 60, 2.4, 3.6, 3.4);
+    demonBoss.hp=Math.min(demonBoss.maxHp, demonBoss.hp+20);
+    updateHUD();
+    paddleGoneUntil=Math.max(paddleGoneUntil, now+3200);
+    screenShake=Math.max(screenShake,12);
   }
 
   function captureBallInCloak(ball, now){
@@ -4046,6 +4121,15 @@ select optgroup { color: #0b1022; }
     const L=layout();
     const cx=1100/2;
     const baseY=L.top + 160;
+    resetBossNineCatDrop('demon');
+    const pr=paddleRect();
+    let lowBaseY=baseY+180;
+    if(pr && pr.w>0 && pr.h>0){
+      const target=Math.max(L.top+200, pr.y-40);
+      lowBaseY=Math.max(baseY+140, Math.min(target, 520));
+    }else{
+      lowBaseY=Math.min(baseY+220, L.top+360);
+    }
     demonBoss={
       x:cx,
       y:baseY,
@@ -4068,7 +4152,21 @@ select optgroup { color: #0b1022; }
       lastUpdate:now,
       lastAfterimage:0,
       deathFade:1,
-      spawnAt:now
+      spawnAt:now,
+      normalBaseY:baseY,
+      lowBaseY,
+      descentStart:now,
+      descentDuration:DEMON_DESCENT_DURATION,
+      mode:'descending',
+      lowArrivalAnnounced:false,
+      lowKnockbacks:0,
+      lastKnockbackAt:0,
+      knockbackVX:0,
+      knockbackVY:0,
+      recoveryDuration:DEMON_RECOVERY_DURATION,
+      bloodDrain:null,
+      moveTarget:null,
+      nextMove:now+1200
     };
     demonPhase='active';
     demonAfterimages=[];
@@ -4119,7 +4217,7 @@ select optgroup { color: #0b1022; }
     spawnParticles(centerX,centerY,'#fff5ff',200,3.0,4.4,4.8);
     spawnParticles(centerX,centerY,'#c08cff',150,2.4,3.6,3.8);
     spawnParticles(centerX,centerY,'#ffd1ff',120,2.6,3.8,3.6);
-    spawnPower(centerX-12, centerY, {forceType:'NINE'});
+    spawnBossNineCatOnce('demon', centerX-12, centerY);
   }
 
   function updateDemonBoss(){
@@ -4133,31 +4231,139 @@ select optgroup { color: #0b1022; }
       demonBoss.lastUpdate=now;
       const prevX=demonBoss.x;
       const prevBaseY=demonBoss.baseY;
-      if(!demonBoss.moveTarget || now>=demonBoss.nextMove){
-        const L=layout();
-        const minX=210;
-        const maxX=890;
-        const minY=L.top + 100;
-        const maxY=L.top + 260;
-        demonBoss.moveTarget={x:minX + Math.random()*(maxX-minX), y:minY + Math.random()*(maxY-minY)};
-        demonBoss.nextMove = now + 1400 + Math.random()*1400;
+      const L=layout();
+      const minX=210;
+      const maxX=890;
+      const normalBase=demonBoss.normalBaseY ?? demonBoss.baseY;
+      const lowBase=demonBoss.lowBaseY ?? (normalBase+220);
+      if(demonBoss.mode==='bloodDrain' && demonBoss.bloodDrain){
+        const state=demonBoss.bloodDrain;
+        const targetY=(state.targetY!=null)?state.targetY:Math.max(L.top+90, normalBase-90);
+        const ascendDur=state.ascendDuration||900;
+        const progress=ascendDur>0?Math.max(0, Math.min(1, (now-state.start)/ascendDur)):1;
+        const lerp=Math.min(0.5, 0.18 + progress*0.6);
+        demonBoss.baseY += (targetY - demonBoss.baseY)*lerp;
+        demonBoss.x += ((state.grabX ?? demonBoss.x) - demonBoss.x)*0.08;
+        if(!state.burstDone && now>=state.burstAt){
+          const burstY=demonBoss.baseY;
+          spawnParticles(demonBoss.x, burstY, '#9f0c2e', 120, 3.0, 4.4, 4.0);
+          spawnParticles(demonBoss.x, burstY, '#c9184a', 80, 2.6, 3.8, 3.6);
+          spawnParticles(demonBoss.x, burstY, '#ff4d6d', 50, 2.4, 3.4, 3.2);
+          playSFX('explosion');
+          state.burstDone=true;
+        }
+        if(now>=state.end){
+          demonBoss.mode='recovery';
+          demonBoss.bloodDrain=null;
+          demonBoss.recoverUntil = now + (demonBoss.recoveryDuration || DEMON_RECOVERY_DURATION);
+          demonBoss.descentStart = demonBoss.recoverUntil;
+        }
+      }else{
+        if(demonBoss.knockbackVX){
+          demonBoss.x += demonBoss.knockbackVX * (dt/16);
+          demonBoss.knockbackVX *= Math.pow(0.82, dt/16);
+          if(Math.abs(demonBoss.knockbackVX)<0.05) demonBoss.knockbackVX=0;
+        }
+        if(demonBoss.knockbackVY){
+          demonBoss.baseY += demonBoss.knockbackVY * (dt/16);
+          demonBoss.knockbackVY *= Math.pow(0.82, dt/16);
+          if(Math.abs(demonBoss.knockbackVY)<0.05) demonBoss.knockbackVY=0;
+        }
+        let desiredBase=demonBoss.baseY;
+        if(demonBoss.mode==='descending'){
+          const elapsed=now - (demonBoss.descentStart||now);
+          const duration=demonBoss.descentDuration || DEMON_DESCENT_DURATION;
+          const progress=duration>0?Math.max(0, Math.min(1, elapsed/duration)):1;
+          desiredBase = normalBase + (lowBase - normalBase)*progress;
+          if(progress>=1){
+            demonBoss.mode='low';
+            demonBoss.moveTarget=null;
+            demonBoss.lowKnockbacks=0;
+            demonBoss.lastKnockbackAt=0;
+            if(!demonBoss.lowArrivalAnnounced){
+              demonEventMarquee={text:'哈哈哈! 你已經在我的攻擊範圍內啦!', start:now, fadeStart:now+3000, end:now+3000, style:'elegant'};
+              demonBoss.lowArrivalAnnounced=true;
+            }
+          }
+        }else if(demonBoss.mode==='low'){
+          desiredBase=lowBase;
+        }else if(demonBoss.mode==='ascending'){
+          const elapsed=now - (demonBoss.ascentStart||now);
+          const duration=demonBoss.ascentDuration || DEMON_ASCENT_DURATION;
+          const progress=duration>0?Math.max(0, Math.min(1, elapsed/duration)):1;
+          desiredBase = lowBase + (normalBase - lowBase)*progress;
+          if(progress>=1){
+            demonBoss.mode='recovery';
+            demonBoss.recoverUntil = now + (demonBoss.recoveryDuration || DEMON_RECOVERY_DURATION);
+            demonBoss.descentStart = demonBoss.recoverUntil;
+          }
+        }else if(demonBoss.mode==='recovery'){
+          desiredBase=normalBase;
+          if(now>= (demonBoss.recoverUntil||now)){
+            demonBoss.mode='descending';
+            demonBoss.descentStart=now;
+          }
+        }else{
+          desiredBase=normalBase;
+        }
+        if(desiredBase> demonBoss.baseY){
+          const denom=demonBoss.descentDuration || DEMON_DESCENT_DURATION;
+          const step = denom>0 ? (Math.abs(lowBase-normalBase)/denom)*dt : (desiredBase-demonBoss.baseY);
+          demonBoss.baseY += Math.min(desiredBase - demonBoss.baseY, step);
+        }else if(desiredBase < demonBoss.baseY){
+          const denom=demonBoss.ascentDuration || DEMON_ASCENT_DURATION;
+          const step = denom>0 ? (Math.abs(lowBase-normalBase)/denom)*dt : (demonBoss.baseY - desiredBase);
+          demonBoss.baseY -= Math.min(demonBoss.baseY - desiredBase, step);
+        }
+        if(demonBoss.mode==='low'){
+          const pr=paddleRect();
+          const targetX = pr.x + pr.w/2;
+          const chaseSpeed = Math.min(0.26, (dt/1000)*0.9);
+          demonBoss.x += (targetX - demonBoss.x)*chaseSpeed;
+          demonBoss.nextMove = now + 200;
+        }else{
+          if(!demonBoss.moveTarget || now>=demonBoss.nextMove){
+            const targetX=minX + Math.random()*(maxX-minX);
+            const targetY=desiredBase + (Math.random()*80 - 40);
+            demonBoss.moveTarget={x:targetX, y:targetY};
+            demonBoss.nextMove = now + 1400 + Math.random()*1400;
+          }
+          if(demonBoss.moveTarget){
+            const speed=Math.min(0.22, (dt/1000)*0.7);
+            demonBoss.x += (demonBoss.moveTarget.x - demonBoss.x)*speed;
+            demonBoss.baseY += (demonBoss.moveTarget.y - demonBoss.baseY)*speed*0.35;
+          }
+        }
       }
-      if(demonBoss.moveTarget){
-        const speed=Math.min(0.22, (dt/1000)*0.75);
-        demonBoss.x += (demonBoss.moveTarget.x - demonBoss.x)*speed;
-        demonBoss.baseY += (demonBoss.moveTarget.y - demonBoss.baseY)*speed;
+      demonBoss.x = Math.max(minX, Math.min(maxX, demonBoss.x));
+      const minBase=Math.min(normalBase, lowBase) - 100;
+      const maxBase=Math.max(normalBase, lowBase) + 140;
+      demonBoss.baseY = Math.max(L.top+80, Math.min(maxBase, demonBoss.baseY));
+      if(demonBoss.mode!=='low' && demonBoss.mode!=='bloodDrain'){
+        if(now - (demonBoss.lastKnockbackAt||0) > DEMON_LOW_KNOCKBACK_WINDOW){
+          demonBoss.lowKnockbacks=0;
+        }
       }
       demonBoss.hoverPhase += dt*0.0026;
       demonBoss.cloakPhase += dt*0.0018;
       const moveDelta=Math.hypot(demonBoss.x-prevX, demonBoss.baseY-prevBaseY);
       const baseSway=0.16 + Math.abs(Math.sin(demonBoss.hoverPhase))*0.1;
-      const swayTarget=Math.min(1.1, baseSway + moveDelta*14);
+      const swayTarget=0.4 + Math.sin(demonBoss.cloakPhase)*0.3 + moveDelta*0.06;
       demonBoss.cloakSway = (demonBoss.cloakSway||0) + (swayTarget - (demonBoss.cloakSway||0))*0.35;
       demonBoss.y = demonBoss.baseY + Math.sin(demonBoss.hoverPhase)*14;
       if(!demonBoss.lastAfterimage || now - demonBoss.lastAfterimage > 140){
         demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, cloakSway:demonBoss.cloakSway, t0:now, life:420});
         if(demonAfterimages.length>6){ demonAfterimages.splice(0, demonAfterimages.length-6); }
         demonBoss.lastAfterimage=now;
+      }
+      if(demonBoss.mode!=='bloodDrain'){
+        const pr=paddleRect();
+        if(pr.w>0 && pr.h>0 && now>=paddleGoneUntil){
+          const bounds=getDemonBounds();
+          if(bounds && rectsOverlap(bounds, pr)){
+            triggerDemonBloodDrain(now, pr);
+          }
+        }
       }
     }else if(demonPhase==='dying' && demonDeathAnim){
       const anim=demonDeathAnim;
@@ -5319,6 +5525,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const cx=anchor.x+anchor.w/2;
     const baseY=anchor.y+anchor.h+80;
     const now=performance.now();
+    resetBossNineCatDrop('space');
     spaceBoss={
       x:cx,
       y:baseY,
@@ -5397,7 +5604,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const now=performance.now();
     const sb=spaceBoss;
     const fake={x:sb.x-sb.w/2,y:sb.y-sb.h/2,w:sb.w,h:sb.h};
-    bossKillEffect(fake,{dropNineCat:'always'});
+    bossKillEffect(fake);
     addScore(BOSS_DEFEAT_SCORE.space);
     stats.bossKills++;
     updateHUD();
@@ -5494,7 +5701,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
           spaceBossBursts.push({type:'halo',x:spaceBoss.x,y:spaceBoss.y,r0:120,r1:720,t0:now,life:2600,color:'255,200,150'});
           playSFX('explosion');
           if(!anim.dropSpawned){
-            spawnPower(spaceBoss.x-12, spaceBoss.y, {forceType:'NINE'});
+            spawnBossNineCatOnce('space', spaceBoss.x-12, spaceBoss.y);
             anim.dropSpawned=true;
           }
         }
@@ -5724,6 +5931,12 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     if(segmentsIntersect(x1,y1,x2,y2,right,bottom,left,bottom)) return true;
     if(segmentsIntersect(x1,y1,x2,y2,left,bottom,left,top)) return true;
     return false;
+  }
+
+  function rectsOverlap(a, b){
+    if(!a || !b) return false;
+    if(!a.w || !a.h || !b.w || !b.h) return false;
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
   function segmentsIntersect(x1,y1,x2,y2,x3,y3,x4,y4){
@@ -6268,6 +6481,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const cx=anchor.x+anchor.w/2;
     const baseY=anchor.y+anchor.h+140;
     const now=performance.now();
+    resetBossNineCatDrop('reaper');
     reaperBoss={
       x:cx,
       y:baseY,
@@ -6750,7 +6964,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
           screenShake=Math.max(screenShake,16);
           playSFX('fireExplosion');
           if(!anim.dropSpawned){
-            spawnPower(bx-12, by, {forceType:'NINE'});
+            spawnBossNineCatOnce('reaper', bx-12, by);
             anim.dropSpawned=true;
           }
         }
@@ -7511,6 +7725,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const cx=anchor.x+anchor.w/2;
     const baseY=Math.max(L.top + 160, anchor.y + anchor.h + 140);
     const now=performance.now();
+    resetBossNineCatDrop('dragon');
     dragonBoss={
       x:cx,
       y:baseY,
@@ -7601,7 +7816,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     playSFX('fireExplosion');
     const dropX=(dragonBoss?dragonBoss.x:550)-12;
     const dropY=dragonBoss?dragonBoss.y:300;
-    spawnPower(dropX, dropY, {forceType:'NINE'});
+    spawnBossNineCatOnce('dragon', dropX, dropY);
   }
 
   function updateDragonBoss(){
@@ -9574,6 +9789,18 @@ function generateLevel(lv, L){
     }
   }
 
+  function resetBossNineCatDrop(key){
+    if(!key) return;
+    bossNineCatDrops.delete(key);
+  }
+
+  function spawnBossNineCatOnce(key, x, y){
+    if(!key) return;
+    if(bossNineCatDrops.has(key)) return;
+    bossNineCatDrops.add(key);
+    spawnPower(x, y, {forceType:'NINE'});
+  }
+
   function bossKillEffect(b, opts={}){
     const cx=b.x+b.w/2, cy=b.y+b.h/2;
     spawnParticles(cx,cy,'#fff5c0',60,2.5,4.0,4.5);
@@ -10045,6 +10272,7 @@ function generateLevel(lv, L){
   function hideCenter(){ centerNote.style.display='none'; }
 
   function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
+    bossNineCatDrops.clear();
     stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
     for(const k of Object.keys(buffs)){
       if(k!=='LONG'){
@@ -11809,6 +12037,8 @@ function generateLevel(lv, L){
           if(result){
             const zone=result.zone;
             let bounceAxis=null;
+            const incomingVX=b.vx;
+            const incomingVY=b.vy;
             if(!inRampage && !b.piercing){
               if(result.penetration===result.oL){ b.x=zone.x-r; b.vx=-Math.abs(b.vx)||-4; bounceAxis='x'; }
               else if(result.penetration===result.oR){ b.x=zone.x+zone.w+r; b.vx=Math.abs(b.vx)||4; bounceAxis='x'; }
@@ -11824,8 +12054,26 @@ function generateLevel(lv, L){
             if(bounceAxis){ noteBounce(b,b.x,b.y,bounceAxis,now); }
             const impactX=Math.max(zone.x, Math.min(b.x, zone.x+zone.w));
             const impactY=Math.max(zone.y, Math.min(b.y, zone.y+zone.h));
+            const hitLeftSide = result.penetration===result.oL && incomingVX>0;
+            const hitRightSide = result.penetration===result.oR && incomingVX<0;
+            const fromBelow = result.penetration===result.oB && incomingVY<0;
+            const approachingFromAbove = incomingVY>0.3;
+            const diagFromBelow = (incomingVY<-0.2) && (hitLeftSide || hitRightSide);
+            const sideImpact = (hitLeftSide || hitRightSide) && incomingVY<=0.2;
+            let knockX=0, knockY=0;
+            if(fromBelow){ knockY=-1; }
+            if(diagFromBelow){
+              knockX = hitLeftSide ? 1 : -1;
+              if(knockY===0) knockY=-0.6;
+            }else if(sideImpact && !approachingFromAbove){
+              knockX = hitLeftSide ? 1 : -1;
+              if(incomingVY<-0.05){ knockY=Math.min(knockY,-0.4); }
+            }
             spawnParticles(impactX, impactY, '#dcb6ff', 20, 1.6, 2.6, 2.4);
             fireCollide();
+            if(!approachingFromAbove && (fromBelow || diagFromBelow || sideImpact)){
+              applyDemonKnockback(knockX, knockY);
+            }
             damageActiveBoss(1,'ball',{x:impactX,y:impactY});
             collidedWithBrick=true;
           }
