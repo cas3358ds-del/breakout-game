@@ -399,22 +399,49 @@ select optgroup { color: #0b1022; }
     }
     /* === 和風．無限之城 === */
     body[data-skin="和風．無限之城"]{
-      --ink:#ffedc2;
-      --muted:#cbb07a;
-      --stroke:rgba(247,227,174,.35);
-      --bg1:#130a00;
-      --bg2:#060300;
-      --hudGrad1:rgba(80,60,20,.55);
-      --hudGrad2:rgba(50,35,10,.45);
-      --glass-1:rgba(255,255,255,.08);
-      --glass-2:rgba(255,255,255,.05);
-      --stageGlass:linear-gradient(180deg, rgba(255,200,120,.07), transparent);
-      --panelPattern:none;
-      --btnGlow:0 0 20px rgba(255,200,120,.25);
+      --ink:#ffe8d4;
+      --muted:#d5b097;
+      --stroke:rgba(214,102,86,.38);
+      --bg1:#1a050c;
+      --bg2:#070106;
+      --hudGrad1:rgba(94,20,32,.62);
+      --hudGrad2:rgba(52,8,20,.5);
+      --glass-1:rgba(148,30,46,.24);
+      --glass-2:rgba(70,12,26,.32);
+      --stageGlass:linear-gradient(180deg, rgba(140,26,38,.08), rgba(0,0,0,0));
+      --panelPattern:repeating-linear-gradient(90deg, rgba(116,24,36,.10) 0 18px, rgba(116,24,36,0) 18px 36px),
+                      repeating-linear-gradient(0deg, rgba(74,14,24,.08) 0 16px, rgba(74,14,24,0) 16px 32px);
+      --btnGlow:0 0 22px rgba(220,72,84,.32);
+      --heartGlow:rgba(255,148,122,.35);
     }
     body[data-skin="和風．無限之城"] #game{
       /* 修正背景位置屬性拼寫錯誤，確保圖片正常顯示 */
       background:url("images/d1.JPG") center/cover no-repeat;
+    }
+    body[data-skin="和風．無限之城"] .hud,
+    body[data-skin="和風．無限之城"] #buffs .badge,
+    body[data-skin="和風．無限之城"] .pill,
+    body[data-skin="和風．無限之城"] #promptsDock .prompt,
+    body[data-skin="和風．無限之城"] .ic-btn,
+    body[data-skin="和風．無限之城"] .btn,
+    body[data-skin="和風．無限之城"] select,
+    body[data-skin="和風．無限之城"] input[type="range"]{
+      color:var(--ink);
+      border-color:var(--stroke);
+      background:linear-gradient(160deg, rgba(180,38,50,.26), rgba(58,10,18,.38));
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.04), 0 10px 26px rgba(0,0,0,.34), var(--btnGlow);
+    }
+    body[data-skin="和風．無限之城"] .menu{
+      background:rgba(30,6,12,.94);
+      border-color:var(--stroke);
+    }
+    body[data-skin="和風．無限之城"] .menu .item{
+      background:linear-gradient(160deg, rgba(160,30,44,.28), rgba(50,8,18,.4));
+      border-color:var(--stroke);
+    }
+    body[data-skin="和風．無限之城"] .level-select select option{
+      background:#2c0610;
+      color:var(--ink);
     }
 
 /* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */

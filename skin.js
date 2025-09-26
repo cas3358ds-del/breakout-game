@@ -188,10 +188,14 @@
     label: '和風．無限之城',
     selectLabel: '和風．無限之城',
     cssSkin: '和風．無限之城',
-    lifeIcon: `<svg viewBox="0 0 32 32">
-      <path d="M2 4 L30 28 M2 4 l6-2 l2 6 M30 28 l-6 2 l-2-6"
-            stroke="#ffedc2" stroke-width="3" fill="none"
-            stroke-linecap="round" stroke-linejoin="round"/>
+    lifeIcon: `<svg viewBox="0 0 48 48" aria-hidden="true">
+      <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 38.5 L39.5 5" stroke="#fdf2da" stroke-width="3"/>
+        <path d="m34 11 4.2 4.2" stroke="#fef5e6" stroke-width="2.4"/>
+        <path d="m10.2 35 4.4 4.4" stroke="#431010" stroke-width="4.4"/>
+        <path d="m13.2 31.8 4 4" stroke="#b23a32" stroke-width="3.4"/>
+        <path d="m17.2 28.2 3.4 3.4" stroke="#fdf2da" stroke-width="2.2"/>
+      </g>
     </svg>`,
     canvas: {
       base: [210, 160, 70],
