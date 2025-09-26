@@ -1786,10 +1786,10 @@ select optgroup { color: #0b1022; }
     if(demonBoss.mode==='bloodDrain') return;
     const now=performance.now();
     if(dirX){
-      demonBoss.knockbackVX = (demonBoss.knockbackVX||0) + dirX*2.8;
+      demonBoss.knockbackVX = (demonBoss.knockbackVX||0) + dirX*8.4;
     }
     if(dirY){
-      demonBoss.knockbackVY = (demonBoss.knockbackVY||0) + dirY*3.4;
+      demonBoss.knockbackVY = (demonBoss.knockbackVY||0) + dirY*10.2;
     }
     if(demonBoss.mode==='low'){
       if(demonBoss.lastKnockbackAt && now - demonBoss.lastKnockbackAt <= DEMON_LOW_KNOCKBACK_WINDOW){
@@ -4261,13 +4261,13 @@ select optgroup { color: #0b1022; }
       }else{
         if(demonBoss.knockbackVX){
           demonBoss.x += demonBoss.knockbackVX * (dt/16);
-          demonBoss.knockbackVX *= Math.pow(0.82, dt/16);
-          if(Math.abs(demonBoss.knockbackVX)<0.05) demonBoss.knockbackVX=0;
+          demonBoss.knockbackVX *= Math.pow(0.9, dt/16);
+          if(Math.abs(demonBoss.knockbackVX)<0.02) demonBoss.knockbackVX=0;
         }
         if(demonBoss.knockbackVY){
           demonBoss.baseY += demonBoss.knockbackVY * (dt/16);
-          demonBoss.knockbackVY *= Math.pow(0.82, dt/16);
-          if(Math.abs(demonBoss.knockbackVY)<0.05) demonBoss.knockbackVY=0;
+          demonBoss.knockbackVY *= Math.pow(0.9, dt/16);
+          if(Math.abs(demonBoss.knockbackVY)<0.02) demonBoss.knockbackVY=0;
         }
         let desiredBase=demonBoss.baseY;
         if(demonBoss.mode==='descending'){
