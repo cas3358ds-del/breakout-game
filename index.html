@@ -1396,6 +1396,7 @@ select optgroup { color: #0b1022; }
   let demonAttackNextAt=0;
   let demonBlackSpears=[];
   let demonBlackSpearId=0;
+  const demonBloodEffects=[]; // 華麗噴血爆炸特效 {x,y,t0,life,ringStart,ringEnd}
   const DEMON_DESCENT_DURATION=20000;
   const DEMON_ASCENT_DURATION=2600;
   const DEMON_RECOVERY_DURATION=4000;
@@ -1825,8 +1826,10 @@ select optgroup { color: #0b1022; }
     const L=layout();
     const startY = overrides.startY ?? Math.max(0, L.top - 260);
     const baseWidth = lane.width || 60;
-    const width = Math.max(24, overrides.width ?? baseWidth * 0.34);
-    const length = Math.max(110, overrides.length ?? (brickH||40)*1.9);
+    const intendedWidth = overrides.width ?? Math.max(24, baseWidth * 0.34);
+    const width = Math.max(12, intendedWidth * 0.5);
+    const intendedLength = overrides.length ?? Math.max(110, (brickH||40)*1.9);
+    const length = Math.max(60, intendedLength * 0.5);
     const tipScale = Math.max(0.12, Math.min(0.45, overrides.tipScale ?? 0.22));
     const spear={
       id: ++demonBlackSpearId,
@@ -1926,11 +1929,20 @@ select optgroup { color: #0b1022; }
   }
 
   function spawnDemonSpearBlood(x, y){
-    spawnParticles(x, y, '#36040d', 36, 3.4, 4.4, 4.8);
-    spawnParticles(x, y, '#720c24', 42, 3.0, 3.8, 4.2);
-    spawnParticles(x, y, '#a11232', 28, 2.6, 3.6, 3.8);
-    spawnParticles(x, y, '#ff375b', 18, 2.2, 3.0, 3.4);
-    spawnParticles(x, y, '#ffd1dc', 12, 2.4, 3.4, 3.6);
+    const now=performance.now();
+    spawnParticles(x, y, '#36040d', 42, 3.6, 4.8, 4.8);
+    spawnParticles(x, y, '#720c24', 48, 3.2, 4.0, 4.4);
+    spawnParticles(x, y, '#a11232', 32, 2.6, 3.6, 3.8);
+    spawnParticles(x, y, '#ff375b', 22, 2.2, 3.0, 3.4);
+    spawnParticles(x, y, '#ffd1dc', 14, 2.4, 3.4, 3.6);
+    demonBloodEffects.push({
+      x,
+      y,
+      t0: now,
+      life: 900,
+      ringStart: 36 + Math.random()*12,
+      ringEnd: 220 + Math.random()*60
+    });
   }
 
   function startDemonBlackRitual(now){
@@ -1953,6 +1965,7 @@ select optgroup { color: #0b1022; }
       for(let i=0;i<3;i++) lanes.push({x:minX+step*i, width:laneWidth, queue:[]});
     }
     demonBlackSpears=[];
+    demonBloodEffects.length=0;
     demonAttackActive={
       type:'blackRitual',
       start:now,
@@ -2092,10 +2105,10 @@ select optgroup { color: #0b1022; }
           if(lineIntersectsRect(spear.x, prevTip, spear.x, tip, rect)){
             spear.paddleHit=true;
             spawnDemonSpearBlood(pr.x+pr.w/2, pr.y+pr.h/2);
-            spawnParticles(spear.x, pr.y+pr.h/2, '#ff8fa3', 16, 2.0, 3.0, 3.2);
+            spawnParticles(spear.x, pr.y+pr.h/2, '#ff8fa3', 20, 2.2, 3.2, 3.4);
             playSFX('explosion');
             paddleStunUntil=Math.max(paddleStunUntil, now+1200);
-            screenShake=Math.max(screenShake,14);
+            screenShake=Math.max(screenShake,18);
           }
         }
         if(tip>=700){
@@ -2157,18 +2170,71 @@ select optgroup { color: #0b1022; }
     }
   }
 
+  function drawDemonBloodEffects(now){
+    if(!demonBloodEffects.length) return;
+    const easeOut=t=>1-Math.pow(1-Math.max(0,Math.min(1,t)),3);
+    const scaleAvg=(scaleX+scaleY)/2;
+    for(let i=demonBloodEffects.length-1;i>=0;i--){
+      const fx=demonBloodEffects[i];
+      const life=fx.life||900;
+      const age=now-(fx.t0||0);
+      const prog=life>0?age/life:1;
+      if(prog>=1){ demonBloodEffects.splice(i,1); continue; }
+      const x=fx.x*scaleX;
+      const y=fx.y*scaleY;
+      const ringStart=fx.ringStart||40;
+      const ringEnd=fx.ringEnd||240;
+      const ringRadius=(ringStart + (ringEnd-ringStart)*easeOut(prog))*scaleAvg;
+      const glowRadius=ringEnd*0.72*scaleAvg;
+      const coreRadius=(ringStart*0.45 + ringEnd*0.22*prog)*scaleAvg;
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      const grad=ctx.createRadialGradient(x,y,0,x,y,glowRadius);
+      grad.addColorStop(0,`rgba(255,100,160,${0.55*(1-prog*0.4)})`);
+      grad.addColorStop(0.45,`rgba(170,0,50,${0.32*(1-prog)})`);
+      grad.addColorStop(1,'rgba(40,0,16,0)');
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.arc(x,y,glowRadius,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.globalAlpha=1;
+      ctx.fillStyle=`rgba(255,140,200,${0.28*(1-prog)})`;
+      ctx.beginPath();
+      ctx.arc(x,y,coreRadius,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.strokeStyle=`rgba(255,220,230,${0.52*(1-prog)})`;
+      const ringWidth=Math.max(3.2*scaleAvg, (6 + 6*(1-prog))*scaleAvg);
+      ctx.lineWidth=ringWidth;
+      ctx.beginPath();
+      ctx.arc(x,y,ringRadius,0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   function handleBallVsDemonSpears(ball, now){
     if(!demonBlackSpears.length) return;
     const r=ball.r;
+    const prevVX=ball.vx;
+    const prevVY=ball.vy;
+    let collided=false;
     for(const spear of demonBlackSpears){
-      if(!spear || (spear.state!=='falling' && spear.state!=='stuck')) continue;
+      if(!spear) continue;
+      if(spear.state!=='falling' && spear.state!=='stuck' && spear.state!=='charging') continue;
       const rect=demonBlackSpearRect(spear);
       if(circleIntersectsRect(ball.x, ball.y, r, rect)){
         if(destroyDemonSpear(spear, 'ball', now)){
+          collided=true;
           fireCollide();
           triggerBallBuffEffectsOnBossHit(ball, ball.x, ball.y, now);
         }
       }
+    }
+    if(collided){
+      ball.vx=prevVX;
+      ball.vy=prevVY;
     }
   }
 
@@ -4594,6 +4660,7 @@ select optgroup { color: #0b1022; }
     demonAttackActive=null;
     demonAttackNextAt=now+15000;
     demonBlackSpears=[];
+    demonBloodEffects.length=0;
   }
 
   function damageDemonBoss(amount=1, source='generic', impact){
@@ -10727,6 +10794,7 @@ function generateLevel(lv, L){
     holyFlashes.length=0;
     phoenixAnim=null;
     fireBursts.length=0;
+    demonBloodEffects.length=0;
     fireEnergy=0; updateFireEnergy();
     // 回復天地翻轉狀態及暫停計時器
     orientLeft=false;
@@ -11188,6 +11256,8 @@ function generateLevel(lv, L){
       ctx.stroke();
       ctx.restore();
     }
+
+    drawDemonBloodEffects(now);
 
 
     // LED 燈條框（多風格，落球區域無燈條）
