@@ -11184,7 +11184,7 @@ function generateLevel(lv, L){
     return '#8fb3ff';
   }
 
-  function drawBGDecor(){ const w=canvas.width,h=canvas.height; bgTime+=0.003;
+  function drawBGDecor(now){ const w=canvas.width,h=canvas.height; bgTime+=0.003;
     const isCyborg = window.currentSkin && window.currentSkin.cssSkin === '科技．賽博格綠';
     const isPhantom = window.currentSkin && window.currentSkin.cssSkin === '科技．魅影幻彩';
     if(isCyborg){
@@ -11432,7 +11432,7 @@ function generateLevel(lv, L){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     if(screenShake>0){ const s=screenShake*0.6; ctx.save(); ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); screenShake*=0.9; }
     const now=performance.now();
-    drawBGDecor();
+    drawBGDecor(now);
     drawDemonWave(now);
     if(buffs.ANNIHIL.active){ if(Math.random()<0.5) annihilSparks.push({x:Math.random()*1100,y:0,v:1+Math.random()*1.5}); for(let i=annihilSparks.length-1;i>=0;i--){ const sp=annihilSparks[i]; sp.y+=sp.v; ctx.fillStyle='rgba(255,220,150,0.8)'; ctx.fillRect(sp.x*scaleX, sp.y*scaleY,2*scaleX,2*scaleY); if(sp.y>700) annihilSparks.splice(i,1); } }
     drawRevealTiles();
