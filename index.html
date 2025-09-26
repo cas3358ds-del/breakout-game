@@ -1821,16 +1821,21 @@ select optgroup { color: #0b1022; }
     };
   }
 
-  function spawnDemonBlackSpear(lane, now){
+  function spawnDemonBlackSpear(lane, now, overrides={}){
     const L=layout();
-    const startY=Math.max(0, L.top - 200);
+    const startY = overrides.startY ?? Math.max(0, L.top - 260);
+    const baseWidth = lane.width || 60;
+    const width = Math.max(24, overrides.width ?? baseWidth * 0.34);
+    const length = Math.max(220, overrides.length ?? (brickH||40)*3.8);
+    const tipScale = Math.max(0.12, Math.min(0.45, overrides.tipScale ?? 0.22));
     const spear={
       id: ++demonBlackSpearId,
       lane,
-      x: lane.x,
-      width: lane.width,
+      x: overrides.x ?? lane.x,
+      width,
+      tipScale,
       y: startY,
-      length: Math.max(180, (brickH||40)*3),
+      length,
       state:'charging',
       spawnAt: now,
       chargeProgress: 0,
@@ -1882,9 +1887,10 @@ select optgroup { color: #0b1022; }
       const idx=attack.queue.indexOf(spear);
       if(idx>=0) attack.queue.splice(idx,1);
     }
-    spawnParticles(spear.x, spear.y + spear.length*0.6, '#3a1020', 28, 2.6, 3.2, 3.4);
-    spawnParticles(spear.x, spear.y + spear.length*0.7, '#8a1b2f', 18, 2.2, 2.8, 3.0);
-    spawnParticles(spear.x, spear.y + spear.length*0.8, '#d03040', 10, 1.6, 2.4, 2.6);
+    spawnParticles(spear.x, spear.y + spear.length*0.45, '#140916', 26, 2.6, 3.6, 3.6);
+    spawnParticles(spear.x, spear.y + spear.length*0.6, '#3a1020', 32, 2.8, 3.4, 3.6);
+    spawnParticles(spear.x, spear.y + spear.length*0.72, '#8a1b2f', 20, 2.2, 2.8, 3.0);
+    spawnParticles(spear.x, spear.y + spear.length*0.82, '#d03040', 14, 1.6, 2.4, 2.6);
     playSFX('fireExplosion');
     return true;
   }
@@ -1920,9 +1926,11 @@ select optgroup { color: #0b1022; }
   }
 
   function spawnDemonSpearBlood(x, y){
-    spawnParticles(x, y, '#720c24', 28, 3.0, 3.8, 4.0);
-    spawnParticles(x, y, '#a11232', 18, 2.6, 3.4, 3.6);
-    spawnParticles(x, y, '#ff375b', 12, 2.0, 2.8, 3.2);
+    spawnParticles(x, y, '#36040d', 36, 3.4, 4.4, 4.8);
+    spawnParticles(x, y, '#720c24', 42, 3.0, 3.8, 4.2);
+    spawnParticles(x, y, '#a11232', 28, 2.6, 3.6, 3.8);
+    spawnParticles(x, y, '#ff375b', 18, 2.2, 3.0, 3.4);
+    spawnParticles(x, y, '#ffd1dc', 12, 2.4, 3.4, 3.6);
   }
 
   function startDemonBlackRitual(now){
@@ -1950,16 +1958,25 @@ select optgroup { color: #0b1022; }
       start:now,
       stage:'windup',
       countdownUntil:now+3000,
-      nextChargeAt:now,
-      nextLaunchAt:0,
+      spawnInterval:80,
+      launchInterval:100,
+      launchSpeed:2200,
       launchEnd:0,
       lanes,
       queue:[],
-      lastLaneIndex:0,
+      spearsPerLane:20,
       overrideMovement:true,
       targetX:1100/2,
       targetBase:Math.max(L.top+110, (demonBoss.normalBaseY??demonBoss.baseY)-40)
     };
+    for(const lane of lanes){
+      lane.queue=[];
+      lane.spawnedCount=0;
+      lane.maxSpears=demonAttackActive.spearsPerLane;
+      lane.spawnNextAt=now;
+      lane.launchIndex=0;
+      lane.nextLaunchAt=0;
+    }
     demonBoss.mode='attack';
     demonBoss.knockbackVX=0;
     demonBoss.knockbackVY=0;
@@ -1989,34 +2006,56 @@ select optgroup { color: #0b1022; }
     demonBoss.knockbackVX*=Math.pow(0.7, dt/16);
     demonBoss.knockbackVY*=Math.pow(0.7, dt/16);
     if(attack.stage==='windup'){
-      if(now>=attack.nextChargeAt){
-        const lane=attack.lanes[attack.lastLaneIndex%attack.lanes.length];
-        attack.lastLaneIndex++;
-        const spear=spawnDemonBlackSpear(lane, now);
-        attack.queue.push(spear);
-        attack.nextChargeAt = now + 180;
+      const spawnInterval=Math.max(30, attack.spawnInterval||80);
+      for(const lane of attack.lanes){
+        if(!lane.spawnNextAt){ lane.spawnNextAt=now; }
+        while(lane.spawnedCount<lane.maxSpears && now>=lane.spawnNextAt){
+          const laneSpan = lane.width || Math.max((brickW||80)*2, 140);
+          const spread=laneSpan*0.45;
+          const offset=(Math.random()*2-1)*spread;
+          const spearWidth=Math.max(24, laneSpan*(0.24 + Math.random()*0.08));
+          const spearLength=Math.max(260, (brickH||40)*(3.6 + Math.random()*0.8));
+          const spear=spawnDemonBlackSpear(lane, now, {
+            x: lane.x + offset,
+            width: spearWidth,
+            length: spearLength,
+            tipScale: 0.16 + Math.random()*0.1
+          });
+          lane.spawnedCount++;
+          lane.spawnNextAt += spawnInterval;
+          attack.queue.push(spear);
+        }
       }
       if(now>=attack.countdownUntil){
         attack.stage='barrage';
-        attack.nextLaunchAt=now;
+        attack.launchStart=now;
         attack.launchEnd=now+2000;
+        for(const lane of attack.lanes){
+          lane.launchIndex=0;
+          lane.nextLaunchAt=now;
+        }
       }
-    }
-    if(attack.stage==='barrage'){
-      if(now>=attack.nextLaunchAt){
-        attack.nextLaunchAt += 100;
-        let launched=false;
-        while(attack.queue.length && !launched){
-          const spear=attack.queue.shift();
+    }else if(attack.stage==='barrage'){
+      const launchInterval=Math.max(60, attack.launchInterval||100);
+      let allLaunched=true;
+      for(const lane of attack.lanes){
+        if(!lane.queue || !lane.queue.length) continue;
+        if(lane.launchIndex===undefined){ lane.launchIndex=0; }
+        if(!lane.nextLaunchAt){ lane.nextLaunchAt=now; }
+        while(lane.launchIndex<lane.queue.length && now>=lane.nextLaunchAt){
+          const spear=lane.queue[lane.launchIndex++];
+          lane.nextLaunchAt += launchInterval;
           if(spear && spear.state==='charging'){
             spear.state='falling';
             spear.launchAt=now;
-            spear.vy=1200;
-            launched=true;
+            spear.vy=attack.launchSpeed||2200;
           }
         }
+        if(lane.launchIndex<lane.queue.length){
+          allLaunched=false;
+        }
       }
-      if(now>=attack.launchEnd && !attack.queue.some(s=>s.state==='charging')){
+      if(allLaunched && now>=attack.launchEnd && !attack.queue.some(s=>s && s.state==='charging')){
         attack.stage='linger';
       }
     }
@@ -2039,7 +2078,7 @@ select optgroup { color: #0b1022; }
         spear.chargeProgress=Math.max(0, Math.min(1, (now - spear.spawnAt)/dur));
         spear.alpha=0.25+0.6*spear.chargeProgress;
       }else if(spear.state==='falling'){
-        const vy=spear.vy||900;
+        const vy=spear.vy||1800;
         const move=vy*(dt/1000);
         const prevTip=spear.y+spear.length;
         spear.y+=move;
@@ -2053,15 +2092,19 @@ select optgroup { color: #0b1022; }
           if(lineIntersectsRect(spear.x, prevTip, spear.x, tip, rect)){
             spear.paddleHit=true;
             spawnDemonSpearBlood(pr.x+pr.w/2, pr.y+pr.h/2);
+            spawnParticles(spear.x, pr.y+pr.h/2, '#ff8fa3', 16, 2.0, 3.0, 3.2);
+            playSFX('explosion');
             paddleStunUntil=Math.max(paddleStunUntil, now+1200);
-            screenShake=Math.max(screenShake,10);
+            screenShake=Math.max(screenShake,14);
           }
         }
         if(tip>=700){
           spear.y=700-spear.length;
           spear.state='stuck';
           spear.stuckAt=now;
-          spear.blockRect={x:spear.x-(spear.width||60)/2, y:700-60, w:spear.width||60, h:60};
+          const blockWidth=Math.max(18, (spear.width||60)*0.75);
+          const blockHeight=Math.min(80, Math.max(40, spear.length*0.25));
+          spear.blockRect={x:spear.x-blockWidth/2, y:700-blockHeight, w:blockWidth, h:blockHeight};
         }
       }else if(spear.state==='stuck'){
         if(now - spear.stuckAt >= 1000){
@@ -2087,21 +2130,28 @@ select optgroup { color: #0b1022; }
       ctx.save();
       ctx.globalAlpha=Math.max(0, Math.min(1, alpha));
       const grad=ctx.createLinearGradient(spear.x*scaleX, rect.y*scaleY, spear.x*scaleX, tip*scaleY);
-      grad.addColorStop(0,'rgba(20,20,28,0.1)');
-      grad.addColorStop(0.2,'rgba(40,20,50,0.6)');
-      grad.addColorStop(0.7,'rgba(20,10,30,0.95)');
-      grad.addColorStop(1,'rgba(10,5,18,1)');
+      grad.addColorStop(0,'rgba(18,18,26,0.08)');
+      grad.addColorStop(0.25,'rgba(42,24,60,0.55)');
+      grad.addColorStop(0.7,'rgba(16,8,24,0.96)');
+      grad.addColorStop(1,'rgba(8,4,16,1)');
       ctx.fillStyle=grad;
       const halfW=(spear.width||60)/2;
+      const tipScale=spear.tipScale ?? 0.22;
       ctx.beginPath();
       ctx.moveTo((spear.x-halfW)*scaleX, rect.y*scaleY);
       ctx.lineTo((spear.x+halfW)*scaleX, rect.y*scaleY);
-      ctx.lineTo((spear.x+halfW*0.5)*scaleX, tip*scaleY);
-      ctx.lineTo((spear.x-halfW*0.5)*scaleX, tip*scaleY);
+      ctx.lineTo((spear.x+halfW*tipScale)*scaleX, tip*scaleY);
+      ctx.lineTo((spear.x-halfW*tipScale)*scaleX, tip*scaleY);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle='rgba(255,40,80,0.2)';
+      ctx.strokeStyle='rgba(255,80,160,0.25)';
       ctx.lineWidth=2*scaleAvg;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.strokeStyle='rgba(255,200,240,0.3)';
+      ctx.lineWidth=1.4*scaleAvg;
+      ctx.moveTo(spear.x*scaleX, rect.y*scaleY);
+      ctx.lineTo(spear.x*scaleX, tip*scaleY);
       ctx.stroke();
       ctx.restore();
     }
