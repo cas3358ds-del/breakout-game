@@ -188,13 +188,39 @@
     label: '和風．無限之城',
     selectLabel: '和風．無限之城',
     cssSkin: '和風．無限之城',
-    lifeIcon: `<svg viewBox="0 0 48 48" aria-hidden="true">
-      <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M6 38.5 L39.5 5" stroke="#fdf2da" stroke-width="3"/>
-        <path d="m34 11 4.2 4.2" stroke="#fef5e6" stroke-width="2.4"/>
-        <path d="m10.2 35 4.4 4.4" stroke="#431010" stroke-width="4.4"/>
-        <path d="m13.2 31.8 4 4" stroke="#b23a32" stroke-width="3.4"/>
-        <path d="m17.2 28.2 3.4 3.4" stroke="#fdf2da" stroke-width="2.2"/>
+    lifeIcon: `<svg viewBox="0 0 64 64" aria-hidden="true" role="img">
+      <defs>
+        <linearGradient id="katana-castle-blade" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fdfcf7" />
+          <stop offset="52%" stop-color="#d9e4ef" />
+          <stop offset="100%" stop-color="#f5efe3" />
+        </linearGradient>
+        <linearGradient id="katana-castle-edge" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.0)" />
+          <stop offset="35%" stop-color="rgba(255,255,255,0.55)" />
+          <stop offset="80%" stop-color="rgba(255,255,255,0.0)" />
+        </linearGradient>
+        <linearGradient id="katana-castle-wrap" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#3a1409" />
+          <stop offset="50%" stop-color="#7b2d16" />
+          <stop offset="100%" stop-color="#2b0c06" />
+        </linearGradient>
+      </defs>
+      <g transform="rotate(-40 32 32)">
+        <path fill="#1f0b05" opacity="0.32" d="M24.6 8.6L38.8 33.6L34.4 34.8C30.7 23.4 25 13 18.4 4.6Z" />
+        <path fill="url(#katana-castle-blade)" d="M33.4 7.2L48.4 36L42.8 37.4L33.1 17.6L26 53.8L19.8 52.8Z" />
+        <path fill="url(#katana-castle-edge)" d="M35.6 9.2L47.6 33.8L44.8 34.6C41.9 26.2 37.8 18.3 33.4 11.8L27.2 46.8L24.2 46.4Z" opacity="0.7" />
+        <path fill="#0d0502" d="M21 40.5h22.4c1.8 0 3.4 1.1 4.1 2.7l.4 1c.8 2-0.2 4.2-2.2 5.1-2.3 1-4.9 1.6-7.6 1.6H26.4c-2.4 0-4.7-.5-6.8-1.5-2-.9-2.9-3.3-1.9-5.3l.6-1.1c.8-1.6 2.4-2.5 4.1-2.5z" />
+        <path fill="#2a150c" d="M23.4 40.4h17.2c2 0 3.6 1.6 3.6 3.6v1.5c0 3-2.4 5.4-5.4 5.4H25.2c-3 0-5.4-2.4-5.4-5.4V44c0-2 1.6-3.6 3.6-3.6z" />
+        <path fill="rgba(255,230,180,0.18)" d="M24.4 41.2h15.2c1.6 0 2.8 1.3 2.8 2.8v1c0 2.4-1.9 4.3-4.3 4.3H25.9c-2.4 0-4.3-1.9-4.3-4.3V44c0-1.6 1.3-2.8 2.8-2.8z" />
+        <rect x="23.8" y="38" width="16.4" height="4.2" rx="2.1" fill="#120603" opacity="0.82" />
+        <rect x="25.6" y="46.6" width="13.2" height="10.2" rx="3.2" fill="url(#katana-castle-wrap)" />
+        <rect x="27.2" y="48.8" width="10" height="6" rx="2.4" fill="rgba(255,220,170,0.26)" />
+        <rect x="28" y="49.8" width="1.6" height="4.2" rx="0.8" fill="#2b0c06" />
+        <rect x="31" y="49.8" width="1.6" height="4.2" rx="0.8" fill="#2b0c06" />
+        <rect x="34" y="49.8" width="1.6" height="4.2" rx="0.8" fill="#2b0c06" />
+        <rect x="29.6" y="55.6" width="4.8" height="3.4" rx="1.2" fill="#d8b163" />
+        <rect x="30.6" y="56.4" width="2.8" height="1.6" rx="0.8" fill="#6b3d16" />
       </g>
     </svg>`,
     canvas: {
