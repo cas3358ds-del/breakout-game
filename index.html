@@ -2220,6 +2220,7 @@ select optgroup { color: #0b1022; }
     const normalBase=demonBoss.normalBaseY ?? demonBoss.baseY;
     demonBladeHellTelegraphs.length=0;
     demonBladeHellSlashes.length=0;
+    const bodyHalfWidth=Math.max(6, (demonBoss?.w||90)/2);
     demonAttackActive={
       type:'bladeHell',
       start:now,
@@ -2227,7 +2228,9 @@ select optgroup { color: #0b1022; }
       overrideMovement:true,
       targetX,
       targetBase:normalBase,
-      beam:{start:now, damageAt:now+500, expandUntil:now+2500, vanishAt:now+3000, radius:12, maxRadius:480, x:targetX, damaging:false},
+      lockedTargetX:targetX,
+      lockedBaseY:demonBoss.baseY,
+      beam:{start:now, damageAt:now+500, expandUntil:now+2500, vanishAt:now+3000, radius:4, maxRadius:bodyHalfWidth, x:targetX, damaging:false},
       currentDarkness:0,
       targetDarkness:0.82,
       currentSpotlight:0,
@@ -2267,9 +2270,16 @@ select optgroup { color: #0b1022; }
     const lerp=1-Math.pow(0.001, dt/16);
     const pr=paddleRect();
     const normalBase=demonBoss.normalBaseY ?? demonBoss.baseY;
-    const targetX=(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):attack.targetX;
-    attack.targetX=targetX;
-    attack.targetBase=normalBase;
+    const desiredX=(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):attack.targetX;
+    if(attack.stage==='windup'){
+      if(attack.lockedTargetX==null){ attack.lockedTargetX = attack.targetX ?? demonBoss.x; }
+      if(attack.lockedBaseY==null){ attack.lockedBaseY = demonBoss.baseY; }
+      attack.targetX=attack.lockedTargetX;
+      attack.targetBase=attack.lockedBaseY;
+    }else{
+      attack.targetX=desiredX;
+      attack.targetBase=normalBase;
+    }
     demonBoss.x += (attack.targetX - demonBoss.x)*lerp;
     demonBoss.baseY += (attack.targetBase - demonBoss.baseY)*lerp*0.35;
     demonBoss.knockbackVX*=Math.pow(0.6, dt/16);
@@ -2284,9 +2294,11 @@ select optgroup { color: #0b1022; }
     if(attack.stage==='windup'){ beam=attack.beam; }
     else if(attack.stage==='ending'){ beam=attack.endBeam; }
     if(beam){
+      const bodyHalfWidth=Math.max(6, (demonBoss?.w||90)/2);
+      beam.maxRadius=bodyHalfWidth;
       if(attack.stage==='windup'){ beam.x=demonBoss.x; }
       if(now>=beam.damageAt) beam.damaging=true;
-      const initialRadius=12;
+      const initialRadius=4;
       if(now<beam.damageAt){ beam.radius=initialRadius; }
       else if(now<beam.expandUntil){
         const prog=Math.max(0, Math.min(1, (now-beam.damageAt)/Math.max(1, beam.expandUntil-beam.damageAt)));
@@ -2298,7 +2310,7 @@ select optgroup { color: #0b1022; }
         const prNow=paddleRect();
         if(prNow.w>0 && prNow.h>0 && now>=paddleGoneUntil){
           const L=layout();
-          const radius=Math.max(8, beam.radius||0);
+          const radius=Math.max(4, beam.radius||0);
           const rect={x:(beam.x||demonBoss.x)-radius, y:L.top, w:radius*2, h:700-L.top};
           if(rectsOverlap(rect, prNow)){
             bladeHellPaddleHit(now,'beam');
@@ -2358,7 +2370,8 @@ select optgroup { color: #0b1022; }
         const prNow=paddleRect();
         const fallbackBeamX = attack.lastPaddleX ?? demonBladeHellLastPaddleCenter?.x ?? 550;
         const beamX=(prNow.w>0 && prNow.h>0)?(prNow.x+prNow.w/2):fallbackBeamX;
-        attack.endBeam={start:now, damageAt:now+500, expandUntil:now+2500, vanishAt:now+3000, radius:10, maxRadius:attack.beam?attack.beam.maxRadius:460, x:beamX, damaging:false};
+        const bodyHalfWidth=Math.max(6, (demonBoss?.w||90)/2);
+        attack.endBeam={start:now, damageAt:now+500, expandUntil:now+2500, vanishAt:now+3000, radius:4, maxRadius:bodyHalfWidth, x:beamX, damaging:false};
         demonEventShakeUntil=now+3200;
       }
     }else if(attack.stage==='ending'){
@@ -2694,15 +2707,16 @@ select optgroup { color: #0b1022; }
       else if(attack.stage==='ending'){ beam=attack.endBeam; }
       if(beam){
         const x=(beam.x??demonBoss?.x??550);
-        const radius=Math.max(6, beam.radius||0);
+        const radius=Math.max(1.5, beam.radius||0);
         ctx.save();
         ctx.globalCompositeOperation='lighter';
         const y1=stageTop;
         const y2=700;
         const grad=ctx.createLinearGradient(x*scaleX, y1*scaleY, x*scaleX, y2*scaleY);
-        grad.addColorStop(0,'rgba(120,60,180,0)');
-        grad.addColorStop(0.5,'rgba(190,120,255,0.75)');
-        grad.addColorStop(1,'rgba(120,60,180,0)');
+        grad.addColorStop(0,'rgba(120,70,210,0)');
+        grad.addColorStop(0.4,'rgba(180,120,255,0.65)');
+        grad.addColorStop(0.6,'rgba(200,150,255,0.82)');
+        grad.addColorStop(1,'rgba(120,70,210,0)');
         ctx.fillStyle=grad;
         ctx.fillRect((x-radius)*scaleX, y1*scaleY, radius*2*scaleX, (y2-y1)*scaleY);
         ctx.restore();
