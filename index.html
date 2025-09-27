@@ -2070,11 +2070,17 @@ select optgroup { color: #0b1022; }
     const centerX=(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):(demonBladeHellLastPaddleCenter?.x||550);
     const centerY=(pr.w>0 && pr.h>0)?(pr.y+pr.h/2):(demonBladeHellLastPaddleCenter?.y||640);
     demonBladeHellLastPaddleCenter={x:centerX,y:centerY};
-    spawnParticles(centerX, centerY, '#ff2f7d', 90, 3.0, 4.4, 3.6);
-    spawnParticles(centerX, centerY, '#ffa8ff', 50, 2.4, 3.4, 3.0);
+    if(cause==='beam'){
+      spawnDemonSpearBlood(centerX, centerY);
+      spawnParticles(centerX, centerY, '#3a0a18', 40, 3.4, 4.6, 4.0);
+      spawnParticles(centerX, centerY, '#8a1340', 36, 2.8, 3.8, 3.4);
+    }else{
+      spawnParticles(centerX, centerY, '#ff2f7d', 90, 3.0, 4.4, 3.6);
+      spawnParticles(centerX, centerY, '#ffa8ff', 50, 2.4, 3.4, 3.0);
+    }
     playSFX('explosion');
     screenShake=Math.max(screenShake, cause==='beam'?12:9);
-    paddleGoneUntil=now+900;
+    paddleGoneUntil=now+(cause==='beam'?3000:900);
     lives=Math.max(0, lives-1);
     updateHUD();
     for(const ball of balls){ ball.vy=-Math.abs(ball.vy||4); }
@@ -2230,7 +2236,18 @@ select optgroup { color: #0b1022; }
       targetBase:normalBase,
       lockedTargetX:targetX,
       lockedBaseY:demonBoss.baseY,
-      beam:{start:now, damageAt:now+500, expandUntil:now+2500, vanishAt:now+3000, radius:4, maxRadius:bodyHalfWidth, x:targetX, damaging:false},
+      beam:{
+        start:now,
+        damageAt:now+500,
+        expandUntil:now+2500,
+        vanishAt:now+3000,
+        radius:4,
+        initialRadius:4,
+        maxRadius:bodyHalfWidth,
+        x:targetX,
+        damaging:false,
+        damageStartedAt:0
+      },
       currentDarkness:0,
       targetDarkness:0.82,
       currentSpotlight:0,
@@ -2297,8 +2314,13 @@ select optgroup { color: #0b1022; }
       const bodyHalfWidth=Math.max(6, (demonBoss?.w||90)/2);
       beam.maxRadius=bodyHalfWidth;
       if(attack.stage==='windup'){ beam.x=demonBoss.x; }
-      if(now>=beam.damageAt) beam.damaging=true;
-      const initialRadius=4;
+      if(now>=beam.damageAt){
+        if(!beam.damaging){
+          beam.damaging=true;
+          beam.damageStartedAt=beam.damageStartedAt||now;
+        }
+      }
+      const initialRadius=beam.initialRadius ?? 4;
       if(now<beam.damageAt){ beam.radius=initialRadius; }
       else if(now<beam.expandUntil){
         const prog=Math.max(0, Math.min(1, (now-beam.damageAt)/Math.max(1, beam.expandUntil-beam.damageAt)));
@@ -2371,7 +2393,18 @@ select optgroup { color: #0b1022; }
         const fallbackBeamX = attack.lastPaddleX ?? demonBladeHellLastPaddleCenter?.x ?? 550;
         const beamX=(prNow.w>0 && prNow.h>0)?(prNow.x+prNow.w/2):fallbackBeamX;
         const bodyHalfWidth=Math.max(6, (demonBoss?.w||90)/2);
-        attack.endBeam={start:now, damageAt:now+500, expandUntil:now+2500, vanishAt:now+3000, radius:4, maxRadius:bodyHalfWidth, x:beamX, damaging:false};
+        attack.endBeam={
+          start:now,
+          damageAt:now+500,
+          expandUntil:now+2500,
+          vanishAt:now+3000,
+          radius:4,
+          initialRadius:4,
+          maxRadius:bodyHalfWidth,
+          x:beamX,
+          damaging:false,
+          damageStartedAt:0
+        };
         demonEventShakeUntil=now+3200;
       }
     }else if(attack.stage==='ending'){
@@ -2708,20 +2741,41 @@ select optgroup { color: #0b1022; }
       if(beam){
         const x=(beam.x??demonBoss?.x??550);
         const radius=Math.max(1.5, beam.radius||0);
+        const initialRadius=beam.initialRadius ?? 4;
+        const maxRadius=Math.max(initialRadius, beam.maxRadius||radius);
+        const expandProg=Math.max(0, Math.min(1, (radius-initialRadius)/Math.max(1, maxRadius-initialRadius)));
+        const damageProg=beam.damaging ? Math.max(0, Math.min(1, (now-(beam.damageStartedAt||beam.damageAt))/800)) : 0;
+        const impact=Math.max(expandProg, damageProg);
+        const pulse=beam.damaging ? (0.2+0.2*Math.sin((now-(beam.damageStartedAt||now))/140)) : 0;
+        const auraStrength=Math.max(0, 0.18 + 0.32*impact + pulse*0.15);
+        const midAlpha=0.35 + 0.4*impact;
+        const coreAlpha=0.45 + 0.35*impact;
         ctx.save();
         ctx.globalCompositeOperation='lighter';
         const y1=stageTop;
         const y2=700;
-        const grad=ctx.createLinearGradient(x*scaleX, y1*scaleY, x*scaleX, y2*scaleY);
-        grad.addColorStop(0,'rgba(120,70,210,0)');
-        grad.addColorStop(0.4,'rgba(180,120,255,0.65)');
-        grad.addColorStop(0.6,'rgba(200,150,255,0.82)');
-        grad.addColorStop(1,'rgba(120,70,210,0)');
-        ctx.fillStyle=grad;
+        const auraWidth=radius*(1.35 + 0.45*impact);
+        const auraGrad=ctx.createLinearGradient(x*scaleX, y1*scaleY, x*scaleX, y2*scaleY);
+        auraGrad.addColorStop(0,'rgba(80,30,160,0)');
+        auraGrad.addColorStop(0.42,`rgba(150,70,220,${auraStrength})`);
+        auraGrad.addColorStop(0.58,`rgba(150,70,220,${auraStrength})`);
+        auraGrad.addColorStop(1,'rgba(80,30,160,0)');
+        ctx.fillStyle=auraGrad;
+        ctx.fillRect((x-auraWidth)*scaleX, y1*scaleY, auraWidth*2*scaleX, (y2-y1)*scaleY);
+
+        const coreGrad=ctx.createLinearGradient(x*scaleX, y1*scaleY, x*scaleX, y2*scaleY);
+        coreGrad.addColorStop(0,'rgba(120,70,210,0)');
+        coreGrad.addColorStop(0.38,`rgba(180,120,255,${midAlpha})`);
+        coreGrad.addColorStop(0.5,`rgba(230,190,255,${coreAlpha})`);
+        coreGrad.addColorStop(0.62,`rgba(180,120,255,${midAlpha})`);
+        coreGrad.addColorStop(1,'rgba(120,70,210,0)');
+        ctx.shadowColor=`rgba(210,160,255,${0.35 + 0.45*impact})`;
+        ctx.shadowBlur=(beam.damaging?60:36)*scaleAvg;
+        ctx.fillStyle=coreGrad;
         ctx.fillRect((x-radius)*scaleX, y1*scaleY, radius*2*scaleX, (y2-y1)*scaleY);
         ctx.restore();
       }
-    }
+      }
 
     if(demonBladeHellTelegraphs.length){
       for(const tele of demonBladeHellTelegraphs){
