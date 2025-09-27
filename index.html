@@ -1438,6 +1438,11 @@ select optgroup { color: #0b1022; }
   let demonBlackSpears=[];
   let demonBlackSpearId=0;
   const demonBloodEffects=[]; // 華麗噴血爆炸特效 {x,y,t0,life,ringStart,ringEnd}
+  const demonBladeHellTelegraphs=[];
+  const demonBladeHellSlashes=[];
+  const demonBladeHellCounterSlashes=[];
+  let demonBladeHellCounterstrike=null;
+  let demonBladeHellLastPaddleCenter={x:550, y:640};
   const DEMON_DESCENT_DURATION=20000;
   const DEMON_ASCENT_DURATION=2600;
   const DEMON_RECOVERY_DURATION=4000;
@@ -1696,6 +1701,7 @@ select optgroup { color: #0b1022; }
 
   function getDemonBounds(){
     if(!demonBoss) return null;
+    if(demonAttackActive && demonAttackActive.type==='bladeHell' && demonAttackActive.stage==='hell') return null;
     const hitW=demonBoss.hitW||demonBoss.w;
     const hitH=demonBoss.hitH||demonBoss.h;
     const offsetX=demonBoss.hitOffsetX||0;
@@ -1986,6 +1992,389 @@ select optgroup { color: #0b1022; }
     });
   }
 
+  function bladeHellSlashWouldHitRect(angle, cx, cy, rect){
+    if(!rect) return false;
+    const len=Math.hypot(1100,700);
+    const dx=Math.cos(angle);
+    const dy=Math.sin(angle);
+    const x1=cx - dx*len;
+    const y1=cy - dy*len;
+    const x2=cx + dx*len;
+    const y2=cy + dy*len;
+    return segmentIntersectsRect(x1,y1,x2,y2,rect);
+  }
+
+  function bladeHellComputeSafeRects(cx, cy, baseRect){
+    if(!baseRect) return [];
+    const margin=Math.max(24, (brickW||80)*0.5);
+    const rects=[];
+    if(!orientLeft){
+      const w=Math.max(40, baseRect.w||desiredPaddleWidth());
+      const h=Math.max(12, baseRect.h||paddle.h||18);
+      const y=baseRect.y|| (700-h-10);
+      const leftRect={x:cx - margin - w, y, w, h};
+      const rightRect={x:cx + margin, y, w, h};
+      leftRect.x=Math.max(0, Math.min(1100-w, leftRect.x));
+      rightRect.x=Math.max(0, Math.min(1100-w, rightRect.x));
+      rects.push(leftRect, rightRect);
+    }else{
+      const w=Math.max(12, baseRect.w||paddle.h||18);
+      const h=Math.max(60, baseRect.h||desiredPaddleWidth());
+      const L=layout();
+      const topRect={x:baseRect.x||40, y:cy - margin - h, w, h};
+      const bottomRect={x:baseRect.x||40, y:cy + margin, w, h};
+      const minY=L.top;
+      const maxY=700-h;
+      topRect.y=Math.max(minY, Math.min(maxY, topRect.y));
+      bottomRect.y=Math.max(minY, Math.min(maxY, bottomRect.y));
+      rects.push(topRect, bottomRect);
+    }
+    return rects;
+  }
+
+  function bladeHellRandomAngle(context=null){
+    const min=-Math.PI*0.6;
+    const max=Math.PI*0.6;
+    const rects=context?.safeRects||null;
+    for(let attempt=0;attempt<60;attempt++){
+      const angle=min + Math.random()*(max-min);
+      if(Math.abs(Math.sin(angle))<0.12) continue;
+      if(!rects || !rects.length){
+        return angle;
+      }
+      let hit=false;
+      for(const rect of rects){
+        if(bladeHellSlashWouldHitRect(angle, context.x, context.y, rect)){
+          hit=true; break;
+        }
+      }
+      if(!hit) return angle;
+    }
+    return min + Math.random()*(max-min);
+  }
+
+  function bladeHellPaddleHit(now, cause='slash'){
+    if(now<paddleGoneUntil) return;
+    if(demonAttackActive?.type==='bladeHell'){
+      demonAttackActive.hitsTaken=(demonAttackActive.hitsTaken||0)+1;
+    }
+    if(stats.lifeStart){
+      const dur=(now-stats.lifeStart)/1000;
+      if(dur<stats.fastestDeath) stats.fastestDeath=dur;
+      if(dur>stats.longestLife) stats.longestLife=dur;
+    }
+    stats.livesUsed++;
+    if(buffs.BLACKHOLE.active){ buffs.BLACKHOLE.deaths=Math.min(8,(buffs.BLACKHOLE.deaths||0)+1); }
+    if(buffs.ANNIHIL.active){ buffs.ANNIHIL.active=false; }
+    const pr=paddleRect();
+    const centerX=(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):(demonBladeHellLastPaddleCenter?.x||550);
+    const centerY=(pr.w>0 && pr.h>0)?(pr.y+pr.h/2):(demonBladeHellLastPaddleCenter?.y||640);
+    demonBladeHellLastPaddleCenter={x:centerX,y:centerY};
+    spawnParticles(centerX, centerY, '#ff2f7d', 90, 3.0, 4.4, 3.6);
+    spawnParticles(centerX, centerY, '#ffa8ff', 50, 2.4, 3.4, 3.0);
+    playSFX('explosion');
+    screenShake=Math.max(screenShake, cause==='beam'?12:9);
+    paddleGoneUntil=now+900;
+    lives=Math.max(0, lives-1);
+    updateHUD();
+    for(const ball of balls){ ball.vy=-Math.abs(ball.vy||4); }
+    if(lives<=0){ running=false; paused=true; showGameOver(); }
+  }
+
+  function spawnBladeHellTelegraph(def, attack, now){
+    const pr=paddleRect();
+    const L=layout();
+    let x, y;
+    let baseRect=null;
+    if(pr.w>0 && pr.h>0){
+      x=pr.x+pr.w/2;
+      y=pr.y+pr.h-8;
+      baseRect={x:pr.x, y:pr.y, w:pr.w, h:pr.h};
+      attack.lastPaddleRect={...baseRect};
+      attack.lastPaddleX=x;
+      attack.lastPaddleY=pr.y+pr.h/2;
+      demonBladeHellLastPaddleCenter={x, y:pr.y+pr.h/2};
+    }else{
+      const fallbackRect=attack.lastPaddleRect?{...attack.lastPaddleRect}:null;
+      if(fallbackRect){ baseRect={...fallbackRect}; }
+      x=attack.lastPaddleX ?? demonBladeHellLastPaddleCenter.x ?? 550;
+      y=(attack.lastPaddleY ?? demonBladeHellLastPaddleCenter.y ?? (L.top+480));
+    }
+    if(!baseRect){
+      const width=desiredPaddleWidth();
+      const height=Math.max(12, paddle.h||18);
+      const centerY=(attack.lastPaddleY ?? demonBladeHellLastPaddleCenter.y ?? (L.top+520));
+      baseRect={x:x-width/2, y:centerY-height/2, w:width, h:height};
+    }
+    baseRect.x=Math.max(0, Math.min(1100-(baseRect.w||0), baseRect.x));
+    const minBaseY=L.top;
+    const maxBaseY=700-(baseRect.h||0);
+    baseRect.y=Math.max(minBaseY, Math.min(maxBaseY, baseRect.y));
+    x=Math.max(60, Math.min(1100-60, x));
+    y=Math.max(L.top+40, Math.min(700-24, y));
+    const delay=def.slashDelay||500;
+    const safeRects=bladeHellComputeSafeRects(x, y, baseRect);
+    const tele={x,y,start:now,slashAt:now+delay,delay,angle:bladeHellRandomAngle({x,y,safeRects}),waveIndex:attack.waveIndex};
+    demonBladeHellTelegraphs.push(tele);
+    spawnParticles(x, y, '#d7b2ff', 12, 1.4, 2.4, 2.4);
+  }
+
+  function spawnBladeHellSlash(tele, now){
+    const len=Math.hypot(1100,700);
+    const dx=Math.cos(tele.angle);
+    const dy=Math.sin(tele.angle);
+    const x1=tele.x - dx*len;
+    const y1=tele.y - dy*len;
+    const x2=tele.x + dx*len;
+    const y2=tele.y + dy*len;
+    const slash={x1,y1,x2,y2,start:now,life:260,hitPaddle:false,waveIndex:tele.waveIndex};
+    demonBladeHellSlashes.push(slash);
+    spawnParticles(tele.x, tele.y, '#d8a6ff', 20, 1.6, 2.6, 2.6);
+    playSFX('sword');
+    screenShake=Math.max(screenShake,7);
+    const pr=paddleRect();
+    if(pr.w>0 && pr.h>0 && now>=paddleGoneUntil && segmentIntersectsRect(x1,y1,x2,y2, pr)){
+      slash.hitPaddle=true;
+      bladeHellPaddleHit(now,'slash');
+    }
+  }
+
+  function updateBladeHellEffects(attack, now){
+    for(let i=demonBladeHellTelegraphs.length-1;i>=0;i--){
+      const tele=demonBladeHellTelegraphs[i];
+      if(now>=tele.slashAt){
+        spawnBladeHellSlash(tele, now);
+        demonBladeHellTelegraphs.splice(i,1);
+      }
+    }
+    for(let i=demonBladeHellSlashes.length-1;i>=0;i--){
+      const slash=demonBladeHellSlashes[i];
+      const life=slash.life||260;
+      if(now>=slash.start+life){
+        if(!slash.hitPaddle && now>=paddleGoneUntil){
+          incrementCombo();
+          addScore(30);
+          updateHUD();
+        }
+        demonBladeHellSlashes.splice(i,1);
+      }
+    }
+  }
+
+  function scheduleBladeHellCounterstrike(now){
+    demonBladeHellCounterSlashes.length=0;
+    demonBladeHellCounterstrike={start:now+3000, activated:false, total:10, slashesDone:0, nextSlash:0, endAt:0, shakeUntil:0};
+  }
+
+  function spawnBladeHellCounterSlash(now){
+    if(!demonBoss) return;
+    const bounds=getDemonBounds();
+    if(!bounds) return;
+    const cx=bounds.x + Math.random()*bounds.w;
+    const cy=bounds.y + Math.random()*bounds.h;
+    const angle=bladeHellRandomAngle();
+    const len=Math.hypot(bounds.w, bounds.h)+220;
+    const dx=Math.cos(angle);
+    const dy=Math.sin(angle);
+    const x1=cx - dx*len;
+    const y1=cy - dy*len;
+    const x2=cx + dx*len;
+    const y2=cy + dy*len;
+    demonBladeHellCounterSlashes.push({x1,y1,x2,y2,start:now,life:260});
+    spawnParticles(cx, cy, '#ff5ec4', 36, 2.4, 3.6, 3.0);
+    screenShake=Math.max(screenShake,9);
+    playSFX('sword');
+    damageDemonBoss(1,'bladeHellReflect',{x:cx,y:cy});
+  }
+
+  function updateDemonBladeHellCounterstrike(now){
+    const state=demonBladeHellCounterstrike;
+    if(!state) return;
+    if(!state.activated){
+      if(now>=state.start){
+        state.activated=true;
+        state.nextSlash=now;
+        state.shakeUntil=now+1200;
+        demonEventMarquee={text:'魔王埃里赫曼被斬擊地獄反噬!', start:now, fadeStart:now+3000, end:now+3000, style:'elegant'};
+      }
+      return;
+    }
+    if(state.slashesDone<state.total && now>=state.nextSlash){
+      spawnBladeHellCounterSlash(now);
+      state.slashesDone++;
+      state.nextSlash=now+100;
+      if(state.slashesDone>=state.total){
+        state.endAt=now+800;
+      }
+    }
+    if(state.endAt && now>=state.endAt){
+      demonBladeHellCounterstrike=null;
+    }
+  }
+
+  function startDemonBladeHell(now){
+    if(!demonBoss) return;
+    const pr=paddleRect();
+    const L=layout();
+    const targetX=(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):(demonBoss.x||550);
+    const normalBase=demonBoss.normalBaseY ?? demonBoss.baseY;
+    demonBladeHellTelegraphs.length=0;
+    demonBladeHellSlashes.length=0;
+    demonAttackActive={
+      type:'bladeHell',
+      start:now,
+      stage:'windup',
+      overrideMovement:true,
+      targetX,
+      targetBase:normalBase,
+      beam:{start:now, damageAt:now+500, expandUntil:now+2500, vanishAt:now+3000, radius:12, maxRadius:480, x:targetX, damaging:false},
+      currentDarkness:0,
+      targetDarkness:0.82,
+      currentSpotlight:0,
+      currentBallGlow:0,
+      countdownDuration:30000,
+      countdownStart:0,
+      countdownEnd:0,
+      waveDefs:[
+        {rounds:3, points:3, pointInterval:500, roundInterval:1000, slashDelay:500},
+        {rounds:3, points:2, pointInterval:200, roundInterval:1000, slashDelay:200},
+        {rounds:3, points:3, pointInterval:200, roundInterval:1000, slashDelay:200},
+        {rounds:3, points:4, pointInterval:200, roundInterval:1000, slashDelay:200},
+        {rounds:1, points:30, pointInterval:100, roundInterval:0, slashDelay:100}
+      ],
+      waveIndex:-1,
+      waveState:null,
+      nextWaveAt:0,
+      hitsTaken:0,
+      lastPaddleX:(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):(demonBladeHellLastPaddleCenter.x||targetX),
+      lastPaddleY:(pr.w>0 && pr.h>0)?(pr.y+pr.h/2):(demonBladeHellLastPaddleCenter.y|| (L.top+480)),
+      lastPaddleRect:(pr.w>0 && pr.h>0)?{x:pr.x,y:pr.y,w:pr.w,h:pr.h}:null
+    };
+    demonEventMarquee={text:'危險！ 魔王埃里赫曼即將召喚斬擊地獄!', start:now, fadeStart:now+3000, end:now+3000, style:'elegant', countdown:{start:now, end:now+3000}};
+    demonEventShakeUntil=now+3200;
+    demonBoss.mode='attack';
+    demonBoss.knockbackVX=0;
+    demonBoss.knockbackVY=0;
+    demonBoss.moveTarget=null;
+    demonBoss.lowKnockbacks=0;
+    demonBoss.lastKnockbackAt=now;
+    demonBoss.attackAura='bladeHell';
+  }
+
+  function updateDemonBladeHell(now, dt){
+    if(!demonAttackActive || demonAttackActive.type!=='bladeHell' || !demonBoss) return;
+    const attack=demonAttackActive;
+    const lerp=1-Math.pow(0.001, dt/16);
+    const pr=paddleRect();
+    const normalBase=demonBoss.normalBaseY ?? demonBoss.baseY;
+    const targetX=(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):attack.targetX;
+    attack.targetX=targetX;
+    attack.targetBase=normalBase;
+    demonBoss.x += (attack.targetX - demonBoss.x)*lerp;
+    demonBoss.baseY += (attack.targetBase - demonBoss.baseY)*lerp*0.35;
+    demonBoss.knockbackVX*=Math.pow(0.6, dt/16);
+    demonBoss.knockbackVY*=Math.pow(0.6, dt/16);
+    if(pr.w>0 && pr.h>0){
+      attack.lastPaddleX=pr.x+pr.w/2;
+      attack.lastPaddleY=pr.y+pr.h/2;
+      attack.lastPaddleRect={x:pr.x,y:pr.y,w:pr.w,h:pr.h};
+      demonBladeHellLastPaddleCenter={x:attack.lastPaddleX, y:attack.lastPaddleY};
+    }
+    let beam=null;
+    if(attack.stage==='windup'){ beam=attack.beam; }
+    else if(attack.stage==='ending'){ beam=attack.endBeam; }
+    if(beam){
+      if(attack.stage==='windup'){ beam.x=demonBoss.x; }
+      if(now>=beam.damageAt) beam.damaging=true;
+      const initialRadius=12;
+      if(now<beam.damageAt){ beam.radius=initialRadius; }
+      else if(now<beam.expandUntil){
+        const prog=Math.max(0, Math.min(1, (now-beam.damageAt)/Math.max(1, beam.expandUntil-beam.damageAt)));
+        beam.radius=initialRadius + (beam.maxRadius-initialRadius)*prog;
+      }else{
+        beam.radius=beam.maxRadius;
+      }
+      if(beam.damaging){
+        const prNow=paddleRect();
+        if(prNow.w>0 && prNow.h>0 && now>=paddleGoneUntil){
+          const L=layout();
+          const radius=Math.max(8, beam.radius||0);
+          const rect={x:(beam.x||demonBoss.x)-radius, y:L.top, w:radius*2, h:700-L.top};
+          if(rectsOverlap(rect, prNow)){
+            bladeHellPaddleHit(now,'beam');
+          }
+        }
+      }
+    }
+    if(attack.stage==='windup'){
+      attack.currentDarkness=Math.min(attack.targetDarkness, attack.currentDarkness + dt/2400);
+      attack.currentSpotlight=Math.min(1, attack.currentSpotlight + dt/1800);
+      attack.currentBallGlow=Math.min(1, attack.currentBallGlow + dt/1500);
+      if(now>=attack.beam.vanishAt){
+        attack.stage='hell';
+        attack.countdownStart=now;
+        attack.countdownEnd=now+attack.countdownDuration;
+        attack.nextWaveAt=now+2000;
+        attack.waveIndex=-1;
+        attack.waveState=null;
+        demonBoss.hiddenUntil = Math.max(demonBoss.hiddenUntil||0, attack.countdownEnd+800);
+      }
+    }else if(attack.stage==='hell'){
+      attack.currentDarkness=Math.min(attack.targetDarkness, attack.currentDarkness + dt/3200);
+      attack.currentSpotlight=Math.min(1, attack.currentSpotlight + dt/2200);
+      attack.currentBallGlow=Math.min(1, attack.currentBallGlow + dt/2000);
+      if(attack.waveState){
+        const ws=attack.waveState;
+        if(!ws.roundState && now>=ws.nextRoundAt){
+          ws.roundState={pointIndex:0,nextPointAt:now};
+        }
+        if(ws.roundState){
+          const rs=ws.roundState;
+          while(rs.pointIndex<ws.def.points && now>=rs.nextPointAt){
+            spawnBladeHellTelegraph(ws.def, attack, now);
+            rs.pointIndex++;
+            rs.nextPointAt += ws.def.pointInterval;
+          }
+          if(rs.pointIndex>=ws.def.points){
+            ws.roundState=null;
+            ws.roundIndex=(ws.roundIndex||0)+1;
+            ws.nextRoundAt = now + ws.def.roundInterval;
+            if(ws.roundIndex>=ws.def.rounds){
+              attack.waveState=null;
+              attack.nextWaveAt = now + 2000;
+            }
+          }
+        }
+      }else if(attack.waveIndex+1 < attack.waveDefs.length && now>=attack.nextWaveAt){
+        attack.waveIndex++;
+        const def=attack.waveDefs[attack.waveIndex];
+        attack.waveState={def, roundIndex:0, nextRoundAt:now, roundState:null};
+      }
+      updateBladeHellEffects(attack, now);
+      for(const ball of balls){ suppressSpeedBoost(ball, now, 200); }
+      if(attack.countdownEnd && now>=attack.countdownEnd){
+        attack.stage='ending';
+        demonBladeHellTelegraphs.length=0;
+        const prNow=paddleRect();
+        const beamX=(prNow.w>0 && prNow.h>0)?(prNow.x+prNow.w/2):(attack.lastPaddleX??demonBladeHellLastPaddleCenter.x||550);
+        attack.endBeam={start:now, damageAt:now+500, expandUntil:now+2500, vanishAt:now+3000, radius:10, maxRadius:attack.beam?attack.beam.maxRadius:460, x:beamX, damaging:false};
+        demonEventShakeUntil=now+3200;
+      }
+    }else if(attack.stage==='ending'){
+      attack.currentDarkness=Math.max(0, attack.currentDarkness - dt/2200);
+      attack.currentSpotlight=Math.max(0, attack.currentSpotlight - dt/2000);
+      attack.currentBallGlow=Math.max(0, attack.currentBallGlow - dt/1800);
+      updateBladeHellEffects(attack, now);
+      if(attack.endBeam && now>=attack.endBeam.vanishAt){
+        const flawless=(attack.hitsTaken||0)===0;
+        demonBladeHellTelegraphs.length=0;
+        demonBladeHellSlashes.length=0;
+        finishDemonAttack(now);
+        if(flawless){ scheduleBladeHellCounterstrike(now); }
+      }
+    }
+  }
+
   function startDemonBlackRitual(now){
     if(!demonBoss) return;
     const L=layout();
@@ -2047,6 +2436,10 @@ select optgroup { color: #0b1022; }
     demonBoss.mode='descending';
     demonBoss.descentStart=now;
     demonBoss.moveTarget=null;
+    if(demonAttackActive.type==='bladeHell'){
+      demonBladeHellTelegraphs.length=0;
+      demonBladeHellSlashes.length=0;
+    }
     demonAttackActive=null;
     demonAttackNextAt = now + 15000;
   }
@@ -2252,6 +2645,169 @@ select optgroup { color: #0b1022; }
       ctx.arc(x,y,ringRadius,0,Math.PI*2);
       ctx.stroke();
       ctx.restore();
+    }
+  }
+
+  function drawDemonBladeHellLayer(now){
+    if(level!==20) return;
+    const attack=(demonAttackActive && demonAttackActive.type==='bladeHell')?demonAttackActive:null;
+    const hasCounter=demonBladeHellCounterSlashes.length>0;
+    if(!attack && !hasCounter) return;
+    const L=layout();
+    const stageTop=L.top;
+    const stageHeight=700-stageTop;
+    const scaleAvg=(scaleX+scaleY)/2;
+
+    if(attack){
+      const dark=attack.currentDarkness||0;
+      const spot=attack.currentSpotlight||0;
+      if(dark>0){
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, stageTop*scaleY, canvas.width, stageHeight*scaleY);
+        ctx.clip();
+        ctx.globalAlpha=Math.max(0, Math.min(1,dark));
+        ctx.fillStyle='#000';
+        ctx.fillRect(0, stageTop*scaleY, canvas.width, stageHeight*scaleY);
+        if(spot>0){
+          const pr=paddleRect();
+          const px=((pr.w>0 && pr.h>0)?(pr.x+pr.w/2):(attack.lastPaddleX??demonBladeHellLastPaddleCenter.x||550))*scaleX;
+          const py=((pr.w>0 && pr.h>0)?(pr.y+pr.h/2):(attack.lastPaddleY??demonBladeHellLastPaddleCenter.y|| (stageTop+240)))*scaleY;
+          const radius=260*scaleAvg;
+          const grad=ctx.createRadialGradient(px,py,40*scaleAvg,px,py,radius);
+          grad.addColorStop(0,'rgba(0,0,0,1)');
+          grad.addColorStop(1,'rgba(0,0,0,0)');
+          ctx.globalCompositeOperation='destination-out';
+          ctx.globalAlpha=Math.max(0, Math.min(1, spot));
+          ctx.fillStyle=grad;
+          ctx.beginPath();
+          ctx.arc(px,py,radius,0,Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      let beam=null;
+      if(attack.stage==='windup'){ beam=attack.beam; }
+      else if(attack.stage==='ending'){ beam=attack.endBeam; }
+      if(beam){
+        const x=(beam.x??demonBoss?.x??550);
+        const radius=Math.max(6, beam.radius||0);
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        const y1=stageTop;
+        const y2=700;
+        const grad=ctx.createLinearGradient(x*scaleX, y1*scaleY, x*scaleX, y2*scaleY);
+        grad.addColorStop(0,'rgba(120,60,180,0)');
+        grad.addColorStop(0.5,'rgba(190,120,255,0.75)');
+        grad.addColorStop(1,'rgba(120,60,180,0)');
+        ctx.fillStyle=grad;
+        ctx.fillRect((x-radius)*scaleX, y1*scaleY, radius*2*scaleX, (y2-y1)*scaleY);
+        ctx.restore();
+      }
+    }
+
+    if(demonBladeHellTelegraphs.length){
+      for(const tele of demonBladeHellTelegraphs){
+        const delay=Math.max(1, tele.delay||1);
+        const remain=Math.max(0, tele.slashAt-now);
+        const prog=1-Math.max(0, Math.min(1, remain/delay));
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        const radius=(12 + 24*prog)*scaleAvg;
+        const grad=ctx.createRadialGradient(tele.x*scaleX, tele.y*scaleY, 0, tele.x*scaleX, tele.y*scaleY, radius);
+        grad.addColorStop(0,'rgba(240,220,255,0.9)');
+        grad.addColorStop(0.55,`rgba(200,130,255,${0.5+0.3*prog})`);
+        grad.addColorStop(1,'rgba(90,20,160,0)');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.arc(tele.x*scaleX, tele.y*scaleY, radius, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    if(demonBladeHellSlashes.length){
+      for(const slash of demonBladeHellSlashes){
+        const life=slash.life||260;
+        const prog=Math.max(0, Math.min(1, (now-slash.start)/life));
+        if(prog>=1) continue;
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        const alpha=1-prog;
+        const width=(6 + 6*(1-prog))*scaleAvg;
+        const grad=ctx.createLinearGradient(slash.x1*scaleX, slash.y1*scaleY, slash.x2*scaleX, slash.y2*scaleY);
+        grad.addColorStop(0,'rgba(180,90,255,0)');
+        grad.addColorStop(0.5,`rgba(220,150,255,${0.85*alpha})`);
+        grad.addColorStop(1,'rgba(180,90,255,0)');
+        ctx.strokeStyle=grad;
+        ctx.lineWidth=width;
+        ctx.shadowColor=`rgba(210,160,255,${0.45*alpha})`;
+        ctx.shadowBlur=28*scaleAvg;
+        ctx.beginPath();
+        ctx.moveTo(slash.x1*scaleX, slash.y1*scaleY);
+        ctx.lineTo(slash.x2*scaleX, slash.y2*scaleY);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    if(demonBladeHellCounterSlashes.length){
+      for(let i=demonBladeHellCounterSlashes.length-1;i>=0;i--){
+        const slash=demonBladeHellCounterSlashes[i];
+        const life=slash.life||260;
+        const prog=Math.max(0, Math.min(1, (now-slash.start)/life));
+        if(prog>=1){ demonBladeHellCounterSlashes.splice(i,1); continue; }
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        const alpha=1-prog;
+        const width=(5 + 5*(1-prog))*scaleAvg;
+        const grad=ctx.createLinearGradient(slash.x1*scaleX, slash.y1*scaleY, slash.x2*scaleX, slash.y2*scaleY);
+        grad.addColorStop(0,'rgba(255,120,210,0)');
+        grad.addColorStop(0.5,`rgba(255,150,220,${0.9*alpha})`);
+        grad.addColorStop(1,'rgba(255,120,210,0)');
+        ctx.strokeStyle=grad;
+        ctx.lineWidth=width;
+        ctx.shadowColor=`rgba(255,140,220,${0.55*alpha})`;
+        ctx.shadowBlur=24*scaleAvg;
+        ctx.beginPath();
+        ctx.moveTo(slash.x1*scaleX, slash.y1*scaleY);
+        ctx.lineTo(slash.x2*scaleX, slash.y2*scaleY);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    if(attack){
+      if(attack.countdownEnd){
+        const remain=Math.max(0, attack.stage==='ending'?0:attack.countdownEnd-now);
+        const seconds=Math.max(0, Math.ceil(remain/1000));
+        ctx.save();
+        ctx.fillStyle='rgba(210,40,80,0.92)';
+        const font=Math.max(42, Math.round(56*scaleAvg));
+        ctx.font=`${font}px 'Playfair Display','Noto Sans TC',serif`;
+        ctx.textAlign='center';
+        ctx.textBaseline='top';
+        ctx.shadowColor='rgba(255,80,120,0.55)';
+        ctx.shadowBlur=24*scaleAvg;
+        ctx.fillText(String(seconds), (1100/2)*scaleX, Math.max(8, stageTop-48)*scaleY);
+        ctx.restore();
+      }
+      if(attack.stage==='hell'){
+        const total=attack.waveDefs.length;
+        let waveNumber;
+        if(attack.waveState){ waveNumber = attack.waveIndex+1; }
+        else if(attack.waveIndex<0){ waveNumber = 1; }
+        else { waveNumber = Math.min(total, attack.waveIndex+2); }
+        waveNumber=Math.max(1, Math.min(total, waveNumber));
+        ctx.save();
+        ctx.fillStyle='rgba(255,220,200,0.9)';
+        const font=Math.max(18, Math.round(22*scaleAvg));
+        ctx.font=`${font}px 'Noto Sans TC',sans-serif`;
+        ctx.textAlign='left';
+        ctx.textBaseline='top';
+        ctx.fillText(`第${waveNumber}波`, 24*scaleX, Math.max(8, stageTop-44)*scaleY);
+        ctx.restore();
+      }
     }
   }
 
@@ -3429,6 +3985,9 @@ select optgroup { color: #0b1022; }
     if(alpha<=0) return;
     ctx.save();
     ctx.translate(entity.x*scaleX, entity.y*scaleY);
+    if(opts.shake){
+      ctx.translate((Math.random()-0.5)*opts.shake*scaleX*0.6, (Math.random()-0.5)*opts.shake*scaleY*0.6);
+    }
     ctx.scale(scaleAvg*size, scaleAvg*size);
     const ghostMul = opts.ghost ? 0.65 : 1;
     ctx.globalAlpha *= Math.max(0, Math.min(1, alpha*ghostMul));
@@ -3449,6 +4008,25 @@ select optgroup { color: #0b1022; }
         ctx.lineWidth=0.04;
         ctx.beginPath();
         ctx.ellipse(0,-1.4,1.02,1.27,0,0,Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }else if(entity.attackAura==='bladeHell'){
+      const phase=now/280;
+      for(let i=0;i<3;i++){
+        const radius=1.2 + i*0.22 + Math.sin(phase+i*1.3)*0.08;
+        ctx.save();
+        ctx.rotate(phase + i*2.1);
+        ctx.scale(radius, radius*0.6);
+        ctx.strokeStyle=`rgba(200,120,255,${0.18+0.12*i})`;
+        ctx.lineWidth=0.06;
+        ctx.beginPath();
+        ctx.ellipse(0,-1.2,1,1.08,0,0,Math.PI*2);
+        ctx.stroke();
+        ctx.strokeStyle=`rgba(120,40,200,${0.12+0.1*i})`;
+        ctx.lineWidth=0.04;
+        ctx.beginPath();
+        ctx.ellipse(0,-1.2,1.12,1.2,0,0,Math.PI*2);
         ctx.stroke();
         ctx.restore();
       }
@@ -4525,8 +5103,11 @@ select optgroup { color: #0b1022; }
     if(level!==20) return;
     drawDemonCore(now);
     drawDemonAfterimages(now);
-    if(demonBoss && (demonPhase==='active' || demonPhase==='dying')){
-      renderDemonFigure(demonBoss, now);
+    const bladeHellHide = demonAttackActive && demonAttackActive.type==='bladeHell' && demonAttackActive.stage==='hell';
+    const shake = (demonBladeHellCounterstrike && demonBladeHellCounterstrike.activated && demonBladeHellCounterstrike.shakeUntil && now<demonBladeHellCounterstrike.shakeUntil) ? 6 : 0;
+    if(demonBoss && (demonPhase==='active' || demonPhase==='dying') && !bladeHellHide){
+      const opts = shake>0 ? {shake} : undefined;
+      renderDemonFigure(demonBoss, now, opts);
     }
     if(demonDeathAnim && demonPhase!=='defeated'){
       const anim=demonDeathAnim;
@@ -4741,6 +5322,15 @@ select optgroup { color: #0b1022; }
     demonAttackActive=null;
     demonAttackNextAt=0;
     demonBlackSpears=[];
+    demonBladeHellTelegraphs.length=0;
+    demonBladeHellSlashes.length=0;
+    demonBladeHellCounterSlashes.length=0;
+    demonBladeHellCounterstrike=null;
+    demonBladeHellLastPaddleCenter={x:550,y:640};
+    demonBladeHellTelegraphs.length=0;
+    demonBladeHellSlashes.length=0;
+    demonBladeHellCounterSlashes.length=0;
+    demonBladeHellCounterstrike=null;
     addScore(BOSS_DEFEAT_SCORE.demon);
     stats.bossKills++;
     updateHUD();
@@ -4763,8 +5353,12 @@ select optgroup { color: #0b1022; }
       const prevX=demonBoss.x;
       const prevBaseY=demonBoss.baseY;
       const attack=demonAttackActive;
-      if(attack && attack.type==='blackRitual'){
-        updateDemonBlackRitual(now, dt);
+      if(attack){
+        if(attack.type==='blackRitual'){
+          updateDemonBlackRitual(now, dt);
+        }else if(attack.type==='bladeHell'){
+          updateDemonBladeHell(now, dt);
+        }
       }
       const L=layout();
       const minX=210;
@@ -4897,7 +5491,10 @@ select optgroup { color: #0b1022; }
       if(!attack && demonBoss.mode!=='bloodDrain' && demonBoss.mode!=='ascending' && demonBoss.mode!=='recovery' && demonBoss.mode!=='attack'){
         if(!demonAttackNextAt){ demonAttackNextAt = now + 15000; }
         if(now>=demonAttackNextAt){
-          startDemonBlackRitual(now);
+          const picks=['blackRitual','bladeHell'];
+          const choice=picks[Math.floor(Math.random()*picks.length)];
+          if(choice==='bladeHell'){ startDemonBladeHell(now); }
+          else { startDemonBlackRitual(now); }
         }
       }
       if(demonBoss.mode!=='bloodDrain' && demonBoss.mode!=='attack'){
@@ -11782,6 +12379,7 @@ function generateLevel(lv, L){
 
     // 球與拖尾
     const nowT=performance.now();
+    const bladeHellGlow=(demonAttackActive && demonAttackActive.type==='bladeHell') ? Math.max(0, Math.min(1, demonAttackActive.currentBallGlow||0)) : 0;
     for(const b of balls){
       b.trail.push({x:b.x,y:b.y,t:nowT}); while(b.trail.length>12) b.trail.shift();
       for(let i=b.trail.length-1;i>=0;i--){ const p=b.trail[i]; const age=(nowT-p.t)/200; if(age>1) continue; const alpha=(1-age)*0.6;
@@ -11796,6 +12394,18 @@ function generateLevel(lv, L){
       if(buffs.PLASMA.active) edge='#aff'; if(buffs.FREEZE.active) edge='#e8f8ff'; if(buffs.HOLY.active) edge='#fff0a0'; if(buffs.FIRE.active) edge='#ff6600'; if(buffs.POISON.active) edge='#55ff55'; if(buffs.BLINK.active) edge='#a0b0ff'; if(buffs.GODSPEED.active) edge='#ffe066'; if(buffs.SWORD.active) edge='#d0bbff'; if(buffs.BLACKHOLE.active) edge='#444'; if(buffs.ANNIHIL.active) edge='#ffb347';
       if(b.demonCloakState==='captured') edge='#ff758b';
       grad.addColorStop(0,'#fff'); grad.addColorStop(1, edge); ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(bx,by,br,0,Math.PI*2); ctx.fill();
+      if(bladeHellGlow>0){
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        const glow=ctx.createRadialGradient(bx,by,0,bx,by,br*2.6);
+        glow.addColorStop(0,`rgba(255,240,180,${0.35*bladeHellGlow})`);
+        glow.addColorStop(1,'rgba(255,200,60,0)');
+        ctx.fillStyle=glow;
+        ctx.beginPath();
+        ctx.arc(bx,by,br*2.4,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
       if(buffs.WAVY.active){ ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1; const r1=br+2+2*Math.sin((nowT/100)+b.x*0.02); ctx.beginPath(); ctx.arc(bx,by,r1,0,Math.PI*2); ctx.stroke(); }
       if(b.stuck && !orientLeft){ ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.fillRect((paddle.x+paddle.w/2-12)*scaleX,(paddle.y-6)*scaleY,24*scaleX,4*scaleY); }
     }
@@ -11941,6 +12551,7 @@ function generateLevel(lv, L){
     drawSpaceBossHUD();
     drawReaperHUD();
     drawDragonHUD();
+    drawDemonBladeHellLayer(now);
     drawDemonHUD();
     drawDemonMarquee(now);
 
@@ -12129,6 +12740,7 @@ function generateLevel(lv, L){
     updateDemonEvent(now);
     updateDemonBoss();
     updateDemonBlackSpears(now);
+    updateDemonBladeHellCounterstrike(now);
 
     if(isTrueBossFightActive()){
       if(!nextTreasureBrickAt){
