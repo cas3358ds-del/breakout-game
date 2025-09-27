@@ -443,6 +443,20 @@ select optgroup { color: #0b1022; }
       background:#2c0610;
       color:var(--ink);
     }
+    body[data-skin="和風．無限之城"] .hearts .life-icon{
+      width:26px;
+      height:26px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      margin:0 2px;
+      filter:drop-shadow(0 0 6px rgba(255,196,150,0.45));
+    }
+    body[data-skin="和風．無限之城"] .hearts .life-icon svg{
+      width:26px;
+      height:26px;
+      display:block;
+    }
 
 /* HUD/按鍵的霓虹語彙（按鍵邊緣流光＋心形光暈） */
 
@@ -11605,22 +11619,133 @@ function generateLevel(lv, L){
       const padGlow=buffs.STICKY.active?'rgba(120,230,220,.6)':((buffs.WIDE.active||buffs.LONG.stacks.length)?'rgba(120,170,255,.6)':'rgba(200,210,255,.4)');
       ctx.shadowColor=padGlow; ctx.shadowBlur=20;
       const padW=pr.w*scaleX, padH=pr.h*scaleY;
+      const scaleUnit=Math.min(scaleX,scaleY);
       ctx.save();
       ctx.translate((pr.x+pr.w/2)*scaleX,(pr.y+pr.h/2)*scaleY);
       let ang=0;
       if(buffs.PADSPIN.active){ const period=GAME_CONFIG.powers.PADSPIN.spin.periodMs||8000; ang=((nowPad-(buffs.PADSPIN.start||nowPad))%period)/period*2*Math.PI; }
       ctx.rotate(ang);
-      ctx.fillStyle='#9aaeff';
+      const isInfiniteCastle = window.currentSkin && window.currentSkin.cssSkin === '和風．無限之城';
+      const drawPadShape = () => {
+        ctx.beginPath();
+        ctx.moveTo(-padW/2 + r, -padH/2);
+        ctx.arcTo(padW/2, -padH/2, padW/2, padH/2, r);
+        ctx.arcTo(padW/2, padH/2, -padW/2, padH/2, r);
+        ctx.arcTo(-padW/2, padH/2, -padW/2, -padH/2, r);
+        ctx.arcTo(-padW/2, -padH/2, padW/2, -padH/2, r);
+        ctx.closePath();
+      };
+      let padFill = '#9aaeff';
+      if(isInfiniteCastle){
+        const depthGrad = ctx.createLinearGradient(0, -padH/2, 0, padH/2);
+        depthGrad.addColorStop(0,'#2d1207');
+        depthGrad.addColorStop(0.16,'#55230d');
+        depthGrad.addColorStop(0.5,'#c6914a');
+        depthGrad.addColorStop(0.84,'#6f2d11');
+        depthGrad.addColorStop(1,'#281006');
+        padFill = depthGrad;
+      }
       if(buffs.PADBOOM.active && !buffs.PADBOOM.exploded){ ctx.globalAlpha=0.5+0.5*Math.sin(nowPad/100); }
-      const r=8*Math.min(scaleX,scaleY);
-      ctx.beginPath();
-      ctx.moveTo(-padW/2 + r, -padH/2);
-      ctx.arcTo(padW/2, -padH/2, padW/2, padH/2, r);
-      ctx.arcTo(padW/2, padH/2, -padW/2, padH/2, r);
-      ctx.arcTo(-padW/2, padH/2, -padW/2, -padH/2, r);
-      ctx.arcTo(-padW/2, -padH/2, padW/2, -padH/2, r);
-      ctx.closePath();
+      const r=8*scaleUnit;
+      drawPadShape();
+      ctx.fillStyle = padFill;
       ctx.fill();
+      if(isInfiniteCastle){
+        ctx.save();
+        drawPadShape();
+        ctx.clip();
+        const plankCount = Math.max(6, Math.round(padW / (72*scaleUnit)));
+        const plankWidth = padW / plankCount;
+        const seamWidth = Math.max(1.1, 0.85*scaleUnit);
+        for(let i=0;i<plankCount;i++){
+          const left = -padW/2 + i*plankWidth;
+          const right = left + plankWidth;
+          const plankGrad = ctx.createLinearGradient(left, 0, right, 0);
+          plankGrad.addColorStop(0,'#371507');
+          plankGrad.addColorStop(0.18,'#6d2c10');
+          plankGrad.addColorStop(0.52,'#d5a158');
+          plankGrad.addColorStop(0.82,'#803914');
+          plankGrad.addColorStop(1,'#301207');
+          ctx.fillStyle = plankGrad;
+          ctx.fillRect(left, -padH/2, plankWidth, padH);
+
+          const inset = plankWidth*0.18;
+          const satin = ctx.createLinearGradient(0, -padH/2, 0, padH/2);
+          satin.addColorStop(0,'rgba(255,240,210,0.14)');
+          satin.addColorStop(0.48,'rgba(255,222,170,0.22)');
+          satin.addColorStop(1,'rgba(150,80,40,0.08)');
+          ctx.fillStyle = satin;
+          ctx.fillRect(left+inset, -padH/2, Math.max(plankWidth-2*inset, seamWidth*2), padH);
+
+          ctx.fillStyle = 'rgba(38,16,8,0.55)';
+          ctx.fillRect(right - seamWidth, -padH/2, seamWidth, padH);
+          if(i === 0){
+            ctx.fillRect(left, -padH/2, seamWidth, padH);
+          }
+        }
+
+        const crossbandWidth = Math.max(3, 3.6*scaleUnit);
+        const crossY1 = -padH/2 + padH*0.26;
+        const crossY2 = padH/2 - padH*0.26;
+        const crossGrad = ctx.createLinearGradient(-padW/2, 0, padW/2, 0);
+        crossGrad.addColorStop(0,'rgba(58,24,12,0.78)');
+        crossGrad.addColorStop(0.5,'rgba(176,108,52,0.58)');
+        crossGrad.addColorStop(1,'rgba(58,24,12,0.78)');
+        ctx.fillStyle = crossGrad;
+        ctx.fillRect(-padW/2, crossY1 - crossbandWidth/2, padW, crossbandWidth);
+        ctx.fillRect(-padW/2, crossY2 - crossbandWidth/2, padW, crossbandWidth);
+
+        const jewelSize = Math.max(4, 4.6*scaleUnit);
+        const jewelOffset = padW/2 - Math.min(padW*0.18, 48*scaleUnit);
+        ctx.fillStyle = '#d9b97a';
+        ctx.strokeStyle = 'rgba(38,16,8,0.65)';
+        ctx.lineWidth = Math.max(0.9, 0.8*scaleUnit);
+        for(const y of [crossY1, crossY2]){
+          for(const x of [-jewelOffset, jewelOffset]){
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(Math.PI/4);
+            ctx.fillRect(-jewelSize/2, -jewelSize/2, jewelSize, jewelSize);
+            ctx.strokeRect(-jewelSize/2, -jewelSize/2, jewelSize, jewelSize);
+            ctx.restore();
+          }
+        }
+
+        const lacquer = ctx.createLinearGradient(0, -padH/2, 0, padH/2);
+        lacquer.addColorStop(0,'rgba(255,255,255,0.26)');
+        lacquer.addColorStop(0.5,'rgba(255,224,180,0.1)');
+        lacquer.addColorStop(1,'rgba(120,58,30,0.28)');
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = lacquer;
+        ctx.fillRect(-padW/2, -padH/2, padW, padH);
+
+        const halo = ctx.createRadialGradient(0, -padH*0.08, padH*0.18, 0, 0, padW*0.72);
+        halo.addColorStop(0,'rgba(255,240,205,0.32)');
+        halo.addColorStop(0.6,'rgba(255,210,150,0.12)');
+        halo.addColorStop(1,'rgba(90,40,20,0.0)');
+        ctx.fillStyle = halo;
+        ctx.fillRect(-padW/2, -padH/2, padW, padH);
+        ctx.globalCompositeOperation = 'source-over';
+
+        ctx.restore();
+
+        drawPadShape();
+        ctx.lineWidth = Math.max(2.8, 3.6*scaleUnit);
+        ctx.strokeStyle = 'rgba(222,182,112,0.92)';
+        ctx.stroke();
+
+        drawPadShape();
+        ctx.lineWidth = Math.max(1.4, 2.1*scaleUnit);
+        ctx.strokeStyle = 'rgba(44,20,8,0.85)';
+        ctx.stroke();
+
+        drawPadShape();
+        ctx.lineWidth = Math.max(0.8, 1.2*scaleUnit);
+        ctx.strokeStyle = 'rgba(255,236,204,0.45)';
+        ctx.setLineDash([Math.max(6, 12*scaleUnit), Math.max(14, 24*scaleUnit)]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
       if(buffs.HOLE.active){
         if(!orientLeft){ const gapW=padW/3; ctx.clearRect(-padW/2+padW/3, -padH/2, gapW, padH); }
         else { const gapH=padH/3; ctx.clearRect(-padW/2, -padH/2+padH/3, padW, gapH); }
