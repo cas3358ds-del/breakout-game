@@ -2356,7 +2356,8 @@ select optgroup { color: #0b1022; }
         attack.stage='ending';
         demonBladeHellTelegraphs.length=0;
         const prNow=paddleRect();
-        const beamX=(prNow.w>0 && prNow.h>0)?(prNow.x+prNow.w/2):(attack.lastPaddleX??demonBladeHellLastPaddleCenter.x||550);
+        const fallbackBeamX = attack.lastPaddleX ?? demonBladeHellLastPaddleCenter?.x ?? 550;
+        const beamX=(prNow.w>0 && prNow.h>0)?(prNow.x+prNow.w/2):fallbackBeamX;
         attack.endBeam={start:now, damageAt:now+500, expandUntil:now+2500, vanishAt:now+3000, radius:10, maxRadius:attack.beam?attack.beam.maxRadius:460, x:beamX, damaging:false};
         demonEventShakeUntil=now+3200;
       }
@@ -2671,8 +2672,10 @@ select optgroup { color: #0b1022; }
         ctx.fillRect(0, stageTop*scaleY, canvas.width, stageHeight*scaleY);
         if(spot>0){
           const pr=paddleRect();
-          const px=((pr.w>0 && pr.h>0)?(pr.x+pr.w/2):(attack.lastPaddleX??demonBladeHellLastPaddleCenter.x||550))*scaleX;
-          const py=((pr.w>0 && pr.h>0)?(pr.y+pr.h/2):(attack.lastPaddleY??demonBladeHellLastPaddleCenter.y|| (stageTop+240)))*scaleY;
+          const fallbackCenterX = attack.lastPaddleX ?? demonBladeHellLastPaddleCenter?.x ?? 550;
+          const fallbackCenterY = attack.lastPaddleY ?? demonBladeHellLastPaddleCenter?.y ?? (stageTop+240);
+          const px=((pr.w>0 && pr.h>0)?(pr.x+pr.w/2):fallbackCenterX)*scaleX;
+          const py=((pr.w>0 && pr.h>0)?(pr.y+pr.h/2):fallbackCenterY)*scaleY;
           const radius=260*scaleAvg;
           const grad=ctx.createRadialGradient(px,py,40*scaleAvg,px,py,radius);
           grad.addColorStop(0,'rgba(0,0,0,1)');
