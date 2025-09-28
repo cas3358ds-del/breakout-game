@@ -562,7 +562,7 @@ select optgroup { color: #0b1022; }
             </select></div>
           </div>
         </div>
-        <div class="pill wide">生命 <b id="lives">3</b> <span class="hearts" id="hearts">❤️❤️❤️</span> <span id="fireEnergy" class="fire-energy"></span> <span class="cats" id="cats" style="display:none"></span></div>
+        <div class="pill wide">生命 <b id="lives">9</b> <span class="hearts" id="hearts">❤️❤️❤️❤️❤️❤️❤️❤️❤️</span> <span id="fireEnergy" class="fire-energy"></span> <span class="cats" id="cats" style="display:none"></span></div>
       </div>
     </section>
     <div class="hud-sentinel" style="height:0"></div>
@@ -1336,7 +1336,7 @@ select optgroup { color: #0b1022; }
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
 
   // === 狀態 ===
-  let running=false, paused=true, level=1, score=0, lives=3, soundsOn=false;
+  let running=false, paused=true, level=1, score=0, lives=9, soundsOn=false;
   let nineCatEaten=0;
   const bossNineCatDrops=new Set();
   let fireEnergy=0;
@@ -2249,7 +2249,7 @@ select optgroup { color: #0b1022; }
         damageStartedAt:0
       },
       currentDarkness:0,
-      targetDarkness:0.82,
+      targetDarkness:0.68,
       currentSpotlight:0,
       currentBallGlow:0,
       countdownDuration:30000,
@@ -2727,10 +2727,21 @@ select optgroup { color: #0b1022; }
           grad.addColorStop(0,'rgba(0,0,0,1)');
           grad.addColorStop(1,'rgba(0,0,0,0)');
           ctx.globalCompositeOperation='destination-out';
-          ctx.globalAlpha=Math.max(0, Math.min(1, spot));
+          ctx.globalAlpha=Math.max(0, Math.min(1, spot*1.2));
           ctx.fillStyle=grad;
           ctx.beginPath();
           ctx.arc(px,py,radius,0,Math.PI*2);
+          ctx.fill();
+          const lightRadius=radius*0.82;
+          const lightGrad=ctx.createRadialGradient(px,py,0,px,py,lightRadius);
+          lightGrad.addColorStop(0,'rgba(230,200,255,0.9)');
+          lightGrad.addColorStop(0.45,'rgba(190,140,255,0.55)');
+          lightGrad.addColorStop(1,'rgba(110,70,220,0)');
+          ctx.globalCompositeOperation='lighter';
+          ctx.globalAlpha=Math.max(0, Math.min(0.9, spot*0.9));
+          ctx.fillStyle=lightGrad;
+          ctx.beginPath();
+          ctx.arc(px,py,lightRadius,0,Math.PI*2);
           ctx.fill();
         }
         ctx.restore();
@@ -2784,10 +2795,12 @@ select optgroup { color: #0b1022; }
         const prog=1-Math.max(0, Math.min(1, remain/delay));
         ctx.save();
         ctx.globalCompositeOperation='lighter';
-        const radius=(12 + 24*prog)*scaleAvg;
+        const sampleBallRadius=(balls && balls.length)?(balls[0].r||10):10;
+        const baseRadius=sampleBallRadius*0.3;
+        const radius=Math.max(1.2, (baseRadius + baseRadius*0.8*prog))*scaleAvg;
         const grad=ctx.createRadialGradient(tele.x*scaleX, tele.y*scaleY, 0, tele.x*scaleX, tele.y*scaleY, radius);
         grad.addColorStop(0,'rgba(240,220,255,0.9)');
-        grad.addColorStop(0.55,`rgba(200,130,255,${0.5+0.3*prog})`);
+        grad.addColorStop(0.6,`rgba(200,130,255,${0.5+0.3*prog})`);
         grad.addColorStop(1,'rgba(90,20,160,0)');
         ctx.fillStyle=grad;
         ctx.beginPath();
@@ -11486,7 +11499,7 @@ function generateLevel(lv, L){
   }
   function hideCenter(){ centerNote.style.display='none'; }
 
-  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
+  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:9; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
     bossNineCatDrops.clear();
     stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
     for(const k of Object.keys(buffs)){
@@ -11527,7 +11540,7 @@ function generateLevel(lv, L){
       localStorage.setItem('breakout_save_v_final_cfg', JSON.stringify(data)); alert('已存檔！');
     }catch(e){ alert('存檔失敗：'+e); } }
   function loadProgress(){ try{ const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4'); if(!raw){ alert('沒有存檔'); return; } const data=JSON.parse(raw);
-      difficultySel.value=data.difficulty||'normal'; level=data.level||1; score=data.score||0; lives=data.lives||3; if(Array.isArray(data.imageChoice)) imageChoice=data.imageChoice;
+      difficultySel.value=data.difficulty||'normal'; level=data.level||1; score=data.score||0; lives=typeof data.lives==='number'?data.lives:9; if(Array.isArray(data.imageChoice)) imageChoice=data.imageChoice;
       soundsOn=!!data.soundsOn; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
       if(typeof data.bgmOn==='boolean'){ bgmOn=data.bgmOn; } if(typeof data.bgmVol==='number'){ bgmVol.value=String(data.bgmVol); if(bgmGain) bgmGain.gain.value=data.bgmVol; localStorage.setItem('bgm_vol', data.bgmVol); }
       resetGame(true); updateHUD(); alert(`已讀檔：等級 ${level}，分數 ${score}，生命 ${lives}`);}catch(e){ alert('讀檔失敗：'+e); } }
