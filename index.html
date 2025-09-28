@@ -1443,6 +1443,7 @@ select optgroup { color: #0b1022; }
   const demonBladeHellCounterSlashes=[];
   let demonBladeHellCounterstrike=null;
   let demonBladeHellLastPaddleCenter={x:550, y:640};
+  let currentPaddleTint='#9aaeff';
   const DEMON_DESCENT_DURATION=20000;
   const DEMON_ASCENT_DURATION=2600;
   const DEMON_RECOVERY_DURATION=4000;
@@ -1461,7 +1462,9 @@ select optgroup { color: #0b1022; }
   }
 
   function isDemonActive(){
-    return level===20 && demonPhase==='active' && !!demonBoss;
+    if(!(level===20 && demonPhase==='active' && !!demonBoss)) return false;
+    if(demonAttackActive && demonAttackActive.type==='bladeHell' && demonAttackActive.stage==='hell') return false;
+    return true;
   }
 
   function getSpaceBossBounds(){
@@ -1992,6 +1995,23 @@ select optgroup { color: #0b1022; }
     });
   }
 
+  function spawnBladeHellBlood(x, y){
+    const now=performance.now();
+    spawnParticles(x, y, '#220006', 54, 4.0, 5.4, 5.0);
+    spawnParticles(x, y, '#4e0014', 64, 3.6, 4.8, 4.6);
+    spawnParticles(x, y, '#8c0624', 48, 3.2, 4.0, 4.2);
+    spawnParticles(x, y, '#ff1f3f', 32, 2.8, 3.6, 3.6);
+    spawnParticles(x, y, '#ffd6e4', 18, 2.4, 3.2, 3.2);
+    demonBloodEffects.push({
+      x,
+      y,
+      t0: now,
+      life: 1100,
+      ringStart: 42 + Math.random()*18,
+      ringEnd: 280 + Math.random()*90
+    });
+  }
+
   function bladeHellSlashWouldHitRect(angle, cx, cy, rect){
     if(!rect) return false;
     const len=Math.hypot(1100,700);
@@ -2074,13 +2094,14 @@ select optgroup { color: #0b1022; }
       spawnDemonSpearBlood(centerX, centerY);
       spawnParticles(centerX, centerY, '#3a0a18', 40, 3.4, 4.6, 4.0);
       spawnParticles(centerX, centerY, '#8a1340', 36, 2.8, 3.8, 3.4);
+      paddleGoneUntil=now+3000;
     }else{
-      spawnParticles(centerX, centerY, '#ff2f7d', 90, 3.0, 4.4, 3.6);
-      spawnParticles(centerX, centerY, '#ffa8ff', 50, 2.4, 3.4, 3.0);
+      spawnBladeHellBlood(centerX, centerY);
+      spawnParticles(centerX, centerY, '#ff2952', 110, 3.2, 4.6, 3.8);
+      spawnParticles(centerX, centerY, '#ffc7d9', 60, 2.6, 3.6, 3.2);
     }
     playSFX('explosion');
     screenShake=Math.max(screenShake, cause==='beam'?12:9);
-    paddleGoneUntil=now+(cause==='beam'?3000:900);
     lives=Math.max(0, lives-1);
     updateHUD();
     for(const ball of balls){ ball.vy=-Math.abs(ball.vy||4); }
@@ -2122,7 +2143,8 @@ select optgroup { color: #0b1022; }
     const safeRects=bladeHellComputeSafeRects(x, y, baseRect);
     const tele={x,y,start:now,slashAt:now+delay,delay,angle:bladeHellRandomAngle({x,y,safeRects}),waveIndex:attack.waveIndex};
     demonBladeHellTelegraphs.push(tele);
-    spawnParticles(x, y, '#d7b2ff', 12, 1.4, 2.4, 2.4);
+    spawnParticles(x, y, '#ff4f4f', 18, 1.6, 2.6, 2.6);
+    spawnParticles(x, y, '#ffd0c0', 10, 1.2, 2.0, 2.0);
   }
 
   function spawnBladeHellSlash(tele, now){
@@ -2250,7 +2272,7 @@ select optgroup { color: #0b1022; }
       },
       currentDarkness:0,
       targetDarkness:0.68,
-      currentSpotlight:0,
+      currentPlatformGlow:0,
       currentBallGlow:0,
       countdownDuration:30000,
       countdownStart:0,
@@ -2342,7 +2364,7 @@ select optgroup { color: #0b1022; }
     }
     if(attack.stage==='windup'){
       attack.currentDarkness=Math.min(attack.targetDarkness, attack.currentDarkness + dt/2400);
-      attack.currentSpotlight=Math.min(1, attack.currentSpotlight + dt/1800);
+      attack.currentPlatformGlow=Math.min(1, (attack.currentPlatformGlow||0) + dt/1800);
       attack.currentBallGlow=Math.min(1, attack.currentBallGlow + dt/1500);
       if(now>=attack.beam.vanishAt){
         attack.stage='hell';
@@ -2355,7 +2377,7 @@ select optgroup { color: #0b1022; }
       }
     }else if(attack.stage==='hell'){
       attack.currentDarkness=Math.min(attack.targetDarkness, attack.currentDarkness + dt/3200);
-      attack.currentSpotlight=Math.min(1, attack.currentSpotlight + dt/2200);
+      attack.currentPlatformGlow=Math.min(1, (attack.currentPlatformGlow||0) + dt/2200);
       attack.currentBallGlow=Math.min(1, attack.currentBallGlow + dt/2000);
       if(attack.waveState){
         const ws=attack.waveState;
@@ -2409,7 +2431,7 @@ select optgroup { color: #0b1022; }
       }
     }else if(attack.stage==='ending'){
       attack.currentDarkness=Math.max(0, attack.currentDarkness - dt/2200);
-      attack.currentSpotlight=Math.max(0, attack.currentSpotlight - dt/2000);
+      attack.currentPlatformGlow=Math.max(0, (attack.currentPlatformGlow||0) - dt/2000);
       attack.currentBallGlow=Math.max(0, attack.currentBallGlow - dt/1800);
       updateBladeHellEffects(attack, now);
       if(attack.endBeam && now>=attack.endBeam.vanishAt){
@@ -2707,7 +2729,6 @@ select optgroup { color: #0b1022; }
 
     if(attack){
       const dark=attack.currentDarkness||0;
-      const spot=attack.currentSpotlight||0;
       if(dark>0){
         ctx.save();
         ctx.beginPath();
@@ -2716,35 +2737,41 @@ select optgroup { color: #0b1022; }
         ctx.globalAlpha=Math.max(0, Math.min(1,dark));
         ctx.fillStyle='#000';
         ctx.fillRect(0, stageTop*scaleY, canvas.width, stageHeight*scaleY);
-        if(spot>0){
-          const pr=paddleRect();
-          const fallbackCenterX = attack.lastPaddleX ?? demonBladeHellLastPaddleCenter?.x ?? 550;
-          const fallbackCenterY = attack.lastPaddleY ?? demonBladeHellLastPaddleCenter?.y ?? (stageTop+240);
-          const px=((pr.w>0 && pr.h>0)?(pr.x+pr.w/2):fallbackCenterX)*scaleX;
-          const py=((pr.w>0 && pr.h>0)?(pr.y+pr.h/2):fallbackCenterY)*scaleY;
-          const radius=260*scaleAvg;
-          const grad=ctx.createRadialGradient(px,py,40*scaleAvg,px,py,radius);
-          grad.addColorStop(0,'rgba(0,0,0,1)');
-          grad.addColorStop(1,'rgba(0,0,0,0)');
-          ctx.globalCompositeOperation='destination-out';
-          ctx.globalAlpha=Math.max(0, Math.min(1, spot*1.2));
+        ctx.restore();
+      }
+      const platformGlow=Math.max(0, Math.min(1, attack.currentPlatformGlow||0));
+      if(platformGlow>0){
+        const pr=paddleRect();
+        if(pr.w>0 && pr.h>0){
+          const tint=parseColorToRGB(currentPaddleTint||'#9aaeff');
+          const mix=(value, amount)=>Math.round(value + (255-value)*amount);
+          const px=(pr.x+pr.w/2)*scaleX;
+          const py=(orientLeft ? (pr.y+pr.h/2) : (pr.y+pr.h - pr.h*0.1))*scaleY;
+          const base=Math.max(pr.w, pr.h);
+          const flatten=orientLeft?1:0.5;
+          const baseRadius=base*(orientLeft?0.65:0.95)*scaleAvg;
+          const innerRadius=baseRadius*0.35;
+          const outerRadius=baseRadius*(1.4 + platformGlow*0.8);
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.scale(1, flatten);
+          ctx.globalCompositeOperation='lighter';
+          const grad=ctx.createRadialGradient(0,0,innerRadius,0,0,outerRadius);
+          grad.addColorStop(0,`rgba(${mix(tint.r,0.45)},${mix(tint.g,0.45)},${mix(tint.b,0.45)},${0.55+0.25*platformGlow})`);
+          grad.addColorStop(0.6,`rgba(${mix(tint.r,0.25)},${mix(tint.g,0.25)},${mix(tint.b,0.25)},${0.45+0.3*platformGlow})`);
+          grad.addColorStop(1,'rgba(30,0,0,0)');
           ctx.fillStyle=grad;
           ctx.beginPath();
-          ctx.arc(px,py,radius,0,Math.PI*2);
+          ctx.arc(0,0,outerRadius,0,Math.PI*2);
           ctx.fill();
-          const lightRadius=radius*0.82;
-          const lightGrad=ctx.createRadialGradient(px,py,0,px,py,lightRadius);
-          lightGrad.addColorStop(0,'rgba(230,200,255,0.9)');
-          lightGrad.addColorStop(0.45,'rgba(190,140,255,0.55)');
-          lightGrad.addColorStop(1,'rgba(110,70,220,0)');
-          ctx.globalCompositeOperation='lighter';
-          ctx.globalAlpha=Math.max(0, Math.min(0.9, spot*0.9));
-          ctx.fillStyle=lightGrad;
+          const ringRadius=baseRadius*(0.9 + platformGlow*0.8);
+          ctx.strokeStyle=`rgba(${mix(tint.r,0.3)},${mix(tint.g,0.3)},${mix(tint.b,0.3)},${0.4+0.35*platformGlow})`;
+          ctx.lineWidth=Math.max(3.2*scaleAvg, 5.6*scaleAvg*platformGlow);
           ctx.beginPath();
-          ctx.arc(px,py,lightRadius,0,Math.PI*2);
-          ctx.fill();
+          ctx.arc(0,0,ringRadius,0,Math.PI*2);
+          ctx.stroke();
+          ctx.restore();
         }
-        ctx.restore();
       }
       let beam=null;
       if(attack.stage==='windup'){ beam=attack.beam; }
@@ -2794,18 +2821,37 @@ select optgroup { color: #0b1022; }
         const remain=Math.max(0, tele.slashAt-now);
         const prog=1-Math.max(0, Math.min(1, remain/delay));
         ctx.save();
-        ctx.globalCompositeOperation='lighter';
+        ctx.translate(tele.x*scaleX, tele.y*scaleY);
         const sampleBallRadius=(balls && balls.length)?(balls[0].r||10):10;
-        const baseRadius=sampleBallRadius*0.3;
-        const radius=Math.max(1.2, (baseRadius + baseRadius*0.8*prog))*scaleAvg;
-        const grad=ctx.createRadialGradient(tele.x*scaleX, tele.y*scaleY, 0, tele.x*scaleX, tele.y*scaleY, radius);
-        grad.addColorStop(0,'rgba(240,220,255,0.9)');
-        grad.addColorStop(0.6,`rgba(200,130,255,${0.5+0.3*prog})`);
-        grad.addColorStop(1,'rgba(90,20,160,0)');
+        const baseRadius=sampleBallRadius*(orientLeft?1.1:2.0);
+        const outerRadius=baseRadius*(1.8 + 1.0*prog);
+        const innerRadius=baseRadius*0.45;
+        const ringRadius=baseRadius*(1.1 + 0.9*prog);
+        const flatten=orientLeft?1:0.48;
+        ctx.scale(1, flatten);
+        ctx.globalCompositeOperation='lighter';
+        const grad=ctx.createRadialGradient(0,0,innerRadius*scaleAvg*0.6,0,0,outerRadius*scaleAvg);
+        grad.addColorStop(0,`rgba(255,230,200,${0.45+0.3*prog})`);
+        grad.addColorStop(0.45,`rgba(255,90,60,${0.55+0.35*prog})`);
+        grad.addColorStop(1,'rgba(140,10,0,0)');
         ctx.fillStyle=grad;
         ctx.beginPath();
-        ctx.arc(tele.x*scaleX, tele.y*scaleY, radius, 0, Math.PI*2);
+        ctx.arc(0,0,outerRadius*scaleAvg,0,Math.PI*2);
         ctx.fill();
+        ctx.strokeStyle=`rgba(255,120,80,${0.45+0.35*prog})`;
+        ctx.lineWidth=Math.max(2.6*scaleAvg, 5.0*scaleAvg*prog);
+        ctx.beginPath();
+        ctx.arc(0,0,ringRadius*scaleAvg,0,Math.PI*2);
+        ctx.stroke();
+        ctx.globalCompositeOperation='source-over';
+        ctx.strokeStyle=`rgba(255,200,180,${0.25+0.35*prog})`;
+        ctx.lineWidth=Math.max(1.6*scaleAvg, 2.4*scaleAvg*(0.4+prog));
+        ctx.beginPath();
+        ctx.moveTo(-ringRadius*scaleAvg*0.85,0);
+        ctx.lineTo(ringRadius*scaleAvg*0.85,0);
+        ctx.moveTo(0,-ringRadius*scaleAvg*0.4);
+        ctx.lineTo(0,ringRadius*scaleAvg*0.4);
+        ctx.stroke();
         ctx.restore();
       }
     }
@@ -5185,9 +5231,11 @@ select optgroup { color: #0b1022; }
 
   function drawDemonLayer(now){
     if(level!==20) return;
-    drawDemonCore(now);
-    drawDemonAfterimages(now);
     const bladeHellHide = demonAttackActive && demonAttackActive.type==='bladeHell' && demonAttackActive.stage==='hell';
+    if(!bladeHellHide){
+      drawDemonCore(now);
+      drawDemonAfterimages(now);
+    }
     const shake = (demonBladeHellCounterstrike && demonBladeHellCounterstrike.activated && demonBladeHellCounterstrike.shakeUntil && now<demonBladeHellCounterstrike.shakeUntil) ? 6 : 0;
     if(demonBoss && (demonPhase==='active' || demonPhase==='dying') && !bladeHellHide){
       const opts = shake>0 ? {shake} : undefined;
@@ -5217,6 +5265,7 @@ select optgroup { color: #0b1022; }
 
   function drawDemonCloakWraps(now, layer='front'){
     if(level!==20 || demonPhase!=='active' || !demonBoss) return;
+    if(demonAttackActive && demonAttackActive.type==='bladeHell' && demonAttackActive.stage==='hell') return;
     if(!Array.isArray(balls) || !balls.length) return;
     const captured=balls.filter(b=>b && b.demonCloakState==='captured');
     if(!captured.length) return;
@@ -5866,6 +5915,28 @@ select optgroup { color: #0b1022; }
 
   function spawnParticles(x,y,color,count=10,spread=1.6,speed=3,size=3){
     for(let i=0;i<count;i++){ const a=Math.random()*Math.PI*2; const v=speed*(.4+Math.random()); particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:400+Math.random()*300,size:size*(.6+Math.random()*0.8),color}); }
+  }
+
+  function parseColorToRGB(color){
+    if(!color){ return {r:200,g:210,b:255}; }
+    if(color.startsWith('#')){
+      let hex=color.slice(1);
+      if(hex.length===3){ hex=hex.split('').map(ch=>ch+ch).join(''); }
+      if(hex.length===6){
+        const num=parseInt(hex,16);
+        if(!Number.isNaN(num)){
+          return {r:(num>>16)&255,g:(num>>8)&255,b:num&255};
+        }
+      }
+    }
+    const match=color.match(/rgba?\(([^)]+)\)/i);
+    if(match){
+      const parts=match[1].split(',').map(v=>parseFloat(v.trim()));
+      if(parts.length>=3 && parts.every(v=>!Number.isNaN(v))){
+        return {r:parts[0], g:parts[1], b:parts[2]};
+      }
+    }
+    return {r:200,g:210,b:255};
   }
 
   // === 工具 ===
@@ -12316,7 +12387,9 @@ function generateLevel(lv, L){
         ctx.arcTo(-padW/2, -padH/2, padW/2, -padH/2, r);
         ctx.closePath();
       };
-      let padFill = '#9aaeff';
+      let padBaseColor = '#9aaeff';
+      let padFill = padBaseColor;
+      currentPaddleTint=padBaseColor;
       if(isInfiniteCastle){
         const depthGrad = ctx.createLinearGradient(0, -padH/2, 0, padH/2);
         depthGrad.addColorStop(0,'#2d1207');
@@ -12325,6 +12398,8 @@ function generateLevel(lv, L){
         depthGrad.addColorStop(0.84,'#6f2d11');
         depthGrad.addColorStop(1,'#281006');
         padFill = depthGrad;
+        padBaseColor = '#c6914a';
+        currentPaddleTint=padBaseColor;
       }
       if(buffs.PADBOOM.active && !buffs.PADBOOM.exploded){ ctx.globalAlpha=0.5+0.5*Math.sin(nowPad/100); }
       const r=8*scaleUnit;
