@@ -216,11 +216,60 @@
     @keyframes goldBlink{0%{text-shadow:0 0 6px rgba(255,215,0,.7);}50%{text-shadow:0 0 18px rgba(255,215,0,1);}100%{text-shadow:0 0 6px rgba(255,215,0,.7);}}
     @keyframes comboMarquee{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
     /* Hearts and Nine-cat history */
-    .hearts{filter:drop-shadow(0 0 10px var(--heartGlow));display:inline-block}
+    .hearts{filter:drop-shadow(0 0 10px var(--heartGlow));display:inline-block;position:relative}
     .hearts.compact .life-icon{width:14px;height:14px}
     .fire-energy{margin-left:6px;display:none;color:#ffb347;font-weight:700;filter:drop-shadow(0 0 6px #ff8c00)}
     .cats{display:flex;margin-left:auto;gap:4px}
     .cats .cat-icon{width:14px;height:14px;display:inline-block}
+    .life-blood-burst{
+      position:absolute;
+      width:36px;
+      height:36px;
+      pointer-events:none;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%) scale(0.4) rotate(var(--burst-rot,0deg));
+      opacity:0;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(255,230,230,0.85) 0%, rgba(255,110,130,0.65) 45%, rgba(160,20,40,0.0) 70%),
+        radial-gradient(circle at 50% 70%, rgba(150,10,40,0.85) 0%, rgba(90,0,20,0.0) 70%);
+      filter:drop-shadow(0 0 18px rgba(255,120,150,0.6));
+      border-radius:50%;
+      animation:lifeBloodBurst 560ms ease-out forwards;
+    }
+    .life-blood-burst::before,
+    .life-blood-burst::after{
+      content:"";
+      position:absolute;
+      inset:-4px;
+      border-radius:50%;
+      background:conic-gradient(from 0deg,
+        rgba(255,200,210,0.0) 0deg,
+        rgba(255,220,230,0.45) 40deg,
+        rgba(255,150,180,0.75) 120deg,
+        rgba(160,30,50,0.0) 220deg,
+        rgba(255,220,230,0.3) 320deg,
+        rgba(255,200,210,0.0) 360deg);
+      transform:scale(0.65);
+      opacity:0.85;
+      animation:lifeBloodSpill 560ms ease-out forwards;
+      mix-blend-mode:screen;
+    }
+    .life-blood-burst::after{
+      inset:-10px;
+      transform:scale(0.5) rotate(32deg);
+      opacity:0.65;
+    }
+    @keyframes lifeBloodBurst{
+      0%{opacity:0;transform:translate(-50%,-50%) scale(0.25) rotate(var(--burst-rot,0deg));}
+      35%{opacity:1;transform:translate(-50%,-50%) scale(1.05) rotate(var(--burst-rot,0deg));}
+      100%{opacity:0;transform:translate(-50%,-50%) scale(1.45) rotate(var(--burst-rot,0deg));}
+    }
+    @keyframes lifeBloodSpill{
+      0%{opacity:0.9;transform:scale(0.45) rotate(0deg);} 
+      40%{opacity:0.8;transform:scale(0.95) rotate(18deg);} 
+      100%{opacity:0;transform:scale(1.35) rotate(32deg);} 
+    }
     /* Gallery and overlay (retain original styles) */
     .overlay{position:fixed;inset:0;z-index:40;pointer-events:none}
     .gallery{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:4;pointer-events:auto}
@@ -1443,6 +1492,8 @@ select optgroup { color: #0b1022; }
   const demonBladeHellCounterSlashes=[];
   let demonBladeHellCounterstrike=null;
   let demonBladeHellLastPaddleCenter={x:550, y:640};
+  let demonBladeHellBallCapture=null;
+  let demonBladeHellPlatformGlow=0;
   let currentPaddleTint='#9aaeff';
   const DEMON_DESCENT_DURATION=20000;
   const DEMON_ASCENT_DURATION=2600;
@@ -2073,6 +2124,32 @@ select optgroup { color: #0b1022; }
     return min + Math.random()*(max-min);
   }
 
+  function captureHeartBurstPosition(prevLives){
+    if(!heartsEl || !prevLives || prevLives<=0) return null;
+    const icons = heartsEl.querySelectorAll('.life-icon');
+    if(!icons.length) return null;
+    const idx = Math.min(prevLives-1, icons.length-1);
+    const target = icons[idx];
+    if(!target) return null;
+    const containerRect = heartsEl.getBoundingClientRect();
+    const rect = target.getBoundingClientRect();
+    return {
+      x: rect.left - containerRect.left + rect.width/2,
+      y: rect.top - containerRect.top + rect.height/2
+    };
+  }
+
+  function spawnBladeHellHeartBurst(pos){
+    if(!heartsEl || !pos) return;
+    const burst=document.createElement('span');
+    burst.className='life-blood-burst';
+    burst.style.left=`${pos.x}px`;
+    burst.style.top=`${pos.y}px`;
+    burst.style.setProperty('--burst-rot', `${(Math.random()*40-20).toFixed(1)}deg`);
+    heartsEl.appendChild(burst);
+    setTimeout(()=>{ burst.remove(); }, 720);
+  }
+
   function bladeHellPaddleHit(now, cause='slash'){
     if(now<paddleGoneUntil) return;
     if(demonAttackActive?.type==='bladeHell'){
@@ -2102,9 +2179,12 @@ select optgroup { color: #0b1022; }
     }
     playSFX('explosion');
     screenShake=Math.max(screenShake, cause==='beam'?12:9);
+    const prevLives=lives;
+    const burstPos = (cause==='slash') ? captureHeartBurstPosition(prevLives) : null;
     lives=Math.max(0, lives-1);
     updateHUD();
-    for(const ball of balls){ ball.vy=-Math.abs(ball.vy||4); }
+    if(burstPos){ spawnBladeHellHeartBurst(burstPos); }
+    for(const ball of balls){ if(ball.capturedByBladeHell) continue; ball.vy=-Math.abs(ball.vy||4); }
     if(lives<=0){ running=false; paused=true; showGameOver(); }
   }
 
@@ -2238,6 +2318,101 @@ select optgroup { color: #0b1022; }
     if(state.endAt && now>=state.endAt){
       demonBladeHellCounterstrike=null;
     }
+  }
+
+  function startBladeHellBallCapture(now){
+    if(demonBladeHellBallCapture){ forceReleaseBladeHellBall(); }
+    if(!Array.isArray(balls) || !balls.length) return;
+    const targetBall = balls[0];
+    demonBladeHellBallCapture={
+      ball:targetBall,
+      start:now,
+      state:'emerging',
+      holdX:targetBall.x,
+      holdY:targetBall.y,
+      originalVX:targetBall.vx,
+      originalVY:targetBall.vy,
+      emergeDuration:600,
+      releaseDuration:520,
+      pulseOffset:Math.random()*Math.PI*2,
+      handAngle:(orientLeft?Math.PI/2:-Math.PI/2)+(Math.random()*0.35-0.18),
+      visible:0
+    };
+    targetBall.capturedByBladeHell=true;
+    targetBall.vx=0;
+    targetBall.vy=0;
+  }
+
+  function beginBladeHellBallRelease(now){
+    const cap=demonBladeHellBallCapture;
+    if(!cap) return;
+    if(cap.state==='releasing') return;
+    cap.state='releasing';
+    cap.releaseStart=now;
+  }
+
+  function forceReleaseBladeHellBall(){
+    const cap=demonBladeHellBallCapture;
+    if(!cap) { demonBladeHellPlatformGlow=0; return; }
+    const ball=cap.ball;
+    if(ball && balls.includes(ball)){
+      ball.capturedByBladeHell=false;
+      let vx=cap.originalVX;
+      let vy=cap.originalVY;
+      if(!vx && !vy){
+        vx=0; vy=0;
+      }
+      if(Math.abs(vx)+Math.abs(vy)<0.2){
+        const sp=Math.max(6, speedForLevel(level));
+        const ang=-Math.PI/2 + (Math.random()*0.3-0.15);
+        vx=Math.cos(ang)*sp*0.75;
+        vy=Math.sin(ang)*sp;
+      }
+      ball.vx=vx;
+      ball.vy=vy;
+    }
+    demonBladeHellBallCapture=null;
+  }
+
+  function updateBladeHellBallCapture(now){
+    const cap=demonBladeHellBallCapture;
+    if(!cap) return;
+    const ball=cap.ball;
+    if(!ball || !balls.includes(ball)){
+      demonBladeHellBallCapture=null;
+      return;
+    }
+    if(cap.state!=='releasing'){
+      if(!demonAttackActive || demonAttackActive.type!=='bladeHell' || demonAttackActive.stage!=='hell'){
+        beginBladeHellBallRelease(now);
+      }
+    }
+    if(cap.state==='releasing'){
+      const dur=cap.releaseDuration||500;
+      const start=cap.releaseStart||now;
+      const prog=Math.min(1, Math.max(0, (now-start)/dur));
+      cap.visible = 1 - prog;
+      cap.holdX = cap.holdX ?? ball.x;
+      cap.holdY = cap.holdY ?? ball.y;
+      ball.x = cap.holdX;
+      ball.y = cap.holdY;
+      ball.vx = 0;
+      ball.vy = 0;
+      if(prog>=1){
+        forceReleaseBladeHellBall();
+      }
+      return;
+    }
+    const dur=cap.emergeDuration||600;
+    const prog=Math.min(1, Math.max(0,(now-cap.start)/dur));
+    cap.visible = prog;
+    if(prog>=1){ cap.state='holding'; }
+    cap.holdX = cap.holdX ?? ball.x;
+    cap.holdY = cap.holdY ?? ball.y;
+    ball.x = cap.holdX;
+    ball.y = cap.holdY;
+    ball.vx = 0;
+    ball.vy = 0;
   }
 
   function startDemonBladeHell(now){
@@ -2374,6 +2549,7 @@ select optgroup { color: #0b1022; }
         attack.waveIndex=-1;
         attack.waveState=null;
         demonBoss.hiddenUntil = Math.max(demonBoss.hiddenUntil||0, attack.countdownEnd+800);
+        startBladeHellBallCapture(now);
       }
     }else if(attack.stage==='hell'){
       attack.currentDarkness=Math.min(attack.targetDarkness, attack.currentDarkness + dt/3200);
@@ -2428,6 +2604,7 @@ select optgroup { color: #0b1022; }
           damageStartedAt:0
         };
         demonEventShakeUntil=now+3200;
+        beginBladeHellBallRelease(now);
       }
     }else if(attack.stage==='ending'){
       attack.currentDarkness=Math.max(0, attack.currentDarkness - dt/2200);
@@ -2505,10 +2682,12 @@ select optgroup { color: #0b1022; }
     demonBoss.mode='descending';
     demonBoss.descentStart=now;
     demonBoss.moveTarget=null;
-    if(demonAttackActive.type==='bladeHell'){
-      demonBladeHellTelegraphs.length=0;
-      demonBladeHellSlashes.length=0;
-    }
+      if(demonAttackActive.type==='bladeHell'){
+        demonBladeHellTelegraphs.length=0;
+        demonBladeHellSlashes.length=0;
+        beginBladeHellBallRelease(now);
+        forceReleaseBladeHellBall();
+      }
     demonAttackActive=null;
     demonAttackNextAt = now + 15000;
   }
@@ -2717,6 +2896,111 @@ select optgroup { color: #0b1022; }
     }
   }
 
+  function drawBladeHellBallCaptureOverlay(now){
+    const cap=demonBladeHellBallCapture;
+    if(!cap || !cap.ball || !balls.includes(cap.ball)) return;
+    const ball=cap.ball;
+    const strength=Math.max(0, Math.min(1, cap.visible ?? 1));
+    if(strength<=0) return;
+    const scaleAvg=(scaleX+scaleY)/2;
+    const bx=(cap.holdX ?? ball.x)*scaleX;
+    const by=(cap.holdY ?? ball.y)*scaleY;
+    const ballRadius=(ball.r||10)*scaleAvg;
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(cap.handAngle || (orientLeft?Math.PI/2:-Math.PI/2));
+    const shimmer=Math.sin((now+(cap.pulseOffset||0))/180);
+    const portalRadius=ballRadius*(2.4 + 0.6*shimmer)*Math.max(0.6,strength);
+    ctx.save();
+    ctx.scale(1.2,0.7);
+    const portal=ctx.createRadialGradient(0,0,portalRadius*0.22,0,0,portalRadius);
+    portal.addColorStop(0,`rgba(255,210,230,${0.22*strength})`);
+    portal.addColorStop(0.55,`rgba(190,60,130,${0.55*strength})`);
+    portal.addColorStop(1,'rgba(20,0,30,0)');
+    ctx.globalCompositeOperation='screen';
+    ctx.fillStyle=portal;
+    ctx.beginPath();
+    ctx.arc(0,0,portalRadius,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=`rgba(255,150,190,${0.3*strength})`;
+    ctx.lineWidth=Math.max(1.2, ballRadius*0.35);
+    for(let i=0;i<5;i++){
+      const ang=i*(Math.PI*2/5)+(now/280);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ang)*ballRadius*0.4, Math.sin(ang)*ballRadius*0.4);
+      ctx.lineTo(Math.cos(ang)*ballRadius*1.25, Math.sin(ang)*ballRadius*1.25);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    const baseScale=ballRadius*2.3;
+    ctx.save();
+    ctx.scale(baseScale/160, baseScale/160);
+    ctx.translate(-14,-22);
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    const boneColor=`rgba(250,245,235,${0.92*strength})`;
+    const outlineColor=`rgba(200,160,200,${0.45*strength})`;
+    ctx.fillStyle=boneColor;
+    ctx.strokeStyle=outlineColor;
+    ctx.shadowColor=`rgba(255,160,220,${0.35*strength})`;
+    ctx.shadowBlur=24*strength;
+
+    const drawFinger=(ox,oy,len,angle)=>{
+      ctx.save();
+      ctx.translate(ox,oy);
+      ctx.rotate(angle);
+      let radius=18;
+      const segments=3;
+      const segLen=len/segments;
+      for(let i=0;i<segments;i++){
+        const nextRadius = (i===segments-1)?10:14-(i*3);
+        ctx.beginPath();
+        ctx.lineWidth=Math.max(8,nextRadius*0.9);
+        ctx.moveTo(0,0);
+        ctx.lineTo(segLen,0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0,0,radius,0,Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(segLen,0,nextRadius,0,Math.PI*2);
+        ctx.fill();
+        ctx.translate(segLen,0);
+        radius=nextRadius;
+      }
+      ctx.restore();
+    };
+
+    const drawPalm=()=>{
+      ctx.save();
+      ctx.translate(18,32);
+      ctx.beginPath();
+      ctx.moveTo(-42,-6);
+      ctx.bezierCurveTo(-52,18,-18,60,26,54);
+      ctx.bezierCurveTo(48,50,60,20,38,-12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    drawPalm();
+    drawFinger(-32,10,78,-1.7);
+    drawFinger(-4,-2,88,-1.25);
+    drawFinger(18,-6,86,-0.95);
+    drawFinger(40,-4,82,-0.55);
+    drawFinger(-18,36,58,-2.05);
+
+    ctx.shadowBlur=0;
+    ctx.restore();
+    ctx.restore();
+  }
+
   function drawDemonBladeHellLayer(now){
     if(level!==20) return;
     const attack=(demonAttackActive && demonAttackActive.type==='bladeHell')?demonAttackActive:null;
@@ -2727,6 +3011,7 @@ select optgroup { color: #0b1022; }
     const stageHeight=700-stageTop;
     const scaleAvg=(scaleX+scaleY)/2;
 
+    demonBladeHellPlatformGlow=0;
     if(attack){
       const dark=attack.currentDarkness||0;
       if(dark>0){
@@ -2740,39 +3025,7 @@ select optgroup { color: #0b1022; }
         ctx.restore();
       }
       const platformGlow=Math.max(0, Math.min(1, attack.currentPlatformGlow||0));
-      if(platformGlow>0){
-        const pr=paddleRect();
-        if(pr.w>0 && pr.h>0){
-          const tint=parseColorToRGB(currentPaddleTint||'#9aaeff');
-          const mix=(value, amount)=>Math.round(value + (255-value)*amount);
-          const px=(pr.x+pr.w/2)*scaleX;
-          const py=(orientLeft ? (pr.y+pr.h/2) : (pr.y+pr.h - pr.h*0.1))*scaleY;
-          const base=Math.max(pr.w, pr.h);
-          const flatten=orientLeft?1:0.5;
-          const baseRadius=base*(orientLeft?0.65:0.95)*scaleAvg;
-          const innerRadius=baseRadius*0.35;
-          const outerRadius=baseRadius*(1.4 + platformGlow*0.8);
-          ctx.save();
-          ctx.translate(px, py);
-          ctx.scale(1, flatten);
-          ctx.globalCompositeOperation='lighter';
-          const grad=ctx.createRadialGradient(0,0,innerRadius,0,0,outerRadius);
-          grad.addColorStop(0,`rgba(${mix(tint.r,0.45)},${mix(tint.g,0.45)},${mix(tint.b,0.45)},${0.55+0.25*platformGlow})`);
-          grad.addColorStop(0.6,`rgba(${mix(tint.r,0.25)},${mix(tint.g,0.25)},${mix(tint.b,0.25)},${0.45+0.3*platformGlow})`);
-          grad.addColorStop(1,'rgba(30,0,0,0)');
-          ctx.fillStyle=grad;
-          ctx.beginPath();
-          ctx.arc(0,0,outerRadius,0,Math.PI*2);
-          ctx.fill();
-          const ringRadius=baseRadius*(0.9 + platformGlow*0.8);
-          ctx.strokeStyle=`rgba(${mix(tint.r,0.3)},${mix(tint.g,0.3)},${mix(tint.b,0.3)},${0.4+0.35*platformGlow})`;
-          ctx.lineWidth=Math.max(3.2*scaleAvg, 5.6*scaleAvg*platformGlow);
-          ctx.beginPath();
-          ctx.arc(0,0,ringRadius,0,Math.PI*2);
-          ctx.stroke();
-          ctx.restore();
-        }
-      }
+      demonBladeHellPlatformGlow=platformGlow;
       let beam=null;
       if(attack.stage==='windup'){ beam=attack.beam; }
       else if(attack.stage==='ending'){ beam=attack.endBeam; }
@@ -2823,35 +3076,52 @@ select optgroup { color: #0b1022; }
         ctx.save();
         ctx.translate(tele.x*scaleX, tele.y*scaleY);
         const sampleBallRadius=(balls && balls.length)?(balls[0].r||10):10;
-        const baseRadius=sampleBallRadius*(orientLeft?1.1:2.0);
-        const outerRadius=baseRadius*(1.8 + 1.0*prog);
-        const innerRadius=baseRadius*0.45;
-        const ringRadius=baseRadius*(1.1 + 0.9*prog);
-        const flatten=orientLeft?1:0.48;
+        const easeOutCubic=(t)=>1-Math.pow(1-t,3);
+        const eased=easeOutCubic(prog);
+        const baseRadius=sampleBallRadius*(orientLeft?0.55:1.0);
+        const outerRadius=baseRadius*(1.9 + 1.2*eased);
+        const innerRadius=baseRadius*(0.28 + 0.22*eased);
+        const haloRadius=baseRadius*(1.1 + 0.8*eased);
+        const flatten=orientLeft?1:0.46;
+        const shimmer=0.6 + 0.4*Math.sin((now/220)+(tele.waveIndex||0));
         ctx.scale(1, flatten);
         ctx.globalCompositeOperation='lighter';
         const grad=ctx.createRadialGradient(0,0,innerRadius*scaleAvg*0.6,0,0,outerRadius*scaleAvg);
-        grad.addColorStop(0,`rgba(255,230,200,${0.45+0.3*prog})`);
-        grad.addColorStop(0.45,`rgba(255,90,60,${0.55+0.35*prog})`);
-        grad.addColorStop(1,'rgba(140,10,0,0)');
+        grad.addColorStop(0,`rgba(255,240,226,${0.32+0.28*eased})`);
+        grad.addColorStop(0.36,`rgba(255,138,168,${0.58+0.28*eased})`);
+        grad.addColorStop(0.72,`rgba(170,24,58,${0.42+0.22*eased})`);
+        grad.addColorStop(1,'rgba(70,0,30,0)');
         ctx.fillStyle=grad;
         ctx.beginPath();
         ctx.arc(0,0,outerRadius*scaleAvg,0,Math.PI*2);
         ctx.fill();
-        ctx.strokeStyle=`rgba(255,120,80,${0.45+0.35*prog})`;
-        ctx.lineWidth=Math.max(2.6*scaleAvg, 5.0*scaleAvg*prog);
+        ctx.lineWidth=Math.max(2*scaleAvg,3.8*scaleAvg*eased);
+        ctx.strokeStyle=`rgba(255,210,220,${0.35+0.4*eased})`;
         ctx.beginPath();
-        ctx.arc(0,0,ringRadius*scaleAvg,0,Math.PI*2);
+        ctx.arc(0,0,haloRadius*scaleAvg,0,Math.PI*2);
         ctx.stroke();
+        ctx.globalCompositeOperation='screen';
+        ctx.strokeStyle=`rgba(255,120,160,${0.25+0.25*eased})`;
+        ctx.lineWidth=Math.max(1.3*scaleAvg,2.6*scaleAvg*eased);
+        const petals=6;
+        for(let p=0;p<petals;p++){
+          const ang=p*(Math.PI*2/petals)+shimmer*0.45;
+          ctx.beginPath();
+          ctx.arc(Math.cos(ang)*innerRadius*scaleAvg*0.6, Math.sin(ang)*innerRadius*scaleAvg*0.6, innerRadius*scaleAvg*0.55, 0, Math.PI*2);
+          ctx.stroke();
+        }
         ctx.globalCompositeOperation='source-over';
-        ctx.strokeStyle=`rgba(255,200,180,${0.25+0.35*prog})`;
-        ctx.lineWidth=Math.max(1.6*scaleAvg, 2.4*scaleAvg*(0.4+prog));
+        ctx.save();
+        ctx.rotate((tele.waveIndex||0)*0.4);
+        ctx.strokeStyle=`rgba(255,220,230,${0.18+0.32*eased})`;
+        ctx.lineWidth=Math.max(1.2*scaleAvg,2.2*scaleAvg*eased);
         ctx.beginPath();
-        ctx.moveTo(-ringRadius*scaleAvg*0.85,0);
-        ctx.lineTo(ringRadius*scaleAvg*0.85,0);
-        ctx.moveTo(0,-ringRadius*scaleAvg*0.4);
-        ctx.lineTo(0,ringRadius*scaleAvg*0.4);
+        ctx.moveTo(-haloRadius*scaleAvg*0.7,0);
+        ctx.lineTo(haloRadius*scaleAvg*0.7,0);
+        ctx.moveTo(0,-haloRadius*scaleAvg*0.38);
+        ctx.lineTo(0,haloRadius*scaleAvg*0.38);
         ctx.stroke();
+        ctx.restore();
         ctx.restore();
       }
     }
@@ -5464,6 +5734,8 @@ select optgroup { color: #0b1022; }
     demonBladeHellSlashes.length=0;
     demonBladeHellCounterSlashes.length=0;
     demonBladeHellCounterstrike=null;
+    forceReleaseBladeHellBall();
+    demonBladeHellPlatformGlow=0;
     addScore(BOSS_DEFEAT_SCORE.demon);
     stats.bossKills++;
     updateHUD();
@@ -6088,7 +6360,7 @@ select optgroup { color: #0b1022; }
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
-let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0},blinkAt:0,loopBrick:null,loopHits:0,lastBrickId:null,lastBrickHitTime:0,sameBrickHits:0,lastBounce:null,speedBoostSuppressedUntil:0,lastCeilingBounce:0}; }
+let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0},blinkAt:0,loopBrick:null,loopHits:0,lastBrickId:null,lastBrickHitTime:0,sameBrickHits:0,lastBounce:null,speedBoostSuppressedUntil:0,lastCeilingBounce:0,capturedByBladeHell:false}; }
 
   function isSpeedSuppressed(ball, now){
     return !!(ball?.speedBoostSuppressedUntil && now < ball.speedBoostSuppressedUntil);
@@ -11449,7 +11721,7 @@ function generateLevel(lv, L){
     if(def.paddleWidthAdd){ buffs.WIDE.active=true; buffs.WIDE.until=now+def.durationMs; }
     if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const max=def.stacksMax??2; if(act.length<max){ buffs.LONG.stacks.push(now+def.durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+def.durationMs; } }
     if(def.sticky){ buffs.STICKY.active=true; buffs.STICKY.until=now+def.durationMs; }
-    if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; news.push(b1);} balls=balls.concat(news); const cap=def.maxBalls??4; if(balls.length>cap) balls.length=cap; } }
+    if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; b1.capturedByBladeHell=false; news.push(b1);} balls=balls.concat(news); const cap=def.maxBalls??4; if(balls.length>cap) balls.length=cap; } }
     if(def.speedMul){ buffs.SLOW.active=true; buffs.SLOW.until=now+def.durationMs; }
     if(def.piercing){ buffs.PIERCE.active=true; buffs.PIERCE.until=now+def.durationMs; for(const b of balls) b.piercing=true; }
     if(def.oneShotShield){ buffs.SHIELD.active=true; }
@@ -11525,7 +11797,9 @@ function generateLevel(lv, L){
     // 更新生命文字與愛心
     livesEl.textContent = lives;
     if (heartsEl) {
+      const activeBursts = Array.from(heartsEl.querySelectorAll('.life-blood-burst'));
       heartsEl.innerHTML = '';
+      for(const burst of activeBursts){ heartsEl.appendChild(burst); }
       // 依據生命數量新增愛心圖示
       for (let i = 0; i < lives; i++) {
         const span = document.createElement('span');
@@ -11588,6 +11862,13 @@ function generateLevel(lv, L){
     phoenixAnim=null;
     fireBursts.length=0;
     demonBloodEffects.length=0;
+    forceReleaseBladeHellBall();
+    demonBladeHellTelegraphs.length=0;
+    demonBladeHellSlashes.length=0;
+    demonBladeHellCounterSlashes.length=0;
+    demonBladeHellCounterstrike=null;
+    demonBladeHellBallCapture=null;
+    demonBladeHellPlatformGlow=0;
     fireEnergy=0; updateFireEnergy();
     // 回復天地翻轉狀態及暫停計時器
     orientLeft=false;
@@ -12502,6 +12783,28 @@ function generateLevel(lv, L){
         ctx.stroke();
         ctx.setLineDash([]);
       }
+      const platformHighlight=Math.max(0, Math.min(1, demonBladeHellPlatformGlow||0));
+      if(platformHighlight>0){
+        ctx.save();
+        drawPadShape();
+        ctx.clip();
+        const sheen=ctx.createLinearGradient(-padW/2, -padH/2, padW/2, padH/2);
+        sheen.addColorStop(0,`rgba(255,230,240,${0.12+0.18*platformHighlight})`);
+        sheen.addColorStop(0.5,`rgba(255,170,210,${0.2+0.28*platformHighlight})`);
+        sheen.addColorStop(1,`rgba(255,255,255,${0.12+0.2*platformHighlight})`);
+        ctx.globalCompositeOperation='screen';
+        ctx.fillStyle=sheen;
+        ctx.fillRect(-padW/2, -padH/2, padW, padH);
+        const rim=ctx.createLinearGradient(0,-padH/2,0,padH/2);
+        rim.addColorStop(0,`rgba(255,200,220,${0.35*platformHighlight})`);
+        rim.addColorStop(1,`rgba(255,120,160,${0.4*platformHighlight})`);
+        ctx.globalCompositeOperation='lighter';
+        ctx.strokeStyle=rim;
+        ctx.lineWidth=Math.max(2.2, 4.2*platformHighlight)*scaleUnit;
+        drawPadShape();
+        ctx.stroke();
+        ctx.restore();
+      }
       if(buffs.HOLE.active){
         if(!orientLeft){ const gapW=padW/3; ctx.clearRect(-padW/2+padW/3, -padH/2, gapW, padH); }
         else { const gapH=padH/3; ctx.clearRect(-padW/2, -padH/2+padH/3, padW, gapH); }
@@ -12568,6 +12871,7 @@ function generateLevel(lv, L){
       if(buffs.WAVY.active){ ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1; const r1=br+2+2*Math.sin((nowT/100)+b.x*0.02); ctx.beginPath(); ctx.arc(bx,by,r1,0,Math.PI*2); ctx.stroke(); }
       if(b.stuck && !orientLeft){ ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.fillRect((paddle.x+paddle.w/2-12)*scaleX,(paddle.y-6)*scaleY,24*scaleX,4*scaleY); }
     }
+    drawBladeHellBallCaptureOverlay(nowT);
     drawDemonCloakWraps(nowT,'front');
 
     // 黑洞特效
@@ -13180,6 +13484,7 @@ function generateLevel(lv, L){
     // Boss 能力排程
     updateBossAbilities();
     updateCyclopsEvent();
+    updateBladeHellBallCapture(now);
     for(const b of balls){
       if(b.rampageUntil && now>b.rampageUntil){ b.rampageUntil=0; if(!buffs.PIERCE.active) b.piercing=false; }
 
@@ -13216,6 +13521,14 @@ function generateLevel(lv, L){
         b.y=b.r+0.1; b.vy=Math.abs(b.vy)||Math.abs(speedForLevel(level));
         spawnParticles(b.x,b.y,'rgba(180,200,255,0.8)',20,1.8,2.6,2.5);
         b.blinkAt=0;
+      }
+
+      if(b.capturedByBladeHell){
+        if(demonBladeHellBallCapture && demonBladeHellBallCapture.ball===b){
+          b.x = demonBladeHellBallCapture.holdX ?? b.x;
+          b.y = demonBladeHellBallCapture.holdY ?? b.y;
+        }
+        continue;
       }
 
       if(b.stuck){ if(!orientLeft){ b.x=paddle.x+paddle.w/2+b.offsetX; b.y=paddle.y-b.r-0.1; } else { const pr=paddleRect(); b.x=pr.x+pr.w+b.r+0.1; b.y=pr.y+pr.h/2; } continue; }
