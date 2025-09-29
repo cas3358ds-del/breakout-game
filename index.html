@@ -2219,7 +2219,7 @@ select optgroup { color: #0b1022; }
     baseRect.y=Math.max(minBaseY, Math.min(maxBaseY, baseRect.y));
     x=Math.max(60, Math.min(1100-60, x));
     y=Math.max(L.top+40, Math.min(700-24, y));
-    const delay=def.slashDelay||500;
+    const delay=def.slashDelay||700;
     const safeRects=bladeHellComputeSafeRects(x, y, baseRect);
     const tele={x,y,start:now,slashAt:now+delay,delay,angle:bladeHellRandomAngle({x,y,safeRects}),waveIndex:attack.waveIndex};
     demonBladeHellTelegraphs.push(tele);
@@ -2443,7 +2443,8 @@ select optgroup { color: #0b1022; }
         maxRadius:bodyHalfWidth,
         x:targetX,
         damaging:false,
-        damageStartedAt:0
+        damageStartedAt:0,
+        contactStart:null
       },
       currentDarkness:0,
       targetDarkness:0.68,
@@ -2453,7 +2454,7 @@ select optgroup { color: #0b1022; }
       countdownStart:0,
       countdownEnd:0,
       waveDefs:[
-        {rounds:3, points:3, pointInterval:500, roundInterval:1000, slashDelay:500},
+        {rounds:3, points:3, pointInterval:500, roundInterval:1000, slashDelay:700},
         {rounds:3, points:2, pointInterval:200, roundInterval:1000, slashDelay:200},
         {rounds:3, points:3, pointInterval:200, roundInterval:1000, slashDelay:200},
         {rounds:3, points:4, pointInterval:200, roundInterval:1000, slashDelay:200},
@@ -2515,6 +2516,7 @@ select optgroup { color: #0b1022; }
         if(!beam.damaging){
           beam.damaging=true;
           beam.damageStartedAt=beam.damageStartedAt||now;
+          beam.contactStart=null;
         }
       }
       const initialRadius=beam.initialRadius ?? 4;
@@ -2532,8 +2534,18 @@ select optgroup { color: #0b1022; }
           const radius=Math.max(4, beam.radius||0);
           const rect={x:(beam.x||demonBoss.x)-radius, y:L.top, w:radius*2, h:700-L.top};
           if(rectsOverlap(rect, prNow)){
-            bladeHellPaddleHit(now,'beam');
+            if(!beam.contactStart){
+              beam.contactStart=now;
+            }
+            if(now - beam.contactStart >= 1000){
+              bladeHellPaddleHit(now,'beam');
+              beam.contactStart=now;
+            }
+          }else{
+            beam.contactStart=null;
           }
+        }else{
+          beam.contactStart=null;
         }
       }
     }
@@ -2601,7 +2613,8 @@ select optgroup { color: #0b1022; }
           maxRadius:bodyHalfWidth,
           x:beamX,
           damaging:false,
-          damageStartedAt:0
+          damageStartedAt:0,
+          contactStart:null
         };
         demonEventShakeUntil=now+3200;
         beginBladeHellBallRelease(now);
@@ -13829,6 +13842,7 @@ function generateLevel(lv, L){
             if(!approachingFromAbove && (fromBelow || diagFromBelow || sideImpact)){
               applyDemonKnockback(knockX, knockY);
             }
+            triggerBallBuffEffectsOnBossHit(b, impactX, impactY, now);
             damageActiveBoss(1,'ball',{x:impactX,y:impactY});
             collidedWithBrick=true;
           }
