@@ -2507,6 +2507,13 @@ select optgroup { color: #0b1022; }
       if(attack.lockedBaseY==null){ attack.lockedBaseY = demonBoss.baseY; }
       attack.targetX=attack.lockedTargetX;
       attack.targetBase=attack.lockedBaseY;
+    }else if(attack.stage==='ending'){
+      const lockX = (attack.endingLockX!=null) ? attack.endingLockX : (attack.endBeam?.x ?? demonBoss.x);
+      const lockBase = (attack.endingLockBase!=null) ? attack.endingLockBase : (attack.lockedBaseY ?? demonBoss.baseY);
+      attack.targetX = lockX;
+      attack.targetBase = lockBase;
+      attack.endingLockX = lockX;
+      attack.endingLockBase = lockBase;
     }else{
       attack.targetX=desiredX;
       attack.targetBase=normalBase;
@@ -2632,6 +2639,10 @@ select optgroup { color: #0b1022; }
           damageStartedAt:0,
           contactStart:null
         };
+        attack.endingLockX = beamX;
+        attack.endingLockBase = demonBoss.baseY;
+        demonBoss.x = beamX;
+        demonBoss.baseY = attack.endingLockBase;
         demonEventShakeUntil=now+3200;
         beginBladeHellBallRelease(now);
       }
@@ -2640,6 +2651,8 @@ select optgroup { color: #0b1022; }
       attack.currentPlatformGlow=Math.max(0, (attack.currentPlatformGlow||0) - dt/2000);
       attack.currentBallGlow=Math.max(0, attack.currentBallGlow - dt/1800);
       updateBladeHellEffects(attack, now);
+      demonBoss.knockbackVX=0;
+      demonBoss.knockbackVY=0;
       if(attack.endBeam && now>=attack.endBeam.vanishAt){
         const flawless=(attack.hitsTaken||0)===0;
         demonBladeHellTelegraphs.length=0;
