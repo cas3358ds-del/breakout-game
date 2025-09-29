@@ -2271,7 +2271,17 @@ select optgroup { color: #0b1022; }
 
   function scheduleBladeHellCounterstrike(now){
     demonBladeHellCounterSlashes.length=0;
-    demonBladeHellCounterstrike={start:now+3000, activated:false, total:10, slashesDone:0, nextSlash:0, endAt:0, shakeUntil:0};
+    demonBladeHellCounterstrike={
+      start:now+3000,
+      activated:false,
+      total:10,
+      slashesDone:0,
+      nextSlash:0,
+      endAt:0,
+      shakeUntil:0,
+      shakeMagnitude:0,
+      marqueeShown:false
+    };
   }
 
   function spawnBladeHellCounterSlash(now){
@@ -2289,10 +2299,12 @@ select optgroup { color: #0b1022; }
     const x2=cx + dx*len;
     const y2=cy + dy*len;
     demonBladeHellCounterSlashes.push({x1,y1,x2,y2,start:now,life:260});
-    spawnParticles(cx, cy, '#ff5ec4', 36, 2.4, 3.6, 3.0);
-    screenShake=Math.max(screenShake,9);
+    spawnParticles(cx, cy, '#b05cff', 40, 2.6, 3.8, 3.2);
+    spawnParticles(cx, cy, '#f0c2ff', 18, 2.2, 3.2, 2.8);
+    spawnBladeHellBlood(cx, cy);
+    screenShake=Math.max(screenShake,11);
     playSFX('sword');
-    damageDemonBoss(1,'bladeHellReflect',{x:cx,y:cy});
+    damageDemonBoss(3,'bladeHellReflect',{x:cx,y:cy},{ignoreCooldown:true,cooldown:60,screenShake:11});
   }
 
   function updateDemonBladeHellCounterstrike(now){
@@ -2302,8 +2314,12 @@ select optgroup { color: #0b1022; }
       if(now>=state.start){
         state.activated=true;
         state.nextSlash=now;
-        state.shakeUntil=now+1200;
-        demonEventMarquee={text:'魔王埃里赫曼被斬擊地獄反噬!', start:now, fadeStart:now+3000, end:now+3000, style:'elegant'};
+        state.shakeUntil=now+1600;
+        state.shakeMagnitude=10;
+        if(!state.marqueeShown){
+          state.marqueeShown=true;
+          demonEventMarquee={text:'魔王埃里赫曼被斬擊地獄反噬!', start:now, fadeStart:now+3000, end:now+3000, style:'elegant'};
+        }
       }
       return;
     }
@@ -2312,7 +2328,7 @@ select optgroup { color: #0b1022; }
       state.slashesDone++;
       state.nextSlash=now+100;
       if(state.slashesDone>=state.total){
-        state.endAt=now+800;
+        state.endAt=now+900;
       }
     }
     if(state.endAt && now>=state.endAt){
@@ -3175,12 +3191,12 @@ select optgroup { color: #0b1022; }
         const alpha=1-prog;
         const width=(5 + 5*(1-prog))*scaleAvg;
         const grad=ctx.createLinearGradient(slash.x1*scaleX, slash.y1*scaleY, slash.x2*scaleX, slash.y2*scaleY);
-        grad.addColorStop(0,'rgba(255,120,210,0)');
-        grad.addColorStop(0.5,`rgba(255,150,220,${0.9*alpha})`);
-        grad.addColorStop(1,'rgba(255,120,210,0)');
+        grad.addColorStop(0,'rgba(150,90,255,0)');
+        grad.addColorStop(0.5,`rgba(200,150,255,${0.9*alpha})`);
+        grad.addColorStop(1,'rgba(150,90,255,0)');
         ctx.strokeStyle=grad;
         ctx.lineWidth=width;
-        ctx.shadowColor=`rgba(255,140,220,${0.55*alpha})`;
+        ctx.shadowColor=`rgba(170,110,255,${0.6*alpha})`;
         ctx.shadowBlur=24*scaleAvg;
         ctx.beginPath();
         ctx.moveTo(slash.x1*scaleX, slash.y1*scaleY);
@@ -5519,7 +5535,9 @@ select optgroup { color: #0b1022; }
       drawDemonCore(now);
       drawDemonAfterimages(now);
     }
-    const shake = (demonBladeHellCounterstrike && demonBladeHellCounterstrike.activated && demonBladeHellCounterstrike.shakeUntil && now<demonBladeHellCounterstrike.shakeUntil) ? 6 : 0;
+    const shake = (demonBladeHellCounterstrike && demonBladeHellCounterstrike.activated && demonBladeHellCounterstrike.shakeUntil && now<demonBladeHellCounterstrike.shakeUntil)
+      ? (demonBladeHellCounterstrike.shakeMagnitude||6)
+      : 0;
     if(demonBoss && (demonPhase==='active' || demonPhase==='dying') && !bladeHellHide){
       const opts = shake>0 ? {shake} : undefined;
       renderDemonFigure(demonBoss, now, opts);
@@ -5701,11 +5719,17 @@ select optgroup { color: #0b1022; }
     demonBloodEffects.length=0;
   }
 
-  function damageDemonBoss(amount=1, source='generic', impact){
+  function damageDemonBoss(amount=1, source='generic', impact, options=null){
     if(demonPhase!=='active' || !demonBoss) return false;
     const now=performance.now();
-    if(demonBoss.hitCooldownUntil && now<demonBoss.hitCooldownUntil) return false;
-    demonBoss.hitCooldownUntil=now+140;
+    const opts=options||{};
+    if(demonBoss.hitCooldownUntil && now<demonBoss.hitCooldownUntil && !opts.ignoreCooldown) return false;
+    if(opts.ignoreCooldown){
+      const customCooldown=Math.max(0, opts.cooldown||0);
+      demonBoss.hitCooldownUntil=now+customCooldown;
+    }else{
+      demonBoss.hitCooldownUntil=now+140;
+    }
     demonBoss.hp=Math.max(0, demonBoss.hp-amount);
     if(source==='ball'){
       addScore(BOSS_HIT_SCORE);
@@ -5715,7 +5739,8 @@ select optgroup { color: #0b1022; }
     const ix=(impact&&impact.x!=null)?impact.x:demonBoss.x;
     const iy=(impact&&impact.y!=null)?impact.y:demonBoss.y;
     spawnParticles(ix,iy,'#dcb6ff',24,1.8,3.0,2.8);
-    screenShake=Math.max(screenShake,4);
+    const shakeStrength = opts.screenShake || 4;
+    screenShake=Math.max(screenShake,shakeStrength);
     if(demonBoss.hp<=0){
       defeatDemonBoss();
     }
