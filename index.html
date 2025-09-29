@@ -2219,7 +2219,7 @@ select optgroup { color: #0b1022; }
     baseRect.y=Math.max(minBaseY, Math.min(maxBaseY, baseRect.y));
     x=Math.max(60, Math.min(1100-60, x));
     y=Math.max(L.top+40, Math.min(700-24, y));
-    const delay=def.slashDelay||700;
+    const delay=def.slashDelay||500;
     const safeRects=bladeHellComputeSafeRects(x, y, baseRect);
     const tele={x,y,start:now,slashAt:now+delay,delay,angle:bladeHellRandomAngle({x,y,safeRects}),waveIndex:attack.waveIndex};
     demonBladeHellTelegraphs.push(tele);
@@ -2470,11 +2470,11 @@ select optgroup { color: #0b1022; }
       countdownStart:0,
       countdownEnd:0,
       waveDefs:[
-        {rounds:3, points:3, pointInterval:500, roundInterval:1000, slashDelay:700},
-        {rounds:3, points:2, pointInterval:200, roundInterval:1000, slashDelay:700},
-        {rounds:3, points:3, pointInterval:200, roundInterval:1000, slashDelay:700},
-        {rounds:3, points:4, pointInterval:200, roundInterval:1000, slashDelay:700},
-        {rounds:1, points:20, pointInterval:300, roundInterval:0, slashDelay:700}
+        {rounds:3, points:3, pointInterval:500, roundInterval:1000, slashDelay:500},
+        {rounds:3, points:2, pointInterval:200, roundInterval:1000, slashDelay:500},
+        {rounds:3, points:3, pointInterval:200, roundInterval:1000, slashDelay:500},
+        {rounds:3, points:4, pointInterval:200, roundInterval:1000, slashDelay:500},
+        {rounds:1, points:30, pointInterval:100, roundInterval:0, slashDelay:500}
       ],
       waveIndex:-1,
       waveState:null,
