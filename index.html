@@ -2470,11 +2470,11 @@ select optgroup { color: #0b1022; }
       countdownStart:0,
       countdownEnd:0,
       waveDefs:[
-        {rounds:3, points:3, pointInterval:500, roundInterval:1000, slashDelay:500},
-        {rounds:3, points:2, pointInterval:200, roundInterval:1000, slashDelay:500},
-        {rounds:3, points:3, pointInterval:200, roundInterval:1000, slashDelay:500},
-        {rounds:3, points:4, pointInterval:200, roundInterval:1000, slashDelay:500},
-        {rounds:1, points:30, pointInterval:100, roundInterval:0, slashDelay:500}
+        {rounds:3, points:3, pointInterval:500, roundInterval:1000, slashDelay:300},
+        {rounds:3, points:2, pointInterval:200, roundInterval:1000, slashDelay:300},
+        {rounds:3, points:3, pointInterval:200, roundInterval:1000, slashDelay:300},
+        {rounds:3, points:4, pointInterval:200, roundInterval:1000, slashDelay:300},
+        {rounds:1, points:30, pointInterval:100, roundInterval:0, slashDelay:300}
       ],
       waveIndex:-1,
       waveState:null,
@@ -2643,6 +2643,12 @@ select optgroup { color: #0b1022; }
         attack.endingLockBase = demonBoss.baseY;
         demonBoss.x = beamX;
         demonBoss.baseY = attack.endingLockBase;
+        const reappearLead=300;
+        const endBeamVanish=attack.endBeam.vanishAt||0;
+        if(endBeamVanish>0){
+          const desiredReturn=endBeamVanish - reappearLead;
+          demonBoss.hiddenUntil = Math.max(demonBoss.hiddenUntil||0, desiredReturn);
+        }
         demonEventShakeUntil=now+3200;
         beginBladeHellBallRelease(now);
       }
