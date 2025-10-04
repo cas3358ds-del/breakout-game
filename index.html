@@ -95,6 +95,16 @@
       background:#0b1633;
       color:#d7e3ff;
     }
+    .level-select select option.locked,
+    .level-select select option:disabled{
+      color:rgba(215,227,255,0.35) !important;
+      background:rgba(11,22,51,0.38);
+      font-weight:500;
+    }
+    .level-select select option.locked.boss-level{
+      color:rgba(255,179,71,0.45) !important;
+      background:rgba(255,155,74,0.12);
+    }
     .level-select select option.boss-level{
       color:#ffb347;
       font-weight:800;
@@ -611,7 +621,7 @@ select optgroup { color: #0b1022; }
             </select></div>
           </div>
         </div>
-        <div class="pill wide">生命 <b id="lives">9</b> <span class="hearts" id="hearts">❤️❤️❤️❤️❤️❤️❤️❤️❤️</span> <span id="fireEnergy" class="fire-energy"></span> <span class="cats" id="cats" style="display:none"></span></div>
+        <div class="pill wide">生命 <b id="lives">3</b> <span class="hearts" id="hearts">❤️❤️❤️</span> <span id="fireEnergy" class="fire-energy"></span> <span class="cats" id="cats" style="display:none"></span></div>
       </div>
     </section>
     <div class="hud-sentinel" style="height:0"></div>
@@ -971,6 +981,7 @@ select optgroup { color: #0b1022; }
   const soundBtn=document.getElementById('soundBtn'), saveBtn=document.getElementById('saveBtn'), loadBtn=document.getElementById('loadBtn'), clearSaveBtn=document.getElementById('clearSaveBtn');
   const levelJumpSel=document.getElementById('levelJumpSel');
   let refreshLevelJumpVisual=null;
+  let updateLevelJumpAvailability=null;
   const tutorBtn=document.getElementById('tutorBtn'), effectsBtn=document.getElementById('effectsBtn'), galleryBtn=document.getElementById('galleryBtn'), rankBtn=document.getElementById('rankBtn');
   const centerNote=document.getElementById('centerNote'), noteTitle=document.getElementById('noteTitle'), noteText=document.getElementById('noteText'), noteBox=document.getElementById('noteBox');
   const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs'), promptsDock=document.getElementById('promptsDock');
@@ -989,6 +1000,25 @@ select optgroup { color: #0b1022; }
   document.getElementById('retryBtn')?.addEventListener('click', ()=>{ gameover.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });
 
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
+
+  let maxLevelReached=1;
+  try{
+    const storedMax=parseInt(localStorage.getItem('breakout_max_level')||'1',10);
+    if(!Number.isNaN(storedMax)){
+      maxLevelReached=Math.max(1, Math.min(GAME_CONFIG.totalLevels, storedMax));
+    }
+  }catch(e){}
+
+  function unlockLevel(targetLevel){
+    const numeric=parseInt(targetLevel,10);
+    if(Number.isNaN(numeric)) return;
+    const sanitized=Math.max(1, Math.min(GAME_CONFIG.totalLevels, numeric));
+    if(sanitized>maxLevelReached){
+      maxLevelReached=sanitized;
+      try{ localStorage.setItem('breakout_max_level', String(maxLevelReached)); }catch(e){}
+      if(typeof updateLevelJumpAvailability==='function') updateLevelJumpAvailability();
+    }
+  }
   const gameover=document.getElementById('gameover'), finalScore2=document.getElementById('finalScore2');
   const retryBtn=document.getElementById('retryBtn');
 
@@ -1385,7 +1415,7 @@ select optgroup { color: #0b1022; }
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
 
   // === 狀態 ===
-  let running=false, paused=true, level=1, score=0, lives=9, soundsOn=false;
+  let running=false, paused=true, level=1, score=0, lives=3, soundsOn=false;
   let nineCatEaten=0;
   const bossNineCatDrops=new Set();
   let fireEnergy=0;
@@ -1395,6 +1425,7 @@ select optgroup { color: #0b1022; }
   const comboEl=document.getElementById('combo');
   let comboNoticeTriggered={50:false,100:false,200:false,300:false,400:false,500:false,800:false,1000:false};
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
+  unlockLevel(level);
   const SPACE_BOSS_MAX_HP = 30;
   const SPACE_BOSS_ATTACK_INTERVAL = 15000;
   const SPACE_BOSS_PADDLE_MIN_WIDTH = 60;
@@ -11888,7 +11919,11 @@ function generateLevel(lv, L){
     // 顯示目前關卡數（level 元素）和總關卡數（totalLevels 元素）
     levelEl.textContent = level;
     if (totalLevelsEl) totalLevelsEl.textContent = GAME_CONFIG.totalLevels;
+    if(level>maxLevelReached){
+      unlockLevel(level);
+    }
     if (levelJumpSel){
+      if(typeof updateLevelJumpAvailability==='function') updateLevelJumpAvailability();
       levelJumpSel.value = String(level);
       if(typeof refreshLevelJumpVisual==='function') refreshLevelJumpVisual();
     }
@@ -11942,7 +11977,7 @@ function generateLevel(lv, L){
   }
   function hideCenter(){ centerNote.style.display='none'; }
 
-  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:9; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
+  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
     bossNineCatDrops.clear();
     stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
     for(const k of Object.keys(buffs)){
@@ -11986,15 +12021,22 @@ function generateLevel(lv, L){
 
   // === 存讀檔（含音效/BGM與影像選擇） ===
   function saveProgress(){ try{
-      const data={level,score,lives,difficulty:difficultySel.value, imageChoice, soundsOn, bgmOn, bgmVol: parseFloat(bgmVol.value)};
+      const data={level,score,lives,difficulty:difficultySel.value, imageChoice, soundsOn, bgmOn, bgmVol: parseFloat(bgmVol.value), maxLevelReached};
       localStorage.setItem('breakout_save_v_final_cfg', JSON.stringify(data)); alert('已存檔！');
     }catch(e){ alert('存檔失敗：'+e); } }
   function loadProgress(){ try{ const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4'); if(!raw){ alert('沒有存檔'); return; } const data=JSON.parse(raw);
-      difficultySel.value=data.difficulty||'normal'; level=data.level||1; score=data.score||0; lives=typeof data.lives==='number'?data.lives:9; if(Array.isArray(data.imageChoice)) imageChoice=data.imageChoice;
+      difficultySel.value=data.difficulty||'normal'; level=data.level||1; score=data.score||0; lives=typeof data.lives==='number'?data.lives:3; if(Array.isArray(data.imageChoice)) imageChoice=data.imageChoice;
+      const savedMaxLevel=parseInt(data.maxLevelReached,10);
+      if(!Number.isNaN(savedMaxLevel)){
+        maxLevelReached=Math.max(1, Math.min(GAME_CONFIG.totalLevels, savedMaxLevel));
+      }
+      maxLevelReached=Math.max(maxLevelReached, level);
+      try{ localStorage.setItem('breakout_max_level', String(maxLevelReached)); }catch(e){}
+      if(typeof updateLevelJumpAvailability==='function') updateLevelJumpAvailability();
       soundsOn=!!data.soundsOn; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
       if(typeof data.bgmOn==='boolean'){ bgmOn=data.bgmOn; } if(typeof data.bgmVol==='number'){ bgmVol.value=String(data.bgmVol); if(bgmGain) bgmGain.gain.value=data.bgmVol; localStorage.setItem('bgm_vol', data.bgmVol); }
       resetGame(true); updateHUD(); alert(`已讀檔：等級 ${level}，分數 ${score}，生命 ${lives}`);}catch(e){ alert('讀檔失敗：'+e); } }
-  function clearSave(){ localStorage.removeItem('breakout_save_v_final_cfg'); localStorage.removeItem('gallery_unlocks'); localStorage.removeItem('dialog_unlocks'); alert('已清除存檔'); }
+  function clearSave(){ localStorage.removeItem('breakout_save_v_final_cfg'); localStorage.removeItem('gallery_unlocks'); localStorage.removeItem('dialog_unlocks'); localStorage.removeItem('breakout_max_level'); maxLevelReached=1; if(typeof updateLevelJumpAvailability==='function') updateLevelJumpAvailability(); alert('已清除存檔'); }
 
   // === 輸入（含觸控） ===
   let keyL=false, keyR=false; let touchActive=false;
@@ -12042,7 +12084,24 @@ function generateLevel(lv, L){
       const isBoss=!!current && current.classList.contains('boss-level');
       levelJumpSel.classList.toggle('boss-selected', isBoss);
     };
+    const updateLevelJumpAccess = ()=>{
+      const highestAllowed=Math.max(1, Math.min(GAME_CONFIG.totalLevels, maxLevelReached));
+      const options=Array.from(levelJumpSel.options);
+      for(const option of options){
+        const optLevel=parseInt(option.value,10);
+        const allowed=!Number.isNaN(optLevel) && optLevel<=highestAllowed;
+        option.disabled=!allowed;
+        option.classList.toggle('locked', !allowed);
+      }
+      const currentVal=parseInt(levelJumpSel.value,10);
+      const fallback=Math.max(1, Math.min(level, highestAllowed));
+      if(Number.isNaN(currentVal) || currentVal>highestAllowed){
+        levelJumpSel.value=String(fallback);
+      }
+      updateLevelJumpVisual();
+    };
     refreshLevelJumpVisual = updateLevelJumpVisual;
+    updateLevelJumpAvailability = updateLevelJumpAccess;
     const populateLevelJumpOptions = ()=>{
       levelJumpSel.innerHTML = '';
       for(let i=1;i<=GAME_CONFIG.totalLevels;i++){
@@ -12052,13 +12111,10 @@ function generateLevel(lv, L){
         option.textContent=isBoss ? `第 ${i} 關 ★ Boss` : `第 ${i} 關`;
         if(isBoss){
           option.classList.add('boss-level');
-          option.style.color='#ffb347';
-          option.style.fontWeight='800';
-          option.style.background='rgba(255,155,74,.22)';
         }
         levelJumpSel.appendChild(option);
       }
-      updateLevelJumpVisual();
+      updateLevelJumpAccess();
     };
     populateLevelJumpOptions();
     levelJumpSel.value = String(level);
@@ -12067,6 +12123,11 @@ function generateLevel(lv, L){
       updateLevelJumpVisual();
       const target=parseInt(levelJumpSel.value,10);
       if(Number.isNaN(target)) return;
+      if(target>maxLevelReached){
+        updateLevelJumpAccess();
+        levelJumpSel.value=String(Math.max(1, Math.min(level, maxLevelReached)));
+        return;
+      }
       level = Math.max(1, Math.min(GAME_CONFIG.totalLevels, target));
       gameOver = false;
       gameover?.classList.remove('show');
