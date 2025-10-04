@@ -2540,6 +2540,7 @@ select optgroup { color: #0b1022; }
           beam.damaging=true;
           beam.damageStartedAt=beam.damageStartedAt||now;
           beam.contactStart=null;
+          playSFX('bladeHellBeamExpand');
         }
       }
       const initialRadius=beam.initialRadius ?? 4;
@@ -6608,6 +6609,46 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         g.gain.setValueAtTime(0.07, now);
         g.gain.exponentialRampToValueAtTime(0.001, now+0.4);
         o.start(now); o.stop(now+0.4); break;
+      case 'bladeHellBeamExpand':
+        o.type='triangle';
+        o.frequency.setValueAtTime(260, now);
+        o.frequency.linearRampToValueAtTime(1040, now+1.4);
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.linearRampToValueAtTime(0.05, now+0.1);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+1.6);
+        o.start(now); o.stop(now+1.6);
+        const shimmer=audioCtx.createOscillator();
+        const shimmerGain=audioCtx.createGain();
+        shimmer.type='sine';
+        shimmer.frequency.setValueAtTime(1200, now);
+        shimmer.frequency.linearRampToValueAtTime(2000, now+0.6);
+        shimmerGain.gain.setValueAtTime(0.015, now);
+        shimmerGain.gain.linearRampToValueAtTime(0.04, now+0.25);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now+1.2);
+        shimmer.connect(shimmerGain); shimmerGain.connect(audioCtx.destination);
+        shimmer.start(now); shimmer.stop(now+1.2);
+        const sparkleBuffer=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*1.4), audioCtx.sampleRate);
+        const sparkleData=sparkleBuffer.getChannelData(0);
+        for(let i=0;i<sparkleData.length;i++){
+          const t=i/sparkleData.length;
+          const envelope=1-Math.pow(t,0.35);
+          sparkleData[i]=(Math.random()*2-1)*0.35*envelope;
+        }
+        const sparkle=audioCtx.createBufferSource();
+        sparkle.buffer=sparkleBuffer;
+        const sparkleFilter=audioCtx.createBiquadFilter();
+        sparkleFilter.type='highpass';
+        sparkleFilter.frequency.setValueAtTime(1500, now);
+        sparkleFilter.Q=1.2;
+        const sparkleGain=audioCtx.createGain();
+        sparkleGain.gain.setValueAtTime(0.12, now);
+        sparkleGain.gain.exponentialRampToValueAtTime(0.0001, now+1.5);
+        sparkle.connect(sparkleFilter);
+        sparkleFilter.connect(sparkleGain);
+        sparkleGain.connect(audioCtx.destination);
+        sparkle.start(now);
+        sparkle.stop(now+1.5);
+        break;
       case 'laser':
         o.type='square';
         o.frequency.setValueAtTime(1200, now);
