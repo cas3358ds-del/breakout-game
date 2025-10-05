@@ -97,13 +97,15 @@
     }
     .level-select select option.locked,
     .level-select select option:disabled{
-      color:rgba(215,227,255,0.35) !important;
-      background:rgba(11,22,51,0.38);
-      font-weight:500;
+      color:rgba(215,227,255,0.12) !important;
+      background:rgba(11,22,51,0.14);
+      font-weight:450;
+      letter-spacing:0.2px;
+      text-shadow:none;
     }
     .level-select select option.locked.boss-level{
-      color:rgba(255,179,71,0.45) !important;
-      background:rgba(255,155,74,0.12);
+      color:rgba(255,179,71,0.18) !important;
+      background:rgba(255,155,74,0.04);
     }
     .level-select select option.boss-level{
       color:#ffb347;
@@ -501,6 +503,18 @@ select optgroup { color: #0b1022; }
     body[data-skin="和風．無限之城"] .level-select select option{
       background:#2c0610;
       color:var(--ink);
+    }
+    body[data-skin="和風．無限之城"] .level-select select option.locked,
+    body[data-skin="和風．無限之城"] .level-select select option:disabled{
+      color:rgba(255,236,221,0.12) !important;
+      background:rgba(44,6,16,0.14);
+      font-weight:450;
+      letter-spacing:0.2px;
+      text-shadow:none;
+    }
+    body[data-skin="和風．無限之城"] .level-select select option.locked.boss-level{
+      color:rgba(255,191,120,0.18) !important;
+      background:rgba(255,132,77,0.04);
     }
     body[data-skin="和風．無限之城"] .hearts .life-icon{
       width:26px;
@@ -12092,6 +12106,8 @@ function generateLevel(lv, L){
         const allowed=!Number.isNaN(optLevel) && optLevel<=highestAllowed;
         option.disabled=!allowed;
         option.classList.toggle('locked', !allowed);
+        option.dataset.locked = (!allowed).toString();
+        option.style.opacity = allowed ? '1' : '0.22';
       }
       const currentVal=parseInt(levelJumpSel.value,10);
       const fallback=Math.max(1, Math.min(level, highestAllowed));
