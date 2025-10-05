@@ -635,7 +635,7 @@ select optgroup { color: #0b1022; }
             </select></div>
           </div>
         </div>
-        <div class="pill wide">生命 <b id="lives">3</b> <span class="hearts" id="hearts">❤️❤️❤️</span> <span id="fireEnergy" class="fire-energy"></span> <span class="cats" id="cats" style="display:none"></span></div>
+        <div class="pill wide">生命 <b id="lives">9</b> <span class="hearts" id="hearts">❤️❤️❤️❤️❤️❤️❤️❤️❤️</span> <span id="fireEnergy" class="fire-energy"></span> <span class="cats" id="cats" style="display:none"></span></div>
       </div>
     </section>
     <div class="hud-sentinel" style="height:0"></div>
@@ -1429,7 +1429,7 @@ select optgroup { color: #0b1022; }
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
 
   // === 狀態 ===
-  let running=false, paused=true, level=1, score=0, lives=3, soundsOn=false;
+  let running=false, paused=true, level=1, score=0, lives=9, soundsOn=false;
   let nineCatEaten=0;
   const bossNineCatDrops=new Set();
   let fireEnergy=0;
@@ -11991,7 +11991,7 @@ function generateLevel(lv, L){
   }
   function hideCenter(){ centerNote.style.display='none'; }
 
-  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:3; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
+  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:9; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
     bossNineCatDrops.clear();
     stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
     for(const k of Object.keys(buffs)){
@@ -12039,7 +12039,7 @@ function generateLevel(lv, L){
       localStorage.setItem('breakout_save_v_final_cfg', JSON.stringify(data)); alert('已存檔！');
     }catch(e){ alert('存檔失敗：'+e); } }
   function loadProgress(){ try{ const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4'); if(!raw){ alert('沒有存檔'); return; } const data=JSON.parse(raw);
-      difficultySel.value=data.difficulty||'normal'; level=data.level||1; score=data.score||0; lives=typeof data.lives==='number'?data.lives:3; if(Array.isArray(data.imageChoice)) imageChoice=data.imageChoice;
+      difficultySel.value=data.difficulty||'normal'; level=data.level||1; score=data.score||0; lives=typeof data.lives==='number'?data.lives:9; if(Array.isArray(data.imageChoice)) imageChoice=data.imageChoice;
       const savedMaxLevel=parseInt(data.maxLevelReached,10);
       if(!Number.isNaN(savedMaxLevel)){
         maxLevelReached=Math.max(1, Math.min(GAME_CONFIG.totalLevels, savedMaxLevel));
@@ -12099,20 +12099,16 @@ function generateLevel(lv, L){
       levelJumpSel.classList.toggle('boss-selected', isBoss);
     };
     const updateLevelJumpAccess = ()=>{
-      const highestAllowed=Math.max(1, Math.min(GAME_CONFIG.totalLevels, maxLevelReached));
       const options=Array.from(levelJumpSel.options);
       for(const option of options){
-        const optLevel=parseInt(option.value,10);
-        const allowed=!Number.isNaN(optLevel) && optLevel<=highestAllowed;
-        option.disabled=!allowed;
-        option.classList.toggle('locked', !allowed);
-        option.dataset.locked = (!allowed).toString();
-        option.style.opacity = allowed ? '1' : '0.22';
+        option.disabled=false;
+        option.classList.remove('locked');
+        option.dataset.locked = 'false';
+        option.style.opacity = '1';
       }
       const currentVal=parseInt(levelJumpSel.value,10);
-      const fallback=Math.max(1, Math.min(level, highestAllowed));
-      if(Number.isNaN(currentVal) || currentVal>highestAllowed){
-        levelJumpSel.value=String(fallback);
+      if(Number.isNaN(currentVal)){
+        levelJumpSel.value=String(Math.max(1, Math.min(GAME_CONFIG.totalLevels, level)));
       }
       updateLevelJumpVisual();
     };
@@ -12139,11 +12135,6 @@ function generateLevel(lv, L){
       updateLevelJumpVisual();
       const target=parseInt(levelJumpSel.value,10);
       if(Number.isNaN(target)) return;
-      if(target>maxLevelReached){
-        updateLevelJumpAccess();
-        levelJumpSel.value=String(Math.max(1, Math.min(level, maxLevelReached)));
-        return;
-      }
       level = Math.max(1, Math.min(GAME_CONFIG.totalLevels, target));
       gameOver = false;
       gameover?.classList.remove('show');
