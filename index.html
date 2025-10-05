@@ -1543,6 +1543,9 @@ select optgroup { color: #0b1022; }
   let demonBladeHellLastPaddleCenter={x:550, y:640};
   let demonBladeHellBallCapture=null;
   let demonBladeHellPlatformGlow=0;
+  const demonAbyssBricks=[];
+  let demonAbyssBrickId=0;
+  const demonAbyssExplosions=[];
   let currentPaddleTint='#9aaeff';
   const DEMON_DESCENT_DURATION=20000;
   const DEMON_ASCENT_DURATION=2600;
@@ -2009,6 +2012,23 @@ select optgroup { color: #0b1022; }
     return (dx*dx + dy*dy) <= r*r;
   }
 
+  function circleIntersectsSegment(cx, cy, r, x1, y1, x2, y2){
+    const dx=x2-x1;
+    const dy=y2-y1;
+    const lenSq=dx*dx+dy*dy;
+    let t=0;
+    if(lenSq>0){
+      t=((cx-x1)*dx + (cy-y1)*dy)/lenSq;
+      if(t<0) t=0;
+      else if(t>1) t=1;
+    }
+    const px=x1 + dx*t;
+    const py=y1 + dy*t;
+    const distX=cx-px;
+    const distY=cy-py;
+    return (distX*distX + distY*distY) <= r*r;
+  }
+
   function lineIntersectsRect(x1,y1,x2,y2,rect){
     const xMin=rect.x, xMax=rect.x+rect.w;
     const yMin=rect.y, yMax=rect.y+rect.h;
@@ -2110,6 +2130,125 @@ select optgroup { color: #0b1022; }
       ringStart: 42 + Math.random()*18,
       ringEnd: 280 + Math.random()*90
     });
+  }
+
+  function spawnAbyssPlatformShatter(x, y){
+    spawnParticles(x, y, '#f5e6ff', 42, 2.6, 3.6, 3.8);
+    spawnParticles(x, y, '#8f55d6', 36, 2.8, 3.8, 4.2);
+    spawnParticles(x, y, '#d3b2ff', 26, 2.2, 3.2, 3.6);
+  }
+
+  function spawnDemonAbyssBrick(attack, now){
+    if(!attack) return null;
+    const L=layout();
+    const stageTop=L.top;
+    const stageBottom=700;
+    const stageHeight=stageBottom-stageTop;
+    const center=attack.orbitCenter || {x:550, y:stageTop + stageHeight*(2/3)};
+    const sides=['top','left','right'];
+    const side=sides[Math.floor(Math.random()*sides.length)];
+    let startX=center.x, startY=stageTop-60;
+    if(side==='top'){
+      const minX=L.pad + 40;
+      const maxX=1100 - L.pad - 40;
+      startX = minX + Math.random()*(Math.max(minX, maxX)-minX);
+      startY = stageTop - 70;
+    }else if(side==='left'){
+      startX = L.pad - 70;
+      startY = stageTop + Math.random()*stageHeight*0.82;
+    }else{
+      startX = 1100 - L.pad + 70;
+      startY = stageTop + Math.random()*stageHeight*0.82;
+    }
+    const spawnCount = attack.spawnCount||0;
+    const baseAngle = (attack.orbitAngleSeed!=null?attack.orbitAngleSeed:(attack.orbitAngleSeed=Math.random()*Math.PI*2));
+    const angle = baseAngle + spawnCount*(Math.PI*2/12);
+    const orbitRadius = Math.max(80, (attack.orbitRadius||160) + (Math.random()*40-20));
+    const targetX = center.x + Math.cos(angle)*orbitRadius;
+    const targetY = center.y + Math.sin(angle)*orbitRadius;
+    const brick={
+      id: ++demonAbyssBrickId,
+      x:startX,
+      y:startY,
+      startX,
+      startY,
+      targetX,
+      targetY,
+      orbitCenter:{x:center.x, y:center.y},
+      orbitRadius,
+      angle,
+      orbitSpeed:(Math.PI*2)/2000,
+      state:'flying',
+      spawnAt:now,
+      arrivalDuration:1000,
+      hitRadius:26,
+      renderSize:46,
+      renderPulse:Math.random()*Math.PI*2,
+      lastUpdate:now,
+      hp:1
+    };
+    demonAbyssBricks.push(brick);
+    attack.spawnCount = spawnCount + 1;
+    spawnParticles(startX, startY, '#401355', 24, 2.6, 3.4, 3.6);
+    spawnParticles(startX, startY, '#b38aff', 18, 2.0, 3.0, 3.2);
+    return brick;
+  }
+
+  function destroyDemonAbyssBrick(brick, cause='generic', now=performance.now()){
+    if(!brick || brick.destroyed) return false;
+    brick.destroyed=true;
+    brick.state='destroyed';
+    brick.destroyedAt=now;
+    brick.removeAt=now+700;
+    spawnParticles(brick.x, brick.y, '#f9ecff', 52, 2.8, 4.0, 4.4);
+    spawnParticles(brick.x, brick.y, '#9a55ff', 36, 2.6, 3.6, 4.0);
+    spawnParticles(brick.x, brick.y, '#542a8f', 28, 2.4, 3.2, 3.6);
+    demonAbyssExplosions.push({
+      x:brick.x,
+      y:brick.y,
+      start:now,
+      end:now+900,
+      radius:brick.hitRadius*2.2
+    });
+    return true;
+  }
+
+  function strikeDemonAbyssBricksAtPoint(x, y, radius=6, source='generic'){
+    if(!demonAbyssBricks.length) return false;
+    const now=performance.now();
+    let hit=false;
+    for(const brick of demonAbyssBricks){
+      if(!brick || brick.destroyed) continue;
+      const dx=brick.x - x;
+      const dy=brick.y - y;
+      const range=brick.hitRadius + radius;
+      if(dx*dx + dy*dy <= range*range){
+        destroyDemonAbyssBrick(brick, source, now);
+        hit=true;
+      }
+    }
+    return hit;
+  }
+
+  function strikeDemonAbyssBricksAlongLine(x1,y1,x2,y2,source='generic'){
+    if(!demonAbyssBricks.length) return false;
+    const now=performance.now();
+    let hit=false;
+    for(const brick of demonAbyssBricks){
+      if(!brick || brick.destroyed) continue;
+      if(circleIntersectsSegment(brick.x, brick.y, brick.hitRadius, x1,y1,x2,y2)){
+        destroyDemonAbyssBrick(brick, source, now);
+        hit=true;
+      }
+    }
+    return hit;
+  }
+
+  function triggerDemonAbyssFinale(now){
+    for(const brick of demonAbyssBricks){
+      if(!brick || brick.destroyed) continue;
+      destroyDemonAbyssBrick(brick, 'finale', now);
+    }
   }
 
   function bladeHellSlashWouldHitRect(angle, cx, cy, rect){
@@ -2488,6 +2627,8 @@ select optgroup { color: #0b1022; }
     const normalBase=demonBoss.normalBaseY ?? demonBoss.baseY;
     demonBladeHellTelegraphs.length=0;
     demonBladeHellSlashes.length=0;
+    demonAbyssBricks.length=0;
+    demonAbyssExplosions.length=0;
     const bodyHalfWidth=Math.max(6, (demonBoss?.w||90)/2);
     demonAttackActive={
       type:'bladeHell',
@@ -2719,6 +2860,253 @@ select optgroup { color: #0b1022; }
     }
   }
 
+  function updateDemonAbyssBricks(now, attack, dt){
+    for(let i=demonAbyssBricks.length-1;i>=0;i--){
+      const brick=demonAbyssBricks[i];
+      if(!brick){ demonAbyssBricks.splice(i,1); continue; }
+      const prevX=brick.x;
+      const prevY=brick.y;
+      const delta=now-(brick.lastUpdate||now);
+      brick.lastUpdate=now;
+      if(brick.destroyed){
+        if(now>=brick.removeAt){ demonAbyssBricks.splice(i,1); }
+        continue;
+      }
+      const center=(attack && attack.orbitCenter) ? attack.orbitCenter : (brick.orbitCenter||{x:550,y:350});
+      brick.orbitCenter=center;
+      if(brick.state==='flying'){
+        const dur=Math.max(1, brick.arrivalDuration||1000);
+        const prog=Math.max(0, Math.min(1, (now-brick.spawnAt)/dur));
+        brick.x = brick.startX + (brick.targetX-brick.startX)*prog;
+        brick.y = brick.startY + (brick.targetY-brick.startY)*prog;
+        if(prog>=1){
+          brick.state='orbit';
+          brick.phaseOffset = Math.random()*Math.PI*2;
+        }
+      }else if(brick.state==='orbit' || brick.state==='beam'){
+        const omega=brick.orbitSpeed || ((Math.PI*2)/2000);
+        brick.angle += omega*delta;
+        const jitter = 6*Math.sin((now/240)+(brick.phaseOffset||0));
+        const radius=Math.max(60, brick.orbitRadius + jitter);
+        brick.x = center.x + Math.cos(brick.angle)*radius;
+        brick.y = center.y + Math.sin(brick.angle)*radius;
+      }else if(brick.state==='projectile'){
+        const dur=Math.max(1, brick.travelDuration||1000);
+        const elapsed=now - (brick.launchAt||now);
+        const t=Math.max(0, Math.min(1, elapsed/dur));
+        const nx=brick.targetX - brick.startX;
+        const ny=brick.targetY - brick.startY;
+        const newX=brick.startX + nx*t;
+        const newY=brick.startY + ny*t;
+        const pr=paddleRect();
+        if(!brick.projectileResolved && pr.w>0 && pr.h>0 && now>=paddleGoneUntil){
+          if(lineIntersectsRect(prevX, prevY, newX, newY, pr)){
+            spawnAbyssPlatformShatter(pr.x+pr.w/2, pr.y+pr.h/2);
+            paddleGoneUntil=now+3000;
+            destroyDemonAbyssBrick(brick,'paddle', now);
+            brick.projectileResolved=true;
+            continue;
+          }
+        }
+        brick.x=newX;
+        brick.y=newY;
+        if(t>=1 && !brick.projectileResolved){
+          destroyDemonAbyssBrick(brick,'impact', now);
+          brick.projectileResolved=true;
+        }
+      }
+      brick.prevX=prevX;
+      brick.prevY=prevY;
+    }
+  }
+
+  function updateDemonAbyssResiduals(now){
+    for(let i=demonAbyssExplosions.length-1;i>=0;i--){
+      const fx=demonAbyssExplosions[i];
+      if(!fx){ demonAbyssExplosions.splice(i,1); continue; }
+      if(now>=fx.end){ demonAbyssExplosions.splice(i,1); }
+    }
+  }
+
+  function startDemonAbyssShatter(now){
+    if(!demonBoss) return;
+    const L=layout();
+    const stageTop=L.top;
+    const stageHeight=700-stageTop;
+    const center={x:550, y:stageTop + stageHeight*(2/3)};
+    demonAbyssBricks.length=0;
+    demonAbyssExplosions.length=0;
+    const attack={
+      type:'abyssShatter',
+      start:now,
+      stage:'countdown',
+      overrideMovement:true,
+      countdownEnd:now+10000,
+      spawnStart:now+1000,
+      spawnEnd:now+9000,
+      nextSpawn:now+1000,
+      spawnInterval:500,
+      orbitCenter:center,
+      orbitRadius:Math.min(220, Math.max(120, stageHeight*0.24)),
+      spawnCount:0,
+      orbitAngleSeed:null,
+      bossDepartStart:now,
+      bossDepartEnd:now+1000,
+      bossDepartFrom:demonBoss.baseY,
+      bossDepartTo:stageTop-220,
+      bossAnchorX:demonBoss.x,
+      bossAnchorY:demonBoss.baseY,
+      hideBoss:false,
+      evaluated:false,
+      resolveAt:0,
+      result:null,
+      beamEnd:0,
+      cleanupAt:0,
+      returnTarget:demonBoss.normalBaseY ?? demonBoss.baseY,
+      returnStart:0,
+      returnDuration:1200
+    };
+    demonAttackActive=attack;
+    demonAttackNextAt=0;
+    demonBoss.mode='attack';
+    demonBoss.knockbackVX=0;
+    demonBoss.knockbackVY=0;
+    demonBoss.moveTarget=null;
+    demonBoss.lowKnockbacks=0;
+    demonBoss.lastKnockbackAt=now;
+    demonBoss.attackAura='abyssShatter';
+    demonEventMarquee={text:'危險！ 魔王埃里赫曼即將施展深淵破碎!', start:now, fadeStart:now+10000, end:now+10000, style:'elegant', countdown:{start:now, end:now+10000, inline:true}};
+  }
+
+  function updateDemonAbyssShatter(now, dt){
+    if(!demonAttackActive || demonAttackActive.type!=='abyssShatter' || !demonBoss) return;
+    const attack=demonAttackActive;
+    const lerp=Math.min(1, dt/260);
+    const anchorX=attack.bossAnchorX ?? demonBoss.x;
+    demonBoss.x += (anchorX - demonBoss.x)*lerp;
+    if(!attack.hideBoss){
+      if(now<attack.bossDepartEnd){
+        const prog=Math.max(0, Math.min(1, (now-attack.bossDepartStart)/Math.max(1, attack.bossDepartEnd-attack.bossDepartStart)));
+        const base=attack.bossDepartFrom + (attack.bossDepartTo-attack.bossDepartFrom)*prog;
+        demonBoss.baseY=base;
+        demonBoss.y=base;
+        if(prog>=1){ attack.hideBoss=true; }
+      }else{
+        attack.hideBoss=true;
+      }
+    }
+    if(attack.hideBoss){
+      demonBoss.baseY=attack.bossDepartTo;
+      demonBoss.y=attack.bossDepartTo;
+    }
+    if(now>=attack.spawnStart && now<attack.spawnEnd && now>=attack.nextSpawn){
+      spawnDemonAbyssBrick(attack, now);
+      attack.nextSpawn += attack.spawnInterval;
+    }
+    updateDemonAbyssBricks(now, attack, dt);
+    updateDemonAbyssResiduals(now);
+    if(!attack.evaluated && now>=attack.countdownEnd){
+      const remaining=demonAbyssBricks.filter(b=>b && !b.destroyed).length;
+      attack.remaining=remaining;
+      attack.result=remaining>=9?'beam':'barrage';
+      attack.evaluated=true;
+      attack.stage='resolve';
+      attack.resolveAt=now+2000;
+    }
+    if(attack.stage==='resolve'){
+      if(now>=attack.resolveAt){
+        if(attack.result==='beam' && demonAbyssBricks.some(b=>b && !b.destroyed)){
+          attack.stage='beam';
+          attack.beamEnd=now+4000;
+          for(const brick of demonAbyssBricks){ if(!brick || brick.destroyed) continue; brick.state='beam'; }
+        }else if(attack.result==='barrage' && demonAbyssBricks.some(b=>b && !b.destroyed)){
+          attack.stage='launch';
+          attack.nextLaunch=now;
+        }else{
+          attack.stage='cleanup';
+          attack.cleanupAt=now+2000;
+        }
+      }
+      return;
+    }
+    if(attack.stage==='beam'){
+      updateDemonAbyssBricks(now, attack, dt);
+      const pr=paddleRect();
+      if(pr.w>0 && pr.h>0 && now>=paddleGoneUntil){
+        for(const brick of demonAbyssBricks){
+          if(!brick || brick.destroyed) continue;
+          const center=attack.orbitCenter || {x:brick.x,y:brick.y};
+          const dir=Math.atan2(brick.y-center.y, brick.x-center.x);
+          const reach=1400;
+          const endX=brick.x + Math.cos(dir)*reach;
+          const endY=brick.y + Math.sin(dir)*reach;
+          if(lineIntersectsRect(brick.x, brick.y, endX, endY, pr)){
+            spawnAbyssPlatformShatter(pr.x+pr.w/2, pr.y+pr.h/2);
+            paddleGoneUntil=now+3000;
+          }
+        }
+      }
+      if(now>=attack.beamEnd){
+        triggerDemonAbyssFinale(now);
+        attack.stage='cleanup';
+        attack.cleanupAt=now+2000;
+      }
+      return;
+    }
+    if(attack.stage==='launch'){
+      if(now>=attack.nextLaunch){
+        const candidate=demonAbyssBricks.find(b=>b && !b.destroyed && (b.state==='orbit' || b.state==='beam'));
+        if(candidate){
+          candidate.state='projectile';
+          candidate.startX=candidate.x;
+          candidate.startY=candidate.y;
+          const prNow=paddleRect();
+          const targetX=(prNow.w>0 && prNow.h>0)?(prNow.x+prNow.w/2):(attack.orbitCenter?.x??550);
+          const targetY=(prNow.w>0 && prNow.h>0)?(prNow.y+prNow.h/2):(700-60);
+          candidate.targetX=targetX;
+          candidate.targetY=targetY;
+          candidate.launchAt=now;
+          candidate.travelDuration=1000;
+          candidate.projectileResolved=false;
+          attack.nextLaunch=now+1000;
+        }else if(!demonAbyssBricks.some(b=>b && !b.destroyed)){
+          attack.stage='cleanup';
+          attack.cleanupAt=now+2000;
+        }
+      }
+      updateDemonAbyssBricks(now, attack, dt);
+      if(!demonAbyssBricks.some(b=>b && !b.destroyed)){
+        attack.stage='cleanup';
+        attack.cleanupAt=now+2000;
+      }
+      return;
+    }
+    if(attack.stage==='cleanup'){
+      updateDemonAbyssBricks(now, attack, dt);
+      if(!demonAbyssBricks.some(b=>b && !b.destroyed) && now>=attack.cleanupAt){
+        attack.stage='return';
+        attack.hideBoss=false;
+        attack.returnStart=now;
+        attack.returnFrom=demonBoss.baseY;
+        attack.returnDuration=Math.max(800, attack.returnDuration||1200);
+      }
+      return;
+    }
+    if(attack.stage==='return'){
+      const dur=Math.max(1, attack.returnDuration||1200);
+      const prog=Math.max(0, Math.min(1, (now-attack.returnStart)/dur));
+      const base=attack.returnFrom + (attack.returnTarget-attack.returnFrom)*prog;
+      demonBoss.baseY=base;
+      demonBoss.y=base;
+      demonBoss.x += (anchorX - demonBoss.x)*lerp;
+      if(prog>=1){
+        attack.hideBoss=false;
+        demonAbyssBricks.length=0;
+        finishDemonAttack(now);
+      }
+    }
+  }
+
   function startDemonBlackRitual(now){
     if(!demonBoss) return;
     const L=layout();
@@ -2739,6 +3127,8 @@ select optgroup { color: #0b1022; }
       for(let i=0;i<3;i++) lanes.push({x:minX+step*i, width:laneWidth, queue:[]});
     }
     demonBlackSpears=[];
+    demonAbyssBricks.length=0;
+    demonAbyssExplosions.length=0;
     demonBloodEffects.length=0;
     demonAttackActive={
       type:'blackRitual',
@@ -2780,12 +3170,15 @@ select optgroup { color: #0b1022; }
     demonBoss.mode='descending';
     demonBoss.descentStart=now;
     demonBoss.moveTarget=null;
-      if(demonAttackActive.type==='bladeHell'){
-        demonBladeHellTelegraphs.length=0;
-        demonBladeHellSlashes.length=0;
-        beginBladeHellBallRelease(now);
-        forceReleaseBladeHellBall();
-      }
+    if(demonAttackActive.type==='bladeHell'){
+      demonBladeHellTelegraphs.length=0;
+      demonBladeHellSlashes.length=0;
+      beginBladeHellBallRelease(now);
+      forceReleaseBladeHellBall();
+    }else if(demonAttackActive.type==='abyssShatter'){
+      demonAbyssBricks.length=0;
+      demonAbyssExplosions.length=0;
+    }
     demonAttackActive=null;
     demonAttackNextAt = now + 15000;
   }
@@ -2990,6 +3383,104 @@ select optgroup { color: #0b1022; }
       ctx.beginPath();
       ctx.arc(x,y,ringRadius,0,Math.PI*2);
       ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawDemonAbyssShatterLayer(now){
+    if(level!==20) return;
+    const attack=(demonAttackActive && demonAttackActive.type==='abyssShatter')?demonAttackActive:null;
+    if(!attack && !demonAbyssBricks.length && !demonAbyssExplosions.length) return;
+    const scaleAvg=(scaleX+scaleY)/2;
+    if(attack && attack.orbitCenter){
+      const cx=attack.orbitCenter.x*scaleX;
+      const cy=attack.orbitCenter.y*scaleY;
+      const auraRadius=(attack.orbitRadius||160)*scaleAvg*1.4;
+      const pulse=0.8 + 0.2*Math.sin(now/240);
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      const aura=ctx.createRadialGradient(cx, cy, 0, cx, cy, auraRadius);
+      aura.addColorStop(0,`rgba(150,90,220,${0.28*pulse})`);
+      aura.addColorStop(0.55,`rgba(80,30,140,${0.32*pulse})`);
+      aura.addColorStop(1,'rgba(30,0,60,0)');
+      ctx.fillStyle=aura;
+      ctx.beginPath();
+      ctx.arc(cx, cy, auraRadius, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+    if(attack && attack.stage==='beam'){
+      for(const brick of demonAbyssBricks){
+        if(!brick || brick.destroyed) continue;
+        const center=attack.orbitCenter || {x:brick.x,y:brick.y};
+        const dir=Math.atan2(brick.y-center.y, brick.x-center.x);
+        const reach=1400;
+        const x1=brick.x*scaleX;
+        const y1=brick.y*scaleY;
+        const x2=(brick.x + Math.cos(dir)*reach)*scaleX;
+        const y2=(brick.y + Math.sin(dir)*reach)*scaleY;
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        const grad=ctx.createLinearGradient(x1,y1,x2,y2);
+        grad.addColorStop(0,'rgba(255,240,255,0.0)');
+        grad.addColorStop(0.1,'rgba(225,180,255,0.5)');
+        grad.addColorStop(0.6,'rgba(120,50,200,0.35)');
+        grad.addColorStop(1,'rgba(60,20,120,0)');
+        ctx.strokeStyle=grad;
+        ctx.lineWidth=Math.max(6, (brick.hitRadius||24)*0.85*scaleAvg);
+        ctx.beginPath();
+        ctx.moveTo(x1,y1);
+        ctx.lineTo(x2,y2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    for(const brick of demonAbyssBricks){
+      if(!brick) continue;
+      const lifeSpan=Math.max(1, (brick.removeAt||now) - (brick.destroyedAt||now));
+      const fade=brick.destroyed?Math.max(0, 1 - (now-(brick.destroyedAt||now))/lifeSpan):1;
+      if(fade<=0) continue;
+      const size=(brick.renderSize||46);
+      const pulse=1 + 0.12*Math.sin((now/200)+(brick.renderPulse||0));
+      const drawSize=size*pulse*scaleAvg;
+      const half=drawSize/2;
+      ctx.save();
+      ctx.translate(brick.x*scaleX, brick.y*scaleY);
+      ctx.rotate((brick.angle||0) + Math.sin((now/260)+(brick.renderPulse||0))*0.14);
+      ctx.globalAlpha=fade;
+      const grad=ctx.createLinearGradient(-half,-half,half,half);
+      grad.addColorStop(0,'rgba(30,0,50,0.85)');
+      grad.addColorStop(0.55,'rgba(130,60,200,0.95)');
+      grad.addColorStop(1,'rgba(240,220,255,0.9)');
+      ctx.fillStyle=grad;
+      drawRoundedRect(-half, -half, drawSize, drawSize, Math.max(8, drawSize*0.22));
+      ctx.strokeStyle='rgba(255,240,255,0.65)';
+      ctx.lineWidth=Math.max(2, drawSize*0.08);
+      ctx.stroke();
+      ctx.restore();
+    }
+    for(const fx of demonAbyssExplosions){
+      if(!fx) continue;
+      const start=fx.start||now;
+      const end=fx.end||start+600;
+      const life=Math.max(1, end-start);
+      const prog=Math.max(0, Math.min(1, (now-start)/life));
+      if(prog>=1) continue;
+      const alpha=Math.max(0, 1-prog);
+      const radius=(fx.radius||80)*(0.6+prog*0.7)*scaleAvg;
+      const cx=(fx.x||0)*scaleX;
+      const cy=(fx.y||0)*scaleY;
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.globalAlpha=alpha*0.85;
+      const glow=ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      glow.addColorStop(0,`rgba(255,240,255,${0.65*alpha})`);
+      glow.addColorStop(0.45,`rgba(190,120,255,${0.45*alpha})`);
+      glow.addColorStop(1,'rgba(50,10,90,0)');
+      ctx.fillStyle=glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI*2);
+      ctx.fill();
       ctx.restore();
     }
   }
@@ -5825,7 +6316,8 @@ select optgroup { color: #0b1022; }
   function drawDemonLayer(now){
     if(level!==20) return;
     const bladeHellHide = demonAttackActive && demonAttackActive.type==='bladeHell' && demonAttackActive.stage==='hell';
-    if(!bladeHellHide){
+    const abyssHide = demonAttackActive && demonAttackActive.type==='abyssShatter' && demonAttackActive.hideBoss;
+    if(!bladeHellHide && !abyssHide){
       drawDemonCore(now);
       drawDemonAfterimages(now);
       drawDemonTeleportTrails(now);
@@ -5833,7 +6325,7 @@ select optgroup { color: #0b1022; }
     const shake = (demonBladeHellCounterstrike && demonBladeHellCounterstrike.activated && demonBladeHellCounterstrike.shakeUntil && now<demonBladeHellCounterstrike.shakeUntil)
       ? (demonBladeHellCounterstrike.shakeMagnitude||6)
       : 0;
-    if(demonBoss && (demonPhase==='active' || demonPhase==='dying') && !bladeHellHide){
+    if(demonBoss && (demonPhase==='active' || demonPhase==='dying') && !bladeHellHide && !abyssHide){
       const opts = shake>0 ? {shake} : undefined;
       renderDemonFigure(demonBoss, now, opts);
     }
@@ -6019,6 +6511,8 @@ select optgroup { color: #0b1022; }
     demonAttackActive=null;
     demonAttackNextAt=now+15000;
     demonBlackSpears=[];
+    demonAbyssBricks.length=0;
+    demonAbyssExplosions.length=0;
     demonBloodEffects.length=0;
   }
 
@@ -6213,6 +6707,8 @@ select optgroup { color: #0b1022; }
     demonAttackActive=null;
     demonAttackNextAt=0;
     demonBlackSpears=[];
+    demonAbyssBricks.length=0;
+    demonAbyssExplosions.length=0;
     demonBladeHellTelegraphs.length=0;
     demonBladeHellSlashes.length=0;
     demonBladeHellCounterSlashes.length=0;
@@ -6224,6 +6720,8 @@ select optgroup { color: #0b1022; }
     demonBladeHellCounterstrike=null;
     forceReleaseBladeHellBall();
     demonBladeHellPlatformGlow=0;
+    demonAbyssBricks.length=0;
+    demonAbyssExplosions.length=0;
     addScore(BOSS_DEFEAT_SCORE.demon);
     stats.bossKills++;
     updateHUD();
@@ -6251,6 +6749,8 @@ select optgroup { color: #0b1022; }
           updateDemonBlackRitual(now, dt);
         }else if(attack.type==='bladeHell'){
           updateDemonBladeHell(now, dt);
+        }else if(attack.type==='abyssShatter'){
+          updateDemonAbyssShatter(now, dt);
         }
       }
       const L=layout();
@@ -6386,7 +6886,8 @@ select optgroup { color: #0b1022; }
           demonBoss.cloakGripSide=0;
         }
       }
-      if(!demonBoss.lastAfterimage || now - demonBoss.lastAfterimage > 140){
+      const hideForAbyss = attack && attack.type==='abyssShatter' && attack.hideBoss;
+      if(!hideForAbyss && (!demonBoss.lastAfterimage || now - demonBoss.lastAfterimage > 140)){
         demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, cloakSway:demonBoss.cloakSway, t0:now, life:420});
         if(demonAfterimages.length>6){ demonAfterimages.splice(0, demonAfterimages.length-6); }
         demonBoss.lastAfterimage=now;
@@ -6394,10 +6895,11 @@ select optgroup { color: #0b1022; }
       if(!attack && demonBoss.mode!=='bloodDrain' && demonBoss.mode!=='ascending' && demonBoss.mode!=='recovery' && demonBoss.mode!=='attack'){
         if(!demonAttackNextAt){ demonAttackNextAt = now + 15000; }
         if(now>=demonAttackNextAt){
-          const picks=['blackRitual','bladeHell'];
+          const picks=['blackRitual','bladeHell','abyssShatter'];
           const choice=picks[Math.floor(Math.random()*picks.length)];
           if(choice==='bladeHell'){ startDemonBladeHell(now); }
-          else { startDemonBlackRitual(now); }
+          else if(choice==='blackRitual'){ startDemonBlackRitual(now); }
+          else { startDemonAbyssShatter(now); }
         }
       }
       if(demonBoss.mode!=='bloodDrain' && demonBoss.mode!=='attack'){
@@ -13620,6 +14122,7 @@ function generateLevel(lv, L){
     drawSpaceBossHUD();
     drawReaperHUD();
     drawDragonHUD();
+    drawDemonAbyssShatterLayer(now);
     drawDemonBladeHellLayer(now);
     drawDemonHUD();
     drawDemonMarquee(now);
@@ -13979,6 +14482,7 @@ function generateLevel(lv, L){
           if(target){
             const impact = target.type==='boss' ? activeBossImpactPoint(s.x,s.y) : {x:target.x, y:target.y};
             strikeDemonSpearsAlongLine(s.x, s.y, impact.x, impact.y, 'laser');
+            strikeDemonAbyssBricksAlongLine(s.x, s.y, impact.x, impact.y, 'laser');
             laserBeams.push({x1:s.x,y1:s.y,x2:impact.x,y2:impact.y,until:now+200});
             laserImpacts.push({x:impact.x, y:impact.y, t0:now, tEnd:now+320});
             spawnParticles(impact.x,impact.y,'rgba(160,255,200,0.9)',10,1.8,2.2,2.6);
@@ -14013,7 +14517,7 @@ function generateLevel(lv, L){
       const bl=gatlingBullets[i];
       bl.x+=bl.vx; bl.y+=bl.vy;
       if(bl.y<0){ gatlingBullets.splice(i,1); continue; }
-      if(strikeDemonSpearsAtPoint(bl.x, bl.y, 6, 'gatling')){
+      if(strikeDemonSpearsAtPoint(bl.x, bl.y, 6, 'gatling') || strikeDemonAbyssBricksAtPoint(bl.x, bl.y, 6, 'gatling')){
         gatlingBullets.splice(i,1);
         continue;
       }
@@ -14049,7 +14553,7 @@ function generateLevel(lv, L){
       }
     }
 
-    if(stormTurret){ if(now>=stormTurret.fireAt){ if(stormTurret.shots<=0){ stormTurret=null; buffs.STORM.active=false; } else if(now-stormTurret.lastShot>=200){ const idx=randomBrick(true); if(idx!=null){ if(idx==='boss' && isSpecialBossActive()){ const impact=activeBossImpactPoint(stormTurret.x,stormTurret.y); highlightSpaceBossTarget(); strikeDemonSpearsAlongLine(stormTurret.x, stormTurret.y, impact.x, impact.y, 'laser'); laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:impact.x,y2:impact.y,until:now+200}); laserImpacts.push({x:impact.x,y:impact.y,t0:now,tEnd:now+320}); damageActiveBoss(1,'laser',impact); } else { const t=bricks[idx]; if(t){ const tx=t.x+t.w/2, ty=t.y+t.h/2; strikeDemonSpearsAlongLine(stormTurret.x, stormTurret.y, tx, ty, 'laser'); laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:tx,y2:ty,until:now+200}); laserImpacts.push({x:tx,y:ty,t0:now,tEnd:now+320}); destroyBrick(idx,'laser'); } } stormTurret.shots--; stormTurret.lastShot=now; } } } }
+    if(stormTurret){ if(now>=stormTurret.fireAt){ if(stormTurret.shots<=0){ stormTurret=null; buffs.STORM.active=false; } else if(now-stormTurret.lastShot>=200){ const idx=randomBrick(true); if(idx!=null){ if(idx==='boss' && isSpecialBossActive()){ const impact=activeBossImpactPoint(stormTurret.x,stormTurret.y); highlightSpaceBossTarget(); strikeDemonSpearsAlongLine(stormTurret.x, stormTurret.y, impact.x, impact.y, 'laser'); strikeDemonAbyssBricksAlongLine(stormTurret.x, stormTurret.y, impact.x, impact.y, 'laser'); laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:impact.x,y2:impact.y,until:now+200}); laserImpacts.push({x:impact.x,y:impact.y,t0:now,tEnd:now+320}); damageActiveBoss(1,'laser',impact); } else { const t=bricks[idx]; if(t){ const tx=t.x+t.w/2, ty=t.y+t.h/2; strikeDemonSpearsAlongLine(stormTurret.x, stormTurret.y, tx, ty, 'laser'); strikeDemonAbyssBricksAlongLine(stormTurret.x, stormTurret.y, tx, ty, 'laser'); laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:tx,y2:ty,until:now+200}); laserImpacts.push({x:tx,y:ty,t0:now,tEnd:now+320}); destroyBrick(idx,'laser'); } } stormTurret.shots--; stormTurret.lastShot=now; } } } }
 
     if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ const d=Math.min(8,buffs.BLACKHOLE.deaths||0); const dmg=1+(d/8)*(40-1); const rad=200+(d/8)*(800-200); const pr=paddleRect(); const cx=pr.x+pr.w/2, cy=pr.y-rad; const spinDir=(Math.random()>0.5?1:-1); blackHoles.push({x:cx,y:cy,r:rad,until:now+3000,start:now,spinDir}); for(let i=bricks.length-1;i>=0;i--){ const bk=bricks[i]; const bx=bk.x+bk.w/2, by=bk.y+bk.h/2; if(Math.hypot(bx-cx,by-cy)<=rad){ damageBrick(i,dmg,'none'); } } if(circleIntersectsActiveBoss(cx,cy,rad)){ const impact=activeBossCenter(); damageActiveBoss(1,'blackhole',impact?{x:impact.x,y:impact.y}:{x:cx,y:cy}); } playSFX('blackhole'); buffs.BLACKHOLE.active=false; }
 
@@ -14371,6 +14875,46 @@ function generateLevel(lv, L){
         beep(520+Math.random()*200,0.03,0.05);
       }
 
+      if(!collidedWithBrick && demonAbyssBricks.length){
+        const nowAttack=demonAttackActive && demonAttackActive.type==='abyssShatter' ? demonAttackActive : null;
+        for(const brick of demonAbyssBricks){
+          if(!brick || brick.destroyed) continue;
+          if(nowAttack && nowAttack.stage==='cleanup' && brick.state==='destroyed') continue;
+          const radius=brick.hitRadius||24;
+          const dx=b.x - brick.x;
+          const dy=b.y - brick.y;
+          const combined=r + radius;
+          if(dx*dx + dy*dy <= combined*combined){
+            const dist=Math.sqrt(dx*dx + dy*dy) || 0.0001;
+            const nx=dx/dist;
+            const ny=dy/dist;
+            const overlap=combined - dist;
+            if(overlap>0){ b.x += nx*overlap; b.y += ny*overlap; }
+            const dot=b.vx*nx + b.vy*ny;
+            if(!inRampage && !b.piercing){
+              b.vx -= 2*dot*nx;
+              b.vy -= 2*dot*ny;
+            }else{
+              const sp=Math.max(4, Math.hypot(b.vx,b.vy));
+              const ang=Math.atan2(b.vy,b.vx);
+              let rvx=Math.cos(ang)*sp, rvy=Math.sin(ang)*sp;
+              const reflectVX = b.vx - 2*dot*nx;
+              const reflectVY = b.vy - 2*dot*ny;
+              if(Math.hypot(reflectVX, reflectVY) > 0.1){ rvx=reflectVX; rvy=reflectVY; }
+              b.vx=rvx;
+              b.vy=rvy;
+              b.piercing=true;
+            }
+            const bounceAxis=Math.abs(nx)>Math.abs(ny)?'x':'y';
+            noteBounce(b,b.x,b.y,bounceAxis,now);
+            fireCollide();
+            destroyDemonAbyssBrick(brick,'ball', now);
+            collidedWithBrick=true;
+            break;
+          }
+        }
+      }
+
       if(!collidedWithBrick && isSpecialBossActive()){
         if(isDragonActive() && dragonBoss){
           const result=resolveDragonBallCollision(b, r, inRampage);
@@ -14508,7 +15052,7 @@ function generateLevel(lv, L){
       m.x+=m.vx; m.y+=m.vy;
       (m.trail||(m.trail=[])).push({x:m.x,y:m.y,t:now}); if(m.trail.length>20) m.trail.shift();
       // 命中判定
-      if(strikeDemonSpearsAtPoint(m.x, m.y, 10, 'missile')){ missiles.splice(i,1); continue; }
+      if(strikeDemonSpearsAtPoint(m.x, m.y, 10, 'missile') || strikeDemonAbyssBricksAtPoint(m.x, m.y, 10, 'missile')){ missiles.splice(i,1); continue; }
       if(rect && m.x>rect.x && m.x<rect.x+rect.w && m.y>rect.y && m.y<rect.y+rect.h){
         if(m.targetType==='boss'){ damageActiveBoss(1,'missile',{x:m.x,y:m.y}); }
         else { destroyBrick(m.targetId,'missile'); }
