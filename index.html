@@ -5698,46 +5698,126 @@ select optgroup { color: #0b1022; }
       const elapsed=now-start;
       const t=Math.max(0, Math.min(1, elapsed/life));
       if(t>=1) continue;
-      const fade=1-t;
+      const fadeBase=Math.max(0, 1-t);
+      const fade=Math.pow(fadeBase, 0.92);
       const from=fx.from||{x:0,y:0};
       const to=fx.to||from;
       const angle=(fx.angle!=null)?fx.angle:Math.atan2((to.y||0)-(from.y||0),(to.x||0)-(from.x||0));
       const dist=(fx.dist!=null)?fx.dist:Math.hypot((to.x||0)-(from.x||0),(to.y||0)-(from.y||0));
-      const steps=5;
+      const nx=Math.sin(angle);
+      const ny=-Math.cos(angle);
+      const swirlSeed=fx.swirlSeed||0;
+      const shimmerPhase=(now-start)/180;
+      const steps=Math.max(6, Math.round(8 + dist/70));
+
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
       for(let i=0;i<steps;i++){
         const segT=steps>1?(i/(steps-1)):0;
-        const segFade=fade*(1 - segT*0.12);
+        const easeOut=Math.max(0, 1 - segT*0.18);
+        const segFade=fade*Math.max(0, 1 - segT*0.14);
         if(segFade<=0) continue;
-        const px=(from.x + (to.x-from.x)*segT)*scaleX;
-        const py=(from.y + (to.y-from.y)*segT)*scaleY;
-        const baseSize=(90 + dist*0.18)*scaleAvg*(1 - segT*0.16);
-        const width=Math.max(32, baseSize*0.45);
-        const height=Math.max(64, baseSize*0.9);
+        const wave=Math.sin(swirlSeed + shimmerPhase + segT*7.2);
+        const offsetMag=(24 + dist*0.05)*wave*segFade;
+        const baseX=from.x + (to.x-from.x)*segT;
+        const baseY=from.y + (to.y-from.y)*segT;
+        const px=(baseX + nx*offsetMag)*scaleX;
+        const py=(baseY + ny*offsetMag)*scaleY;
+        const baseSize=(120 + dist*0.22)*scaleAvg*easeOut;
+        const width=Math.max(36, baseSize*0.36);
+        const height=Math.max(78, baseSize*0.82);
         ctx.save();
         ctx.translate(px, py);
         ctx.rotate(angle);
-        ctx.globalAlpha=Math.max(0, Math.min(1, segFade*0.58));
-        const glow=ctx.createRadialGradient(0,0,width*0.18,0,0,height);
-        glow.addColorStop(0,`rgba(240,220,255,${0.75*segFade})`);
-        glow.addColorStop(0.6,`rgba(180,120,255,${0.45*segFade})`);
-        glow.addColorStop(1,'rgba(90,40,180,0)');
+        ctx.globalAlpha=Math.max(0, Math.min(1, segFade*0.85));
+        const glow=ctx.createRadialGradient(0,0,width*0.16,0,0,height);
+        glow.addColorStop(0,`rgba(250,240,255,${0.9*segFade})`);
+        glow.addColorStop(0.4,`rgba(210,170,255,${0.55*segFade})`);
+        glow.addColorStop(0.75,`rgba(120,60,220,${0.18*segFade})`);
+        glow.addColorStop(1,'rgba(70,20,160,0)');
         ctx.fillStyle=glow;
         ctx.beginPath();
         ctx.ellipse(0,0,width,height,0,0,Math.PI*2);
         ctx.fill();
         ctx.restore();
       }
-      ctx.save();
-      ctx.globalAlpha=fade*0.6;
-      ctx.strokeStyle=`rgba(210,160,255,${0.65*fade})`;
-      ctx.lineWidth=Math.max(3, 8*scaleAvg*fade);
-      ctx.lineCap='round';
-      ctx.beginPath();
-      ctx.moveTo(from.x*scaleX, from.y*scaleY);
-      const midX=(from.x+to.x)/2;
-      const midY=(from.y+to.y)/2 - Math.sin((now+start)/220)*(24 + dist*0.05)*fade;
-      ctx.quadraticCurveTo(midX*scaleX, midY*scaleY, to.x*scaleX, to.y*scaleY);
-      ctx.stroke();
+
+      const ribbons=Array.isArray(fx.ribbons)?fx.ribbons:[];
+      for(const ribbon of ribbons){
+        const amp=(ribbon.amplitude||26)*fade;
+        const hue=ribbon.hue!=null?ribbon.hue:260;
+        const ribbonPhase=swirlSeed + shimmerPhase*0.8 + (ribbon.offset||0)*Math.PI*2;
+        const ctrlX=(from.x+to.x)/2 + nx*amp*Math.sin(ribbonPhase);
+        const ctrlY=(from.y+to.y)/2 + ny*amp*Math.cos(ribbonPhase*0.9);
+        ctx.save();
+        ctx.globalAlpha=Math.max(0, fade*0.55);
+        ctx.shadowBlur=18*scaleAvg*fade;
+        ctx.shadowColor=`hsla(${hue.toFixed(1)}, 90%, 70%, ${0.32*fade})`;
+        ctx.strokeStyle=`hsla(${hue.toFixed(1)}, 96%, ${60 - t*20}%, ${0.55*fade})`;
+        ctx.lineWidth=Math.max(3, (ribbon.width||0.4)*(14 + dist*0.06)*scaleAvg*fade);
+        ctx.lineCap='round';
+        ctx.beginPath();
+        ctx.moveTo(from.x*scaleX, from.y*scaleY);
+        ctx.quadraticCurveTo(ctrlX*scaleX, ctrlY*scaleY, to.x*scaleX, to.y*scaleY);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const motes=Array.isArray(fx.motes)?fx.motes:[];
+      for(const mote of motes){
+        const speed=(mote.speed||0.6);
+        const travel=((elapsed/life)*speed + (mote.offset||0))%1;
+        const moteFade=Math.max(0, 1 - travel*1.1)*fade;
+        if(moteFade<=0) continue;
+        const swirl=Math.sin(swirlSeed*1.3 + travel*9.2 + shimmerPhase*1.4)*(mote.drift||0);
+        const baseX=from.x + (to.x-from.x)*travel;
+        const baseY=from.y + (to.y-from.y)*travel;
+        const mx=(baseX + nx*swirl)*scaleX;
+        const my=(baseY + ny*swirl)*scaleY;
+        const radius=(mote.radius||12)*scaleAvg*0.6;
+        ctx.save();
+        ctx.translate(mx, my);
+        ctx.globalAlpha=moteFade*0.9;
+        const glow=ctx.createRadialGradient(0,0,0,0,0,radius);
+        glow.addColorStop(0,`rgba(255,255,255,${0.9*moteFade})`);
+        glow.addColorStop(0.45,`rgba(220,180,255,${0.6*moteFade})`);
+        glow.addColorStop(1,'rgba(120,60,200,0)');
+        ctx.fillStyle=glow;
+        ctx.beginPath();
+        ctx.arc(0,0,radius,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      const portals=Array.isArray(fx.portals)?fx.portals:[];
+      for(const portal of portals){
+        const anchor=(portal && portal.anchor==='to')?to:from;
+        const phase=(portal&&portal.phase!=null)?portal.phase:0;
+        const pulse=0.65 + 0.35*Math.sin(shimmerPhase*2 + phase);
+        const radius=(72 + dist*0.04)*scaleAvg*pulse*fade;
+        if(radius<=0) continue;
+        ctx.save();
+        ctx.translate(anchor.x*scaleX, anchor.y*scaleY);
+        ctx.rotate(phase + shimmerPhase*0.6);
+        const aspect=0.78 + 0.18*Math.sin(shimmerPhase + phase*0.6);
+        ctx.scale(1, aspect);
+        ctx.globalAlpha=fade*0.8;
+        const ring=ctx.createRadialGradient(0,0,radius*0.2,0,0,radius);
+        ring.addColorStop(0,`rgba(255,255,255,${0.6*fade})`);
+        ring.addColorStop(0.5,`rgba(210,170,255,${0.4*fade})`);
+        ring.addColorStop(1,'rgba(120,60,210,0)');
+        ctx.fillStyle=ring;
+        ctx.beginPath();
+        ctx.ellipse(0,0,radius*1.22,radius,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.lineWidth=Math.max(2, radius*0.14);
+        ctx.strokeStyle=`rgba(230,210,255,${0.38*fade})`;
+        ctx.beginPath();
+        ctx.ellipse(0,0,radius*1.08,radius*0.86,0,0,Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       ctx.restore();
     }
   }
@@ -6036,13 +6116,39 @@ select optgroup { color: #0b1022; }
       cloakSway:demonBoss.cloakSway
     };
     const life=640;
+    const trailAngle=Math.atan2(destination.y-prev.y, destination.x-prev.x);
+    const trailDist=Math.hypot(destination.x-prev.x, destination.y-prev.y);
+    const swirlSeed=Math.random()*Math.PI*2;
+    const ribbonCount=3;
+    const ribbons=Array.from({length:ribbonCount}, (_,i)=>(
+      {
+        offset:Math.random(),
+        amplitude:18 + i*10 + Math.random()*16,
+        width:0.34 + i*0.18,
+        hue:250 + i*14 + Math.random()*18
+      }
+    ));
+    const motes=Array.from({length:12}, ()=>({
+      offset:Math.random(),
+      drift:(Math.random()-0.5)*48,
+      radius:10 + Math.random()*18,
+      speed:0.5 + Math.random()*0.9
+    }));
+    const portals=[
+      {anchor:'from', phase:Math.random()*Math.PI*2},
+      {anchor:'to', phase:Math.random()*Math.PI*2}
+    ];
     demonTeleportTrails.push({
       start:now,
       end:now+life,
       from:prev,
       to:destination,
-      angle:Math.atan2(destination.y-prev.y, destination.x-prev.x),
-      dist:Math.hypot(destination.x-prev.x, destination.y-prev.y)
+      angle:trailAngle,
+      dist:trailDist,
+      swirlSeed,
+      ribbons,
+      motes,
+      portals
     });
     if(demonTeleportTrails.length>4){ demonTeleportTrails.splice(0, demonTeleportTrails.length-4); }
     for(let i=0;i<4;i++){
