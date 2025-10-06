@@ -796,7 +796,7 @@ select optgroup { color: #0b1022; }
       TRACK:{label:'追蹤球(自動修正軌跡)',type:'buff',durationMs:10000,track:{},badge:'🧭'},
       MISSILE:{label:'飛彈球(擋板反彈時發射3枚)',type:'buff',durationMs:5000,missile:{speed:7,turn:0.08,lifeMs:4000},badge:'🚀'},
       HELL:{label:'地獄球(黑洞吞鄰近格)',type:'buff',durationMs:5000,hell:{speedMul:1.2,haloMs:2000},badge:'🕳️'},
-      MEGA:{label:'特大球(半徑×3, 速度×0.8)',type:'buff',durationMs:5000,mega:{sizeMul:3,speedMul:0.8},badge:'🟢'},
+      MEGA:{label:'特大球(半徑×3, 速度×0.8, 傷害×2)',type:'buff',durationMs:5000,mega:{sizeMul:3,speedMul:0.8,damageMul:2},badge:'🟢'},
       CHAIN:{label:'鎖鏈球(命中磚鎖10秒)',type:'debuff',durationMs:5000,chain:{lockMs:10000},badge:'⛓️'},
       NARROW:{label:'平台縮小(寬度減半)',type:'debuff',durationMs:5000,narrow:true,badge:'📉'},
       HOLE:{label:'平台空洞(中間1/3無效)',type:'debuff',durationMs:5000,hole:true,badge:'🕳'},
@@ -8045,7 +8045,11 @@ select optgroup { color: #0b1022; }
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
-let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700/2,r:10,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0},blinkAt:0,loopBrick:null,loopHits:0,lastBrickId:null,lastBrickHitTime:0,sameBrickHits:0,lastBounce:null,speedBoostSuppressedUntil:0,lastCeilingBounce:0,capturedByBladeHell:false}; }
+let balls=[]; function makeBall(stuck=false,x=null){
+  const megaCfg = GAME_CONFIG.powers.MEGA?.mega || {};
+  const sizeMul = (buffs.MEGA?.applied && megaCfg.sizeMul) ? megaCfg.sizeMul : 1;
+  return {x:x??(1100/2),y:700/2,r:10*sizeMul,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0},blinkAt:0,loopBrick:null,loopHits:0,lastBrickId:null,lastBrickHitTime:0,sameBrickHits:0,lastBounce:null,speedBoostSuppressedUntil:0,lastCeilingBounce:0,capturedByBladeHell:false};
+}
 
   function isSpeedSuppressed(ball, now){
     return !!(ball?.speedBoostSuppressedUntil && now < ball.speedBoostSuppressedUntil);
@@ -13609,7 +13613,7 @@ function generateLevel(lv, L){
           const impact=center?{x:center.x,y:center.y}:null;
           damageActiveBoss(1,'phoenix',impact);
         }
-      } else if(type==='NINE'){ if(nineCatEaten>=2) return; lives=9; nineCatEaten++; updateHUD(); spawnParticles(550,350,'#ffd',40,2.2,3.5,4); beep(880,0.1,0.06); }
+      } else if(type==='NINE'){ if(nineCatEaten>=3) return; lives=9; nineCatEaten++; updateHUD(); spawnParticles(550,350,'#ffd',40,2.2,3.5,4); beep(880,0.1,0.06); }
       return;
     }
     // 定時類
@@ -15481,6 +15485,8 @@ function generateLevel(lv, L){
     updateBossAbilities();
     updateCyclopsEvent();
     updateBladeHellBallCapture(now);
+    const megaCfg = GAME_CONFIG.powers.MEGA?.mega || {};
+    const megaDamageMul = (buffs.MEGA?.active && megaCfg.damageMul) ? megaCfg.damageMul : 1;
     for(const b of balls){
       if(b.rampageUntil && now>b.rampageUntil){ b.rampageUntil=0; if(!buffs.PIERCE.active) b.piercing=false; }
 
@@ -15732,7 +15738,9 @@ function generateLevel(lv, L){
           if(bk.unbreakable || (bk.lockedUntil && now<bk.lockedUntil)){
             if(bk.boss){ updateHUD(); }
           }else{
-            bk.hp=(bk.hp||1)-1; incrementCombo();
+            const currentHp = (typeof bk.hp === 'number') ? bk.hp : 1;
+            bk.hp = currentHp - megaDamageMul;
+            incrementCombo();
             if(bk.hp<=0){
               const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
               if(!bk.explosive){
@@ -15809,7 +15817,7 @@ function generateLevel(lv, L){
             if(result.bounceAxis){ noteBounce(b,b.x,b.y,result.bounceAxis,now); }
             spawnParticles(result.impactX, result.impactY, '#b8d6ff', 20, 1.4, 2.4, 2.2);
             triggerBallBuffEffectsOnBossHit(b, result.impactX, result.impactY, now);
-            damageActiveBoss(1,'ball',{x:result.impactX,y:result.impactY});
+            damageActiveBoss(megaDamageMul,'ball',{x:result.impactX,y:result.impactY});
             if(buffs.TRACK.active){
               const pr=paddleRect();
               const tx = pr.x + (orientLeft? (pr.w + 60) : pr.w/2);
@@ -15866,7 +15874,7 @@ function generateLevel(lv, L){
               applyDemonKnockback(knockX, knockY);
             }
             triggerBallBuffEffectsOnBossHit(b, impactX, impactY, now);
-            damageActiveBoss(1,'ball',{x:impactX,y:impactY});
+            damageActiveBoss(megaDamageMul,'ball',{x:impactX,y:impactY});
             collidedWithBrick=true;
           }
         }else{
@@ -15894,7 +15902,7 @@ function generateLevel(lv, L){
               const impactY = Math.max(ry, Math.min(b.y, ry+rh));
               spawnParticles(impactX, impactY, '#b8d6ff', 20, 1.4, 2.4, 2.2);
               fireCollide();
-              damageActiveBoss(1,'ball',{x:impactX,y:impactY});
+              damageActiveBoss(megaDamageMul,'ball',{x:impactX,y:impactY});
               collidedWithBrick=true;
             }
           }
