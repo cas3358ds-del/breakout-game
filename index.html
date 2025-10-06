@@ -2205,7 +2205,7 @@ select optgroup { color: #0b1022; }
     const stageTop=L.top;
     const stageBottom=700;
     const stageHeight=stageBottom-stageTop;
-    const center=attack.orbitCenter || {x:550, y:stageTop + stageHeight*(2/3)};
+    const center=attack.orbitCenter || {x:550, y:stageTop + stageHeight*0.38};
     const sides=['top','left','right'];
     const side=sides[Math.floor(Math.random()*sides.length)];
     let startX=center.x, startY=stageTop-60;
@@ -2278,20 +2278,49 @@ select optgroup { color: #0b1022; }
     brick.radiusAdjustFrom=null;
     brick.radiusAdjustStart=null;
     brick.radiusAdjustDuration=null;
-    spawnParticles(brick.x, brick.y, '#f9ecff', 52, 2.8, 4.0, 4.4);
-    spawnParticles(brick.x, brick.y, '#9a55ff', 36, 2.6, 3.6, 4.0);
-    spawnParticles(brick.x, brick.y, '#542a8f', 28, 2.4, 3.2, 3.6);
-    demonAbyssExplosions.push({
-      x:brick.x,
-      y:brick.y,
-      start:now,
-      end:now+900,
-      radius:brick.hitRadius*2.2
-    });
+    spawnParticles(brick.x, brick.y, '#ffe9ff', 64, 3.4, 4.8, 5.0);
+    spawnParticles(brick.x, brick.y, '#9f6dff', 52, 3.0, 4.2, 4.4);
+    spawnParticles(brick.x, brick.y, '#4a1b7a', 36, 2.6, 3.4, 3.6);
+    spawnParticles(brick.x, brick.y, '#6effff', 42, 3.2, 4.6, 4.2);
+    spawnParticles(brick.x, brick.y, '#ffd684', 26, 2.8, 4.0, 4.6);
+    spawnDemonAbyssNovaFx(brick.x, brick.y, brick.hitRadius*2.2, now);
     if(demonAttackActive && demonAttackActive.type==='abyssShatter'){
       realignDemonAbyssOrbit(demonAttackActive, now);
     }
     return true;
+  }
+
+  function spawnDemonAbyssNovaFx(x, y, radius, now){
+    const baseRadius=Math.max(80, radius);
+    const seed=Math.random()*TAU;
+    demonAbyssExplosions.push({
+      x,
+      y,
+      start:now,
+      end:now+1200,
+      radius:baseRadius,
+      style:'abyssNova',
+      seed,
+      rings:3
+    });
+    demonAbyssExplosions.push({
+      x,
+      y,
+      start:now+90,
+      end:now+2200,
+      radius:baseRadius*1.35,
+      style:'abyssNovaAura',
+      seed:seed+Math.PI/3
+    });
+    demonAbyssExplosions.push({
+      x,
+      y,
+      start:now+180,
+      end:now+1600,
+      radius:baseRadius*0.9,
+      style:'abyssNovaCore',
+      seed:seed+Math.PI*0.75
+    });
   }
 
   function strikeDemonAbyssBricksAtPoint(x, y, radius=6, source='generic'){
@@ -3081,7 +3110,7 @@ select optgroup { color: #0b1022; }
     const L=layout();
     const stageTop=L.top;
     const stageHeight=700-stageTop;
-    const center={x:550, y:stageTop + stageHeight*(2/3)};
+    const center={x:550, y:stageTop + stageHeight*0.38};
     demonAbyssBricks.length=0;
     demonAbyssExplosions.length=0;
     const attack={
@@ -3106,6 +3135,10 @@ select optgroup { color: #0b1022; }
       bossDepartEnd:now+1000,
       bossDepartFrom:demonBoss.baseY,
       bossDepartTo:stageTop-220,
+      bossVanishY:stageTop-260,
+      bossOffscreenY:stageTop-340,
+      bossAscendSpeed:420,
+      bossDepartureComplete:false,
       bossAnchorX:demonBoss.x,
       bossAnchorY:demonBoss.baseY,
       hideBoss:false,
@@ -3136,20 +3169,45 @@ select optgroup { color: #0b1022; }
     const lerp=Math.min(1, dt/260);
     const anchorX=attack.bossAnchorX ?? demonBoss.x;
     demonBoss.x += (anchorX - demonBoss.x)*lerp;
-    if(!attack.hideBoss){
-      if(now<attack.bossDepartEnd){
-        const prog=Math.max(0, Math.min(1, (now-attack.bossDepartStart)/Math.max(1, attack.bossDepartEnd-attack.bossDepartStart)));
-        const base=attack.bossDepartFrom + (attack.bossDepartTo-attack.bossDepartFrom)*prog;
-        demonBoss.baseY=base;
-        demonBoss.y=base;
-        if(prog>=1){ attack.hideBoss=true; }
+    const stage=attack.stage;
+    const vanishY=(attack.bossVanishY!=null)?attack.bossVanishY:(attack.bossDepartTo-80);
+    const offscreenY=(attack.bossOffscreenY!=null)?attack.bossOffscreenY:(vanishY-120);
+    const ascendSpeed=Math.max(180, attack.bossAscendSpeed||420);
+    if(stage!=='return'){
+      if(!attack.hideBoss){
+        if(!attack.bossDepartureComplete){
+          if(now<attack.bossDepartEnd){
+            const prog=Math.max(0, Math.min(1, (now-attack.bossDepartStart)/Math.max(1, attack.bossDepartEnd-attack.bossDepartStart)));
+            const base=attack.bossDepartFrom + (attack.bossDepartTo-attack.bossDepartFrom)*prog;
+            demonBoss.baseY=base;
+            demonBoss.y=base;
+            if(prog>=1){
+              attack.bossDepartureComplete=true;
+              demonBoss.baseY=attack.bossDepartTo;
+              demonBoss.y=attack.bossDepartTo;
+            }
+          }else{
+            attack.bossDepartureComplete=true;
+            demonBoss.baseY=attack.bossDepartTo;
+            demonBoss.y=attack.bossDepartTo;
+          }
+        }else{
+          const dtSec=Math.max(0.001, dt/1000);
+          demonBoss.baseY=Math.min(demonBoss.baseY, attack.bossDepartTo);
+          demonBoss.baseY -= ascendSpeed*dtSec;
+          if(demonBoss.baseY<=vanishY){
+            if(demonBoss.baseY<=offscreenY){
+              demonBoss.baseY=offscreenY;
+              attack.hideBoss=true;
+              attack.bossGoneAt=now;
+            }
+          }
+          demonBoss.y=demonBoss.baseY;
+        }
       }else{
-        attack.hideBoss=true;
+        demonBoss.baseY=offscreenY;
+        demonBoss.y=offscreenY;
       }
-    }
-    if(attack.hideBoss){
-      demonBoss.baseY=attack.bossDepartTo;
-      demonBoss.y=attack.bossDepartTo;
     }
     if(now>=attack.spawnStart && now<attack.spawnEnd && now>=attack.nextSpawn){
       spawnDemonAbyssBrick(attack, now);
@@ -3695,10 +3753,134 @@ select optgroup { color: #0b1022; }
       const life=Math.max(1, end-start);
       const prog=Math.max(0, Math.min(1, (now-start)/life));
       if(prog>=1) continue;
-      const alpha=Math.max(0, 1-prog);
-      const radius=(fx.radius||80)*(0.6+prog*0.7)*scaleAvg;
+      const style=fx.style||'pulse';
       const cx=(fx.x||0)*scaleX;
       const cy=(fx.y||0)*scaleY;
+      const scaleAvg=(scaleX+scaleY)/2;
+      if(style==='abyssNova'){
+        const fade=Math.max(0, 1-prog);
+        const baseRadius=(fx.radius||80)*scaleAvg;
+        const outer=baseRadius*(0.85 + prog*0.6);
+        const seed=fx.seed||0;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.globalCompositeOperation='lighter';
+        const glow=ctx.createRadialGradient(0,0,0,0,outer);
+        glow.addColorStop(0,`rgba(255,255,255,${0.45*fade})`);
+        glow.addColorStop(0.35,`rgba(240,215,255,${0.55*fade})`);
+        glow.addColorStop(0.78,`rgba(160,100,255,${0.45*fade})`);
+        glow.addColorStop(1,'rgba(40,0,90,0)');
+        ctx.fillStyle=glow;
+        ctx.beginPath();
+        ctx.arc(0,0,outer,0,Math.PI*2);
+        ctx.fill();
+        const rings=Math.max(2, fx.rings||3);
+        const spin=seed + (now-start)/160;
+        const rayCount=10;
+        ctx.lineCap='round';
+        ctx.lineJoin='round';
+        ctx.strokeStyle=`rgba(255,235,255,${0.55*fade})`;
+        ctx.lineWidth=Math.max(1.8, outer*0.018);
+        for(let i=0;i<rayCount;i++){
+          const ang=spin + i*(TAU/rayCount);
+          const rayLen=outer*(0.55 + 0.28*Math.sin((now/120)+i));
+          ctx.beginPath();
+          ctx.moveTo(0,0);
+          ctx.lineTo(Math.cos(ang)*rayLen, Math.sin(ang)*rayLen);
+          ctx.stroke();
+        }
+        for(let i=0;i<rings;i++){
+          const ringPhase=Math.max(0, Math.min(1, prog*1.05 + i*0.12));
+          const ringRadius=outer*(0.35 + i*0.24 + ringPhase*0.3);
+          const ringAlpha=Math.max(0, 0.65 - ringPhase*0.45)*fade;
+          if(ringAlpha<=0) continue;
+          ctx.strokeStyle=`rgba(255,240,255,${ringAlpha})`;
+          ctx.lineWidth=Math.max(1.6, outer*0.02*(1-ringPhase*0.5));
+          ctx.beginPath();
+          ctx.arc(0,0,ringRadius,0,Math.PI*2);
+          ctx.stroke();
+        }
+        const petals=6;
+        ctx.strokeStyle=`rgba(150,220,255,${0.28*fade})`;
+        ctx.lineWidth=Math.max(1.2, outer*0.015);
+        for(let i=0;i<petals;i++){
+          const ang=spin*0.8 + i*(TAU/petals);
+          const stretch=outer*(0.58 + 0.24*(1-prog));
+          ctx.save();
+          ctx.rotate(ang);
+          ctx.beginPath();
+          ctx.ellipse(0,0,stretch*0.18,stretch*0.62,0,0,Math.PI*2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
+        continue;
+      }
+      if(style==='abyssNovaAura'){
+        const fade=Math.max(0, 1-prog);
+        const baseRadius=(fx.radius||100)*scaleAvg;
+        const pulse=0.9 + 0.2*Math.sin((now-start)/220 + (fx.seed||0));
+        const auraOuter=baseRadius*(0.85 + prog*0.65)*pulse;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(1.1 + 0.18*Math.sin((now/260)+(fx.seed||0)*0.6), 0.92 + 0.16*Math.cos((now/210)+(fx.seed||0)));
+        ctx.globalCompositeOperation='screen';
+        ctx.globalAlpha=fade*0.8;
+        const aura=ctx.createRadialGradient(0,0,auraOuter*0.24,0,0,auraOuter);
+        aura.addColorStop(0,`rgba(255,255,255,${0.18*fade})`);
+        aura.addColorStop(0.4,`rgba(180,130,255,${0.32*fade})`);
+        aura.addColorStop(0.78,`rgba(80,20,160,${0.32*fade})`);
+        aura.addColorStop(1,'rgba(20,0,45,0)');
+        ctx.fillStyle=aura;
+        ctx.beginPath();
+        ctx.arc(0,0,auraOuter,0,Math.PI*2);
+        ctx.fill();
+        const loops=5;
+        const spin=(fx.seed||0) + (now-start)/180;
+        ctx.lineWidth=Math.max(1.2, auraOuter*0.014);
+        for(let i=0;i<loops;i++){
+          const ang=spin + i*(TAU/loops);
+          const len=auraOuter*(0.7 + 0.2*Math.sin((now/140)+i));
+          ctx.strokeStyle=`rgba(150,230,255,${0.2*fade})`;
+          ctx.beginPath();
+          ctx.arc(0,0,len,ang-0.42, ang+0.42);
+          ctx.stroke();
+        }
+        ctx.restore();
+        continue;
+      }
+      if(style==='abyssNovaCore'){
+        const fade=Math.max(0, 1-prog);
+        const baseRadius=(fx.radius||60)*scaleAvg;
+        const flicker=0.75 + 0.25*Math.sin((now-start)/90 + (fx.seed||0));
+        const coreRadius=baseRadius*(0.38 + (1-prog)*0.42)*flicker;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.globalCompositeOperation='lighter';
+        const core=ctx.createRadialGradient(0,0,0,0,coreRadius);
+        core.addColorStop(0,`rgba(255,255,255,${0.9*fade})`);
+        core.addColorStop(0.55,`rgba(255,210,255,${0.65*fade})`);
+        core.addColorStop(1,'rgba(150,70,220,0)');
+        ctx.fillStyle=core;
+        ctx.beginPath();
+        ctx.arc(0,0,coreRadius,0,Math.PI*2);
+        ctx.fill();
+        const crossRadius=coreRadius*1.65;
+        const spin=(fx.seed||0)/2 + (now-start)/140;
+        ctx.strokeStyle=`rgba(255,245,240,${0.35*fade})`;
+        ctx.lineWidth=Math.max(1.4, baseRadius*0.018);
+        for(let i=0;i<4;i++){
+          const ang=spin + i*(Math.PI/2);
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(ang)*coreRadius*0.25, Math.sin(ang)*coreRadius*0.25);
+          ctx.lineTo(Math.cos(ang)*crossRadius, Math.sin(ang)*crossRadius);
+          ctx.stroke();
+        }
+        ctx.restore();
+        continue;
+      }
+      const alpha=Math.max(0, 1-prog);
+      const radius=(fx.radius||80)*(0.6+prog*0.7)*scaleAvg;
       ctx.save();
       ctx.globalCompositeOperation='lighter';
       ctx.globalAlpha=alpha*0.85;
