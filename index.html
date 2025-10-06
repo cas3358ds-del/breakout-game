@@ -951,6 +951,287 @@ select optgroup { color: #0b1022; }
     return IMG_MAP[i];
   }
 
+  function demonHandPosition(side='left'){
+    if(!demonBoss){
+      const L=layout();
+      return {
+        x:550 + (side==='left'?-120:120),
+        y:L.top + 220
+      };
+    }
+    const baseY = demonBoss.baseY != null ? demonBoss.baseY : demonBoss.y;
+    const offsetX = (side==='left'?-1:1) * Math.max(80, (demonBoss.w||90)*1.2);
+    const offsetY = Math.max(40, (demonBoss.h||90)*0.65);
+    return {
+      x:demonBoss.x + offsetX,
+      y:baseY + offsetY
+    };
+  }
+
+  function startDemonVoidVolley(now){
+    if(!demonBoss || demonVoidVolleyState) return;
+    const order=Math.random()>0.5?['left','right']:['right','left'];
+    demonVoidVolleyState={
+      start:now,
+      stage:'charging',
+      shots:order.map((hand, idx)=>({
+        hand,
+        chargeStart:now,
+        chargeEnd:now+2000,
+        fireAt:now+2000 + idx*2000,
+        fired:false,
+        firedAt:0,
+        cooldownUntil:0
+      }))
+    };
+    demonVoidNextRoll=now+5000;
+  }
+
+  function fireDemonVoidShot(shot, now){
+    const handPos=demonHandPosition(shot.hand);
+    const {x:targetX, y:targetY}=getPaddleTarget();
+    const dx=targetX-handPos.x;
+    const dy=targetY-handPos.y;
+    const dist=Math.hypot(dx, dy)||1;
+    const speed=520;
+    demonVoidProjectiles.push({
+      kind:'voidLarge',
+      x:handPos.x,
+      y:handPos.y,
+      vx:(dx/dist)*speed,
+      vy:(dy/dist)*speed,
+      radius:28,
+      spawnAt:now,
+      splitAt:now+480,
+      lastUpdate:now
+    });
+    spawnParticles(handPos.x, handPos.y, '#c19bff', 26, 1.6, 2.6, 2.4);
+    spawnParticles(handPos.x, handPos.y, '#8c4dff', 18, 1.4, 2.2, 2.2);
+    playSFX('plasma');
+    shot.fired=true;
+    shot.firedAt=now;
+    shot.cooldownUntil=now+900;
+  }
+
+  function splitDemonVoidOrb(projectile, index, now){
+    const baseAngle=Math.atan2(projectile.vy||0, projectile.vx||1);
+    const offsets=[-0.36, 0, 0.36];
+    const speed=620;
+    for(const offset of offsets){
+      demonVoidProjectiles.push({
+        kind:'voidSmall',
+        x:projectile.x,
+        y:projectile.y,
+        vx:Math.cos(baseAngle+offset)*speed,
+        vy:Math.sin(baseAngle+offset)*speed,
+        radius:14,
+        spawnAt:now,
+        lastUpdate:now,
+        life:3200,
+        trail:[]
+      });
+    }
+    spawnParticles(projectile.x, projectile.y, '#d7b6ff', 34, 1.8, 2.8, 2.6);
+    spawnParticles(projectile.x, projectile.y, '#9c5bff', 22, 1.6, 2.4, 2.4);
+    playSFX('explosion');
+    demonVoidProjectiles.splice(index,1);
+  }
+
+  function updateDemonVoidVolley(now){
+    if(level!==20) return;
+    const state=demonVoidVolleyState;
+    if(!state) return;
+    if(demonPhase!=='active' || !demonBoss){
+      demonVoidVolleyState=null;
+      return;
+    }
+    let stage='cooldown';
+    let active=false;
+    for(const shot of state.shots){
+      if(!shot) continue;
+      if(!shot.fired){
+        if(now>=shot.fireAt){
+          fireDemonVoidShot(shot, now);
+          stage='firing';
+          active=true;
+        }else{
+          stage='charging';
+          active=true;
+        }
+      }else{
+        const fadeEnd=shot.cooldownUntil || (shot.firedAt+900);
+        shot.cooldownUntil=fadeEnd;
+        if(now<fadeEnd){
+          if(stage!=='charging') stage='firing';
+          active=true;
+        }
+      }
+    }
+    state.stage=stage;
+    if(!active && !demonVoidProjectiles.length){
+      demonVoidVolleyState=null;
+    }
+  }
+
+  function updateDemonVoidProjectiles(now){
+    if(level!==20 || !demonVoidProjectiles.length) return;
+    const L=layout();
+    const stageTop=L.top;
+    for(let i=demonVoidProjectiles.length-1;i>=0;i--){
+      const proj=demonVoidProjectiles[i];
+      if(!proj){ demonVoidProjectiles.splice(i,1); continue; }
+      const dt=now-(proj.lastUpdate||now);
+      proj.lastUpdate=now;
+      const step=dt/1000;
+      proj.x += (proj.vx||0)*step;
+      proj.y += (proj.vy||0)*step;
+      if(proj.trail){
+        proj.trail.push({x:proj.x, y:proj.y, t:now});
+        if(proj.trail.length>14) proj.trail.shift();
+      }
+      if(proj.kind==='voidLarge'){
+        if(now>=proj.splitAt){
+          splitDemonVoidOrb(proj, i, now);
+          continue;
+        }
+      }else if(proj.kind==='voidSmall'){
+        const life=proj.life||3200;
+        if(now>=proj.spawnAt + life){
+          demonVoidProjectiles.splice(i,1);
+          continue;
+        }
+        const pr=paddleRect();
+        if(pr.w>0 && pr.h>0 && now>=paddleGoneUntil){
+          if(circleIntersectsRect(proj.x, proj.y, proj.radius||12, pr)){
+            demonVoidOrbHit(now);
+            spawnParticles(proj.x, proj.y, '#f0d0ff', 22, 1.6, 2.4, 2.6);
+            demonVoidProjectiles.splice(i,1);
+            continue;
+          }
+        }
+      }
+      if(proj.x<-160 || proj.x>1260 || proj.y<stageTop-200 || proj.y>780){
+        demonVoidProjectiles.splice(i,1);
+      }
+    }
+  }
+
+  function demonVoidOrbHit(now){
+    if(now<paddleGoneUntil) return;
+    if(stats.lifeStart){
+      const dur=(now-stats.lifeStart)/1000;
+      if(dur<stats.fastestDeath) stats.fastestDeath=dur;
+      if(dur>stats.longestLife) stats.longestLife=dur;
+    }
+    stats.livesUsed++;
+    if(buffs.BLACKHOLE.active){ buffs.BLACKHOLE.deaths=Math.min(8,(buffs.BLACKHOLE.deaths||0)+1); }
+    if(buffs.ANNIHIL.active){ buffs.ANNIHIL.active=false; }
+    const pr=paddleRect();
+    const centerX=pr.x+pr.w/2;
+    const centerY=pr.y+pr.h/2;
+    spawnParticles(centerX, centerY, '#a87dff', 70, 2.8, 3.8, 3.4);
+    spawnParticles(centerX, centerY, '#f2dbff', 40, 2.2, 3.2, 3.0);
+    spawnParticles(centerX, centerY, '#6930c3', 28, 2.0, 3.0, 2.8);
+    playSFX('explosion');
+    screenShake=Math.max(screenShake,10);
+    const prevLives=lives;
+    const burstPos=captureHeartBurstPosition(prevLives);
+    lives=Math.max(0, lives-1);
+    updateHUD();
+    if(burstPos){ spawnBladeHellHeartBurst(burstPos); }
+    for(const ball of balls){ if(!ball) continue; ball.vy=-Math.abs(ball.vy||4); }
+    if(lives<=0){ running=false; paused=true; showGameOver(); }
+  }
+
+  function drawDemonVoidVolleyEffects(now, opts={}){
+    if(level!==20) return;
+    const hideCharges=!!opts.hideCharges;
+    const scaleAvg=(scaleX+scaleY)/2;
+    if(!hideCharges && demonVoidVolleyState && demonBoss && demonPhase==='active'){
+      for(const shot of demonVoidVolleyState.shots){
+        if(!shot) continue;
+        const pos=demonHandPosition(shot.hand);
+        let intensity=0;
+        if(!shot.fired){
+          const dur=Math.max(1, (shot.chargeEnd||shot.fireAt) - shot.chargeStart);
+          const elapsed=now-shot.chargeStart;
+          intensity=Math.max(0, Math.min(1, elapsed/dur));
+          if(now>= (shot.chargeEnd||shot.fireAt)) intensity=1;
+        }else{
+          const fadeEnd=shot.cooldownUntil || (shot.firedAt+900);
+          if(now<fadeEnd){
+            const remain=fadeEnd-now;
+            const fadeDur=Math.max(1, fadeEnd-shot.firedAt);
+            intensity=Math.max(0, Math.min(1, remain/fadeDur))*0.8;
+          }
+        }
+        if(intensity<=0) continue;
+        ctx.save();
+        ctx.translate(pos.x*scaleX, pos.y*scaleY);
+        ctx.globalCompositeOperation='lighter';
+        const radius=36*scaleAvg*(0.7+0.6*intensity);
+        const grad=ctx.createRadialGradient(0,0,radius*0.18,0,0,radius);
+        grad.addColorStop(0,`rgba(240,225,255,${0.9*intensity})`);
+        grad.addColorStop(0.55,`rgba(175,110,255,${0.65*intensity})`);
+        grad.addColorStop(1,'rgba(70,20,130,0)');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.arc(0,0,radius,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(pos.x*scaleX, pos.y*scaleY);
+        ctx.rotate(now/240 + (shot.hand==='left'?0.4:-0.4));
+        ctx.globalCompositeOperation='lighter';
+        ctx.strokeStyle=`rgba(200,150,255,${0.4*intensity})`;
+        ctx.lineWidth=4*scaleAvg*(0.6+0.4*intensity);
+        ctx.beginPath();
+        ctx.ellipse(0,0,radius*0.55,radius*0.28,0,0,Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    if(!demonVoidProjectiles.length) return;
+    for(const proj of demonVoidProjectiles){
+      if(!proj) continue;
+      const x=proj.x*scaleX;
+      const y=proj.y*scaleY;
+      const radius=(proj.radius || (proj.kind==='voidLarge'?24:12))*scaleAvg;
+      if(proj.trail && proj.trail.length){
+        for(let t=0;t<proj.trail.length;t++){
+          const tr=proj.trail[t];
+          const alpha=(t+1)/proj.trail.length;
+          ctx.save();
+          ctx.globalCompositeOperation='lighter';
+          ctx.globalAlpha=0.18*alpha;
+          ctx.beginPath();
+          ctx.arc(tr.x*scaleX, tr.y*scaleY, radius*0.5*alpha, 0, Math.PI*2);
+          ctx.fillStyle='rgba(190,150,255,1)';
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      const grad=ctx.createRadialGradient(x,y,radius*0.22,x,y,radius);
+      if(proj.kind==='voidLarge'){
+        grad.addColorStop(0,'rgba(245,230,255,0.95)');
+        grad.addColorStop(0.55,'rgba(190,130,255,0.75)');
+        grad.addColorStop(1,'rgba(80,20,150,0)');
+      }else{
+        grad.addColorStop(0,'rgba(245,225,255,0.9)');
+        grad.addColorStop(0.6,'rgba(200,150,255,0.7)');
+        grad.addColorStop(1,'rgba(90,30,160,0)');
+      }
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
   // === 特殊增益解鎖 ===
   const SPECIAL_UNLOCK_LEVELS = {
     PHOENIX:1,
@@ -1533,6 +1814,9 @@ select optgroup { color: #0b1022; }
   let demonDefeatedAt=0;
   let demonAttackActive=null;
   let demonAttackNextAt=0;
+  let demonVoidVolleyState=null;
+  const demonVoidProjectiles=[];
+  let demonVoidNextRoll=0;
   let demonBlackSpears=[];
   let demonBlackSpearId=0;
   const demonBloodEffects=[]; // 華麗噴血爆炸特效 {x,y,t0,life,ringStart,ringEnd}
@@ -5644,7 +5928,7 @@ select optgroup { color: #0b1022; }
     ctx.fillText(evt.text, (innerX+innerW/2)*scaleX, (innerY+innerH/2)*scaleY);
     if(evt.countdown){
       const remain=Math.max(0, evt.countdown.end - now);
-      if(remain>0){
+      if(remain>0 && !evt.countdown.inline){
         const value=Math.max(1, Math.ceil(remain/1000));
         const cdFont=Math.max(26, Math.round(32*((scaleX+scaleY)/2)));
         ctx.font=`${cdFont}px 'Playfair Display','Noto Sans TC',serif`;
@@ -5652,6 +5936,35 @@ select optgroup { color: #0b1022; }
         ctx.fillText(String(value), (innerX+innerW-18)*scaleX, (innerY+innerH/2)*scaleY);
       }
     }
+    ctx.restore();
+  }
+
+  function drawDemonInlineCountdown(now){
+    if(level!==20) return;
+    const evt=demonEventMarquee;
+    if(!evt || !evt.countdown || !evt.countdown.inline) return;
+    if(now<evt.start) return;
+    if(now>=evt.countdown.end) return;
+    const remain=Math.max(0, evt.countdown.end-now);
+    if(remain<=0) return;
+    const value=Math.max(1, Math.ceil(remain/1000));
+    const L=layout();
+    const scaleAvg=(scaleX+scaleY)/2;
+    const fontSize=Math.max(68, Math.round(88*scaleAvg));
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.font=`${fontSize}px 'Playfair Display','Noto Sans TC',serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(150,0,20,0.45)';
+    ctx.shadowBlur=30*scaleAvg;
+    ctx.fillStyle='rgba(255,60,60,0.92)';
+    const x=550*scaleX;
+    const y=(L.top+40)*scaleY;
+    ctx.fillText(String(value), x, y);
+    ctx.strokeStyle='rgba(255,200,200,0.35)';
+    ctx.lineWidth=4*scaleAvg;
+    ctx.strokeText(String(value), x, y);
     ctx.restore();
   }
 
@@ -6984,6 +7297,7 @@ select optgroup { color: #0b1022; }
     if(level!==20) return;
     const bladeHellHide = demonAttackActive && demonAttackActive.type==='bladeHell' && demonAttackActive.stage==='hell';
     const abyssHide = demonAttackActive && demonAttackActive.type==='abyssShatter' && demonAttackActive.hideBoss;
+    const hideCharges = bladeHellHide || abyssHide;
     if(!bladeHellHide && !abyssHide){
       drawDemonCore(now);
       drawDemonAfterimages(now);
@@ -6995,6 +7309,9 @@ select optgroup { color: #0b1022; }
     if(demonBoss && (demonPhase==='active' || demonPhase==='dying') && !bladeHellHide && !abyssHide){
       const opts = shake>0 ? {shake} : undefined;
       renderDemonFigure(demonBoss, now, opts);
+    }
+    if((demonVoidVolleyState || demonVoidProjectiles.length) && (demonVoidProjectiles.length || !hideCharges)){
+      drawDemonVoidVolleyEffects(now, {hideCharges});
     }
     if(demonDeathAnim && demonPhase!=='defeated'){
       const anim=demonDeathAnim;
@@ -7177,6 +7494,9 @@ select optgroup { color: #0b1022; }
     demonEventWave={x:cx,y:baseY,start:now,duration:2000,maxRadius:Math.hypot(1100,700)};
     demonAttackActive=null;
     demonAttackNextAt=now+15000;
+    demonVoidVolleyState=null;
+    demonVoidProjectiles.length=0;
+    demonVoidNextRoll=now+5000;
     demonBlackSpears=[];
     demonAbyssBricks.length=0;
     demonAbyssExplosions.length=0;
@@ -7375,6 +7695,9 @@ select optgroup { color: #0b1022; }
     }
     demonAttackActive=null;
     demonAttackNextAt=0;
+    demonVoidVolleyState=null;
+    demonVoidProjectiles.length=0;
+    demonVoidNextRoll=0;
     demonBlackSpears=[];
     demonAbyssBricks.length=0;
     demonAbyssExplosions.length=0;
@@ -7413,6 +7736,7 @@ select optgroup { color: #0b1022; }
       const prevX=demonBoss.x;
       const prevBaseY=demonBoss.baseY;
       const attack=demonAttackActive;
+      if(!demonVoidNextRoll){ demonVoidNextRoll = now + 5000; }
       if(attack){
         if(attack.type==='blackRitual'){
           updateDemonBlackRitual(now, dt);
@@ -7570,7 +7894,16 @@ select optgroup { color: #0b1022; }
         if(demonAfterimages.length>6){ demonAfterimages.splice(0, demonAfterimages.length-6); }
         demonBoss.lastAfterimage=now;
       }
-      if(!attack && demonBoss.mode!=='bloodDrain' && demonBoss.mode!=='ascending' && demonBoss.mode!=='recovery' && demonBoss.mode!=='attack'){
+      if(now>=demonVoidNextRoll){
+        demonVoidNextRoll = now + 5000;
+        const canVolley = !attack && demonBoss.mode!=='bloodDrain' && demonBoss.mode!=='attack' && demonBoss.mode!=='ascending' && demonBoss.mode!=='recovery';
+        if(canVolley && !demonVoidVolleyState){
+          if(Math.random()<0.10){
+            startDemonVoidVolley(now);
+          }
+        }
+      }
+      if(!attack && !demonVoidVolleyState && demonBoss.mode!=='bloodDrain' && demonBoss.mode!=='ascending' && demonBoss.mode!=='recovery' && demonBoss.mode!=='attack'){
         if(!demonAttackNextAt){ demonAttackNextAt = now + 15000; }
         if(now>=demonAttackNextAt){
           const picks=['blackRitual','bladeHell','abyssShatter'];
@@ -7608,6 +7941,9 @@ select optgroup { color: #0b1022; }
         if(elapsed>=fadeDuration){
           demonAfterimages.push({x:demonBoss.x, y:demonBoss.y, baseY:demonBoss.baseY, w:demonBoss.w, h:demonBoss.h, hoverPhase:demonBoss.hoverPhase, cloakPhase:demonBoss.cloakPhase, cloakSway:demonBoss.cloakSway, t0:now, life:600, fade:true});
           if(demonAfterimages.length>8){ demonAfterimages.splice(0, demonAfterimages.length-8); }
+          demonVoidVolleyState=null;
+          demonVoidProjectiles.length=0;
+          demonVoidNextRoll=0;
           demonBoss=null;
         }
       }
@@ -8869,6 +9205,9 @@ let balls=[]; function makeBall(stuck=false,x=null){
     demonDefeatedAt=0;
     demonAttackActive=null;
     demonAttackNextAt=0;
+    demonVoidVolleyState=null;
+    demonVoidProjectiles.length=0;
+    demonVoidNextRoll=0;
     demonBlackSpears=[];
     const lvlImg = getLevelImage(level);
     if (lvlImg && lvlImg.decode) { lvlImg.decode().catch(()=>{}); }
@@ -15007,6 +15346,7 @@ function generateLevel(lv, L){
     drawDemonAbyssShatterLayer(now);
     drawDemonBladeHellLayer(now);
     drawDemonHUD();
+    drawDemonInlineCountdown(now);
     drawDemonMarquee(now);
 
     // 倒數提示
@@ -15193,6 +15533,8 @@ function generateLevel(lv, L){
     updateDragonBoss();
     updateDemonEvent(now);
     updateDemonBoss();
+    updateDemonVoidVolley(now);
+    updateDemonVoidProjectiles(now);
     updateDemonBlackSpears(now);
     updateDemonBladeHellCounterstrike(now);
 
