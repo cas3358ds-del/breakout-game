@@ -13617,6 +13617,14 @@ function generateLevel(lv, L){
       return;
     }
     // 定時類
+    if(type==='MEGA'){
+      const megaBuff = buffs.MEGA || (buffs.MEGA = { active: false, until: 0, applied: false });
+      const sizeMul = GAME_CONFIG.powers.MEGA?.mega?.sizeMul ?? 1;
+      if(!megaBuff.applied){
+        for(const ball of balls){ ball.r *= sizeMul; }
+        megaBuff.applied = true;
+      }
+    }
     if(def.durationMs){ if(type!=='LONG'){ const b=buffs[type]||(buffs[type]={active:false,until:0}); b.active=true; b.until=now+def.durationMs; } }
     if(def.paddleWidthAdd){ buffs.WIDE.active=true; buffs.WIDE.until=now+def.durationMs; }
     if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const max=def.stacksMax??2; if(act.length<max){ buffs.LONG.stacks.push(now+def.durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+def.durationMs; } }
@@ -13639,7 +13647,7 @@ function generateLevel(lv, L){
     if(type==='TRACK'){ buffs.TRACK.active=true; buffs.TRACK.until=now+def.durationMs; }
     if(type==='MISSILE'){ buffs.MISSILE.active=true; buffs.MISSILE.until=now+def.durationMs; }
     if(type==='HELL'){ buffs.HELL.active=true; buffs.HELL.until=now+def.durationMs; }
-    if(type==='MEGA'){ if(!buffs.MEGA.active){ for(const ball of balls){ ball.r*=GAME_CONFIG.powers.MEGA.mega.sizeMul; } buffs.MEGA.applied=true; } buffs.MEGA.active=true; buffs.MEGA.until=now+def.durationMs; }
+    if(type==='MEGA'){ buffs.MEGA.active=true; buffs.MEGA.until=now+def.durationMs; }
     if(type==='CHAIN'){ buffs.CHAIN.active=true; buffs.CHAIN.until=now+def.durationMs; }
     if(type==='NARROW'){ buffs.NARROW.active=true; buffs.NARROW.until=now+def.durationMs; }
     if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+def.durationMs; showComboNotice('注意看! 你破洞啦!',5000,3000); }
