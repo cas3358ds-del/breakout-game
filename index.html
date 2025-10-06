@@ -2138,6 +2138,67 @@ select optgroup { color: #0b1022; }
     spawnParticles(x, y, '#d3b2ff', 26, 2.2, 3.2, 3.6);
   }
 
+  function getStandardBrickDimensions(){
+    const L=layout();
+    const pad=L.pad ?? GAME_CONFIG.bricks.padding;
+    const cols=L.cols ?? GAME_CONFIG.bricks.cols;
+    const available=Math.max(1, cols);
+    const width = brickW>0 ? brickW : Math.floor((1100 - (available+1)*pad)/available);
+    const height = brickH>0 ? brickH : (L.h ?? GAME_CONFIG.bricks.brickHeight);
+    return {width, height};
+  }
+
+  const TAU=Math.PI*2;
+
+  function normalizeAngle(angle){
+    if(!Number.isFinite(angle)) return 0;
+    let a=angle % TAU;
+    if(a<0) a+=TAU;
+    return a;
+  }
+
+  function shortestAngleDiff(target, from){
+    let diff=(target-from)%TAU;
+    if(diff>Math.PI) diff-=TAU;
+    if(diff<-Math.PI) diff+=TAU;
+    return diff;
+  }
+
+  function easeOutCubic(t){
+    const clamped=Math.max(0, Math.min(1, t));
+    const inv=1-clamped;
+    return 1 - inv*inv*inv;
+  }
+
+  function realignDemonAbyssOrbit(attack, now){
+    if(!attack) return;
+    const living=demonAbyssBricks.filter(b=>b && !b.destroyed && (b.state==='orbit' || b.state==='beam'));
+    if(!living.length) return;
+    const rotation=attack.orbitRotation=normalizeAngle(attack.orbitRotation||0);
+    const baseAngle=attack.orbitAngleSeed!=null ? attack.orbitAngleSeed : (attack.orbitAngleSeed=Math.random()*TAU);
+    const radius=(attack.orbitRadius ?? attack.orbitRadiusBase ?? 140);
+    attack.orbitRadius=radius;
+    living.sort((a,b)=> (a.orbitOrder||a.id) - (b.orbitOrder||b.id));
+    const step=TAU/living.length;
+    for(let i=0;i<living.length;i++){
+      const brick=living[i];
+      const targetActual=normalizeAngle(baseAngle + i*step);
+      const targetBase=normalizeAngle(targetActual - rotation);
+      const currentBase=normalizeAngle((brick.baseAngle!=null?brick.baseAngle:((brick.angle||0)-rotation)));
+      brick.baseAngle=currentBase;
+      brick.baseAngleStart=currentBase;
+      brick.baseAngleTarget=targetBase;
+      brick.baseAngleAdjustStart=now;
+      brick.baseAngleAdjustDuration=500;
+      const fromRadius=brick.orbitRadius ?? radius;
+      brick.orbitRadius = brick.orbitRadius ?? radius;
+      brick.radiusAdjustFrom=fromRadius;
+      brick.radiusAdjustTo=radius;
+      brick.radiusAdjustStart=now;
+      brick.radiusAdjustDuration=500;
+    }
+  }
+
   function spawnDemonAbyssBrick(attack, now){
     if(!attack) return null;
     const L=layout();
@@ -2160,12 +2221,17 @@ select optgroup { color: #0b1022; }
       startX = 1100 - L.pad + 70;
       startY = stageTop + Math.random()*stageHeight*0.82;
     }
-    const spawnCount = attack.spawnCount||0;
-    const baseAngle = (attack.orbitAngleSeed!=null?attack.orbitAngleSeed:(attack.orbitAngleSeed=Math.random()*Math.PI*2));
-    const angle = baseAngle + spawnCount*(Math.PI*2/12);
-    const orbitRadius = Math.max(80, (attack.orbitRadius||160) + (Math.random()*40-20));
-    const targetX = center.x + Math.cos(angle)*orbitRadius;
-    const targetY = center.y + Math.sin(angle)*orbitRadius;
+    const {width:stdWidth, height:stdHeight}=getStandardBrickDimensions();
+    const baseRadius=attack.orbitRadius ?? attack.orbitRadiusBase ?? Math.max(100, stageHeight*0.2);
+    const orbiters=demonAbyssBricks.filter(b=>b && !b.destroyed && (b.state==='orbit' || b.state==='beam')).length;
+    const totalSlots=orbiters+1;
+    const baseAngle = attack.orbitAngleSeed!=null?attack.orbitAngleSeed:(attack.orbitAngleSeed=Math.random()*TAU);
+    const targetAngle = normalizeAngle(baseAngle + (totalSlots-1)*(TAU/Math.max(1,totalSlots)));
+    const rotation=attack.orbitRotation||0;
+    const baseAngleForBrick=normalizeAngle(targetAngle - rotation);
+    const orbitRadius = baseRadius;
+    const targetX = center.x + Math.cos(targetAngle)*orbitRadius;
+    const targetY = center.y + Math.sin(targetAngle)*orbitRadius;
     const brick={
       id: ++demonAbyssBrickId,
       x:startX,
@@ -2176,19 +2242,23 @@ select optgroup { color: #0b1022; }
       targetY,
       orbitCenter:{x:center.x, y:center.y},
       orbitRadius,
-      angle,
+      baseAngle:baseAngleForBrick,
+      orbitOrder:(attack.nextOrbitOrder||0),
       orbitSpeed:(Math.PI*2)/2000,
       state:'flying',
       spawnAt:now,
       arrivalDuration:1000,
-      hitRadius:26,
-      renderSize:46,
+      hitRadius:Math.hypot(stdWidth*0.45, stdHeight*0.45),
+      renderWidth:stdWidth,
+      renderHeight:stdHeight,
       renderPulse:Math.random()*Math.PI*2,
+      crackleSeed:Math.random()*Math.PI*2,
       lastUpdate:now,
       hp:1
     };
+    attack.nextOrbitOrder=(attack.nextOrbitOrder||0)+1;
     demonAbyssBricks.push(brick);
-    attack.spawnCount = spawnCount + 1;
+    attack.spawnCount = (attack.spawnCount||0) + 1;
     spawnParticles(startX, startY, '#401355', 24, 2.6, 3.4, 3.6);
     spawnParticles(startX, startY, '#b38aff', 18, 2.0, 3.0, 3.2);
     return brick;
@@ -2200,6 +2270,14 @@ select optgroup { color: #0b1022; }
     brick.state='destroyed';
     brick.destroyedAt=now;
     brick.removeAt=now+700;
+    brick.baseAngleTarget=null;
+    brick.baseAngleStart=null;
+    brick.baseAngleAdjustStart=null;
+    brick.baseAngleAdjustDuration=null;
+    brick.radiusAdjustTo=null;
+    brick.radiusAdjustFrom=null;
+    brick.radiusAdjustStart=null;
+    brick.radiusAdjustDuration=null;
     spawnParticles(brick.x, brick.y, '#f9ecff', 52, 2.8, 4.0, 4.4);
     spawnParticles(brick.x, brick.y, '#9a55ff', 36, 2.6, 3.6, 4.0);
     spawnParticles(brick.x, brick.y, '#542a8f', 28, 2.4, 3.2, 3.6);
@@ -2210,6 +2288,9 @@ select optgroup { color: #0b1022; }
       end:now+900,
       radius:brick.hitRadius*2.2
     });
+    if(demonAttackActive && demonAttackActive.type==='abyssShatter'){
+      realignDemonAbyssOrbit(demonAttackActive, now);
+    }
     return true;
   }
 
@@ -2861,6 +2942,14 @@ select optgroup { color: #0b1022; }
   }
 
   function updateDemonAbyssBricks(now, attack, dt){
+    if(attack){
+      const orbitDt=Math.max(0, now - (attack.lastOrbitUpdate||now));
+      const omega=attack.orbitAngularSpeed || ((Math.PI*2)/2200);
+      attack.orbitAngularSpeed=omega;
+      attack.orbitRotation=normalizeAngle((attack.orbitRotation||0) + omega*orbitDt);
+      attack.lastOrbitUpdate=now;
+      if(attack.orbitRadius==null){ attack.orbitRadius=attack.orbitRadiusBase ?? 140; }
+    }
     for(let i=demonAbyssBricks.length-1;i>=0;i--){
       const brick=demonAbyssBricks[i];
       if(!brick){ demonAbyssBricks.splice(i,1); continue; }
@@ -2882,14 +2971,73 @@ select optgroup { color: #0b1022; }
         if(prog>=1){
           brick.state='orbit';
           brick.phaseOffset = Math.random()*Math.PI*2;
+          if(attack){
+            const rotation=attack.orbitRotation||0;
+            const actual=Math.atan2(brick.y-center.y, brick.x-center.x);
+            brick.baseAngle=normalizeAngle(actual - rotation);
+            brick.baseAngleStart=null;
+            brick.baseAngleTarget=null;
+            brick.orbitRadius=attack.orbitRadius ?? attack.orbitRadiusBase ?? brick.orbitRadius;
+            brick.radiusAdjustTo=null;
+            realignDemonAbyssOrbit(attack, now);
+          }else{
+            brick.angle=Math.atan2(brick.y-center.y, brick.x-center.x);
+          }
         }
       }else if(brick.state==='orbit' || brick.state==='beam'){
-        const omega=brick.orbitSpeed || ((Math.PI*2)/2000);
-        brick.angle += omega*delta;
-        const jitter = 6*Math.sin((now/240)+(brick.phaseOffset||0));
-        const radius=Math.max(60, brick.orbitRadius + jitter);
-        brick.x = center.x + Math.cos(brick.angle)*radius;
-        brick.y = center.y + Math.sin(brick.angle)*radius;
+        if(attack){
+          let orbitRadius=brick.orbitRadius ?? attack.orbitRadius ?? attack.orbitRadiusBase ?? 140;
+          if(brick.radiusAdjustTo!=null){
+            const start=brick.radiusAdjustStart||now;
+            const dur=Math.max(1, brick.radiusAdjustDuration||500);
+            const t=Math.max(0, Math.min(1, (now-start)/dur));
+            const eased=easeOutCubic(t);
+            const from=brick.radiusAdjustFrom ?? orbitRadius;
+            const to=brick.radiusAdjustTo;
+            orbitRadius = from + (to-from)*eased;
+            brick.orbitRadius=orbitRadius;
+            if(t>=1){
+              brick.radiusAdjustTo=null;
+              brick.radiusAdjustFrom=null;
+              brick.radiusAdjustStart=null;
+              brick.radiusAdjustDuration=null;
+            }
+          }else{
+            brick.orbitRadius=orbitRadius;
+          }
+          let baseAngle=brick.baseAngle ?? 0;
+          if(brick.baseAngleTarget!=null){
+            const start=brick.baseAngleAdjustStart||now;
+            const dur=Math.max(1, brick.baseAngleAdjustDuration||500);
+            const t=Math.max(0, Math.min(1, (now-start)/dur));
+            const eased=easeOutCubic(t);
+            const from=(brick.baseAngleStart!=null)?brick.baseAngleStart:baseAngle;
+            const diff=shortestAngleDiff(brick.baseAngleTarget, from);
+            baseAngle=normalizeAngle(from + diff*eased);
+            brick.baseAngle=baseAngle;
+            if(t>=1){
+              brick.baseAngle=normalizeAngle(brick.baseAngleTarget);
+              brick.baseAngleTarget=null;
+              brick.baseAngleStart=null;
+              brick.baseAngleAdjustStart=null;
+              brick.baseAngleAdjustDuration=null;
+            }
+          }
+          const rotation=attack.orbitRotation||0;
+          const jitter = 6*Math.sin((now/240)+(brick.phaseOffset||0));
+          const radius=Math.max(60, (brick.orbitRadius ?? orbitRadius) + jitter);
+          const angle=normalizeAngle(rotation + (brick.baseAngle ?? baseAngle));
+          brick.angle=angle;
+          brick.x = center.x + Math.cos(angle)*radius;
+          brick.y = center.y + Math.sin(angle)*radius;
+        }else{
+          const omega=brick.orbitSpeed || ((Math.PI*2)/2000);
+          brick.angle = (brick.angle||0) + omega*delta;
+          const jitter = 6*Math.sin((now/240)+(brick.phaseOffset||0));
+          const radius=Math.max(60, (brick.orbitRadius||140) + jitter);
+          brick.x = center.x + Math.cos(brick.angle)*radius;
+          brick.y = center.y + Math.sin(brick.angle)*radius;
+        }
       }else if(brick.state==='projectile'){
         const dur=Math.max(1, brick.travelDuration||1000);
         const elapsed=now - (brick.launchAt||now);
@@ -2947,9 +3095,13 @@ select optgroup { color: #0b1022; }
       nextSpawn:now+1000,
       spawnInterval:500,
       orbitCenter:center,
-      orbitRadius:Math.min(220, Math.max(120, stageHeight*0.24)),
+      orbitRadiusBase:Math.min(200, Math.max(110, stageHeight*0.20)),
+      orbitRadius:Math.min(200, Math.max(110, stageHeight*0.20)),
+      orbitRotation:0,
       spawnCount:0,
       orbitAngleSeed:null,
+      nextOrbitOrder:0,
+      lastOrbitUpdate:now,
       bossDepartStart:now,
       bossDepartEnd:now+1000,
       bossDepartFrom:demonBoss.baseY,
@@ -3019,6 +3171,7 @@ select optgroup { color: #0b1022; }
           attack.stage='beam';
           attack.beamEnd=now+4000;
           for(const brick of demonAbyssBricks){ if(!brick || brick.destroyed) continue; brick.state='beam'; }
+          realignDemonAbyssOrbit(attack, now);
         }else if(attack.result==='barrage' && demonAbyssBricks.some(b=>b && !b.destroyed)){
           attack.stage='launch';
           attack.nextLaunch=now;
@@ -3058,6 +3211,9 @@ select optgroup { color: #0b1022; }
         const candidate=demonAbyssBricks.find(b=>b && !b.destroyed && (b.state==='orbit' || b.state==='beam'));
         if(candidate){
           candidate.state='projectile';
+          candidate.baseAngleTarget=null;
+          candidate.baseAngleStart=null;
+          candidate.radiusAdjustTo=null;
           candidate.startX=candidate.x;
           candidate.startY=candidate.y;
           const prNow=paddleRect();
@@ -3069,6 +3225,7 @@ select optgroup { color: #0b1022; }
           candidate.travelDuration=1000;
           candidate.projectileResolved=false;
           attack.nextLaunch=now+1000;
+          realignDemonAbyssOrbit(attack, now);
         }else if(!demonAbyssBricks.some(b=>b && !b.destroyed)){
           attack.stage='cleanup';
           attack.cleanupAt=now+2000;
@@ -3392,6 +3549,9 @@ select optgroup { color: #0b1022; }
     const attack=(demonAttackActive && demonAttackActive.type==='abyssShatter')?demonAttackActive:null;
     if(!attack && !demonAbyssBricks.length && !demonAbyssExplosions.length) return;
     const scaleAvg=(scaleX+scaleY)/2;
+    const dims=getStandardBrickDimensions();
+    const baseBrickW=dims.width;
+    const baseBrickH=dims.height;
     if(attack && attack.orbitCenter){
       const cx=attack.orbitCenter.x*scaleX;
       const cy=attack.orbitCenter.y*scaleY;
@@ -3440,23 +3600,92 @@ select optgroup { color: #0b1022; }
       const lifeSpan=Math.max(1, (brick.removeAt||now) - (brick.destroyedAt||now));
       const fade=brick.destroyed?Math.max(0, 1 - (now-(brick.destroyedAt||now))/lifeSpan):1;
       if(fade<=0) continue;
-      const size=(brick.renderSize||46);
-      const pulse=1 + 0.12*Math.sin((now/200)+(brick.renderPulse||0));
-      const drawSize=size*pulse*scaleAvg;
-      const half=drawSize/2;
+      const pulseBase = (brick.renderPulse||0);
+      const widthBase=(brick.renderWidth||baseBrickW);
+      const heightBase=(brick.renderHeight||baseBrickH);
+      const width=widthBase*(0.97 + 0.03*Math.sin((now/240)+pulseBase));
+      const height=heightBase*(0.96 + 0.03*Math.cos((now/260)+pulseBase));
+      const x=brick.x - width/2;
+      const y=brick.y - height/2;
+      const right=x+width;
+      const bottom=y+height;
+      const radius=Math.max(4, Math.min(width,height)*0.22);
+      const innerX=x + width*0.08;
+      const innerY=y + height*0.14;
+      const innerW=width*0.84;
+      const innerH=height*0.72;
+      const innerR=Math.max(3, radius*0.55);
+      const glowPulse=0.65 + 0.35*Math.sin((now/180)+pulseBase);
+      const veinAlpha=0.14 + 0.10*Math.sin((now/140)+pulseBase*1.7);
       ctx.save();
-      ctx.translate(brick.x*scaleX, brick.y*scaleY);
-      ctx.rotate((brick.angle||0) + Math.sin((now/260)+(brick.renderPulse||0))*0.14);
       ctx.globalAlpha=fade;
-      const grad=ctx.createLinearGradient(-half,-half,half,half);
-      grad.addColorStop(0,'rgba(30,0,50,0.85)');
-      grad.addColorStop(0.55,'rgba(130,60,200,0.95)');
-      grad.addColorStop(1,'rgba(240,220,255,0.9)');
-      ctx.fillStyle=grad;
-      drawRoundedRect(-half, -half, drawSize, drawSize, Math.max(8, drawSize*0.22));
-      ctx.strokeStyle='rgba(255,240,255,0.65)';
-      ctx.lineWidth=Math.max(2, drawSize*0.08);
+      const baseGrad=ctx.createLinearGradient(x*scaleX, y*scaleY, right*scaleX, bottom*scaleY);
+      baseGrad.addColorStop(0,'rgba(18,0,36,0.95)');
+      baseGrad.addColorStop(0.45,'rgba(76,0,96,0.98)');
+      baseGrad.addColorStop(0.72,'rgba(26,0,44,0.92)');
+      baseGrad.addColorStop(1,'rgba(8,0,18,0.9)');
+      ctx.fillStyle=baseGrad;
+      drawRoundedRect(x, y, width, height, radius);
+      ctx.fill();
+
+      const cavityGrad=ctx.createLinearGradient(innerX*scaleX, (innerY+innerH)*scaleY, innerX*scaleX, innerY*scaleY);
+      cavityGrad.addColorStop(0,'rgba(10,0,24,0.85)');
+      cavityGrad.addColorStop(0.55,'rgba(68,18,100,0.38)');
+      cavityGrad.addColorStop(1,'rgba(140,90,190,0.28)');
+      ctx.fillStyle=cavityGrad;
+      drawRoundedRect(innerX, innerY, innerW, innerH, innerR);
+      ctx.fill();
+
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      const glow=ctx.createRadialGradient(brick.x*scaleX, brick.y*scaleY, 0, brick.x*scaleX, brick.y*scaleY, Math.max(width*scaleX,height*scaleY)*0.65);
+      glow.addColorStop(0,`rgba(180,130,255,${0.34*glowPulse})`);
+      glow.addColorStop(0.6,`rgba(110,50,170,${0.20*glowPulse})`);
+      glow.addColorStop(1,'rgba(40,0,80,0)');
+      ctx.fillStyle=glow;
+      drawRoundedRect(innerX, innerY, innerW, innerH, innerR);
+      ctx.fill();
+      ctx.restore();
+
+      const sheen=ctx.createLinearGradient(innerX*scaleX, innerY*scaleY, innerX*scaleX, (innerY+innerH*0.45)*scaleY);
+      sheen.addColorStop(0,`rgba(240,220,255,${0.24*glowPulse})`);
+      sheen.addColorStop(1,'rgba(130,70,210,0)');
+      ctx.fillStyle=sheen;
+      drawRoundedRect(innerX, innerY, innerW, innerH*0.45, Math.max(3, innerR*0.85));
+      ctx.fill();
+
+      const abyssGrad=ctx.createLinearGradient(innerX*scaleX, (innerY+innerH*0.35)*scaleY, innerX*scaleX, (innerY+innerH)*scaleY);
+      abyssGrad.addColorStop(0,'rgba(30,0,55,0)');
+      abyssGrad.addColorStop(1,'rgba(0,0,0,0.55)');
+      ctx.fillStyle=abyssGrad;
+      drawRoundedRect(innerX, innerY+innerH*0.35, innerW, innerH*0.65, Math.max(2.5, innerR*0.65));
+      ctx.fill();
+
+      ctx.strokeStyle=`rgba(200,160,255,${veinAlpha})`;
+      ctx.lineWidth=Math.max(1, Math.min(width,height)*0.03*scaleAvg);
+      ctx.beginPath();
+      ctx.moveTo((x+width*0.22)*scaleX, (y+height*0.18)*scaleY);
+      ctx.quadraticCurveTo((brick.x + Math.cos(brick.crackleSeed||0)*width*0.08)*scaleX, (brick.y - height*0.06)*scaleY, (x+width*0.78)*scaleX, (y+height*0.28)*scaleY);
+      ctx.moveTo((x+width*0.3)*scaleX, (y+height*0.72)*scaleY);
+      ctx.quadraticCurveTo((brick.x - Math.sin(brick.crackleSeed||0)*width*0.12)*scaleX, (brick.y + height*0.04)*scaleY, (x+width*0.8)*scaleX, (y+height*0.84)*scaleY);
       ctx.stroke();
+
+      const borderAlpha=0.5 + 0.25*Math.sin((now/200)+pulseBase);
+      ctx.strokeStyle=`rgba(215,185,255,${borderAlpha})`;
+      ctx.lineWidth=Math.max(2, Math.min(width,height)*0.06*scaleAvg);
+      drawRoundedRect(x, y, width, height, radius);
+      ctx.stroke();
+
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.shadowColor=`rgba(110,50,200,${0.35*fade})`;
+      ctx.shadowBlur=20*scaleAvg;
+      ctx.strokeStyle='rgba(110,40,200,0.22)';
+      ctx.lineWidth=Math.max(1.2, Math.min(width,height)*0.025*scaleAvg);
+      drawRoundedRect(x, y, width, height, radius);
+      ctx.stroke();
+      ctx.restore();
+
       ctx.restore();
     }
     for(const fx of demonAbyssExplosions){
