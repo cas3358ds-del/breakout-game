@@ -2133,9 +2133,55 @@ select optgroup { color: #0b1022; }
   }
 
   function spawnAbyssPlatformShatter(x, y){
-    spawnParticles(x, y, '#f5e6ff', 42, 2.6, 3.6, 3.8);
-    spawnParticles(x, y, '#8f55d6', 36, 2.8, 3.8, 4.2);
-    spawnParticles(x, y, '#d3b2ff', 26, 2.2, 3.2, 3.6);
+    const now=performance.now();
+    playSFX('abyssPlatformBreak');
+    spawnParticles(x, y, '#fff3ff', 56, 2.8, 4.4, 4.8);
+    spawnParticles(x, y, '#c089ff', 46, 2.6, 4.0, 4.4);
+    spawnParticles(x, y, '#61e8ff', 34, 2.4, 3.8, 4.0);
+    spawnParticles(x, y, '#ffbc73', 32, 2.2, 3.6, 3.8);
+    spawnParticles(x, y, '#341442', 28, 2.8, 3.6, 4.2);
+    const seed=Math.random()*TAU;
+    const cracks=Array.from({length:10},()=>({
+      angle:Math.random()*TAU,
+      length:160+Math.random()*160,
+      sway:0.2+Math.random()*0.45,
+      branch:Math.random()<0.55
+    }));
+    const shards=Array.from({length:26},()=>({
+      angle:Math.random()*TAU,
+      speed:180+Math.random()*220,
+      size:10+Math.random()*6,
+      tint:0.55+Math.random()*0.35
+    }));
+    demonAbyssExplosions.push({
+      x,
+      y,
+      start:now,
+      end:now+900,
+      style:'abyssPlatformShock',
+      radius:240,
+      seed
+    });
+    demonAbyssExplosions.push({
+      x,
+      y,
+      start:now,
+      end:now+1200,
+      style:'abyssPlatformCracks',
+      radius:260,
+      seed,
+      cracks
+    });
+    demonAbyssExplosions.push({
+      x,
+      y,
+      start:now,
+      end:now+1000,
+      style:'abyssPlatformSparks',
+      radius:300,
+      seed,
+      shards
+    });
   }
 
   function getStandardBrickDimensions(){
@@ -2261,6 +2307,7 @@ select optgroup { color: #0b1022; }
     attack.spawnCount = (attack.spawnCount||0) + 1;
     spawnParticles(startX, startY, '#401355', 24, 2.6, 3.4, 3.6);
     spawnParticles(startX, startY, '#b38aff', 18, 2.0, 3.0, 3.2);
+    playSFX('abyssBrickLaunch');
     return brick;
   }
 
@@ -2284,6 +2331,7 @@ select optgroup { color: #0b1022; }
     spawnParticles(brick.x, brick.y, '#6effff', 42, 3.2, 4.6, 4.2);
     spawnParticles(brick.x, brick.y, '#ffd684', 26, 2.8, 4.0, 4.6);
     spawnDemonAbyssNovaFx(brick.x, brick.y, brick.hitRadius*2.2, now);
+    playSFX('abyssBrickShatter');
     if(demonAttackActive && demonAttackActive.type==='abyssShatter'){
       realignDemonAbyssOrbit(demonAttackActive, now);
     }
@@ -3854,6 +3902,115 @@ select optgroup { color: #0b1022; }
       const cx=(fx.x||0)*scaleX;
       const cy=(fx.y||0)*scaleY;
       const scaleAvg=(scaleX+scaleY)/2;
+      if(style==='abyssPlatformShock'){
+        const fade=Math.max(0, 1-Math.pow(prog,0.9));
+        const baseRadius=Math.max(120, (fx.radius||220))*scaleAvg;
+        const inner=baseRadius*(0.35 + 0.18*Math.sin((now-start)/150 + (fx.seed||0)));
+        const outer=baseRadius*(0.65 + prog*0.85);
+        ctx.save();
+        ctx.globalCompositeOperation='screen';
+        const shock=ctx.createRadialGradient(cx, cy, inner, cx, cy, outer);
+        shock.addColorStop(0,`rgba(255,255,255,${0.35*fade})`);
+        shock.addColorStop(0.45,`rgba(220,190,255,${0.45*fade})`);
+        shock.addColorStop(0.75,`rgba(120,70,210,${0.38*fade})`);
+        shock.addColorStop(1,'rgba(20,0,40,0)');
+        ctx.fillStyle=shock;
+        ctx.beginPath();
+        ctx.arc(cx, cy, outer, 0, Math.PI*2);
+        ctx.fill();
+        ctx.lineWidth=Math.max(2.5, outer*0.032);
+        ctx.strokeStyle=`rgba(255,240,255,${0.55*fade})`;
+        ctx.setLineDash([outer*0.18, outer*0.22]);
+        ctx.lineDashOffset = -((now-start)/9 + (fx.seed||0)*180);
+        ctx.beginPath();
+        ctx.arc(cx, cy, outer*0.86, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+        continue;
+      }
+      if(style==='abyssPlatformCracks'){
+        const fade=Math.max(0, 1-Math.pow(prog,0.6));
+        const cracks=fx.cracks || [];
+        const grow=0.3 + prog*1.1;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.globalCompositeOperation='lighter';
+        ctx.lineCap='round';
+        const baseWidth=Math.max(1.6, (fx.radius||220)*0.012*scaleAvg*(1-prog*0.4));
+        for(const crack of cracks){
+          const ang=crack.angle||0;
+          const innerOffset=(fx.radius||220)*(0.05 + prog*0.06);
+          const totalLen=(crack.length||200)*grow;
+          const sway=crack.sway||0;
+          const ctrlLen=totalLen*(0.32 + sway*0.5);
+          const ctrlAngle=ang + (sway*0.6-0.3);
+          ctx.lineWidth=baseWidth;
+          ctx.strokeStyle=`rgba(190,150,255,${0.55*fade})`;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(ang)*innerOffset*scaleAvg, Math.sin(ang)*innerOffset*scaleAvg);
+          ctx.quadraticCurveTo(
+            Math.cos(ctrlAngle)*ctrlLen*scaleAvg,
+            Math.sin(ctrlAngle)*ctrlLen*scaleAvg,
+            Math.cos(ang)*totalLen*scaleAvg,
+            Math.sin(ang)*totalLen*scaleAvg
+          );
+          ctx.stroke();
+          if(crack.branch){
+            const branchLen=totalLen*0.45;
+            const branchAng=ang + (Math.sin((now-start)/180 + ang)*0.35);
+            ctx.lineWidth=baseWidth*0.72;
+            ctx.strokeStyle=`rgba(130,210,255,${0.45*fade})`;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(ang)*totalLen*scaleAvg*0.65, Math.sin(ang)*totalLen*scaleAvg*0.65);
+            ctx.lineTo(
+              Math.cos(branchAng)*branchLen*scaleAvg,
+              Math.sin(branchAng)*branchLen*scaleAvg
+            );
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+        continue;
+      }
+      if(style==='abyssPlatformSparks'){
+        const fade=Math.max(0, 1-prog);
+        const shards=fx.shards || [];
+        const travelBase=(fx.radius||280);
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        for(const shard of shards){
+          const ease=Math.pow(prog,0.7);
+          const dist=(travelBase*ease + (shard.speed||200)*prog*0.45)*scaleAvg;
+          const px=cx + Math.cos(shard.angle||0)*dist;
+          const py=cy + Math.sin(shard.angle||0)*dist;
+          const size=(shard.size||12)*(0.55 + (1-prog)*0.5)*scaleAvg;
+          const tint=shard.tint||0.7;
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate((shard.angle||0) + (now-start)/300);
+          ctx.shadowColor=`rgba(150,220,255,${0.45*fade*tint})`;
+          ctx.shadowBlur=24*fade;
+          const grad=ctx.createLinearGradient(-size,0,size,0);
+          grad.addColorStop(0,'rgba(40,10,90,0)');
+          grad.addColorStop(0.35,`rgba(255,255,255,${0.45*fade*tint})`);
+          grad.addColorStop(0.7,`rgba(160,210,255,${0.35*fade*tint})`);
+          grad.addColorStop(1,'rgba(30,0,60,0)');
+          ctx.fillStyle=grad;
+          ctx.beginPath();
+          ctx.ellipse(0,0,size*0.35,size,0,0,Math.PI*2);
+          ctx.fill();
+          ctx.strokeStyle=`rgba(255,230,255,${0.4*fade*tint})`;
+          ctx.lineWidth=Math.max(1.2, size*0.14);
+          ctx.beginPath();
+          ctx.moveTo(-size*0.55,0);
+          ctx.lineTo(size*0.55,0);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
+        continue;
+      }
       if(style==='abyssNova'){
         const fade=Math.max(0, 1-prog);
         const baseRadius=(fx.radius||80)*scaleAvg;
@@ -8144,6 +8301,134 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         g.gain.setValueAtTime(0.06, now);
         g.gain.exponentialRampToValueAtTime(0.001, now+0.5);
         o.start(now); o.stop(now+0.5); break;
+      case 'abyssBrickLaunch':{
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(260, now);
+        o.frequency.exponentialRampToValueAtTime(780, now+0.28);
+        g.gain.setValueAtTime(0.045, now);
+        g.gain.linearRampToValueAtTime(0.06, now+0.12);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.5);
+        const shimmer=audioCtx.createOscillator();
+        const shimmerGain=audioCtx.createGain();
+        shimmer.type='triangle';
+        shimmer.frequency.setValueAtTime(920, now);
+        shimmer.frequency.linearRampToValueAtTime(1400, now+0.22);
+        shimmerGain.gain.setValueAtTime(0.018, now);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.0008, now+0.5);
+        shimmer.connect(shimmerGain);
+        shimmerGain.connect(audioCtx.destination);
+        const noiseBuffer=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.4), audioCtx.sampleRate);
+        const noiseData=noiseBuffer.getChannelData(0);
+        for(let i=0;i<noiseData.length;i++){
+          const t=i/noiseData.length;
+          const env=1-Math.pow(t,0.6);
+          noiseData[i]=(Math.random()*2-1)*0.18*env;
+        }
+        const noise=audioCtx.createBufferSource();
+        noise.buffer=noiseBuffer;
+        const noiseFilter=audioCtx.createBiquadFilter();
+        noiseFilter.type='bandpass';
+        noiseFilter.frequency.setValueAtTime(820, now);
+        noiseFilter.Q=1.8;
+        const noiseGain=audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.028, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now+0.45);
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.5);
+        shimmer.start(now); shimmer.stop(now+0.5);
+        noise.start(now); noise.stop(now+0.45);
+        break;
+      }
+      case 'abyssBrickShatter':{
+        o.type='triangle';
+        o.frequency.setValueAtTime(720, now);
+        o.frequency.exponentialRampToValueAtTime(240, now+0.32);
+        g.gain.setValueAtTime(0.07, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.34);
+        const shimmer=audioCtx.createOscillator();
+        const shimmerGain=audioCtx.createGain();
+        shimmer.type='sine';
+        shimmer.frequency.setValueAtTime(1600, now);
+        shimmer.frequency.exponentialRampToValueAtTime(520, now+0.34);
+        shimmerGain.gain.setValueAtTime(0.02, now);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now+0.34);
+        shimmer.connect(shimmerGain);
+        shimmerGain.connect(audioCtx.destination);
+        const crackleBuffer=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.36), audioCtx.sampleRate);
+        const crackle=crackleBuffer.getChannelData(0);
+        for(let i=0;i<crackle.length;i++){
+          const t=i/crackle.length;
+          const envelope=Math.pow(1-t,0.45);
+          crackle[i]=(Math.random()*2-1)*0.42*envelope;
+        }
+        const crackleSrc=audioCtx.createBufferSource();
+        crackleSrc.buffer=crackleBuffer;
+        const crackleFilter=audioCtx.createBiquadFilter();
+        crackleFilter.type='highpass';
+        crackleFilter.frequency.setValueAtTime(1800, now);
+        crackleFilter.Q=0.8;
+        const crackleGain=audioCtx.createGain();
+        crackleGain.gain.setValueAtTime(0.08, now);
+        crackleGain.gain.exponentialRampToValueAtTime(0.0001, now+0.38);
+        crackleSrc.connect(crackleFilter);
+        crackleFilter.connect(crackleGain);
+        crackleGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.34);
+        shimmer.start(now); shimmer.stop(now+0.34);
+        crackleSrc.start(now); crackleSrc.stop(now+0.38);
+        break;
+      }
+      case 'abyssPlatformBreak':{
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(240, now);
+        o.frequency.exponentialRampToValueAtTime(60, now+0.6);
+        g.gain.setValueAtTime(0.085, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.6);
+        const sub=audioCtx.createOscillator();
+        const subGain=audioCtx.createGain();
+        sub.type='sine';
+        sub.frequency.setValueAtTime(70, now);
+        sub.frequency.exponentialRampToValueAtTime(24, now+0.7);
+        subGain.gain.setValueAtTime(0.16, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now+0.7);
+        sub.connect(subGain);
+        subGain.connect(audioCtx.destination);
+        const sprayBuffer=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.7), audioCtx.sampleRate);
+        const sprayData=sprayBuffer.getChannelData(0);
+        for(let i=0;i<sprayData.length;i++){
+          const t=i/sprayData.length;
+          const envelope=Math.pow(1-t,0.3);
+          sprayData[i]=(Math.random()*2-1)*0.6*envelope;
+        }
+        const spray=audioCtx.createBufferSource();
+        spray.buffer=sprayBuffer;
+        const sprayFilter=audioCtx.createBiquadFilter();
+        sprayFilter.type='bandpass';
+        sprayFilter.frequency.setValueAtTime(680, now);
+        sprayFilter.Q=1.4;
+        const sprayGain=audioCtx.createGain();
+        sprayGain.gain.setValueAtTime(0.12, now);
+        sprayGain.gain.exponentialRampToValueAtTime(0.0001, now+0.7);
+        spray.connect(sprayFilter);
+        sprayFilter.connect(sprayGain);
+        sprayGain.connect(audioCtx.destination);
+        const chime=audioCtx.createOscillator();
+        const chimeGain=audioCtx.createGain();
+        chime.type='triangle';
+        chime.frequency.setValueAtTime(1200, now);
+        chime.frequency.exponentialRampToValueAtTime(420, now+0.5);
+        chimeGain.gain.setValueAtTime(0.03, now);
+        chimeGain.gain.exponentialRampToValueAtTime(0.0001, now+0.5);
+        chime.connect(chimeGain);
+        chimeGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.6);
+        sub.start(now); sub.stop(now+0.7);
+        spray.start(now); spray.stop(now+0.7);
+        chime.start(now); chime.stop(now+0.5);
+        break;
+      }
       case 'demonTeleport':{
         o.type='sine';
         o.frequency.setValueAtTime(680, now);
@@ -13478,6 +13763,12 @@ function generateLevel(lv, L){
     fireBursts.length=0;
     fireExplosions.length=0;
     demonBloodEffects.length=0;
+    demonAbyssBricks.length=0;
+    demonAbyssExplosions.length=0;
+    if(demonAttackActive && demonAttackActive.type==='abyssShatter'){
+      demonAttackActive=null;
+      demonAttackNextAt=0;
+    }
     forceReleaseBladeHellBall();
     demonBladeHellTelegraphs.length=0;
     demonBladeHellSlashes.length=0;
