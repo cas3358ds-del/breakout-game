@@ -2487,7 +2487,11 @@ select optgroup { color: #0b1022; }
   }
 
   function spawnBladeHellTelegraph(def, attack, now){
-    const pr=paddleRect();
+    const prActual=paddleRect();
+    const ghost=flipDecoy?.active
+      ? {x:flipDecoy.x, y:flipDecoy.y, w:flipDecoy.w ?? desiredPaddleWidth(), h:flipDecoy.h ?? paddle.h}
+      : null;
+    const pr=ghost || prActual;
     const L=layout();
     let x, y;
     let baseRect=null;
@@ -2731,7 +2735,11 @@ select optgroup { color: #0b1022; }
 
   function startDemonBladeHell(now){
     if(!demonBoss) return;
-    const pr=paddleRect();
+    const prActual=paddleRect();
+    const ghost=flipDecoy?.active
+      ? {x:flipDecoy.x, y:flipDecoy.y, w:flipDecoy.w ?? desiredPaddleWidth(), h:flipDecoy.h ?? paddle.h}
+      : null;
+    const pr=ghost || prActual;
     const L=layout();
     const targetX=(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):(demonBoss.x||550);
     const normalBase=demonBoss.normalBaseY ?? demonBoss.baseY;
@@ -2799,7 +2807,11 @@ select optgroup { color: #0b1022; }
     if(!demonAttackActive || demonAttackActive.type!=='bladeHell' || !demonBoss) return;
     const attack=demonAttackActive;
     const lerp=1-Math.pow(0.001, dt/16);
-    const pr=paddleRect();
+    const prActual=paddleRect();
+    const ghost=flipDecoy?.active
+      ? {x:flipDecoy.x, y:flipDecoy.y, w:flipDecoy.w ?? desiredPaddleWidth(), h:flipDecoy.h ?? paddle.h}
+      : null;
+    const pr=ghost || prActual;
     const normalBase=demonBoss.normalBaseY ?? demonBoss.baseY;
     const desiredX=(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):attack.targetX;
     if(attack.stage==='windup'){
@@ -4884,7 +4896,7 @@ select optgroup { color: #0b1022; }
   }
 
   function spawnLionBeamFrom(x,y){
-    const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
+    const {x:tx, y:ty}=getPaddleTarget();
     const ang=Math.atan2(ty-y, tx-x); const speed=6.0;
     hostileBeams.push({x:x, y:y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); screenShake=Math.max(screenShake,6); }});
     beep(1100,0.12,0.08);
@@ -4893,7 +4905,7 @@ select optgroup { color: #0b1022; }
     const bc=bossCenter(); if(!bc) return;
     bossChargeColor='255,215,90'; bossChargeUntil=performance.now()+2000;
     setTimeout(()=>{
-      const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
+      const {x:tx, y:ty}=getPaddleTarget();
       const ang=Math.atan2(ty-bc.y, tx-bc.x); const speed=6.0;
       hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'gold', hit:false, onHit:(pr)=>{ paddle.w = Math.max(60, paddle.w - 20); screenShake=Math.max(screenShake,6); }});
       beep(1100,0.12,0.08);
@@ -4903,7 +4915,7 @@ select optgroup { color: #0b1022; }
     const bc=bossCenter(); if(!bc) return;
     bossChargeColor='210,210,255'; bossChargeUntil=performance.now()+2000;
     setTimeout(()=>{
-      const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
+      const {x:tx, y:ty}=getPaddleTarget();
       const ang=Math.atan2(ty-bc.y, tx-bc.x);
       const speed=4.5;
       hostileArcs.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, phase:0, amp:32, color:'silver', onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); screenShake=Math.max(screenShake,10); }});
@@ -5077,10 +5089,12 @@ select optgroup { color: #0b1022; }
       if(state.phase==='firing' && now>=state.fireNext){
         const orb=dragonDeathRayOrbs.shift();
         if(orb){
-          const pr=paddleRect();
+          const targetInfo=getPaddleTarget();
+          const aimX=targetInfo.x;
+          const aimY=targetInfo.y;
           let target=state.lockedTarget;
           if(!target || now>=paddleGoneUntil){
-            target={x:pr.x+pr.w/2, y:pr.y+pr.h/2};
+            target={x:aimX, y:aimY};
             state.lockedTarget={...target};
           }
           dragonDeathRayBeams.push({
@@ -5215,7 +5229,7 @@ select optgroup { color: #0b1022; }
     const bc=bossCenter(); if(!bc) return;
     bossChargeColor='255,60,80'; bossChargeUntil=performance.now()+2000;
     setTimeout(()=>{
-      const pr=paddleRect(); const tx=pr.x+pr.w/2, ty=pr.y+pr.h/2;
+      const {x:tx, y:ty}=getPaddleTarget();
       const ang=Math.atan2(ty-bc.y, tx-bc.x); const speed=7.2;
       hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'red', hit:false, onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); screenShake=Math.max(screenShake,12); }});
       beep(600,0.14,0.09);
@@ -7028,7 +7042,9 @@ select optgroup { color: #0b1022; }
     }else{
       demonBoss.hitCooldownUntil=now+140;
     }
+    const prevHp=demonBoss.hp;
     demonBoss.hp=Math.max(0, demonBoss.hp-amount);
+    if(demonBoss.hp<prevHp){ incrementCombo(); }
     if(source==='ball'){
       addScore(BOSS_HIT_SCORE);
       updateHUD();
@@ -7337,8 +7353,7 @@ select optgroup { color: #0b1022; }
           demonBoss.baseY -= Math.min(demonBoss.baseY - desiredBase, step);
         }
         if(demonBoss.mode==='low'){
-          const pr=paddleRect();
-          const targetX = pr.x + pr.w/2;
+          const {x:targetX} = getPaddleTarget();
           const chaseSpeed = Math.min(0.26, (dt/1000)*0.9);
           demonBoss.x += (targetX - demonBoss.x)*chaseSpeed;
           demonBoss.nextMove = now + 200;
@@ -7695,6 +7710,7 @@ select optgroup { color: #0b1022; }
   let orientLeft=false; // true 時改為左側擋板模式
   let paddleStunUntil=0;
   let paddleGoneUntil=0;
+  let flipDecoy=null;
 
 
   function spawnParticles(x,y,color,count=10,spread=1.6,speed=3,size=3){
@@ -8730,7 +8746,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const dmg = amount>0 ? 1 : 0;
     if(!dmg) return false;
     spaceBoss.hitCooldownUntil = now + 140;
+    const prevHp=spaceBoss.hp;
     spaceBoss.hp = Math.max(0, spaceBoss.hp - dmg);
+    if(spaceBoss.hp<prevHp){ incrementCombo(); }
     if(source==='ball'){
       addScore(BOSS_HIT_SCORE);
       updateHUD();
@@ -8811,14 +8829,14 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       sb.thrusterPhase = (sb.thrusterPhase||0) + 0.08;
       const atkMode = spaceBossAttack?.mode;
       const atkState = spaceBossAttack?.state;
-      const pr = paddleRect();
+      const {rect:pr, x:targetX, y:targetY} = getPaddleTarget();
       for(const gun of sb.guns){
         gun.spin=(gun.spin||0)+0.28;
         if(atkMode===1 && atkState==='firing'){
           const gx = sb.x + gun.offsetX;
           const gy = sb.y + gun.offsetY;
-          const tx = pr.x + pr.w/2;
-          const ty = pr.y + pr.h/2;
+          const tx = targetX;
+          const ty = targetY;
           const dir = Math.atan2(ty-gy, tx-gx);
           gun.angle = dir + Math.PI/2;
         }else{
@@ -8890,7 +8908,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
 
   function startSpaceBossAttack(mode, now){
     if(!spaceBoss) return;
-    const pr=paddleRect();
+    const {rect:pr, x:targetX, y:targetY}=getPaddleTarget();
     spaceBossNextAttackAt=0;
     if(mode===1){
       spaceBossAttack={
@@ -8905,7 +8923,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       spaceBossMarquee={text:'危險！ 太空戰艦即將進行火力壓制!', start:now, fadeStart:now+3000, end:now+3200, style:'alert', countdownDuration:3000};
       playSFX('spaceBossVolleyCharge');
     }else{
-      const baseTarget={x:pr.x+pr.w/2, y:pr.y+pr.h/2};
+      const baseTarget={x:targetX, y:targetY};
       const movement=spaceBossLastPaddleCenter-spaceBossPrevPaddleCenter;
       let dir=0;
       if(Math.abs(movement)>1){ dir = movement>0?1:-1; }
@@ -8962,10 +8980,10 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
         return;
       }
       if(now-atk.lastShot>=SPACE_BOSS_GUN_FIRE_RATE){
-        const pr=paddleRect();
-        let tx=pr.x+pr.w/2;
-        let ty=pr.y+pr.h/2;
-        if(pr.w<=0 || pr.h<=0){
+        const {rect:pr, x:targetX, y:targetY}=getPaddleTarget();
+        let tx=targetX;
+        let ty=targetY;
+        if((pr.w<=0 || pr.h<=0) && !flipDecoy?.active){
           tx = spaceBossLastPaddleCenter || 1100/2;
           ty = 700-50;
         }
@@ -9865,9 +9883,7 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
       if(now>=state.countdownEnd){
         state.stage='projectile';
         if(reaperBoss){
-          const pr=paddleRect();
-          const targetX=pr.x+pr.w/2;
-          const targetY=pr.y+pr.h/2;
+          const {x:targetX, y:targetY}=getPaddleTarget();
           const startX=reaperBoss.x;
           const startY=reaperBoss.y-reaperBoss.h*0.2;
           const dx=targetX-startX;
@@ -9967,7 +9983,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const dmg = amount>0?1:0;
     if(!dmg) return false;
     reaperBoss.hitCooldownUntil = now + 160;
+    const prevHp=reaperBoss.hp;
     reaperBoss.hp = Math.max(0, reaperBoss.hp - dmg);
+    if(reaperBoss.hp<prevHp){ incrementCombo(); }
     if(source==='ball'){
       addScore(BOSS_HIT_SCORE);
       updateHUD();
@@ -10941,7 +10959,9 @@ let balls=[]; function makeBall(stuck=false,x=null){ return {x:x??(1100/2),y:700
     const now=performance.now();
     if(dragonBoss.hitCooldownUntil && now<dragonBoss.hitCooldownUntil) return false;
     dragonBoss.hitCooldownUntil=now+140;
+    const prevHp=dragonBoss.hp;
     dragonBoss.hp=Math.max(0, dragonBoss.hp-amount);
+    if(dragonBoss.hp<prevHp){ incrementCombo(); }
     if(source==='ball'){
       addScore(BOSS_HIT_SCORE);
       updateHUD();
@@ -13456,6 +13476,7 @@ function generateLevel(lv, L){
     holyFlashes.length=0;
     phoenixAnim=null;
     fireBursts.length=0;
+    fireExplosions.length=0;
     demonBloodEffects.length=0;
     forceReleaseBladeHellBall();
     demonBladeHellTelegraphs.length=0;
@@ -13464,6 +13485,23 @@ function generateLevel(lv, L){
     demonBladeHellCounterstrike=null;
     demonBladeHellBallCapture=null;
     demonBladeHellPlatformGlow=0;
+    swords.length=0;
+    swordFireStart=0;
+    nextSwordFire=0;
+    stormTurret=null;
+    gatling=null;
+    gatlingBullets.length=0;
+    missiles.length=0;
+    blackHoles.length=0;
+    laserBeams.length=0;
+    laserImpacts.length=0;
+    hostileBeams.length=0;
+    hostileArcs.length=0;
+    hostileColumns.length=0;
+    hazardClouds.length=0;
+    lockBoxes.length=0;
+    annihilSparks.length=0;
+    flipDecoy=null;
     fireEnergy=0; updateFireEnergy();
     // 回復天地翻轉狀態及暫停計時器
     orientLeft=false;
@@ -13834,6 +13872,23 @@ function generateLevel(lv, L){
       const x = 40; // 與牆距
       return {x:x, y:Math.max(0, Math.min(700-len, paddle.y)), w:thick, h:len};
     }
+  }
+
+  function getPaddleTarget(pr=null){
+    const rect = pr || paddleRect();
+    let targetX = rect.x + rect.w/2;
+    let targetY = rect.y + rect.h/2;
+    if(rect.w<=0 || rect.h<=0){
+      targetX = flipDecoy?.x != null ? flipDecoy.x + (flipDecoy.w ?? paddle.w)/2 : 1100/2;
+      targetY = flipDecoy?.y != null ? flipDecoy.y + (flipDecoy.h ?? paddle.h)/2 : 700 - 50;
+    }
+    if(flipDecoy?.active){
+      const w = flipDecoy.w ?? paddle.w;
+      const h = flipDecoy.h ?? paddle.h;
+      targetX = flipDecoy.x + w/2;
+      targetY = flipDecoy.y + h/2;
+    }
+    return {rect, x:targetX, y:targetY};
   }
   // === 背景裝飾 & LED 燈條 ===
   function ledColor(){
@@ -14263,6 +14318,24 @@ function generateLevel(lv, L){
     const pr=paddleRect();
     const nowPad=performance.now();
     if(nowPad>=paddleGoneUntil){
+      if(flipDecoy?.active){
+        const ghost=flipDecoy;
+        const gw=(ghost.w ?? paddle.w);
+        const gh=(ghost.h ?? paddle.h);
+        const glowAlpha=0.35 + 0.25*Math.sin(nowPad/180);
+        ctx.save();
+        ctx.globalAlpha=glowAlpha;
+        drawRoundedRect(ghost.x, ghost.y, gw, gh, 10);
+        const baseGrad=ctx.createLinearGradient(ghost.x*scaleX, (ghost.y-6)*scaleY, ghost.x*scaleX, (ghost.y+gh+6)*scaleY);
+        baseGrad.addColorStop(0,'rgba(200,220,255,0.45)');
+        baseGrad.addColorStop(1,'rgba(160,190,255,0.2)');
+        ctx.fillStyle=baseGrad;
+        ctx.fill();
+        ctx.lineWidth=2*Math.min(scaleX,scaleY);
+        ctx.strokeStyle='rgba(220,235,255,0.45)';
+        ctx.stroke();
+        ctx.restore();
+      }
       const padGlow=buffs.STICKY.active?'rgba(120,230,220,.6)':((buffs.WIDE.active||buffs.LONG.stacks.length)?'rgba(120,170,255,.6)':'rgba(200,210,255,.4)');
       ctx.shadowColor=padGlow; ctx.shadowBlur=20;
       const padW=pr.w*scaleX, padH=pr.h*scaleY;
@@ -14881,6 +14954,16 @@ function generateLevel(lv, L){
         f.active = true;
         // 更新 until 供 HUD 顯示
         if(f.endAt) f.until = f.endAt;
+        const decoyW = paddle.w;
+        const decoyH = paddle.h;
+        flipDecoy = {
+          active:true,
+          x:1100/2 - decoyW/2,
+          y:700 - 50,
+          w:decoyW,
+          h:decoyH,
+          until:f.endAt
+        };
         // 切換為左側模式
         orientLeft = true;
         // 將擋板置於畫面中央（垂直模式）
@@ -14901,11 +14984,19 @@ function generateLevel(lv, L){
         // 加入鎖定框提示擋板位置
         pushLockBox(pr.x, pr.y, pr.w, pr.h, 'paddle');
       }
+      if(f.active && flipDecoy?.active){
+        flipDecoy.w = paddle.w;
+        flipDecoy.h = paddle.h;
+        flipDecoy.x = 1100/2 - flipDecoy.w/2;
+        flipDecoy.y = 700 - 50;
+        flipDecoy.until = f.endAt;
+      }
       // 結束翻轉：active 狀態到期後恢復正常
       if(f.active && f.endAt && now >= f.endAt){
         f.active = false;
         // 重置 until
         f.until = 0;
+        flipDecoy=null;
         // 恢復水平方向
         orientLeft = false;
         // 擋板置於底部中央
@@ -14926,6 +15017,9 @@ function generateLevel(lv, L){
         // 顯示鎖定框
         pushLockBox(pr2.x, pr2.y, pr2.w, pr2.h, 'paddle');
       }
+    }
+    else if(flipDecoy){
+      flipDecoy=null;
     }
 
 
@@ -15074,11 +15168,6 @@ function generateLevel(lv, L){
       if(buffs.WAVY.active){ const w=GAME_CONFIG.powers.WAVY.wavy||{amp:0.6,base:1.2,periodMs:200}; const phase=(now-(buffs.WAVY.start||now))/(w.periodMs); mul*=(w.base+w.amp*Math.sin(phase)); }
       if(buffs.HELL.active){ mul*=(GAME_CONFIG.powers.HELL.hell.speedMul); }
       if(buffs.MEGA.active){ mul*=(GAME_CONFIG.powers.MEGA.mega.speedMul); }
-      if(buffs.ANNIHIL.active){
-        const t=Math.min(1,(now-buffs.ANNIHIL.start)/10000);
-        const maxMul=GAME_CONFIG.powers.ANNIHIL.annihil.speedMul||3;
-        mul*=1+t*(maxMul-1);
-      }
 
       // 天地翻轉：啟動前 2 秒與結束前 2 秒期間略微減速（降低不適感）
       const f = buffs.FLIP;
@@ -15617,8 +15706,9 @@ function generateLevel(lv, L){
 
     {
       const prNow = paddleRect();
+      const {x:centerX} = getPaddleTarget(prNow);
       spaceBossPrevPaddleCenter = spaceBossLastPaddleCenter;
-      spaceBossLastPaddleCenter = prNow.x + prNow.w/2;
+      spaceBossLastPaddleCenter = centerX;
     }
 
         // 天空定時掉落
