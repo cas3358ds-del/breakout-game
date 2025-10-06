@@ -3142,6 +3142,7 @@ select optgroup { color: #0b1022; }
       bossAnchorX:demonBoss.x,
       bossAnchorY:demonBoss.baseY,
       hideBoss:false,
+      minBaseClamp:stageTop-360,
       evaluated:false,
       resolveAt:0,
       result:null,
@@ -7274,7 +7275,17 @@ select optgroup { color: #0b1022; }
       demonBoss.x = Math.max(minX, Math.min(maxX, demonBoss.x));
       const minBase=Math.min(normalBase, lowBase) - 100;
       const maxBase=Math.max(normalBase, lowBase) + 140;
-      demonBoss.baseY = Math.max(L.top+80, Math.min(maxBase, demonBoss.baseY));
+      let minBaseClamp=L.top+80;
+      if(attack && attack.overrideMovement){
+        if(attack.minBaseClamp!=null){
+          minBaseClamp = attack.minBaseClamp;
+        }else if(attack.type==='abyssShatter'){
+          const vanishY = attack.bossVanishY!=null ? attack.bossVanishY : (attack.bossDepartTo-80);
+          const offscreenY = attack.bossOffscreenY!=null ? attack.bossOffscreenY : (vanishY-120);
+          minBaseClamp = Math.min(minBaseClamp, vanishY, offscreenY);
+        }
+      }
+      demonBoss.baseY = Math.max(minBaseClamp, Math.min(maxBase, demonBoss.baseY));
       if(demonBoss.mode!=='low' && demonBoss.mode!=='bloodDrain'){
         if(now - (demonBoss.lastKnockbackAt||0) > DEMON_LOW_KNOCKBACK_WINDOW){
           demonBoss.lowKnockbacks=0;
