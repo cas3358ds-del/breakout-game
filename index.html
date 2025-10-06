@@ -3951,6 +3951,8 @@ select optgroup { color: #0b1022; }
     if(level!==20) return;
     const attack=(demonAttackActive && demonAttackActive.type==='abyssShatter')?demonAttackActive:null;
     if(!attack && !demonAbyssBricks.length && !demonAbyssExplosions.length) return;
+    const L=layout();
+    const stageTop=L.top;
     const scaleAvg=(scaleX+scaleY)/2;
     const dims=getStandardBrickDimensions();
     const baseBrickW=dims.width;
@@ -4431,6 +4433,22 @@ select optgroup { color: #0b1022; }
       ctx.arc(cx, cy, radius, 0, Math.PI*2);
       ctx.fill();
       ctx.restore();
+    }
+    if(attack && attack.stage==='countdown' && attack.countdownEnd){
+      const remain=Math.max(0, attack.countdownEnd-now);
+      if(remain>0){
+        const seconds=Math.max(1, Math.ceil(remain/1000));
+        ctx.save();
+        ctx.fillStyle='rgba(210,40,80,0.92)';
+        const font=Math.max(42, Math.round(56*scaleAvg));
+        ctx.font=`${font}px 'Playfair Display','Noto Sans TC',serif`;
+        ctx.textAlign='center';
+        ctx.textBaseline='top';
+        ctx.shadowColor='rgba(255,80,120,0.55)';
+        ctx.shadowBlur=24*scaleAvg;
+        ctx.fillText(String(seconds), (1100/2)*scaleX, Math.max(8, stageTop-48)*scaleY);
+        ctx.restore();
+      }
     }
   }
 
