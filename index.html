@@ -1831,6 +1831,7 @@ select optgroup { color: #0b1022; }
   let demonAbyssBrickId=0;
   const demonAbyssExplosions=[];
   let currentPaddleTint='#9aaeff';
+  const lastPaddleDrawState={ axis:null, time:0, vertical:false };
   const DEMON_DESCENT_DURATION=20000;
   const DEMON_ASCENT_DURATION=2600;
   const DEMON_RECOVERY_DURATION=4000;
@@ -15005,7 +15006,18 @@ function generateLevel(lv, L){
       let ang=0;
       if(buffs.PADSPIN.active){ const period=GAME_CONFIG.powers.PADSPIN.spin.periodMs||8000; ang=((nowPad-(buffs.PADSPIN.start||nowPad))%period)/period*2*Math.PI; }
       ctx.rotate(ang);
-      const isInfiniteCastle = window.currentSkin && window.currentSkin.cssSkin === '和風．無限之城';
+      const padSkinName = window.currentSkin?.cssSkin || '';
+      const isInfiniteCastle = padSkinName === '和風．無限之城';
+      const isCyborg = padSkinName === '科技．賽博格綠';
+      const isPhantom = padSkinName === '科技．魅影幻彩';
+      const isCosmos = padSkinName === '宇宙．星辰絮語';
+      const isAurora = padSkinName === '冰雪．極光絲綢';
+      const isVerticalAxis = padH>padW;
+      const axisCenter = isVerticalAxis ? (pr.y+pr.h/2) : (pr.x+pr.w/2);
+      let axisDelta=0;
+      if(lastPaddleDrawState.axis!=null && lastPaddleDrawState.vertical===isVerticalAxis && nowPad-lastPaddleDrawState.time<180){
+        axisDelta=axisCenter-lastPaddleDrawState.axis;
+      }
       const drawPadShape = () => {
         ctx.beginPath();
         ctx.moveTo(-padW/2 + r, -padH/2);
@@ -15027,6 +15039,61 @@ function generateLevel(lv, L){
         depthGrad.addColorStop(1,'#281006');
         padFill = depthGrad;
         padBaseColor = '#c6914a';
+        currentPaddleTint=padBaseColor;
+      } else if(isCyborg){
+        const pulse=0.6+0.4*Math.sin(nowPad/260);
+        ctx.shadowColor=`rgba(0,255,190,${0.25+0.35*pulse})`;
+        ctx.shadowBlur=26+14*pulse;
+        const hull=ctx.createLinearGradient(-padW/2,0,padW/2,0);
+        hull.addColorStop(0,'#001810');
+        hull.addColorStop(0.18,'#00331f');
+        hull.addColorStop(0.5,`rgba(0,90,60,${0.92+0.05*pulse})`);
+        hull.addColorStop(0.82,'#00331f');
+        hull.addColorStop(1,'#001810');
+        padFill=hull;
+        padBaseColor='#00f2a0';
+        currentPaddleTint=padBaseColor;
+      } else if(isPhantom){
+        const shimmer=0.45+0.55*Math.sin(nowPad/220);
+        const hueBase=(nowPad/900*180)%360;
+        const glowHue=(hueBase+60)%360;
+        ctx.shadowColor=`hsla(${glowHue},85%,68%,${0.25+0.35*shimmer})`;
+        ctx.shadowBlur=24+16*shimmer;
+        const neon=ctx.createLinearGradient(-padW/2,-padH*0.35,padW/2,padH*0.35);
+        for(let i=0;i<=6;i++){
+          const stop=i/6;
+          const hue=(hueBase+i*52)%360;
+          const light=58+12*Math.sin(nowPad/180+i);
+          neon.addColorStop(stop,`hsl(${hue},90%,${light}%)`);
+        }
+        padFill=neon;
+        padBaseColor='hsl('+((hueBase+180)%360)+',80%,60%)';
+        currentPaddleTint=padBaseColor;
+      } else if(isCosmos){
+        const glow=0.45+0.3*Math.sin(nowPad/320);
+        ctx.shadowColor=`rgba(130,170,255,${0.25+0.3*glow})`;
+        ctx.shadowBlur=24+12*glow;
+        const hull=ctx.createLinearGradient(0,-padH/2,0,padH/2);
+        hull.addColorStop(0,'#0d1425');
+        hull.addColorStop(0.32,'#192238');
+        hull.addColorStop(0.5,'#24314d');
+        hull.addColorStop(0.68,'#192238');
+        hull.addColorStop(1,'#0b1221');
+        padFill=hull;
+        padBaseColor='#5f7dff';
+        currentPaddleTint=padBaseColor;
+      } else if(isAurora){
+        const frost=0.55+0.45*Math.sin(nowPad/340);
+        ctx.shadowColor=`rgba(200,230,255,${0.28+0.32*frost})`;
+        ctx.shadowBlur=24+14*frost;
+        const ice=ctx.createLinearGradient(0,-padH/2,0,padH/2);
+        ice.addColorStop(0,'#f2fdff');
+        ice.addColorStop(0.28,'#d2efff');
+        ice.addColorStop(0.55,'#b5dbff');
+        ice.addColorStop(0.85,'#d8f1ff');
+        ice.addColorStop(1,'#f5feff');
+        padFill=ice;
+        padBaseColor='#cfe9ff';
         currentPaddleTint=padBaseColor;
       }
       if(buffs.PADBOOM.active && !buffs.PADBOOM.exploded){ ctx.globalAlpha=0.5+0.5*Math.sin(nowPad/100); }
@@ -15129,6 +15196,269 @@ function generateLevel(lv, L){
         ctx.setLineDash([Math.max(6, 12*scaleUnit), Math.max(14, 24*scaleUnit)]);
         ctx.stroke();
         ctx.setLineDash([]);
+      } else if(isCyborg){
+        const pulse=0.6+0.4*Math.sin(nowPad/260);
+        ctx.save();
+        drawPadShape();
+        ctx.clip();
+        const glow=ctx.createLinearGradient(0,-padH/2,0,padH/2);
+        glow.addColorStop(0,'rgba(0,255,180,0.15)');
+        glow.addColorStop(0.5,`rgba(0,255,200,${0.25+0.2*pulse})`);
+        glow.addColorStop(1,'rgba(0,120,80,0.12)');
+        ctx.fillStyle=glow;
+        ctx.fillRect(-padW/2,-padH/2,padW,padH);
+        const gridX=Math.max(18*scaleUnit, padW/10);
+        const gridY=Math.max(12*scaleUnit, padH/3);
+        ctx.lineWidth=Math.max(1,1.4*scaleUnit);
+        ctx.strokeStyle=`rgba(0,255,190,${0.1+0.18*pulse})`;
+        for(let x=-padW/2+gridX;x<padW/2;x+=gridX){
+          ctx.beginPath();
+          ctx.moveTo(x,-padH/2);
+          ctx.lineTo(x,padH/2);
+          ctx.stroke();
+        }
+        for(let y=-padH/2+gridY;y<padH/2;y+=gridY){
+          ctx.beginPath();
+          ctx.moveTo(-padW/2,y);
+          ctx.lineTo(padW/2,y);
+          ctx.stroke();
+        }
+        const nodes=[];
+        for(let x=-padW/2+gridX;x<padW/2;x+=gridX){
+          for(let y=-padH/2+gridY;y<padH/2;y+=gridY){ nodes.push([x,y]); }
+        }
+        ctx.fillStyle=`rgba(0,255,210,${0.35+0.25*pulse})`;
+        const nodeR=Math.max(1.8,2.6*scaleUnit);
+        for(const [nx,ny] of nodes){
+          ctx.beginPath();
+          ctx.arc(nx,ny,nodeR,0,Math.PI*2);
+          ctx.fill();
+        }
+        const scanWidth=Math.max(10*scaleUnit,padW*0.12);
+        const scanPos=-padW/2+((nowPad%1600)/1600)*padW;
+        const scan=ctx.createLinearGradient(scanPos-scanWidth, -padH/2, scanPos+scanWidth, padH/2);
+        scan.addColorStop(0,'rgba(0,255,200,0)');
+        scan.addColorStop(0.5,`rgba(0,255,210,${0.25+0.2*pulse})`);
+        scan.addColorStop(1,'rgba(0,255,200,0)');
+        ctx.globalCompositeOperation='lighter';
+        ctx.fillStyle=scan;
+        ctx.fillRect(-padW/2,-padH/2,padW,padH);
+        ctx.globalCompositeOperation='source-over';
+        ctx.restore();
+        drawPadShape();
+        ctx.lineWidth=Math.max(1.4,2.2*scaleUnit);
+        ctx.strokeStyle=`rgba(0,255,210,${0.35+0.25*pulse})`;
+        ctx.stroke();
+        drawPadShape();
+        ctx.lineWidth=Math.max(0.8,1.2*scaleUnit);
+        ctx.strokeStyle='rgba(0,80,60,0.55)';
+        ctx.stroke();
+      } else if(isPhantom){
+        const shimmer=0.45+0.55*Math.sin(nowPad/220);
+        const hueBase=(nowPad/900*180)%360;
+        ctx.save();
+        drawPadShape();
+        ctx.clip();
+        const aura=ctx.createRadialGradient(0,0,padH*0.18,0,0,padW*0.78);
+        aura.addColorStop(0,'rgba(255,255,255,0.25)');
+        aura.addColorStop(0.45,'rgba(255,255,255,0.1)');
+        aura.addColorStop(1,'rgba(120,100,255,0.15)');
+        ctx.globalCompositeOperation='lighter';
+        ctx.fillStyle=aura;
+        ctx.fillRect(-padW/2,-padH/2,padW,padH);
+        ctx.globalCompositeOperation='source-over';
+        const stripeSpacing=Math.max(22*scaleUnit,padW/8);
+        ctx.lineWidth=Math.max(2.2,3*scaleUnit);
+        for(let i=-padW;i<=padW;i+=stripeSpacing){
+          const alpha=0.08+0.08*Math.sin(nowPad/180+i*0.08);
+          ctx.strokeStyle=`rgba(255,255,255,${alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(i-padH/2,-padH/2);
+          ctx.lineTo(i+padH/2,padH/2);
+          ctx.stroke();
+        }
+        const ribbonCount=4;
+        for(let i=0;i<ribbonCount;i++){
+          const offset=((nowPad/1400)+i*0.25)%1;
+          const centerX=-padW/2+offset*padW;
+          const width=Math.max(padW*0.08,16*scaleUnit);
+          const ribbon=ctx.createLinearGradient(centerX-width,-padH/2,centerX+width,padH/2);
+          ribbon.addColorStop(0,'rgba(255,255,255,0)');
+          ribbon.addColorStop(0.5,`hsla(${(hueBase+i*80)%360},100%,70%,${0.28+0.18*shimmer})`);
+          ribbon.addColorStop(1,'rgba(255,255,255,0)');
+          ctx.globalCompositeOperation='lighter';
+          ctx.fillStyle=ribbon;
+          ctx.fillRect(-padW/2,-padH/2,padW,padH);
+        }
+        ctx.globalCompositeOperation='source-over';
+        ctx.restore();
+        drawPadShape();
+        ctx.lineWidth=Math.max(1.6,2.4*scaleUnit);
+        ctx.strokeStyle=`rgba(255,255,255,${0.55+0.25*shimmer})`;
+        ctx.stroke();
+        drawPadShape();
+        ctx.lineWidth=Math.max(2.4,3.2*scaleUnit);
+        ctx.strokeStyle=`hsla(${(hueBase+220)%360},80%,60%,${0.3+0.25*shimmer})`;
+        ctx.stroke();
+      } else if(isCosmos){
+        const glow=0.45+0.3*Math.sin(nowPad/320);
+        ctx.save();
+        drawPadShape();
+        ctx.clip();
+        const inner=ctx.createLinearGradient(-padW/2,0,padW/2,0);
+        inner.addColorStop(0,'rgba(40,60,110,0.12)');
+        inner.addColorStop(0.5,'rgba(140,170,255,0.2)');
+        inner.addColorStop(1,'rgba(40,60,110,0.12)');
+        ctx.fillStyle=inner;
+        ctx.fillRect(-padW/2,-padH/2,padW,padH);
+        const plating=Math.max(3,Math.round(padW/(80*scaleUnit)));
+        ctx.lineWidth=Math.max(1.2,1.8*scaleUnit);
+        ctx.strokeStyle='rgba(140,180,255,0.18)';
+        for(let i=1;i<plating;i++){
+          const x=-padW/2+(padW/plating)*i;
+          ctx.beginPath();
+          ctx.moveTo(x,-padH/2);
+          ctx.lineTo(x,padH/2);
+          ctx.stroke();
+        }
+        const windowRows=Math.max(1,Math.round(padH/(30*scaleUnit)));
+        const windowCols=Math.max(3,Math.round(padW/(90*scaleUnit)));
+        const windowW=Math.min(18*scaleUnit,padW/(windowCols*3));
+        const windowH=Math.min(8*scaleUnit,padH/(windowRows*3));
+        const windowGapX=padW/(windowCols+1);
+        const windowGapY=padH/(windowRows+1);
+        ctx.fillStyle=`rgba(160,200,255,${0.4+0.2*glow})`;
+        for(let r=0;r<windowRows;r++){
+          const y=-padH/2+(r+1)*windowGapY;
+          for(let c=0;c<windowCols;c++){
+            const x=-padW/2+(c+1)*windowGapX;
+            ctx.fillRect(x-windowW/2,y-windowH/2,windowW,windowH);
+          }
+        }
+        ctx.restore();
+        drawPadShape();
+        ctx.lineWidth=Math.max(1.6,2.3*scaleUnit);
+        ctx.strokeStyle=`rgba(150,190,255,${0.32+0.18*glow})`;
+        ctx.stroke();
+        const thrusterWidth=isVerticalAxis?Math.min(padW*0.55,28*scaleUnit):Math.min(padH*0.7,28*scaleUnit);
+        const thrusterDepth=Math.min((isVerticalAxis?padH:padW)*0.18,46*scaleUnit);
+        const thrusterBevel=Math.max(6*scaleUnit,thrusterWidth*0.35);
+        const drawThruster=(dir)=>{
+          ctx.save();
+          if(isVerticalAxis){ ctx.translate(0,dir*padH/2); }
+          else { ctx.translate(dir*padW/2,0); }
+          ctx.beginPath();
+          if(isVerticalAxis){
+            ctx.moveTo(-thrusterWidth/2,0);
+            ctx.lineTo(-thrusterWidth/2+thrusterBevel,dir*thrusterDepth);
+            ctx.lineTo(thrusterWidth/2-thrusterBevel,dir*thrusterDepth);
+            ctx.lineTo(thrusterWidth/2,0);
+          } else {
+            ctx.moveTo(0,-thrusterWidth/2);
+            ctx.lineTo(dir*thrusterDepth,-thrusterWidth/2+thrusterBevel);
+            ctx.lineTo(dir*thrusterDepth,thrusterWidth/2-thrusterBevel);
+            ctx.lineTo(0,thrusterWidth/2);
+          }
+          ctx.closePath();
+          const housing=isVerticalAxis
+            ? ctx.createLinearGradient(-thrusterWidth/2,0,thrusterWidth/2,0)
+            : ctx.createLinearGradient(0,-thrusterWidth/2,0,thrusterWidth/2);
+          housing.addColorStop(0,'#1a2438');
+          housing.addColorStop(0.5,'#23324f');
+          housing.addColorStop(1,'#10182a');
+          ctx.fillStyle=housing;
+          ctx.fill();
+          ctx.lineWidth=Math.max(1.2,1.6*scaleUnit);
+          ctx.strokeStyle='rgba(160,200,255,0.35)';
+          ctx.stroke();
+          ctx.restore();
+        };
+        const drawFlame=(dir,active)=>{
+          if(!active) return;
+          const speed=Math.min(1,Math.abs(axisDelta)/8);
+          const flicker=0.7+0.3*Math.sin(nowPad/90+dir*1.4);
+          const length=thrusterDepth*(1.1+0.6*speed*flicker);
+          ctx.save();
+          if(isVerticalAxis){ ctx.translate(0,dir*padH/2); }
+          else { ctx.translate(dir*padW/2,0); }
+          ctx.globalCompositeOperation='lighter';
+          if(isVerticalAxis){
+            ctx.beginPath();
+            ctx.moveTo(-thrusterWidth*0.28,0);
+            ctx.quadraticCurveTo(0,dir*length*0.3,0,dir*length);
+            ctx.quadraticCurveTo(0,dir*length*0.3,thrusterWidth*0.28,0);
+          } else {
+            ctx.beginPath();
+            ctx.moveTo(0,-thrusterWidth*0.28);
+            ctx.quadraticCurveTo(dir*length*0.3,0,dir*length,0);
+            ctx.quadraticCurveTo(dir*length*0.3,0,0,thrusterWidth*0.28);
+          }
+          const grad=isVerticalAxis?ctx.createLinearGradient(0,0,0,dir*length):ctx.createLinearGradient(0,0,dir*length,0);
+          grad.addColorStop(0,`rgba(120,200,255,${0.4+0.3*speed})`);
+          grad.addColorStop(0.6,`rgba(80,160,255,${0.25+0.25*speed})`);
+          grad.addColorStop(1,'rgba(0,0,0,0)');
+          ctx.fillStyle=grad;
+          ctx.shadowColor=`rgba(120,200,255,${0.5*speed})`;
+          ctx.shadowBlur=24*speed;
+          ctx.fill();
+          ctx.restore();
+        };
+        drawThruster(-1);
+        drawThruster(1);
+        if(isVerticalAxis){
+          drawFlame(-1, axisDelta>0.2);
+          drawFlame(1, axisDelta<-0.2);
+        } else {
+          drawFlame(-1, axisDelta>0.2);
+          drawFlame(1, axisDelta<-0.2);
+        }
+      } else if(isAurora){
+        const frost=0.55+0.45*Math.sin(nowPad/340);
+        ctx.save();
+        drawPadShape();
+        ctx.clip();
+        const sheenCount=3;
+        for(let i=0;i<sheenCount;i++){
+          const offset=((nowPad/1800)+i*0.33)%1;
+          const center=-padW/2+offset*padW;
+          const width=Math.max(padW*0.14,22*scaleUnit);
+          const aurora=ctx.createLinearGradient(center-width,-padH/2,center+width,padH/2);
+          aurora.addColorStop(0,'rgba(255,255,255,0)');
+          aurora.addColorStop(0.5,`rgba(190,240,255,${0.18+0.18*frost})`);
+          aurora.addColorStop(1,'rgba(255,255,255,0)');
+          ctx.globalCompositeOperation='lighter';
+          ctx.fillStyle=aurora;
+          ctx.fillRect(-padW/2,-padH/2,padW,padH);
+        }
+        ctx.globalCompositeOperation='source-over';
+        const shimmer=ctx.createLinearGradient(0,-padH/2,0,padH/2);
+        shimmer.addColorStop(0,'rgba(255,255,255,0.4)');
+        shimmer.addColorStop(0.4,'rgba(180,220,255,0.1)');
+        shimmer.addColorStop(1,'rgba(100,150,200,0.18)');
+        ctx.fillStyle=shimmer;
+        ctx.fillRect(-padW/2,-padH/2,padW,padH);
+        ctx.lineWidth=Math.max(1.1,1.5*scaleUnit);
+        ctx.strokeStyle='rgba(220,240,255,0.25)';
+        ctx.beginPath();
+        ctx.moveTo(-padW*0.35,padH/2);
+        ctx.lineTo(-padW*0.15,padH*0.1);
+        ctx.lineTo(-padW*0.05,-padH*0.25);
+        ctx.lineTo(padW*0.18,-padH*0.35);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(padW*0.4,padH/2);
+        ctx.lineTo(padW*0.2,padH*0.15);
+        ctx.lineTo(padW*0.32,-padH*0.18);
+        ctx.stroke();
+        ctx.restore();
+        drawPadShape();
+        ctx.lineWidth=Math.max(1.6,2.3*scaleUnit);
+        ctx.strokeStyle=`rgba(220,240,255,${0.5+0.25*frost})`;
+        ctx.stroke();
+        drawPadShape();
+        ctx.lineWidth=Math.max(0.9,1.4*scaleUnit);
+        ctx.strokeStyle='rgba(120,180,220,0.4)';
+        ctx.stroke();
       }
       const platformHighlight=Math.max(0, Math.min(1, demonBladeHellPlatformGlow||0));
       if(platformHighlight>0){
@@ -15157,9 +15487,15 @@ function generateLevel(lv, L){
         else { const gapH=padH/3; ctx.clearRect(-padW/2, -padH/2+padH/3, padW, gapH); }
       }
       ctx.restore();
+      lastPaddleDrawState.axis=axisCenter;
+      lastPaddleDrawState.time=nowPad;
+      lastPaddleDrawState.vertical=isVerticalAxis;
       ctx.shadowBlur=0;
       if(buffs.SHIELD.active && !orientLeft){ const g=ctx.createLinearGradient(0,(700-10)*scaleY,0,700*scaleY); g.addColorStop(0,'rgba(120,220,255,0.35)'); g.addColorStop(1,'rgba(120,220,255,0.05)'); ctx.fillStyle=g; ctx.fillRect(0,(700-10)*scaleY,canvas.width,10*scaleY); }
       if(nowPad<=paddleStunUntil){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle='rgba(255,230,160,0.35)'; drawRoundedRect(pr.x,pr.y,pr.w,pr.h,8); ctx.fill(); ctx.restore(); }
+    }
+    else {
+      lastPaddleDrawState.axis=null;
     }
     // 雷射砲展示
     if(buffs.LASER.active){ ctx.fillStyle='rgba(120,255,120,0.8)'; if(!orientLeft){ ctx.fillRect((pr.x-6)*scaleX, (pr.y-4)*scaleY, 4*scaleX, (pr.h+8)*scaleY); ctx.fillRect((pr.x+pr.w+2)*scaleX, (pr.y-4)*scaleY, 4*scaleX, (pr.h+8)*scaleY); } else { ctx.fillRect((pr.x-4)*scaleX, (pr.y-6)*scaleY, (pr.w+8)*scaleX, 4*scaleY); ctx.fillRect((pr.x-4)*scaleX, (pr.y+pr.h+2)*scaleY, (pr.w+8)*scaleX, 4*scaleY); } }
