@@ -333,8 +333,14 @@
     .gameover .backdrop{position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.88));}
     .gameover .center{position:relative;z-index:2;text-align:center;background:linear-gradient(180deg, rgba(10,14,30,.85), rgba(10,14,30,.75));padding:18px 22px;border:1px solid var(--glass-stroke);border-radius:16px;box-shadow:0 20px 90px rgba(0,0,0,.5)}
     .win .backdrop{position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.88));}
-    .thumb-ring{position:absolute;inset:16px;pointer-events:none;display:grid;grid-template-columns:repeat(10,1fr);gap:6px;opacity:.95}
-    .thumb-ring img{width:100%;height:100%;object-fit:cover;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);}
+    .thumb-ring{position:absolute;inset:16px;pointer-events:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));grid-auto-rows:1fr;gap:10px;opacity:.95}
+    .thumb-ring img{width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:14px;box-shadow:0 12px 36px rgba(0,0,0,.55);transform:scale(0.92);transition:transform .4s ease;}
+    .thumb-ring img:nth-child(odd){transform:scale(0.9);}
+    .thumb-ring img:nth-child(4n){transform:scale(0.94);}
+    @media (max-width:640px){
+      .thumb-ring{inset:10px;gap:6px;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));}
+      .thumb-ring img{border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.55);}
+    }
     .win .center{position:relative;z-index:2;text-align:center;background:linear-gradient(180deg, rgba(10,14,30,.85), rgba(10,14,30,.75));padding:18px 22px;border:1px solid var(--glass-stroke);border-radius:16px;box-shadow:0 20px 90px rgba(0,0,0,.5)}
     .win h2{margin:4px 0 6px;font-size:28px;letter-spacing:2px}
     .win .small{opacity:.8;font-size:12px;margin-top:6px}
@@ -722,7 +728,7 @@ select optgroup { color: #0b1022; }
           <h2>恭喜過關！</h2>
           <div style="font-size:28px;margin:6px 0;">總分數：<span id="finalScore">0</span></div>
           <div id="statsWin" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:360px"></div>
-          <div class="small">作者： ChatGPT　／　指導者： Rock</div>
+          <div class="small">作者： GPT-5、Codex　／　指導者： Rock</div>
           <div class="again"><button class="btn" id="uploadWin">上傳排行榜</button> <button class="btn" id="againBtn">再玩一次</button></div>
         </div>
       </div>
@@ -1292,6 +1298,7 @@ select optgroup { color: #0b1022; }
   const skinSel = document.getElementById('skinSel');
   const gallery=document.getElementById('gallery'), galleryImg=document.getElementById('galleryImg'), galleryHint=document.getElementById('galleryHint'), galleryDialog=document.getElementById('galleryDialog');
   const win=document.getElementById('win'), ring=document.getElementById('ring'), finalScore=document.getElementById('finalScore'), againBtn=document.getElementById('againBtn');
+  let finalVictorySequence=null;
   document.getElementById('retryBtn')?.addEventListener('click', ()=>{ gameover.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });
 
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
@@ -1395,6 +1402,56 @@ select optgroup { color: #0b1022; }
   galleryBtn?.addEventListener('click', ()=>{
     openGalleryPage();
   }, {passive:true});
+
+  function showFinalWinOverlay(){
+    finalScore.textContent=String(score);
+    const statsEl=document.getElementById('statsWin');
+    if(statsEl) statsEl.innerHTML = renderStatsHtml();
+    ring.innerHTML='';
+    for(let i=1;i<=GAME_CONFIG.totalLevels;i++){
+      const im=getLevelImage(i);
+      if(!im) continue;
+      const th=document.createElement('img');
+      th.src=im.src;
+      th.loading='lazy';
+      ring.appendChild(th);
+    }
+    win.classList.add('show');
+    playSFX('win');
+    resetCombo();
+  }
+
+  function startFinalVictorySequence(){
+    if(finalVictorySequence) return;
+    const key=getLevelImageKey(level);
+    const img=getLevelImage(level);
+    if(img) galleryImg.src=img.src;
+    galleryDialog.style.display='none';
+    if(galleryHint) galleryHint.textContent='點一下顯示台詞 ▶';
+    gallery.style.display='flex';
+    requestAnimationFrame(()=>gallery.classList.add('show'));
+    const proceed=()=>{
+      finalVictorySequence={stage:'completed'};
+      gallery.classList.remove('show');
+      setTimeout(()=>{
+        gallery.style.display='none';
+        galleryDialog.style.display='none';
+        if(galleryHint) galleryHint.textContent='點一下顯示台詞 ▶';
+      },220);
+      showFinalWinOverlay();
+    };
+    const showLine=()=>{
+      finalVictorySequence={stage:'dialog'};
+      const dlg=getRandomDialog(key);
+      unlockDialog(key, dlg.idx);
+      galleryDialog.textContent=dlg.text;
+      galleryDialog.style.display='block';
+      if(galleryHint) galleryHint.textContent='點一下進入最終結算 ▶';
+      gallery.addEventListener('click', proceed, {once:true, passive:true});
+    };
+    finalVictorySequence={stage:'gallery'};
+    gallery.addEventListener('click', showLine, {once:true, passive:true});
+  }
 
   // === Rank page logic ===
   async function fetchLeaderboard(){
@@ -1795,6 +1852,8 @@ select optgroup { color: #0b1022; }
   let demonEventTriggeredAt=0;
   let demonEventMarquee=null;
   let demonEventWave=null;
+  let demonDeathShockwaves=[];
+  let demonDeathFlares=[];
   let demonEventRows=[];
   let demonEventNextRowAt=0;
   let demonFallingDebris=[];
@@ -7704,8 +7763,23 @@ select optgroup { color: #0b1022; }
     const centerX=demonBoss?demonBoss.x:550;
     const centerY=demonBoss?demonBoss.y:(layout().top+160);
     demonPhase='dying';
-    demonDeathAnim={start:now, duration:2200, vanishAt:now+900, lastSpark:0, centerX:centerX, centerY:centerY};
-    demonEventWave={x:centerX,y:centerY,start:now,duration:2600,maxRadius:Math.hypot(1100,700)};
+    demonDeathAnim={
+      start:now,
+      duration:2800,
+      vanishAt:now+1100,
+      lastSpark:0,
+      centerX:centerX,
+      centerY:centerY,
+      bursts:[
+        {time:0, scale:1.0, triggered:false},
+        {time:360, scale:1.18, triggered:false},
+        {time:820, scale:1.38, triggered:false},
+        {time:1400, scale:1.65, triggered:false}
+      ]
+    };
+    demonEventWave={x:centerX,y:centerY,start:now,duration:3000,maxRadius:Math.hypot(1100,700)*1.05};
+    demonDeathShockwaves=[{start:now, duration:2600, maxRadius:Math.hypot(1100,700)*1.05, x:centerX, y:centerY, palette:{inner:'255,240,255', mid:'210,140,255', outer:'120,40,200'}, easing:0.82, alpha:0.55}];
+    demonDeathFlares=[];
     demonTeleportTrails=[];
     demonEventMarquee={text:'成功擊殺Boss: 魔王埃里赫曼!', start:now, fadeStart:now+5000, end:now+5000};
     if(demonBoss){
@@ -7736,10 +7810,11 @@ select optgroup { color: #0b1022; }
     addScore(BOSS_DEFEAT_SCORE.demon);
     stats.bossKills++;
     updateHUD();
-    screenShake=Math.max(screenShake,24);
-    spawnParticles(centerX,centerY,'#fff5ff',200,3.0,4.4,4.8);
-    spawnParticles(centerX,centerY,'#c08cff',150,2.4,3.6,3.8);
-    spawnParticles(centerX,centerY,'#ffd1ff',120,2.6,3.8,3.6);
+    screenShake=Math.max(screenShake,32);
+    spawnParticles(centerX,centerY,'#fff5ff',260,3.2,4.6,5.2);
+    spawnParticles(centerX,centerY,'#c08cff',200,2.6,3.8,4.2);
+    spawnParticles(centerX,centerY,'#ffd1ff',180,2.8,4.2,3.9);
+    spawnParticles(centerX,centerY,'#ff89d0',140,3.0,4.5,4.4);
     spawnBossNineCatOnce('demon', centerX-12, centerY);
   }
 
@@ -7945,6 +8020,58 @@ select optgroup { color: #0b1022; }
       const anim=demonDeathAnim;
       const elapsed=now-anim.start;
       const fadeDuration=Math.max(1, (anim.vanishAt|| (anim.start+900)) - anim.start);
+      const burstX = (anim.centerX!=null)?anim.centerX:(demonBoss?demonBoss.x:550);
+      const burstY = (anim.centerY!=null)?anim.centerY:(demonBoss?demonBoss.y:(layout().top+160));
+      if(anim.bursts){
+        for(const burst of anim.bursts){
+          if(!burst.triggered && elapsed>=burst.time){
+            burst.triggered=true;
+            const scale=Math.max(1, burst.scale||1);
+            const radius=Math.hypot(1100,700)*(1.05 + (scale-1)*0.65);
+            const paletteIndex=Math.floor(scale*3);
+            const palettes=[
+              {inner:'255,248,255', mid:'210,150,255', outer:'110,40,200'},
+              {inner:'255,238,255', mid:'220,160,255', outer:'130,60,210'},
+              {inner:'255,232,255', mid:'200,140,255', outer:'120,50,220'},
+              {inner:'255,240,255', mid:'210,160,255', outer:'140,60,220'}
+            ];
+            const palette=palettes[paletteIndex%palettes.length];
+            demonDeathShockwaves.push({
+              start:now,
+              duration:2200 + scale*240,
+              maxRadius:radius,
+              x:burstX,
+              y:burstY,
+              palette,
+              easing:0.76,
+              alpha:0.58
+            });
+            const rayCount=Math.min(28, 14 + Math.round(scale*6));
+            for(let i=0;i<rayCount;i++){
+              const angle=(Math.PI*2/rayCount)*i + Math.random()*0.25;
+              const baseWidth=54 + scale*18 + Math.random()*16;
+              const length=460 + scale*180 + Math.random()*80;
+              const life=1300 + scale*320 + Math.random()*160;
+              demonDeathFlares.push({
+                start:now,
+                life,
+                angle,
+                baseWidth,
+                tipWidth:baseWidth*0.32,
+                length,
+                x:burstX,
+                y:burstY,
+                color:'255,220,255',
+                glow:'150,60,220'
+              });
+            }
+            screenShake=Math.max(screenShake, 32 + scale*6);
+            spawnParticles(burstX,burstY,'#fef5ff',220,3.4,4.8,4.6);
+            spawnParticles(burstX,burstY,'#cfa4ff',180,2.6,4.0,4.0);
+            spawnParticles(burstX,burstY,'#ff9fe8',160,2.8,4.2,4.2);
+          }
+        }
+      }
       if(demonBoss){
         const dt = now - (demonBoss.lastUpdate||now);
         demonBoss.lastUpdate=now;
@@ -8015,6 +8142,95 @@ select optgroup { color: #0b1022; }
     ctx.arc(wave.x*scaleX, wave.y*scaleY, Math.max(minR+1,maxR),0,Math.PI*2);
     ctx.fill();
     ctx.restore();
+  }
+
+  function drawDemonDeathAftershock(now){
+    if(level!==20) return;
+    if(demonDeathShockwaves.length){
+      const scaleAvg=(scaleX+scaleY)/2;
+      for(let i=demonDeathShockwaves.length-1;i>=0;i--){
+        const wave=demonDeathShockwaves[i];
+        const life=Math.max(1, wave.duration||2000);
+        const elapsed=now-wave.start;
+        if(elapsed<0) continue;
+        if(elapsed>life){ demonDeathShockwaves.splice(i,1); continue; }
+        const prog=Math.max(0, Math.min(1, elapsed/life));
+        const ease=Math.pow(prog, wave.easing||0.85);
+        const radius=(wave.maxRadius||Math.hypot(1100,700))*ease;
+        const alpha=(wave.alpha!=null?wave.alpha:0.55)*(1-prog);
+        if(alpha<=0.01) continue;
+        const palette=wave.palette||{inner:'255,240,255', mid:'210,150,255', outer:'110,40,200'};
+        const cx=(wave.x||550)*scaleX;
+        const cy=(wave.y!=null?wave.y:(layout().top+160))*scaleY;
+        const maxR=radius*scaleAvg;
+        const innerR=Math.max(12, maxR*0.28);
+        const grad=ctx.createRadialGradient(cx, cy, innerR*0.3, cx, cy, Math.max(innerR, maxR));
+        grad.addColorStop(0,`rgba(${palette.inner},${alpha})`);
+        grad.addColorStop(0.55,`rgba(${palette.mid},${alpha*0.7})`);
+        grad.addColorStop(1,`rgba(${palette.outer},0)`);
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.max(innerR, maxR),0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    if(demonDeathFlares.length){
+      for(let i=demonDeathFlares.length-1;i>=0;i--){
+        const flare=demonDeathFlares[i];
+        const life=Math.max(1, flare.life||1200);
+        const elapsed=now-flare.start;
+        if(elapsed<0) continue;
+        if(elapsed>life){ demonDeathFlares.splice(i,1); continue; }
+        const prog=Math.max(0, Math.min(1, elapsed/life));
+        const fade=1-prog;
+        const originX=flare.x!=null?flare.x:550;
+        const originY=flare.y!=null?flare.y:(layout().top+160);
+        const angle=flare.angle||0;
+        const dx=Math.cos(angle);
+        const dy=Math.sin(angle);
+        const len=(flare.length||480)*(0.9 + 0.2*fade);
+        const baseWidth=(flare.baseWidth||60)*(0.8 + 0.2*fade);
+        const tipWidth=(flare.tipWidth!=null?flare.tipWidth:baseWidth*0.35)*(0.6 + 0.4*fade);
+        const px=-dy;
+        const py=dx;
+        const tipX=originX + dx*len;
+        const tipY=originY + dy*len;
+        const baseLeftX=originX + px*baseWidth;
+        const baseLeftY=originY + py*baseWidth;
+        const baseRightX=originX - px*baseWidth;
+        const baseRightY=originY - py*baseWidth;
+        const tipLeftX=tipX + px*tipWidth;
+        const tipLeftY=tipY + py*tipWidth;
+        const tipRightX=tipX - px*tipWidth;
+        const tipRightY=tipY - py*tipWidth;
+        const alpha=(flare.alpha!=null?flare.alpha:0.85)*fade;
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        const grad=ctx.createLinearGradient(originX*scaleX, originY*scaleY, tipX*scaleX, tipY*scaleY);
+        grad.addColorStop(0,`rgba(${flare.glow||'150,60,220'},${alpha*0.65})`);
+        grad.addColorStop(0.35,`rgba(${flare.color||'255,220,255'},${alpha})`);
+        grad.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.moveTo(baseLeftX*scaleX, baseLeftY*scaleY);
+        ctx.lineTo(tipLeftX*scaleX, tipLeftY*scaleY);
+        ctx.lineTo(tipRightX*scaleX, tipRightY*scaleY);
+        ctx.lineTo(baseRightX*scaleX, baseRightY*scaleY);
+        ctx.closePath();
+        ctx.fill();
+        const baseGlow=ctx.createRadialGradient(originX*scaleX, originY*scaleY, 0, originX*scaleX, originY*scaleY, baseWidth*((scaleX+scaleY)/2)*0.9);
+        baseGlow.addColorStop(0,`rgba(${flare.color||'255,220,255'},${alpha})`);
+        baseGlow.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.fillStyle=baseGlow;
+        ctx.beginPath();
+        ctx.arc(originX*scaleX, originY*scaleY, baseWidth*((scaleX+scaleY)/2)*0.9,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
   }
 
   function drawDemonCore(now){
@@ -9145,6 +9361,7 @@ let balls=[]; function makeBall(stuck=false,x=null){
   function initBricks(){
     const L=layout();
     const totalPad=(L.cols+1)*L.pad; brickW=Math.floor((1100-totalPad)/L.cols); brickH=L.h; bricks=[]; revealRects=[]; brickIdCounter=0;
+    finalVictorySequence=null;
     spaceBoss=null;
     spaceBossAnchor=null;
     spaceBossPlaceholder=null;
@@ -9208,6 +9425,8 @@ let balls=[]; function makeBall(stuck=false,x=null){
     demonEventTriggeredAt=0;
     demonEventMarquee=null;
     demonEventWave=null;
+    demonDeathShockwaves=[];
+    demonDeathFlares=[];
     demonEventRows=[];
     demonEventNextRowAt=0;
     demonFallingDebris=[];
@@ -14114,7 +14333,7 @@ function generateLevel(lv, L){
   }
   function hideCenter(){ centerNote.style.display='none'; }
 
-  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:9; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
+  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:9; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; finalVictorySequence=null; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
     bossNineCatDrops.clear();
     stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
     for(const k of Object.keys(buffs)){
@@ -14837,6 +15056,7 @@ function generateLevel(lv, L){
     if(screenShake>0){ const s=screenShake*0.6; ctx.save(); ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); screenShake*=0.9; }
     const now=performance.now();
     drawBGDecor(now);
+    drawDemonDeathAftershock(now);
     drawDemonWave(now);
     if(buffs.ANNIHIL.active){ if(Math.random()<0.5) annihilSparks.push({x:Math.random()*1100,y:0,v:1+Math.random()*1.5}); for(let i=annihilSparks.length-1;i>=0;i--){ const sp=annihilSparks[i]; sp.y+=sp.v; ctx.fillStyle='rgba(255,220,150,0.8)'; ctx.fillRect(sp.x*scaleX, sp.y*scaleY,2*scaleX,2*scaleY); if(sp.y>700) annihilSparks.splice(i,1); } }
     drawRevealTiles();
@@ -17077,16 +17297,8 @@ function generateLevel(lv, L){
       markImageUnlocked(type, idx);
       paused=true; running=false; onPauseStart();
       if(level>=GAME_CONFIG.totalLevels){
-        finalScore.textContent=String(score);
-          const el=document.getElementById('statsWin'); if(el) el.innerHTML = renderStatsHtml();
-        ring.innerHTML='';
-        for(let i=1;i<=GAME_CONFIG.totalLevels;i++){
-          const im=getLevelImage(i);
-          const th=document.createElement('img'); th.src=im.src; ring.appendChild(th);
-        }
-        win.classList.add('show');
-        playSFX('win');
-        resetCombo();
+        startFinalVictorySequence();
+        return;
       }else{
         const key = getLevelImageKey(level);
         galleryImg.src=getLevelImage(level).src;
