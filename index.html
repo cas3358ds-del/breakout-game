@@ -332,7 +332,7 @@
     .gameover.show{display:flex;}
     .gameover .backdrop{position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.88));}
     .gameover .center{position:relative;z-index:2;text-align:center;background:linear-gradient(180deg, rgba(10,14,30,.85), rgba(10,14,30,.75));padding:18px 22px;border:1px solid var(--glass-stroke);border-radius:16px;box-shadow:0 20px 90px rgba(0,0,0,.5)}
-    .win .backdrop{position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.88));}
+    .win .backdrop{position:absolute;inset:0;background:linear-gradient(180deg, rgba(4,8,20,.62), rgba(6,10,24,.82));}
     .thumb-ring{position:absolute;inset:16px;pointer-events:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));grid-auto-rows:1fr;gap:10px;opacity:.95}
     .thumb-ring img{width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:14px;box-shadow:0 12px 36px rgba(0,0,0,.55);transform:scale(0.92);transition:transform .4s ease;}
     .thumb-ring img:nth-child(odd){transform:scale(0.9);}
@@ -341,10 +341,35 @@
       .thumb-ring{inset:10px;gap:6px;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));}
       .thumb-ring img{border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.55);}
     }
+    @media (max-width:640px){
+      .win{flex-direction:column;justify-content:flex-start;padding:28px 0 18px;align-items:center;}
+      .win .center{order:1;width:min(420px,90vw);margin:0 auto 18px;}
+      .thumb-ring{position:static;inset:auto;order:2;width:100%;max-width:min(520px,92vw);margin:0 auto;padding:16px 16px 20px;pointer-events:auto;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));grid-auto-rows:auto;gap:12px;opacity:1;max-height:min(60vh,520px);overflow-y:auto;align-content:flex-start;justify-items:center;background:linear-gradient(160deg, rgba(44,62,108,.78), rgba(14,18,36,.86));border:1px solid rgba(174,202,255,.28);border-radius:18px;box-shadow:0 18px 48px rgba(0,0,0,.46);backdrop-filter:blur(10px);}
+      .thumb-ring img{width:100%;height:auto;aspect-ratio:3/4;object-fit:cover;object-position:50% 20%;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.45);transform:none;filter:brightness(1.1) contrast(1.05) saturate(1.08);background:rgba(12,18,32,.6);}
+      .thumb-ring img:nth-child(odd),
+      .thumb-ring img:nth-child(4n){transform:none;}
+      .thumb-ring::-webkit-scrollbar{width:6px;}
+      .thumb-ring::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:999px;}
+      .thumb-ring{scrollbar-width:thin;}
+    }
+    @media (max-width:480px){
+      .win .center{width:min(360px,92vw);}
+      .thumb-ring{gap:10px;padding:14px 14px 18px;max-height:min(58vh,460px);}
+      .thumb-ring img{border-radius:12px;}
+    }
+    @media (max-width:380px){
+      .win{padding:22px 0 16px;}
+      .thumb-ring{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;}
+      .thumb-ring img{aspect-ratio:13/18;object-position:50% 18%;}
+    }
     .win .center{position:relative;z-index:2;text-align:center;background:linear-gradient(180deg, rgba(10,14,30,.85), rgba(10,14,30,.75));padding:18px 22px;border:1px solid var(--glass-stroke);border-radius:16px;box-shadow:0 20px 90px rgba(0,0,0,.5)}
     .win h2{margin:4px 0 6px;font-size:28px;letter-spacing:2px}
     .win .small{opacity:.8;font-size:12px;margin-top:6px}
     .win .again{margin-top:10px}
+    .thumb-note{display:none;}
+    @media (max-width:640px){
+      .thumb-note{display:block;order:3;margin:10px auto 0;font-size:12px;color:#dbe7ff;opacity:0.85;text-align:center;max-width:min(520px,92vw);line-height:1.5;padding:0 18px;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+    }
     /* Note box */
     .center-note{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:auto;z-index:3}
     .note-box{background:linear-gradient(180deg, rgba(8,12,28,.9), rgba(8,12,28,.85));border:1px solid var(--glass-stroke);padding:16px 18px;border-radius:14px;text-align:center;max-width:min(90vw,860px);max-height:90vh;overflow:auto;box-shadow:0 12px 60px rgba(0,0,0,.5);font-size:14px;position:relative}
@@ -731,6 +756,7 @@ select optgroup { color: #0b1022; }
           <div class="small">作者： GPT-5、Codex　／　指導者： Rock</div>
           <div class="again"><button class="btn" id="uploadWin">上傳排行榜</button> <button class="btn" id="againBtn">再玩一次</button></div>
         </div>
+        <div class="thumb-note" id="thumbNote"></div>
       </div>
 
       <div class="gameover" id="gameover">
@@ -1415,6 +1441,13 @@ select optgroup { color: #0b1022; }
       th.src=im.src;
       th.loading='lazy';
       ring.appendChild(th);
+    }
+    const thumbNote=document.getElementById('thumbNote');
+    if(thumbNote){
+      const totalThumbs=ring.childElementCount;
+      thumbNote.textContent = totalThumbs
+        ? `${totalThumbs} 張角色收藏已亮相，向上或向下滑動即可查看全部。`
+        : '尚未解鎖角色收藏，請再接再厲！';
     }
     win.classList.add('show');
     playSFX('win');
