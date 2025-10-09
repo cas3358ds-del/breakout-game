@@ -25,6 +25,46 @@
       label: '科技．賽博格綠',
       selectLabel: '科技．賽博格綠',
       cssSkin: '科技．賽博格綠',
+      lifeIcon: `<svg viewBox="0 0 64 64" aria-hidden="true" role="img">
+        <defs>
+          <linearGradient id="cy-chip-housing" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#002b1f" />
+            <stop offset="45%" stop-color="#004f34" />
+            <stop offset="100%" stop-color="#001d16" />
+          </linearGradient>
+          <linearGradient id="cy-chip-core" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00ffd0" />
+            <stop offset="100%" stop-color="#00a87a" />
+          </linearGradient>
+          <linearGradient id="cy-chip-circuit" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="rgba(0,255,210,0.85)" />
+            <stop offset="100%" stop-color="rgba(0,190,140,0.65)" />
+          </linearGradient>
+        </defs>
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6" y="6" width="52" height="52" rx="10" fill="url(#cy-chip-housing)" stroke="rgba(0,255,200,0.4)" stroke-width="2" />
+          <rect x="14" y="14" width="36" height="36" rx="6" fill="rgba(0,40,28,0.65)" stroke="rgba(0,255,210,0.45)" stroke-width="1.5" />
+          <rect x="20" y="20" width="24" height="24" rx="4" fill="url(#cy-chip-core)" stroke="rgba(0,90,70,0.55)" stroke-width="1.4" />
+          <path d="M20 34h-6c-2 0-3-1-3-3v-8" stroke="url(#cy-chip-circuit)" stroke-width="1.6" />
+          <path d="M44 30h6c2 0 3 1 3 3v8" stroke="url(#cy-chip-circuit)" stroke-width="1.6" />
+          <path d="M32 20v-6c0-2 1-3 3-3h8" stroke="url(#cy-chip-circuit)" stroke-width="1.6" />
+          <path d="M32 44v6c0 2-1 3-3 3h-8" stroke="url(#cy-chip-circuit)" stroke-width="1.6" />
+          <g fill="#00d4a3" stroke="rgba(0,40,32,0.55)" stroke-width="1">
+            <rect x="18" y="4" width="4" height="8" rx="1.5" />
+            <rect x="28" y="4" width="4" height="8" rx="1.5" />
+            <rect x="38" y="4" width="4" height="8" rx="1.5" />
+            <rect x="18" y="52" width="4" height="8" rx="1.5" />
+            <rect x="28" y="52" width="4" height="8" rx="1.5" />
+            <rect x="38" y="52" width="4" height="8" rx="1.5" />
+            <rect x="4" y="18" width="8" height="4" rx="1.5" />
+            <rect x="4" y="28" width="8" height="4" rx="1.5" />
+            <rect x="4" y="38" width="8" height="4" rx="1.5" />
+            <rect x="52" y="18" width="8" height="4" rx="1.5" />
+            <rect x="52" y="28" width="8" height="4" rx="1.5" />
+            <rect x="52" y="38" width="8" height="4" rx="1.5" />
+          </g>
+        </g>
+      </svg>`,
       // 取消外層特效並停用 panelPattern
       cssVars: {
         '--fxViz': '0',
@@ -48,6 +88,33 @@
       label: '科技．魅影幻彩',
       selectLabel: '科技．魅影幻彩',
       cssSkin: '科技．魅影幻彩',
+      lifeIcon: `<svg viewBox="0 0 64 64" aria-hidden="true" role="img">
+        <defs>
+          <radialGradient id="phantom-glass-core" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+            <stop offset="45%" stop-color="#a66bff" stop-opacity="0.8" />
+            <stop offset="100%" stop-color="#25103f" stop-opacity="1" />
+          </radialGradient>
+          <linearGradient id="phantom-glass-facet" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00f6ff" stop-opacity="0.9" />
+            <stop offset="50%" stop-color="#ff4de1" stop-opacity="0.85" />
+            <stop offset="100%" stop-color="#7a5dff" stop-opacity="0.95" />
+          </linearGradient>
+          <linearGradient id="phantom-glass-frame" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#32124b" />
+            <stop offset="100%" stop-color="#110820" />
+          </linearGradient>
+        </defs>
+        <g fill="none" stroke-linejoin="round">
+          <path d="M12 8h40l8 12v24l-8 12H12l-8-12V20z" fill="url(#phantom-glass-frame)" stroke="rgba(255,255,255,0.2)" stroke-width="1.6" />
+          <path d="M16 14h32l6 10v16l-6 10H16l-6-10V24z" fill="url(#phantom-glass-core)" stroke="rgba(180,150,255,0.45)" stroke-width="1.4" />
+          <path d="M32 14L44 24 34 50 20 38z" fill="url(#phantom-glass-facet)" stroke="rgba(30,10,40,0.45)" stroke-width="1.2" />
+          <path d="M18 22l10 8-6 16-8-10z" fill="rgba(0,240,255,0.28)" stroke="rgba(180,255,255,0.4)" stroke-width="1" />
+          <path d="M42 22l10 14-6 10-14 4z" fill="rgba(255,90,210,0.3)" stroke="rgba(255,180,255,0.45)" stroke-width="1" />
+          <path d="M24 18l16 28" stroke="rgba(255,255,255,0.4)" stroke-width="1" />
+          <path d="M20 28h24" stroke="rgba(255,255,255,0.25)" stroke-width="1.1" />
+        </g>
+      </svg>`,
       cssVars: { '--fxViz': '0', '--panelPattern': 'none' },
       canvas: {
         base: [120, 80, 255],

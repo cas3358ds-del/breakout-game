@@ -600,17 +600,17 @@ select optgroup { color: #0b1022; }
       background:rgba(255,132,77,0.04);
     }
     body[data-skin="和風．無限之城"] .hearts .life-icon{
-      width:26px;
-      height:26px;
+      width:21px;
+      height:21px;
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      margin:0 2px;
+      margin:0;
       filter:drop-shadow(0 0 6px rgba(255,196,150,0.45));
     }
     body[data-skin="和風．無限之城"] .hearts .life-icon svg{
-      width:26px;
-      height:26px;
+      width:21px;
+      height:21px;
       display:block;
     }
 
@@ -15706,99 +15706,61 @@ function generateLevel(lv, L){
         ctx.lineWidth=Math.max(0.9,1.3*scaleUnit);
         ctx.strokeStyle='rgba(255,255,255,0.45)';
         ctx.stroke();
-        const thrusterWidth=isVerticalAxis?Math.min(padW*0.58,32*scaleUnit):Math.min(padH*0.72,32*scaleUnit);
-        const thrusterDepth=Math.min((isVerticalAxis?padH:padW)*0.22,50*scaleUnit);
-        const drawThruster=(dir)=>{
-          ctx.save();
-          if(isVerticalAxis){ ctx.translate(0,dir*padH/2); }
-          else { ctx.translate(dir*padW/2,0); }
-          const capsuleRadius=thrusterWidth/2;
-          ctx.beginPath();
-          if(isVerticalAxis){
-            ctx.arc(0,0,capsuleRadius,Math.PI,0,false);
-            ctx.quadraticCurveTo(0,dir*thrusterDepth*0.92,0,dir*thrusterDepth*0.95);
-            ctx.arc(0,dir*thrusterDepth*0.74,capsuleRadius*0.72,-Math.PI/2,Math.PI/2,false);
-          } else {
-            ctx.arc(0,0,capsuleRadius,Math.PI/2,-Math.PI/2,true);
-            ctx.quadraticCurveTo(dir*thrusterDepth*0.92,0,dir*thrusterDepth*0.95,0);
-            ctx.arc(dir*thrusterDepth*0.74,0,capsuleRadius*0.72,-Math.PI/2,Math.PI/2,false);
-          }
-          ctx.closePath();
-          const housing=isVerticalAxis
-            ? ctx.createLinearGradient(-capsuleRadius,0,capsuleRadius,0)
-            : ctx.createLinearGradient(0,-capsuleRadius,0,capsuleRadius);
-          housing.addColorStop(0,'#d7dbe5');
-          housing.addColorStop(0.5,'#9ca5b6');
-          housing.addColorStop(1,'#eef1f6');
-          ctx.fillStyle=housing;
-          ctx.fill();
-          ctx.lineWidth=Math.max(1.1,1.7*scaleUnit);
-          ctx.strokeStyle='rgba(70,80,110,0.45)';
-          ctx.stroke();
-          const band=isVerticalAxis
-            ? ctx.createLinearGradient(-capsuleRadius,0,capsuleRadius,0)
-            : ctx.createLinearGradient(0,-capsuleRadius,0,capsuleRadius);
-          band.addColorStop(0,'rgba(160,170,200,0.15)');
-          band.addColorStop(0.5,'rgba(120,135,170,0.45)');
-          band.addColorStop(1,'rgba(160,170,200,0.15)');
-          ctx.save();
-          ctx.clip();
-          ctx.fillStyle=band;
-          ctx.fillRect(-capsuleRadius*0.85,-capsuleRadius*0.55,capsuleRadius*1.7,capsuleRadius*1.1);
-          ctx.restore();
-          const nozzleRadius=Math.max(3.4,4.6*scaleUnit);
-          ctx.beginPath();
-          const nozzleX=isVerticalAxis?0:dir*thrusterDepth*0.74;
-          const nozzleY=isVerticalAxis?dir*thrusterDepth*0.74:0;
-          ctx.ellipse(nozzleX,nozzleY,nozzleRadius*1.1,nozzleRadius*0.78,0,0,Math.PI*2);
-          ctx.fillStyle='rgba(30,35,52,0.85)';
-          ctx.fill();
-          const rim=ctx.createRadialGradient(nozzleX,nozzleY,nozzleRadius*0.2,nozzleX,nozzleY,nozzleRadius*1.05);
-          rim.addColorStop(0,'rgba(210,220,240,0.35)');
-          rim.addColorStop(1,'rgba(40,45,60,0)');
-          ctx.fillStyle=rim;
-          ctx.fill();
-          ctx.restore();
-        };
-        const drawFlame=(dir,active)=>{
+        const plumeWidth=isVerticalAxis?Math.min(padW*0.56,30*scaleUnit):Math.min(padH*0.68,30*scaleUnit);
+        const plumeReach=Math.min((isVerticalAxis?padH:padW)*0.24,48*scaleUnit);
+        const drawIonPlume=(dir,active)=>{
           if(!active) return;
           const speed=Math.min(1,Math.abs(axisDelta)/6);
-          const flicker=0.75+0.25*Math.sin(nowPad/90+dir*1.7);
-          const length=thrusterDepth*(1.05+0.7*speed*flicker);
+          const flicker=0.7+0.3*Math.sin(nowPad/95+dir*1.8);
+          const length=plumeReach*(0.9+0.6*speed*flicker);
           ctx.save();
           if(isVerticalAxis){ ctx.translate(0,dir*padH/2); }
           else { ctx.translate(dir*padW/2,0); }
           ctx.globalCompositeOperation='lighter';
+          ctx.beginPath();
           if(isVerticalAxis){
-            ctx.beginPath();
-            ctx.moveTo(-thrusterWidth*0.28,0);
-            ctx.quadraticCurveTo(0,dir*length*0.32,0,dir*length);
-            ctx.quadraticCurveTo(0,dir*length*0.32,thrusterWidth*0.28,0);
+            ctx.moveTo(-plumeWidth*0.26,0);
+            ctx.quadraticCurveTo(0,dir*length*0.36,0,dir*length);
+            ctx.quadraticCurveTo(0,dir*length*0.32,plumeWidth*0.26,0);
           } else {
-            ctx.beginPath();
-            ctx.moveTo(0,-thrusterWidth*0.28);
-            ctx.quadraticCurveTo(dir*length*0.32,0,dir*length,0);
-            ctx.quadraticCurveTo(dir*length*0.32,0,0,thrusterWidth*0.28);
+            ctx.moveTo(0,-plumeWidth*0.26);
+            ctx.quadraticCurveTo(dir*length*0.36,0,dir*length,0);
+            ctx.quadraticCurveTo(dir*length*0.32,0,0,plumeWidth*0.26);
           }
           const grad=isVerticalAxis?ctx.createLinearGradient(0,0,0,dir*length):ctx.createLinearGradient(0,0,dir*length,0);
-          grad.addColorStop(0,`rgba(255,230,225,${0.58+0.32*speed})`);
-          grad.addColorStop(0.3,`rgba(255,120,90,${0.62+0.28*speed})`);
-          grad.addColorStop(0.65,`rgba(200,24,40,${0.6+0.32*speed})`);
+          grad.addColorStop(0,`rgba(210,240,255,${0.42+0.28*speed})`);
+          grad.addColorStop(0.38,`rgba(140,180,255,${0.55+0.35*speed})`);
+          grad.addColorStop(0.78,`rgba(40,80,180,${0.45+0.28*speed})`);
           grad.addColorStop(1,'rgba(0,0,0,0)');
           ctx.fillStyle=grad;
-          ctx.shadowColor=`rgba(255,70,70,${0.48+0.38*speed})`;
-          ctx.shadowBlur=26*(0.6+0.4*speed);
+          ctx.shadowColor=`rgba(150,200,255,${0.35+0.25*speed})`;
+          ctx.shadowBlur=22*(0.6+0.4*speed);
+          ctx.fill();
+          const coreRadius=plumeWidth*0.18;
+          const coreLength=length*0.5;
+          ctx.beginPath();
+          if(isVerticalAxis){
+            ctx.moveTo(-coreRadius,0);
+            ctx.quadraticCurveTo(0,dir*coreLength*0.6,0,dir*coreLength);
+            ctx.quadraticCurveTo(0,dir*coreLength*0.6,coreRadius,0);
+          } else {
+            ctx.moveTo(0,-coreRadius);
+            ctx.quadraticCurveTo(dir*coreLength*0.6,0,dir*coreLength,0);
+            ctx.quadraticCurveTo(dir*coreLength*0.6,0,0,coreRadius);
+          }
+          const coreGrad=isVerticalAxis?ctx.createLinearGradient(0,0,0,dir*coreLength):ctx.createLinearGradient(0,0,dir*coreLength,0);
+          coreGrad.addColorStop(0,`rgba(255,255,255,${0.65+0.2*speed})`);
+          coreGrad.addColorStop(1,'rgba(120,200,255,0)');
+          ctx.fillStyle=coreGrad;
           ctx.fill();
           ctx.restore();
         };
-        drawThruster(-1);
-        drawThruster(1);
         if(isVerticalAxis){
-          drawFlame(-1, axisDelta>0.2);
-          drawFlame(1, axisDelta<-0.2);
+          drawIonPlume(-1, axisDelta>0.2);
+          drawIonPlume(1, axisDelta<-0.2);
         } else {
-          drawFlame(-1, axisDelta>0.2);
-          drawFlame(1, axisDelta<-0.2);
+          drawIonPlume(-1, axisDelta>0.2);
+          drawIonPlume(1, axisDelta<-0.2);
         }
       } else if(isSolar){
         const pulse=0.55+0.45*Math.sin(nowPad/360);
