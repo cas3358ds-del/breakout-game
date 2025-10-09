@@ -25,6 +25,49 @@
       label: '科技．賽博格綠',
       selectLabel: '科技．賽博格綠',
       cssSkin: '科技．賽博格綠',
+      lifeIcon: `<svg viewBox="0 0 64 64" aria-hidden="true" role="img">
+        <defs>
+          <linearGradient id="cy-chip-core" x1="12%" y1="8%" x2="88%" y2="92%">
+            <stop offset="0%" stop-color="#0aff9c" />
+            <stop offset="55%" stop-color="#12d4a6" />
+            <stop offset="100%" stop-color="#52ffe9" />
+          </linearGradient>
+          <linearGradient id="cy-chip-trace" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="rgba(0,255,200,0.85)" />
+            <stop offset="100%" stop-color="rgba(60,255,190,0.45)" />
+          </linearGradient>
+        </defs>
+        <rect x="5" y="5" width="54" height="54" rx="7" fill="#03140e" stroke="#00f2a0" stroke-width="2.4" />
+        <rect x="14.5" y="14.5" width="35" height="35" rx="4.5" fill="url(#cy-chip-core)" stroke="#0efbc1" stroke-width="1.8" />
+        <g fill="none" stroke="url(#cy-chip-trace)" stroke-width="2" stroke-linecap="round">
+          <path d="M22 19h8v8l6 6v6" />
+          <path d="M42 25h-8v8l-6 6v6" opacity="0.85" />
+          <path d="M27 22v6l-6 6v6" opacity="0.7" />
+          <path d="M37 22v6l6 6v6" opacity="0.7" />
+        </g>
+        <g fill="#00f2a0">
+          <rect x="12" y="2.5" width="3" height="9" rx="1.2" />
+          <rect x="20" y="2.5" width="3" height="9" rx="1.2" />
+          <rect x="28" y="2.5" width="3" height="9" rx="1.2" />
+          <rect x="36" y="2.5" width="3" height="9" rx="1.2" />
+          <rect x="44" y="2.5" width="3" height="9" rx="1.2" />
+          <rect x="12" y="52.5" width="3" height="9" rx="1.2" />
+          <rect x="20" y="52.5" width="3" height="9" rx="1.2" />
+          <rect x="28" y="52.5" width="3" height="9" rx="1.2" />
+          <rect x="36" y="52.5" width="3" height="9" rx="1.2" />
+          <rect x="44" y="52.5" width="3" height="9" rx="1.2" />
+          <rect x="2.5" y="12" width="9" height="3" rx="1.2" />
+          <rect x="2.5" y="20" width="9" height="3" rx="1.2" />
+          <rect x="2.5" y="28" width="9" height="3" rx="1.2" />
+          <rect x="2.5" y="36" width="9" height="3" rx="1.2" />
+          <rect x="2.5" y="44" width="9" height="3" rx="1.2" />
+          <rect x="52.5" y="12" width="9" height="3" rx="1.2" />
+          <rect x="52.5" y="20" width="9" height="3" rx="1.2" />
+          <rect x="52.5" y="28" width="9" height="3" rx="1.2" />
+          <rect x="52.5" y="36" width="9" height="3" rx="1.2" />
+          <rect x="52.5" y="44" width="9" height="3" rx="1.2" />
+        </g>
+      </svg>`,
       // 取消外層特效並停用 panelPattern
       cssVars: {
         '--fxViz': '0',
@@ -48,6 +91,36 @@
       label: '科技．魅影幻彩',
       selectLabel: '科技．魅影幻彩',
       cssSkin: '科技．魅影幻彩',
+      lifeIcon: `<svg viewBox="0 0 64 64" aria-hidden="true" role="img">
+        <defs>
+          <radialGradient id="phantom-glass-glow" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.85)" />
+            <stop offset="55%" stop-color="rgba(180,160,255,0.55)" />
+            <stop offset="100%" stop-color="rgba(50,20,110,0.3)" />
+          </radialGradient>
+          <linearGradient id="phantom-glass-ring" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#f0d7ff" />
+            <stop offset="50%" stop-color="#7a4df5" />
+            <stop offset="100%" stop-color="#2a1a77" />
+          </linearGradient>
+        </defs>
+        <circle cx="32" cy="32" r="26.5" fill="url(#phantom-glass-ring)" stroke="rgba(255,255,255,0.6)" stroke-width="1.6" />
+        <g fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2">
+          <circle cx="32" cy="32" r="21" />
+          <circle cx="32" cy="32" r="14.5" />
+        </g>
+        <path d="M32 10L40 26L24 26Z" fill="#ff79c6" opacity="0.86" />
+        <path d="M32 22L48 38L32 54Z" fill="#7aa7ff" opacity="0.78" />
+        <path d="M32 22L16 38L32 54Z" fill="#f6ff7a" opacity="0.8" />
+        <path d="M24 26L32 10L16 38Z" fill="#ffa17a" opacity="0.86" />
+        <path d="M40 26L48 38L32 10Z" fill="#9d79ff" opacity="0.82" />
+        <circle cx="32" cy="32" r="18" fill="url(#phantom-glass-glow)" opacity="0.9" />
+        <g fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3">
+          <path d="M32 12.5L41 30L23 30Z" />
+          <path d="M32 21L45.5 35.5L32 50Z" />
+          <path d="M32 21L18.5 35.5L32 50Z" />
+        </g>
+      </svg>`,
       cssVars: { '--fxViz': '0', '--panelPattern': 'none' },
       canvas: {
         base: [120, 80, 255],

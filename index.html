@@ -15706,100 +15706,80 @@ function generateLevel(lv, L){
         ctx.lineWidth=Math.max(0.9,1.3*scaleUnit);
         ctx.strokeStyle='rgba(255,255,255,0.45)';
         ctx.stroke();
-        const thrusterWidth=isVerticalAxis?Math.min(padW*0.58,32*scaleUnit):Math.min(padH*0.72,32*scaleUnit);
-        const thrusterDepth=Math.min((isVerticalAxis?padH:padW)*0.22,50*scaleUnit);
-        const drawThruster=(dir)=>{
+        const jetWidth=isVerticalAxis?Math.min(padW*0.58,30*scaleUnit):Math.min(padH*0.76,30*scaleUnit);
+        const jetLengthBase=Math.min((isVerticalAxis?padH:padW)*0.26,58*scaleUnit);
+        const jetOffset=2.6*scaleUnit;
+        const leftIntensity=Math.max(0,Math.min(1,axisDelta/6));
+        const rightIntensity=Math.max(0,Math.min(1,-axisDelta/6));
+        const drawJetAura=(dir,intensity)=>{
+          const glow=0.12+0.88*intensity;
           ctx.save();
-          if(isVerticalAxis){ ctx.translate(0,dir*padH/2); }
-          else { ctx.translate(dir*padW/2,0); }
-          const capsuleRadius=thrusterWidth/2;
+          if(isVerticalAxis){ ctx.translate(0,dir*(padH/2+jetOffset)); }
+          else { ctx.translate(dir*(padW/2+jetOffset),0); }
+          ctx.globalCompositeOperation='lighter';
+          const radiusX=isVerticalAxis?jetWidth*(0.64+0.32*glow):jetWidth*(0.9+0.35*glow);
+          const radiusY=isVerticalAxis?jetWidth*(0.92+0.36*glow):jetWidth*(0.56+0.28*glow);
+          const grad=ctx.createRadialGradient(0,0,Math.min(radiusX,radiusY)*0.35,0,0,Math.max(radiusX,radiusY));
+          grad.addColorStop(0,`rgba(230,240,255,${0.35+0.4*glow})`);
+          grad.addColorStop(0.6,`rgba(150,190,255,${0.28+0.35*glow})`);
+          grad.addColorStop(1,'rgba(40,30,90,0)');
+          ctx.fillStyle=grad;
           ctx.beginPath();
-          if(isVerticalAxis){
-            ctx.arc(0,0,capsuleRadius,Math.PI,0,false);
-            ctx.quadraticCurveTo(0,dir*thrusterDepth*0.92,0,dir*thrusterDepth*0.95);
-            ctx.arc(0,dir*thrusterDepth*0.74,capsuleRadius*0.72,-Math.PI/2,Math.PI/2,false);
-          } else {
-            ctx.arc(0,0,capsuleRadius,Math.PI/2,-Math.PI/2,true);
-            ctx.quadraticCurveTo(dir*thrusterDepth*0.92,0,dir*thrusterDepth*0.95,0);
-            ctx.arc(dir*thrusterDepth*0.74,0,capsuleRadius*0.72,-Math.PI/2,Math.PI/2,false);
-          }
-          ctx.closePath();
-          const housing=isVerticalAxis
-            ? ctx.createLinearGradient(-capsuleRadius,0,capsuleRadius,0)
-            : ctx.createLinearGradient(0,-capsuleRadius,0,capsuleRadius);
-          housing.addColorStop(0,'#d7dbe5');
-          housing.addColorStop(0.5,'#9ca5b6');
-          housing.addColorStop(1,'#eef1f6');
-          ctx.fillStyle=housing;
-          ctx.fill();
-          ctx.lineWidth=Math.max(1.1,1.7*scaleUnit);
-          ctx.strokeStyle='rgba(70,80,110,0.45)';
-          ctx.stroke();
-          const band=isVerticalAxis
-            ? ctx.createLinearGradient(-capsuleRadius,0,capsuleRadius,0)
-            : ctx.createLinearGradient(0,-capsuleRadius,0,capsuleRadius);
-          band.addColorStop(0,'rgba(160,170,200,0.15)');
-          band.addColorStop(0.5,'rgba(120,135,170,0.45)');
-          band.addColorStop(1,'rgba(160,170,200,0.15)');
-          ctx.save();
-          ctx.clip();
-          ctx.fillStyle=band;
-          ctx.fillRect(-capsuleRadius*0.85,-capsuleRadius*0.55,capsuleRadius*1.7,capsuleRadius*1.1);
-          ctx.restore();
-          const nozzleRadius=Math.max(3.4,4.6*scaleUnit);
-          ctx.beginPath();
-          const nozzleX=isVerticalAxis?0:dir*thrusterDepth*0.74;
-          const nozzleY=isVerticalAxis?dir*thrusterDepth*0.74:0;
-          ctx.ellipse(nozzleX,nozzleY,nozzleRadius*1.1,nozzleRadius*0.78,0,0,Math.PI*2);
-          ctx.fillStyle='rgba(30,35,52,0.85)';
-          ctx.fill();
-          const rim=ctx.createRadialGradient(nozzleX,nozzleY,nozzleRadius*0.2,nozzleX,nozzleY,nozzleRadius*1.05);
-          rim.addColorStop(0,'rgba(210,220,240,0.35)');
-          rim.addColorStop(1,'rgba(40,45,60,0)');
-          ctx.fillStyle=rim;
+          ctx.ellipse(0,0,radiusX,radiusY,0,0,Math.PI*2);
           ctx.fill();
           ctx.restore();
         };
-        const drawFlame=(dir,active)=>{
-          if(!active) return;
-          const speed=Math.min(1,Math.abs(axisDelta)/6);
-          const flicker=0.75+0.25*Math.sin(nowPad/90+dir*1.7);
-          const length=thrusterDepth*(1.05+0.7*speed*flicker);
+        const drawJetTrail=(dir,active,intensity)=>{
+          if(!active||intensity<=0) return;
+          const flicker=0.7+0.3*Math.sin(nowPad/120+dir*1.6);
+          const length=jetLengthBase*(0.95+0.75*intensity*flicker);
           ctx.save();
-          if(isVerticalAxis){ ctx.translate(0,dir*padH/2); }
-          else { ctx.translate(dir*padW/2,0); }
+          if(isVerticalAxis){ ctx.translate(0,dir*(padH/2+jetOffset)); }
+          else { ctx.translate(dir*(padW/2+jetOffset),0); }
           ctx.globalCompositeOperation='lighter';
+          ctx.beginPath();
           if(isVerticalAxis){
-            ctx.beginPath();
-            ctx.moveTo(-thrusterWidth*0.28,0);
+            ctx.moveTo(-jetWidth*0.3,0);
             ctx.quadraticCurveTo(0,dir*length*0.32,0,dir*length);
-            ctx.quadraticCurveTo(0,dir*length*0.32,thrusterWidth*0.28,0);
+            ctx.quadraticCurveTo(0,dir*length*0.32,jetWidth*0.3,0);
           } else {
-            ctx.beginPath();
-            ctx.moveTo(0,-thrusterWidth*0.28);
-            ctx.quadraticCurveTo(dir*length*0.32,0,dir*length,0);
-            ctx.quadraticCurveTo(dir*length*0.32,0,0,thrusterWidth*0.28);
+            ctx.moveTo(0,-jetWidth*0.32);
+            ctx.quadraticCurveTo(dir*length*0.32,-jetWidth*0.18,dir*length,0);
+            ctx.quadraticCurveTo(dir*length*0.32,jetWidth*0.18,0,jetWidth*0.32);
           }
           const grad=isVerticalAxis?ctx.createLinearGradient(0,0,0,dir*length):ctx.createLinearGradient(0,0,dir*length,0);
-          grad.addColorStop(0,`rgba(255,230,225,${0.58+0.32*speed})`);
-          grad.addColorStop(0.3,`rgba(255,120,90,${0.62+0.28*speed})`);
-          grad.addColorStop(0.65,`rgba(200,24,40,${0.6+0.32*speed})`);
-          grad.addColorStop(1,'rgba(0,0,0,0)');
+          grad.addColorStop(0,`rgba(240,246,255,${0.5+0.28*intensity})`);
+          grad.addColorStop(0.35,`rgba(170,210,255,${0.6+0.28*intensity})`);
+          grad.addColorStop(0.7,`rgba(110,140,255,${0.52+0.26*intensity})`);
+          grad.addColorStop(1,'rgba(30,20,90,0)');
           ctx.fillStyle=grad;
-          ctx.shadowColor=`rgba(255,70,70,${0.48+0.38*speed})`;
-          ctx.shadowBlur=26*(0.6+0.4*speed);
+          ctx.shadowColor=`rgba(160,200,255,${0.36+0.4*intensity})`;
+          ctx.shadowBlur=26*(0.7+0.6*intensity);
           ctx.fill();
+          const sparkCount=Math.max(4,Math.round(6+8*intensity));
+          ctx.fillStyle=`rgba(220,235,255,${0.32+0.28*intensity})`;
+          for(let i=0;i<sparkCount;i++){
+            const animated=(i+(nowPad/160)+dir*0.35)/sparkCount;
+            const t=animated-Math.floor(animated);
+            const fade=Math.pow(1-t,0.6);
+            const along=length*(0.25+0.7*t);
+            const sway=Math.sin(nowPad/140+i*1.8)*jetWidth*0.22*fade;
+            if(isVerticalAxis){
+              ctx.beginPath();
+              ctx.arc(sway,dir*along,Math.max(0.8,1.4*scaleUnit*fade*(0.6+0.8*intensity)),0,Math.PI*2);
+              ctx.fill();
+            } else {
+              ctx.beginPath();
+              ctx.arc(dir*along,sway,Math.max(0.8,1.4*scaleUnit*fade*(0.6+0.8*intensity)),0,Math.PI*2);
+              ctx.fill();
+            }
+          }
           ctx.restore();
         };
-        drawThruster(-1);
-        drawThruster(1);
-        if(isVerticalAxis){
-          drawFlame(-1, axisDelta>0.2);
-          drawFlame(1, axisDelta<-0.2);
-        } else {
-          drawFlame(-1, axisDelta>0.2);
-          drawFlame(1, axisDelta<-0.2);
-        }
+        drawJetAura(-1,leftIntensity);
+        drawJetAura(1,rightIntensity);
+        drawJetTrail(-1,axisDelta>0.2,leftIntensity);
+        drawJetTrail(1,axisDelta<-0.2,rightIntensity);
       } else if(isSolar){
         const pulse=0.55+0.45*Math.sin(nowPad/360);
         ctx.save();
