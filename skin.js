@@ -25,7 +25,7 @@
       label: '科技．賽博格綠',
       selectLabel: '科技．賽博格綠',
       cssSkin: '科技．賽博格綠',
-      lifeIcon: `<svg viewBox="0 0 64 64" aria-hidden="true" role="img">
+      lifeIcon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" role="img">
         <defs>
           <linearGradient id="cy-chip-core" x1="12%" y1="8%" x2="88%" y2="92%">
             <stop offset="0%" stop-color="#0aff9c" />
@@ -91,7 +91,7 @@
       label: '科技．魅影幻彩',
       selectLabel: '科技．魅影幻彩',
       cssSkin: '科技．魅影幻彩',
-      lifeIcon: `<svg viewBox="0 0 64 64" aria-hidden="true" role="img">
+      lifeIcon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" role="img">
         <defs>
           <radialGradient id="phantom-glass-glow" cx="50%" cy="50%" r="60%">
             <stop offset="0%" stop-color="rgba(255,255,255,0.85)" />
