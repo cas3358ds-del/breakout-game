@@ -468,7 +468,7 @@ select optgroup { color: #0b1022; }
 .stage{--fxViz:0}
 
     /* === 科技．魅影幻彩（朦朧紫黑七彩霓虹） === */
-    body[data-skin="科技．魅影幻彩"]{
+    body[data-skin="科技．魅影幻彩"]{ 
       --ink:#f3e8ff;
       --muted:#d6c3ff;
       --stroke:rgba(200,160,255,.4);
@@ -500,6 +500,11 @@ select optgroup { color: #0b1022; }
       --btnGlow:0 0 20px rgba(30,200,100,.25);
     }
     body[data-skin="科技．賽博格綠"] .stage{--fxViz:0}
+    body[data-skin="科技．賽博格綠"] .hearts .life-icon,
+    body[data-skin="科技．賽博格綠"] .hearts .life-icon svg{ width:22px; height:22px; }
+
+    body[data-skin="科技．魅影幻彩"] .hearts .life-icon,
+    body[data-skin="科技．魅影幻彩"] .hearts .life-icon svg{ width:24px; height:24px; }
 
     /* === 宇宙．星辰絮語 === */
     body[data-skin="宇宙．星辰絮語"]{ --ink:#eef0ff; --muted:#c9c9ff; --stroke:rgba(160,140,255,.34); --bg1:#0c0b24; --bg2:#09081a; --hudGrad1:rgba(30,24,70,.58); --hudGrad2:rgba(20,18,50,.44); --glass-1:rgba(200,180,255,.10); --glass-2:rgba(160,140,255,.08); --stageGlass:linear-gradient(180deg, rgba(160,140,255,.05), rgba(0,0,0,0)); --panelPattern:radial-gradient(120px 80px at 20% 10%, rgba(110,80,255,.08), transparent 60%), radial-gradient(160px 120px at 80% 20%, rgba(180,100,255,.08), transparent 60%); --btnGlow:0 0 22px rgba(150,120,255,.25); }
@@ -14375,13 +14380,21 @@ function generateLevel(lv, L){
       heartsEl.innerHTML = '';
       for(const burst of activeBursts){ heartsEl.appendChild(burst); }
       // 依據生命數量新增愛心圖示
+      const iconDef = (window.currentSkin && window.currentSkin.lifeIcon) || '❤️';
       for (let i = 0; i < lives; i++) {
         const span = document.createElement('span');
-        const icon = (window.currentSkin && window.currentSkin.lifeIcon) || '❤️';
-        if (typeof icon === 'string' && icon.trim().startsWith('<')) {
-          span.innerHTML = icon;
+        if (typeof iconDef === 'string' && iconDef.trim().startsWith('<')) {
+          span.innerHTML = iconDef.trim();
+          const svg = span.querySelector('svg');
+          if (svg) {
+            if (!svg.hasAttribute('xmlns')) {
+              svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            }
+            svg.setAttribute('focusable', 'false');
+            svg.setAttribute('aria-hidden', 'true');
+          }
         } else {
-          span.textContent = icon;
+          span.textContent = iconDef;
         }
         span.className = 'life-icon';
         heartsEl.appendChild(span);
@@ -15712,7 +15725,8 @@ function generateLevel(lv, L){
         const leftIntensity=Math.max(0,Math.min(1,axisDelta/6));
         const rightIntensity=Math.max(0,Math.min(1,-axisDelta/6));
         const drawJetAura=(dir,intensity)=>{
-          const glow=0.12+0.88*intensity;
+          if(intensity <= 0) return;
+          const glow=0.2+0.8*intensity;
           ctx.save();
           if(isVerticalAxis){ ctx.translate(0,dir*(padH/2+jetOffset)); }
           else { ctx.translate(dir*(padW/2+jetOffset),0); }
