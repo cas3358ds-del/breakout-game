@@ -93,32 +93,36 @@
       cssSkin: '科技．魅影幻彩',
       lifeIcon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" role="img">
         <defs>
-          <radialGradient id="phantom-glass-glow" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stop-color="rgba(255,255,255,0.85)" />
-            <stop offset="55%" stop-color="rgba(180,160,255,0.55)" />
-            <stop offset="100%" stop-color="rgba(50,20,110,0.3)" />
+          <linearGradient id="phantom-gem-rainbow" x1="12%" y1="8%" x2="88%" y2="92%">
+            <stop offset="0%" stop-color="#ff5f8d" />
+            <stop offset="18%" stop-color="#ff9a5f" />
+            <stop offset="36%" stop-color="#ffd860" />
+            <stop offset="54%" stop-color="#72f08f" />
+            <stop offset="72%" stop-color="#62c8ff" />
+            <stop offset="88%" stop-color="#8d7bff" />
+            <stop offset="100%" stop-color="#d08dff" />
+          </linearGradient>
+          <radialGradient id="phantom-gem-glow" cx="50%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.95)" />
+            <stop offset="45%" stop-color="rgba(255,255,255,0.4)" />
+            <stop offset="100%" stop-color="rgba(120,60,200,0.05)" />
           </radialGradient>
-          <linearGradient id="phantom-glass-ring" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#f0d7ff" />
-            <stop offset="50%" stop-color="#7a4df5" />
-            <stop offset="100%" stop-color="#2a1a77" />
+          <linearGradient id="phantom-gem-frame" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#fdf4ff" />
+            <stop offset="55%" stop-color="#9476ff" />
+            <stop offset="100%" stop-color="#2c1455" />
           </linearGradient>
         </defs>
-        <circle cx="32" cy="32" r="26.5" fill="url(#phantom-glass-ring)" stroke="rgba(255,255,255,0.6)" stroke-width="1.6" />
-        <g fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2">
-          <circle cx="32" cy="32" r="21" />
-          <circle cx="32" cy="32" r="14.5" />
-        </g>
-        <path d="M32 10L40 26L24 26Z" fill="#ff79c6" opacity="0.86" />
-        <path d="M32 22L48 38L32 54Z" fill="#7aa7ff" opacity="0.78" />
-        <path d="M32 22L16 38L32 54Z" fill="#f6ff7a" opacity="0.8" />
-        <path d="M24 26L32 10L16 38Z" fill="#ffa17a" opacity="0.86" />
-        <path d="M40 26L48 38L32 10Z" fill="#9d79ff" opacity="0.82" />
-        <circle cx="32" cy="32" r="18" fill="url(#phantom-glass-glow)" opacity="0.9" />
-        <g fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3">
-          <path d="M32 12.5L41 30L23 30Z" />
-          <path d="M32 21L45.5 35.5L32 50Z" />
-          <path d="M32 21L18.5 35.5L32 50Z" />
+        <path d="M32 4L56 20L48 46L32 60L16 46L8 20Z" fill="url(#phantom-gem-frame)" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" />
+        <path d="M32 8L51 21.5L44.5 43L32 54L19.5 43L13 21.5Z" fill="url(#phantom-gem-rainbow)" stroke="rgba(255,255,255,0.55)" stroke-width="1.4" />
+        <path d="M32 8L39 22L25 22Z" fill="#ffffff" opacity="0.28" />
+        <path d="M32 8L44.5 43L32 54Z" fill="url(#phantom-gem-glow)" opacity="0.95" />
+        <path d="M32 8L19.5 43L32 54Z" fill="url(#phantom-gem-glow)" opacity="0.65" />
+        <g fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.1">
+          <path d="M32 8L25 22L19.5 43" />
+          <path d="M32 8L39 22L44.5 43" />
+          <path d="M25 22H39" />
+          <path d="M19.5 43H44.5" />
         </g>
       </svg>`,
       cssVars: { '--fxViz': '0', '--panelPattern': 'none' },
