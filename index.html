@@ -19,7 +19,6 @@
       --panelPattern:none;
       --btnGlow:0 0 0 rgba(0,0,0,0);
       --hudBottom:96px;
-      --hud-stage-gap:72px;
       --heartGlow: rgba(0,0,0,0);
       /* 保留原本磚塊與道具顏色 */
       --brick1:#ff6b6b; --brick2:#ffd166; --brick3:#06d6a0; --brick4:#4cc9f0;
@@ -141,20 +140,12 @@
       position:relative;
       max-width:min(1080px,96vw);
       margin:12px auto 0;
+      padding-top:72px;
     }
     #promptsDock{
-      position:static;
-      left:auto;right:auto;top:auto;
-      z-index:20;
+      position:absolute;left:0;right:0;top:0;z-index:20;
       display:flex;gap:8px;justify-content:center;padding:0 6px;
       overflow:hidden;
-      margin:0 auto var(--hud-stage-gap);
-      width:100%;
-      box-sizing:border-box;
-    }
-    #promptsDock:empty{
-      display:none;
-      margin-bottom:0;
     }
     #promptsDock .prompt{
       flex:1 1 calc((100% - 16px)/3);
@@ -171,20 +162,17 @@
     }
     #promptsDock .prompt.fade{opacity:0}
     @media (min-width:768px){
-      #playArea{display:flex;gap:12px;align-items:flex-start;}
+      #playArea{padding-top:0;display:flex;gap:12px;align-items:flex-start;}
       #promptsDock{
         position:absolute;top:0;left:-200px;right:auto;width:180px;
         flex-direction:column;justify-content:flex-start;
-        margin:0;
       }
       #promptsDock .prompt{
         width:100%;height:60px;flex:none;
       }
-      .stage{margin:0 auto 0;}
     }
     /* Stage */
-    .stage{position:relative;margin:var(--hud-stage-gap) auto 0;max-width:100%;border-radius:18px;padding:12px;box-sizing:border-box;background:var(--stageGlass);background-image:var(--panelPattern);background-blend-mode:overlay;}
-    #promptsDock:not(:empty) + .stage{margin:0 auto 0;}
+    .stage{position:relative;margin:0 auto 0;max-width:100%;border-radius:18px;padding:12px;box-sizing:border-box;background:var(--stageGlass);background-image:var(--panelPattern);background-blend-mode:overlay;}
     canvas#game{background:linear-gradient(180deg,#0d132a,#0b1226 55%, #091223);border:1px solid rgba(80,110,170,.45);border-radius:16px;display:block;width:100%;height:auto;margin:0 auto;box-shadow:inset 0 0 160px rgba(255,255,255,.03), 0 28px 90px rgba(0,0,0,.46);touch-action:none;}
     .legend{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:12px;color:#cfe0ff;margin-top:6px}
     .legend .item{padding:4px 8px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--stroke);display:flex;align-items:center;gap:4px}
