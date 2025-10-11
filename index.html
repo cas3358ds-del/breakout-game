@@ -14749,17 +14749,24 @@ function generateLevel(lv, L){
     const optMenu = document.getElementById('optMenu');
     let scheduled = false;
     function schedule(){ if(scheduled) return; scheduled = true; requestAnimationFrame(() => { scheduled = false; placeHUD(); }); }
+    const mobileHudQuery = window.matchMedia('(max-width: 640px)');
+    if(mobileHudQuery && typeof mobileHudQuery.addEventListener === 'function'){
+      mobileHudQuery.addEventListener('change', schedule, {passive:true});
+    }else if(mobileHudQuery && typeof mobileHudQuery.addListener === 'function'){
+      mobileHudQuery.addListener(() => schedule());
+    }
     function placeHUD(){
       if(!hud) return;
       const hudRect = hud.getBoundingClientRect();
       const styles = window.getComputedStyle(hud);
       const marginBottom = parseFloat(styles.marginBottom || '0');
-      let bottom = hudRect.height + marginBottom;
-      if(sentinel){
+      const baseBottom = Math.ceil(hudRect.height + marginBottom);
+      let bottom = baseBottom;
+      if(!mobileHudQuery.matches && sentinel){
         const sentinelRect = sentinel.getBoundingClientRect();
-        bottom = Math.max(bottom, sentinelRect.top);
+        bottom = Math.max(bottom, Math.ceil(sentinelRect.top));
       }
-      const gap = Math.max(0, Math.ceil(bottom) + 6);
+      const gap = Math.max(0, bottom + 6);
       document.documentElement.style.setProperty('--hudBottom', gap + 'px');
     }
     function toggle(menu, btn){
