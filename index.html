@@ -14750,9 +14750,17 @@ function generateLevel(lv, L){
     let scheduled = false;
     function schedule(){ if(scheduled) return; scheduled = true; requestAnimationFrame(() => { scheduled = false; placeHUD(); }); }
     function placeHUD(){
-      const rect = (sentinel || hud).getBoundingClientRect();
-      const top = Math.max(0, Math.ceil(rect.top)) + 6;
-      document.documentElement.style.setProperty('--hudBottom', top + 'px');
+      if(!hud) return;
+      const hudRect = hud.getBoundingClientRect();
+      const styles = window.getComputedStyle(hud);
+      const marginBottom = parseFloat(styles.marginBottom || '0');
+      let bottom = hudRect.height + marginBottom;
+      if(sentinel){
+        const sentinelRect = sentinel.getBoundingClientRect();
+        bottom = Math.max(bottom, sentinelRect.top);
+      }
+      const gap = Math.max(0, Math.ceil(bottom) + 6);
+      document.documentElement.style.setProperty('--hudBottom', gap + 'px');
     }
     function toggle(menu, btn){
       const show = !menu.classList.contains('show');
