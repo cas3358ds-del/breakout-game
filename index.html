@@ -734,20 +734,11 @@ select optgroup { color: #0b1022; }
       <!-- 遊戲區域 -->
       <div class="stage">
         <canvas id="fx"></canvas>
-<canvas id="game" width="1100" height="700"></canvas>
+        <canvas id="game" width="1100" height="700"></canvas>
         <div id="combo" class="combo"></div>
-        <div class="legend">
-        <span class="item"><span class="box" style="background:var(--expl)"></span>爆炸磚</span>
-        <span class="item"><span class="box" style="background:var(--brick2)"></span>一般磚</span>
-        <span class="item"><span class="box" style="background:#888"></span>不可破壞磚</span>
-        <span class="item"><span class="box" style="background:#bb7aff"></span>強反彈磚</span>
-        <span class="item"><span class="box" style="background:#6ec6ff"></span>移動磚</span>
-        <span class="item"><span class="box" style="background:#ff4d6d"></span>Boss磚</span>
-        <span class="item"><span class="box" style="background:var(--power)"></span>增益道具</span>
-        <span class="item"><span class="box" style="background:var(--debuff)"></span>減益道具</span>
+        
       </div>
     </div>
-  </div>
 
     <!-- 覆蓋層/畫廊/勝利/結束/提示 -->
     <div class="overlay">
@@ -829,10 +820,7 @@ select optgroup { color: #0b1022; }
       <div class="center-note" id="centerNote">
         <div class="note-box" id="noteBox"><button class="note-close" id="noteClose" aria-label="關閉">×</button>
           <h2 id="noteTitle">按 <kbd>Space</kbd> 或點畫面開始</h2>
-          <p id="noteText">
-            操作：<kbd>←</kbd>/<kbd>→</kbd> 或 <kbd>A</kbd>/<kbd>D</kbd>；手指拖曳畫面也可移動平台。<br>
-            已整合：背景逐步揭示 + 清關畫廊、增益/減益（含電漿球/凍結球/神聖球/鳳凰審判/9命怪貓）、爆炸磚、音效、難度、存讀檔、BGM、教學/效果說明、Boss與進階磚。
-          </p>
+          <p id="noteText"></p>
         </div>
       </div>
 </div>
