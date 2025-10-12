@@ -50,7 +50,7 @@
       backdrop-filter: blur(8px);
       box-shadow:0 6px 28px rgba(0,0,0,.28)
     }
-    .stats{display:grid;grid-template-columns:auto auto 1fr;grid-auto-rows:minmax(36px,auto);gap:8px 10px;align-items:center}
+    .stats{display:grid;grid-template-columns:auto auto auto 1fr;grid-auto-rows:minmax(36px,auto);gap:8px 10px;align-items:center}
     .stats .wide{grid-column:1 / -1}
     .pill{
       padding:8px 18px;border:1px solid var(--stroke);
@@ -682,6 +682,7 @@ select optgroup { color: #0b1022; }
       <div class="stats">
         <div class="pill">分數 <b id="score">0</b></div>
         <div class="pill">關卡 <b id="level">1</b>/<span id="totalLevels">20</span></div>
+        <div class="pill">銀幣 <b id="silverCoins">0</b></div>
         <div class="inline-controls">
           <button class="ic-btn" id="sndBtn" aria-haspopup="true" aria-expanded="false" aria-controls="soundMenu" title="聲音"><span class="ico">🔊</span></button>
           <div class="menu" id="soundMenu">
@@ -1349,6 +1350,7 @@ select optgroup { color: #0b1022; }
   // === 參考 DOM ===
   const canvas=document.getElementById('game'); const ctx=canvas.getContext('2d');
   const scoreEl=document.getElementById('score'), levelEl=document.getElementById('level'), livesEl=document.getElementById('lives');
+  const silverCoinsEl=document.getElementById('silverCoins');
   const pauseBtn=document.getElementById('pauseBtn'), resetBtn=document.getElementById('resetBtn'), fsBtn=document.getElementById('fsBtn');
   const soundBtn=document.getElementById('soundBtn'), saveBtn=document.getElementById('saveBtn'), loadBtn=document.getElementById('loadBtn'), clearSaveBtn=document.getElementById('clearSaveBtn');
   const levelJumpSel=document.getElementById('levelJumpSel');
@@ -1373,6 +1375,24 @@ select optgroup { color: #0b1022; }
   document.getElementById('retryBtn')?.addEventListener('click', ()=>{ gameover.classList.remove('show'); gameOver=false; resetGame(); startGameWithCountdown(); });
 
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
+
+  const SILVER_COIN_KEY='breakout_silver_coins';
+  let silverCoins=0;
+  (function(){
+    try{
+      const stored=localStorage.getItem(SILVER_COIN_KEY);
+      if(stored!=null){
+        const parsed=parseInt(stored,10);
+        if(!Number.isNaN(parsed) && parsed>=0){
+          silverCoins=parsed;
+        }
+      }
+    }catch(e){}
+  })();
+  function saveSilverCoins(){
+    try{ localStorage.setItem(SILVER_COIN_KEY, String(Math.max(0, Math.floor(silverCoins)))); }catch(e){}
+  }
+
 
   let maxLevelReached=1;
   try{
@@ -7886,6 +7906,7 @@ select optgroup { color: #0b1022; }
     demonAbyssBricks.length=0;
     demonAbyssExplosions.length=0;
     addScore(BOSS_DEFEAT_SCORE.demon);
+    dropBossCoins(centerX, centerY, 5);
     stats.bossKills++;
     updateHUD();
     screenShake=Math.max(screenShake,32);
@@ -8889,6 +8910,13 @@ let balls=[]; function makeBall(stuck=false,x=null){
         g.gain.setValueAtTime(0.07, now);
         g.gain.exponentialRampToValueAtTime(0.001, now+0.4);
         o.start(now); o.stop(now+0.4); break;
+      case 'coin':
+        o.type='sine';
+        o.frequency.setValueAtTime(900, now);
+        o.frequency.linearRampToValueAtTime(1400, now+0.18);
+        g.gain.setValueAtTime(0.045, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.25);
+        o.start(now); o.stop(now+0.3); break;
       case 'bladeHellBeamExpand':
         o.type='triangle';
         o.frequency.setValueAtTime(260, now);
@@ -9729,6 +9757,7 @@ let balls=[]; function makeBall(stuck=false,x=null){
     const sb=spaceBoss;
     const fake={x:sb.x-sb.w/2,y:sb.y-sb.h/2,w:sb.w,h:sb.h};
     bossKillEffect(fake);
+    dropBossCoins(sb.x, sb.y, 1);
     addScore(BOSS_DEFEAT_SCORE.space);
     stats.bossKills++;
     updateHUD();
@@ -10965,6 +10994,7 @@ let balls=[]; function makeBall(stuck=false,x=null){
     if(reaperPhase!=='active' || !reaperBoss) return;
     const now=performance.now();
     const rb=reaperBoss;
+    dropBossCoins(rb.x, rb.y, 2);
     addScore(BOSS_DEFEAT_SCORE.reaper);
     stats.bossKills++;
     updateHUD();
@@ -11936,6 +11966,7 @@ let balls=[]; function makeBall(stuck=false,x=null){
       dragonBursts.push({type:'ring',x:cx,y:cy,r0:60,r1:520,width:26,t0:now,life:1800,color:'255,210,130'});
     }
     addScore(BOSS_DEFEAT_SCORE.dragon);
+    if(dragonBoss){ dropBossCoins(dragonBoss.x, dragonBoss.y, 3); }
     stats.bossKills++;
     updateHUD();
     screenShake=Math.max(screenShake,20);
@@ -14041,6 +14072,115 @@ function generateLevel(lv, L){
 
   // === 掉落道具 ===
   const powerups=[];
+  const coins=[];
+
+  const COIN_DEFS={
+    small:{value:1,size:18,chance:0.9,magnetRange:150,seekSpeed:4.6,palette:{inner:'#f9fbff',mid:'#cdd9f0',outer:'#8898c0',rim:'#ffffff',text:'#12203b'},label:'+1'},
+    medium:{value:5,size:20,chance:0.09,magnetRange:165,seekSpeed:4.8,palette:{inner:'#f8fbff',mid:'#c5d7ff',outer:'#6e85c7',rim:'#f1f6ff',text:'#102040'},label:'+5'},
+    large:{value:10,size:22,chance:0.01,magnetRange:180,seekSpeed:5.0,palette:{inner:'#f6faff',mid:'#bdd0ff',outer:'#5a75be',rim:'#eef5ff',text:'#0c1a36'},label:'+10'},
+    extra:{value:30,size:26,chance:0,magnetRange:210,seekSpeed:5.6,palette:{inner:'#fff7f0',mid:'#ffd9a6',outer:'#ffac4c',rim:'#ffe6bb',text:'#2a1700'},label:'+30'}
+  };
+
+  function randomCoinType(){
+    const r=Math.random();
+    if(r<COIN_DEFS.small.chance) return 'small';
+    if(r<COIN_DEFS.small.chance+COIN_DEFS.medium.chance) return 'medium';
+    return 'large';
+  }
+
+  function setCoinDirection(coin, horizontal){
+    coin.horizontal=!!horizontal;
+    if(coin.horizontal){
+      coin.vx = -Math.abs(coin.speed);
+      coin.vy = 0;
+    }else{
+      coin.vx = 0;
+      coin.vy = Math.abs(coin.speed);
+    }
+  }
+
+  function spawnCoinAt(cx, cy, opts={}){
+    const type = opts.type || randomCoinType();
+    const def = COIN_DEFS[type] || COIN_DEFS.small;
+    const size = opts.size || def.size;
+    const now = performance.now();
+    const coin={
+      type,
+      value: opts.value ?? def.value,
+      size,
+      w:size,
+      h:size,
+      x:(cx ?? 550) - size/2,
+      y:(cy ?? (layout().top+40)) - size/2,
+      speed: opts.speed ?? 2.6,
+      seekSpeed: opts.seekSpeed ?? def.seekSpeed,
+      magnetRange: opts.magnetRange ?? def.magnetRange,
+      spawnAt: now,
+      life: opts.life ?? 14000,
+      phase: Math.random()*Math.PI*2,
+      vx:0,
+      vy:0,
+      magnet:false
+    };
+    const L = layout();
+    const stageTop = L?.top ?? 60;
+    coin.x = Math.max(8, Math.min(1100 - coin.w - 8, coin.x));
+    coin.y = Math.max(stageTop, Math.min(700 - coin.h - 8, coin.y));
+    setCoinDirection(coin, orientLeft);
+    coins.push(coin);
+    return coin;
+  }
+
+  function coinDropChanceForLevel(lv){
+    const min=0.10, max=0.20;
+    const total=Math.max(1, (GAME_CONFIG.totalLevels||1)-1);
+    const t=Math.max(0, Math.min(1, (lv-1)/total));
+    return min + (max-min)*t;
+  }
+
+  function maybeDropCoin(b, rateMul=1){
+    if(!b) return;
+    if(b.boss) return;
+    let chance = coinDropChanceForLevel(level) * (rateMul ?? 1);
+    if(b.elite) chance = 1;
+    if(chance>1) chance=1;
+    if(Math.random()<chance){
+      spawnCoinAt(b.x + b.w/2, b.y + b.h/2);
+    }
+  }
+
+  function dropBossCoins(centerX, centerY, count){
+    if(!count || count<=0) return;
+    const radius = 32;
+    for(let i=0;i<count;i++){
+      const ang = (Math.PI*2*i)/count;
+      const x = centerX + Math.cos(ang)*radius;
+      const y = centerY + Math.sin(ang)*radius;
+      spawnCoinAt(x, y, {type:'extra'});
+    }
+  }
+
+  function awardSilverCoins(amount, opts={}){
+    if(!Number.isFinite(amount)) return;
+    silverCoins = Math.max(0, Math.floor(silverCoins + amount));
+    saveSilverCoins();
+    updateHUD();
+    if(opts.x!=null && opts.y!=null){
+      const type = opts.type || 'small';
+      const primary = type==='extra' ? '#ffe4b0' : '#d5e8ff';
+      spawnParticles(opts.x, opts.y, primary, 14, 1.6, 2.4, 2.1);
+      spawnParticles(opts.x, opts.y, '#ffffff', 8, 1.4, 2.0, 1.8);
+    }
+    playSFX('coin');
+  }
+
+  function collectCoin(coin){
+    if(!coin) return;
+    const cx = coin.x + coin.w/2;
+    const cy = coin.y + coin.h/2;
+    awardSilverCoins(coin.value, {x:cx, y:cy, type:coin.type});
+  }
+
 
   // === 天空隨機增益掉落（第1關每25秒 → 第20關每6秒 線性遞減） ===
   let nextSkyDropAt = 0;
@@ -14115,6 +14255,7 @@ function generateLevel(lv, L){
   }
   function maybeDropFromBrick(b, rateMul=1){
     if(!b || b.unbreakable) return;
+    maybeDropCoin(b, rateMul);
     if(b.treasure){
       spawnPower(b.x + b.w/2 - GAME_CONFIG.powerCapsule.width/2, b.y + b.h/2, {forceGood:true});
       return;
@@ -14333,6 +14474,41 @@ function generateLevel(lv, L){
     updateBuffBadges();
   }
 
+  function drawCoin(c){
+    const def = COIN_DEFS[c.type] || COIN_DEFS.small;
+    c.phase = (c.phase || 0) + 0.02;
+    const cx = (c.x + c.w/2)*scaleX;
+    const cy = (c.y + c.h/2)*scaleY;
+    const avgScale = (scaleX + scaleY)/2;
+    const radius = (c.w/2) * avgScale;
+    const palette = def.palette || COIN_DEFS.small.palette;
+    ctx.save();
+    const grad = ctx.createRadialGradient(cx, cy, radius*0.18, cx, cy, radius);
+    grad.addColorStop(0, palette.inner || '#f5faff');
+    grad.addColorStop(0.5, palette.mid || '#d0e2ff');
+    grad.addColorStop(1, palette.outer || '#7b8fbf');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI*2);
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, radius*0.18);
+    ctx.strokeStyle = palette.rim || '#eef5ff';
+    ctx.stroke();
+    const glow = 0.35 + 0.25*Math.sin(c.phase || 0);
+    ctx.fillStyle = `rgba(255,255,255,${glow})`;
+    ctx.beginPath();
+    ctx.ellipse(cx - radius*0.3, cy - radius*0.3, radius*0.35, radius*0.25, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.fillStyle = palette.text || '#102040';
+    ctx.font = `${Math.max(10, Math.round(radius*1.05))}px 'Playfair Display', serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(def.label || `+${c.value}`, cx, cy + radius*0.06);
+    ctx.restore();
+  }
+
   function drawPower(p){ const base=p.isDebuff?getVar('--debuff'):getVar('--power'); const gold1='#f6d365', gold2='#fda085'; const color = p.isSpecial ? gold1 : base; const x=p.x*scaleX, y=p.y*scaleY, w=p.w*scaleX, h=p.h*scaleY; const wobble=Math.sin(p.phase)*1.5; p.phase+=0.04;
     ctx.save(); ctx.translate(0,wobble); const grd=ctx.createLinearGradient(x,y,x,y+h); grd.addColorStop(0,color); grd.addColorStop(1,p.isSpecial?gold2:(p.isDebuff?'#a33':'#3a56a8')); ctx.fillStyle=grd; roundedRect(x,y,w,h,8); ctx.fill(); ctx.strokeStyle=p.isSpecial?'rgba(255,220,150,.8)':'rgba(255,255,255,.25)'; ctx.stroke();
     ctx.fillStyle=p.isSpecial?'#402a00':'#fff'; ctx.font=`${Math.max(10,Math.round(12*scaleY))}px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.type[0], x+w/2, y+h/2+0.5); ctx.restore(); }
@@ -14400,6 +14576,9 @@ function generateLevel(lv, L){
       }
       catsEl.style.display = nineCatEaten ? 'flex' : 'none';
     }
+    if (silverCoinsEl) {
+      silverCoinsEl.textContent = Math.max(0, Math.floor(silverCoins));
+    }
     updateFireEnergy();
   }
   window.updateHUD = updateHUD;
@@ -14431,6 +14610,7 @@ function generateLevel(lv, L){
     // 重置 LONG buff stacks
     buffs.LONG.stacks=[];
     powerups.length=0;
+    coins.length=0;
     particles.length=0;
     plasmas.length=0;
     holyFlashes.length=0;
@@ -16328,8 +16508,8 @@ function generateLevel(lv, L){
     // 飛彈
     for(const m of missiles){ for(const tr of (m.trail||[])){ const a=Math.max(0,1-(performance.now()-tr.t)/300); ctx.fillStyle=`rgba(255,180,90,${0.6*a})`; ctx.beginPath(); ctx.arc(tr.x*scaleX,tr.y*scaleY,2*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); } ctx.fillStyle='#ddd'; ctx.beginPath(); ctx.arc(m.x*scaleX,m.y*scaleY,4*((scaleX+scaleY)/2),0,Math.PI*2); ctx.fill(); }
 
-    // 掉落道具
-
+    // 掉落道具與銀幣
+    for(const c of coins) drawCoin(c);
     for(const p of powerups) drawPower(p);
 
     // 鎖定框
@@ -16615,6 +16795,10 @@ function generateLevel(lv, L){
         paddle.x = 0;
         // 將現有掉落道具改為水平移動
         for(const p of powerups){ p.horizontal = true; }
+        for(const coin of coins){
+          if(coin.magnet){ coin.horizontal = true; }
+          else { setCoinDirection(coin, true); }
+        }
         // 重新鎖定所有球以瞄準擋板中心
         const pr = paddleRect();
         const tx = pr.x + pr.w/2;
@@ -16648,6 +16832,10 @@ function generateLevel(lv, L){
         paddle.x = 1100/2 - paddle.w/2;
         // 將現有掉落道具改為垂直移動
         for(const p of powerups){ p.horizontal = false; }
+        for(const coin of coins){
+          if(coin.magnet){ coin.horizontal = false; }
+          else { setCoinDirection(coin, false); }
+        }
         // 球重新瞄準擋板中心
         const pr2 = paddleRect();
         const tx2 = pr2.x + pr2.w/2;
@@ -17316,6 +17504,56 @@ function generateLevel(lv, L){
       lives--; updateHUD();
       if(lives<=0){ running=false; paused=true; showGameOver(); return; }
       else { resetBalls(false); startCountdown(); return; }
+      }
+    }
+
+    // 銀幣掉落與拾取
+    for(let i=coins.length-1;i>=0;i--){
+      const coin=coins[i];
+      coin.phase = (coin.phase || 0) + 0.08;
+      if(!coin.magnet){
+        if(coin.horizontal){ coin.x += coin.vx; }
+        else { coin.y += coin.vy; }
+      }
+      const pr = paddleRect();
+      const prCenterX = pr.x + pr.w/2;
+      const prCenterY = pr.y + pr.h/2;
+      const cx = coin.x + coin.w/2;
+      const cy = coin.y + coin.h/2;
+      if(!coin.magnet){
+        const dist = Math.hypot(cx - prCenterX, cy - prCenterY);
+        if(dist <= (coin.magnetRange || 150)){ coin.magnet = true; }
+      }
+      if(coin.magnet){
+        const dx = prCenterX - cx;
+        const dy = prCenterY - cy;
+        const dist = Math.hypot(dx, dy) || 1;
+        const seek = Math.max(coin.seekSpeed || 5, Math.abs(coin.speed||2.6)*1.5);
+        coin.x += (dx/dist) * seek;
+        coin.y += (dy/dist) * seek;
+      }
+      const hit = (!orientLeft)
+        ? (coin.y + coin.h >= pr.y && coin.x + coin.w >= pr.x && coin.x <= pr.x + pr.w && coin.y <= pr.y + pr.h)
+        : (coin.x <= pr.x + pr.w && coin.x + coin.w >= pr.x && coin.y + coin.h >= pr.y && coin.y <= pr.y + pr.h);
+      if(hit){
+        collectCoin(coin);
+        coins.splice(i,1);
+        continue;
+      }
+      if(coin.magnet){
+        const dist = Math.hypot((coin.x + coin.w/2) - prCenterX, (coin.y + coin.h/2) - prCenterY);
+        if(dist < Math.max(14, coin.w*0.6)){
+          collectCoin(coin);
+          coins.splice(i,1);
+          continue;
+        }
+      }
+      if(now - coin.spawnAt > coin.life){ coins.splice(i,1); continue; }
+      if(!coin.magnet){
+        if(!coin.horizontal && coin.y > 720){ coins.splice(i,1); continue; }
+        if(coin.horizontal && coin.x + coin.w < -50){ coins.splice(i,1); continue; }
+      }else{
+        if(cx < -120 || cx > 1220 || cy < -120 || cy > 820){ coins.splice(i,1); continue; }
       }
     }
 
