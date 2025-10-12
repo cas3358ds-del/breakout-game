@@ -117,6 +117,15 @@
       font-weight:700;
     }
     select,input[type="range"]{background:var(--glass-2);color:#fff;border:1px solid var(--stroke);border-radius:8px;padding:6px 10px}
+    @media (max-width: 520px){
+      .hud{padding:8px 10px;border-radius:16px;max-width:calc(100vw - 20px)}
+      .stats{gap:6px 8px;grid-auto-rows:minmax(30px,auto)}
+      .pill{padding:6px 12px;min-height:30px;font-size:13px;gap:6px}
+      .pill b{font-size:1em}
+      .inline-controls{gap:6px}
+      .ic-btn{width:40px;height:32px;border-radius:10px}
+      .ic-btn .ico{font-size:16px}
+    }
     /* Buffs & Prompts */
     #buffs{
       position:sticky;z-index:22;
