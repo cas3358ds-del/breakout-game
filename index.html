@@ -50,7 +50,7 @@
       backdrop-filter: blur(8px);
       box-shadow:0 6px 28px rgba(0,0,0,.28)
     }
-    .stats{display:grid;grid-template-columns:auto auto 1fr;grid-auto-rows:minmax(36px,auto);gap:8px 10px;align-items:center}
+    .stats{display:grid;grid-template-columns:auto auto auto 1fr;grid-auto-rows:minmax(36px,auto);gap:8px 10px;align-items:center}
     .stats .wide{grid-column:1 / -1}
     .pill{
       padding:8px 18px;border:1px solid var(--stroke);
@@ -59,6 +59,9 @@
       color:#d7e3ff;font-weight:650;font-size:15px
     }
     .pill b{color:#fff;font-variant-numeric:tabular-nums}
+    .coins-pill{gap:8px;}
+    .coins-pill .coin-label{display:inline-flex;align-items:center;}
+    .coin-icon{display:inline-flex;align-items:center;justify-content:center;font-size:16px;filter:drop-shadow(0 0 6px rgba(255,255,255,0.35));}
     .inline-controls{justify-self:end;display:flex;gap:8px;align-items:center;position:relative}
     .ic-btn{
       width:48px;height:36px;border-radius:12px;border:1px solid var(--stroke);
@@ -681,6 +684,7 @@ select optgroup { color: #0b1022; }
     <section class="hud" aria-label="遊戲 HUD">
       <div class="stats">
         <div class="pill">分數 <b id="score">0</b></div>
+        <div class="pill coins-pill"><span class="coin-label">銀幣</span><b id="coins">0</b><span class="coin-icon" aria-hidden="true">🪙</span></div>
         <div class="pill">關卡 <b id="level">1</b>/<span id="totalLevels">20</span></div>
         <div class="inline-controls">
           <button class="ic-btn" id="sndBtn" aria-haspopup="true" aria-expanded="false" aria-controls="soundMenu" title="聲音"><span class="ico">🔊</span></button>
@@ -896,6 +900,20 @@ select optgroup { color: #0b1022; }
     },
     powerCapsule:{width:24,height:16,fallVy:2.2},
     caps:{paddleMaxW:300,ballSpeedMax:19.5}
+  };
+
+  const COIN_STORAGE_KEY = 'breakout_silver_coins';
+  const COIN_TYPES = {
+    small: { label: '小銀幣', value: 1, weight: 0.90, radius: 9, fallSpeed: 2.4, magnetSpeed: 8 },
+    medium:{ label: '中銀幣', value: 5, weight: 0.09, radius: 11, fallSpeed: 2.6, magnetSpeed: 8.5 },
+    large: { label: '大銀幣', value:10, weight: 0.01, radius: 13, fallSpeed: 2.8, magnetSpeed: 9 },
+    mega:  { label: '特大銀幣', value:30, weight: 0,    radius: 16, fallSpeed: 2.3, magnetSpeed: 11 }
+  };
+  const BOSS_COIN_DROP_COUNT = {
+    5: 1,
+    10: 2,
+    15: 3,
+    20: 5
   };
 
   // === 影像載入（支援 .png / .jpg） ===
@@ -1364,6 +1382,7 @@ select optgroup { color: #0b1022; }
   const fireEnergyEl = document.getElementById('fireEnergy');
   const catsEl = document.getElementById('cats');
   const totalLevelsEl = document.getElementById('totalLevels');
+  const coinsEl = document.getElementById('coins');
   const sfxOnEl = document.getElementById('sfxOn');
   const bgmOnEl = document.getElementById('bgmOn');
   const skinSel = document.getElementById('skinSel');
@@ -1381,6 +1400,11 @@ select optgroup { color: #0b1022; }
       maxLevelReached=Math.max(1, Math.min(GAME_CONFIG.totalLevels, storedMax));
     }
   }catch(e){}
+  try{
+    const storedCoins=parseInt(localStorage.getItem(COIN_STORAGE_KEY)||'0',10);
+    if(!Number.isNaN(storedCoins) && storedCoins>=0){ coins=storedCoins; }
+  }catch(e){ coins=0; }
+  updateCoinHUD();
 
   function unlockLevel(targetLevel){
     const numeric=parseInt(targetLevel,10);
@@ -1845,7 +1869,7 @@ select optgroup { color: #0b1022; }
   let scaleX=1, scaleY=1; window.addEventListener('resize', resizeCanvasDPR, {passive:true}); resizeCanvasDPR();
 
   // === 狀態 ===
-  let running=false, paused=true, level=1, score=0, lives=9, soundsOn=false;
+  let running=false, paused=true, level=1, score=0, lives=9, coins=0, soundsOn=false;
   let nineCatEaten=0;
   const bossNineCatDrops=new Set();
   let fireEnergy=0;
@@ -9438,7 +9462,7 @@ let balls=[]; function makeBall(stuck=false,x=null){
 
   function initBricks(){
     const L=layout();
-    const totalPad=(L.cols+1)*L.pad; brickW=Math.floor((1100-totalPad)/L.cols); brickH=L.h; bricks=[]; revealRects=[]; brickIdCounter=0;
+    const totalPad=(L.cols+1)*L.pad; brickW=Math.floor((1100-totalPad)/L.cols); brickH=L.h; bricks=[]; revealRects=[]; brickIdCounter=0; coinDrops.length=0;
     finalVictorySequence=null;
     spaceBoss=null;
     spaceBossAnchor=null;
@@ -13911,7 +13935,7 @@ function generateLevel(lv, L){
     b.hp = (b.hp||1) - amount;
     if(b.hp<=0){
       if(b.elite){ stats.eliteKills++; }
-      revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); updateHUD();
+      revealBrickArea(b); maybeDropCoinFromBrick(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); updateHUD();
     }
   }
 
@@ -13933,6 +13957,7 @@ function generateLevel(lv, L){
     spawnParticles(cx,cy,'#ff4d6d',40,2.0,3.5,3.5);
     screenShake=Math.max(screenShake,6);
     playSFX('fireExplosion');
+    spawnBossCoinDrops(level, cx, cy);
     showComboNotice(`成功擊殺第${level}關Boss!`,5000,3000);
     const dropMode = opts.dropNineCat ?? 'never';
     if(dropMode==='always'){
@@ -13964,7 +13989,7 @@ function generateLevel(lv, L){
     }
     if(sfx==='default'){ beep(420,0.06,0.08); setTimeout(()=>beep(620,0.05,0.06),40); }
     else if(sfx!=='none'){ playSFX(sfx); }
-    revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); updateHUD();
+    revealBrickArea(b); maybeDropCoinFromBrick(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); updateHUD();
   }
   function damageBrick(i, dmg, sfx='default'){ for(let k=0;k<dmg;k++){ if(!bricks[i]) break; destroyBrick(i, sfx); } }
   function destroyNeighbors(idx){ const b=bricks[idx]; if(!b) return; const L=layout(); const near=[]; for(let j=bricks.length-1;j>=0;j--){ if(j===idx) continue; const t=bricks[j]; const dx=Math.abs((t.x+t.w/2)-(b.x+b.w/2)); const dy=Math.abs((t.y+t.h/2)-(b.y+b.h/2)); const thx=brickW+L.pad+2, thy=brickH+L.pad+2; if(dx<=thx && dy<=thy){ // 鄰近一格
@@ -13975,7 +14000,7 @@ function generateLevel(lv, L){
               bossKillEffect(t);
               revealBrickArea(t); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(t)); stats.bossKills++; }
           } else {
-            revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(t)); if(t.elite) stats.eliteKills++;
+            revealBrickArea(t); maybeDropCoinFromBrick(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(t)); if(t.elite) stats.eliteKills++;
           }
         }
       }
@@ -13995,7 +14020,7 @@ function generateLevel(lv, L){
           b.hp -= 1;
           if(b.hp<=0){ bossKillEffect(b); revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; }
         }else{
-          revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++;
+          revealBrickArea(b); maybeDropCoinFromBrick(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++;
         }
         spawnParticles(bx,by,'#ffdd99',14,1.7,2.6,3);
       }
@@ -14019,7 +14044,7 @@ function generateLevel(lv, L){
             if(b.hp<=0){ bossKillEffect(b); revealBrickArea(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
           }
           else {
-            revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD();
+            revealBrickArea(b); maybeDropCoinFromBrick(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD();
           }
         }
         spawnParticles(bx,by,'#ffdd99',20,1.8,2.8,3.5);
@@ -14041,6 +14066,7 @@ function generateLevel(lv, L){
 
   // === 掉落道具 ===
   const powerups=[];
+  const coinDrops=[];
 
   // === 天空隨機增益掉落（第1關每25秒 → 第20關每6秒 線性遞減） ===
   let nextSkyDropAt = 0;
@@ -14224,6 +14250,82 @@ function generateLevel(lv, L){
     });
   }
 
+  function coinDropChanceForLevel(lv){
+    const maxLv=Math.max(1, GAME_CONFIG.totalLevels-1);
+    const progress=Math.max(0, Math.min(1, (lv-1)/maxLv));
+    return Math.min(0.2, 0.1 + 0.1*progress);
+  }
+
+  function pickCoinType(){
+    const order=['small','medium','large'];
+    const roll=Math.random();
+    let acc=0;
+    for(const key of order){
+      const def=COIN_TYPES[key];
+      acc += def?.weight || 0;
+      if(roll < acc) return key;
+    }
+    return order[order.length-1];
+  }
+
+  function spawnCoinDrop(x,y,type='small',opts={}){
+    const def=COIN_TYPES[type];
+    if(!def) return;
+    const horizontal=orientLeft;
+    const speed=opts.speed ?? def.fallSpeed ?? GAME_CONFIG.powerCapsule.fallVy;
+    const drop={
+      x,
+      y,
+      type,
+      value:def.value || 0,
+      radius:def.radius || 10,
+      horizontal,
+      speed,
+      magnet:false,
+      magnetSpeed:def.magnetSpeed || 9,
+      phase:Math.random()*Math.PI*2
+    };
+    if(horizontal){
+      drop.vx = -(opts.vx ?? speed);
+      drop.vy = 0;
+    }else{
+      drop.vx = 0;
+      drop.vy = opts.vy ?? speed;
+    }
+    coinDrops.push(drop);
+  }
+
+  function maybeDropCoinFromBrick(b){
+    if(!b || b.unbreakable || b.boss) return;
+    const chance = b.elite ? 1 : coinDropChanceForLevel(level);
+    if(Math.random() <= chance){
+      const type = pickCoinType();
+      const cx = b.x + b.w/2;
+      const cy = b.y + b.h/2;
+      spawnCoinDrop(cx, cy, type);
+    }
+  }
+
+  function spawnBossCoinDrops(levelNum, cx, cy){
+    const count = BOSS_COIN_DROP_COUNT[levelNum] || 0;
+    if(!count) return;
+    const spread = 24;
+    for(let i=0;i<count;i++){
+      const offset = (i - (count-1)/2) * spread;
+      const dropX = cx + (orientLeft ? 0 : offset);
+      const dropY = cy - i*10;
+      spawnCoinDrop(dropX, dropY, 'mega', {speed: COIN_TYPES.mega.fallSpeed});
+    }
+  }
+
+  function collectCoinDrop(drop){
+    if(!drop) return;
+    addCoins(drop.value || 0);
+    spawnParticles(drop.x, drop.y, '#d7e3ff', 18, 1.6, 2.4, 2.2);
+    spawnParticles(drop.x, drop.y, '#ffffff', 10, 1.2, 2.0, 1.8);
+    beep(1200,0.07,0.05);
+  }
+
   function applyPower(type){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type) stats.buffs++; }
     const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
@@ -14257,7 +14359,7 @@ function generateLevel(lv, L){
               if(b.hp>0){ keep.push(b);} else { bossKillEffect(b); revealBrickArea(b); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; }
             }
             else {
-              revealBrickArea(b); maybeDropFromBrick(b); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++;
+              revealBrickArea(b); maybeDropCoinFromBrick(b); maybeDropFromBrick(b); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++;
             }
             fireBursts.push({x:b.x+b.w/2,y:b.y+b.h/2,life:400+Math.random()*400});
           } else keep.push(b);
@@ -14337,6 +14439,50 @@ function generateLevel(lv, L){
     ctx.save(); ctx.translate(0,wobble); const grd=ctx.createLinearGradient(x,y,x,y+h); grd.addColorStop(0,color); grd.addColorStop(1,p.isSpecial?gold2:(p.isDebuff?'#a33':'#3a56a8')); ctx.fillStyle=grd; roundedRect(x,y,w,h,8); ctx.fill(); ctx.strokeStyle=p.isSpecial?'rgba(255,220,150,.8)':'rgba(255,255,255,.25)'; ctx.stroke();
     ctx.fillStyle=p.isSpecial?'#402a00':'#fff'; ctx.font=`${Math.max(10,Math.round(12*scaleY))}px ui-monospace, monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.type[0], x+w/2, y+h/2+0.5); ctx.restore(); }
 
+  function drawCoin(c){
+    const baseX=c.x*scaleX;
+    const baseY=c.y*scaleY;
+    const radius=Math.max(6, c.radius*((scaleX+scaleY)/2));
+    const phase=c.phase || 0;
+    const bob=Math.sin(phase)*2*scaleY;
+    const palette={
+      small:['#f2f6ff','#c8d4f6','#8a98c6'],
+      medium:['#e6faff','#a6defa','#5f99d6'],
+      large:['#f4f0ff','#d8c8ff','#8f7de2'],
+      mega:['#fff5d6','#f6d365','#b8860b']
+    };
+    const colors=palette[c.type] || palette.small;
+    ctx.save();
+    ctx.globalAlpha=0.92;
+    const grad=ctx.createRadialGradient(baseX, baseY+bob, radius*0.2, baseX, baseY+bob, radius);
+    grad.addColorStop(0, colors[0]);
+    grad.addColorStop(0.45, colors[1]);
+    grad.addColorStop(1, colors[2]);
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    ctx.arc(baseX, baseY+bob, radius, 0, Math.PI*2);
+    ctx.fill();
+    ctx.lineWidth=Math.max(1.1, radius*0.14);
+    ctx.strokeStyle='rgba(255,255,255,0.7)';
+    ctx.stroke();
+    ctx.lineWidth=Math.max(0.8, radius*0.08);
+    ctx.strokeStyle='rgba(40,60,120,0.2)';
+    ctx.beginPath();
+    ctx.arc(baseX, baseY+bob, radius*0.72, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.fillStyle = c.type==='mega' ? '#4a2a00' : '#102040';
+    ctx.font = `${Math.max(10, radius*0.9)}px "Segoe UI","Noto Sans TC",sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(`+${c.value}`, baseX, baseY+bob);
+    ctx.restore();
+  }
+
+  function updateCoinHUD(){ if(coinsEl) coinsEl.textContent = coins; }
+  function persistCoins(){ try{ localStorage.setItem(COIN_STORAGE_KEY, String(coins)); }catch(e){} }
+  function setCoins(value){ const next=Math.max(0, Math.floor(value)); coins=next; persistCoins(); updateCoinHUD(); }
+  function addCoins(amount){ if(!amount) return; setCoins(coins + amount); }
+
   function updateFireEnergy(){
     if(!fireEnergyEl) return;
     if(buffs.FIRE?.active || fireEnergy>0){
@@ -14350,6 +14496,7 @@ function generateLevel(lv, L){
   function updateHUD(){
     // 更新分數、關卡、生命與愛心顯示
     scoreEl.textContent = Math.max(0 | score, 0);
+    updateCoinHUD();
     // 顯示目前關卡數（level 元素）和總關卡數（totalLevels 元素）
     levelEl.textContent = level;
     if (totalLevelsEl) totalLevelsEl.textContent = GAME_CONFIG.totalLevels;
@@ -14419,7 +14566,7 @@ function generateLevel(lv, L){
   }
   function hideCenter(){ centerNote.style.display='none'; }
 
-  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:9; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; finalVictorySequence=null; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
+  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:9; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; coinDrops.length=0; finalVictorySequence=null; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
     bossNineCatDrops.clear();
     stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
     for(const k of Object.keys(buffs)){
@@ -14487,11 +14634,12 @@ function generateLevel(lv, L){
 
   // === 存讀檔（含音效/BGM與影像選擇） ===
   function saveProgress(){ try{
-      const data={level,score,lives,difficulty:difficultySel.value, imageChoice, soundsOn, bgmOn, bgmVol: parseFloat(bgmVol.value), maxLevelReached};
+      const data={level,score,lives,coins,difficulty:difficultySel.value, imageChoice, soundsOn, bgmOn, bgmVol: parseFloat(bgmVol.value), maxLevelReached};
       localStorage.setItem('breakout_save_v_final_cfg', JSON.stringify(data)); alert('已存檔！');
     }catch(e){ alert('存檔失敗：'+e); } }
   function loadProgress(){ try{ const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4'); if(!raw){ alert('沒有存檔'); return; } const data=JSON.parse(raw);
       difficultySel.value=data.difficulty||'normal'; level=data.level||1; score=data.score||0; lives=typeof data.lives==='number'?data.lives:9; if(Array.isArray(data.imageChoice)) imageChoice=data.imageChoice;
+      if(typeof data.coins==='number' && !Number.isNaN(data.coins)){ setCoins(data.coins); }
       const savedMaxLevel=parseInt(data.maxLevelReached,10);
       if(!Number.isNaN(savedMaxLevel)){
         maxLevelReached=Math.max(1, Math.min(GAME_CONFIG.totalLevels, savedMaxLevel));
@@ -15128,7 +15276,7 @@ function generateLevel(lv, L){
             if(b.hp<=0){ bossKillEffect(b); revealBrickArea(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
           }
           else {
-            revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD(); playSFX('plasmaHit');
+            revealBrickArea(b); maybeDropCoinFromBrick(b); maybeDropFromBrick(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD(); playSFX('plasmaHit');
           }
         }
       }
@@ -16331,6 +16479,7 @@ function generateLevel(lv, L){
     // 掉落道具
 
     for(const p of powerups) drawPower(p);
+    for(const c of coinDrops) drawCoin(c);
 
     // 鎖定框
     drawLockBoxes();
@@ -16582,7 +16731,7 @@ function generateLevel(lv, L){
           }
           else {
             bk.hp=(bk.hp||1)-1;
-            if(bk.hp<=0){ revealBrickArea(bk); maybeDropFromBrick(bk); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(bk)); if(bk.elite) stats.eliteKills++; updateHUD(); }
+            if(bk.hp<=0){ revealBrickArea(bk); maybeDropCoinFromBrick(bk); maybeDropFromBrick(bk); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(bk)); if(bk.elite) stats.eliteKills++; updateHUD(); }
           }
           spawnParticles(bk.x+bk.w/2,bk.y+bk.h/2,'rgba(120,255,120,0.9)',10,1.5,2.4,2);
         }
@@ -16776,7 +16925,7 @@ function generateLevel(lv, L){
             if(bk.hp<=0){
               addScore(scoreForBrick(bk)); updateHUD();
               const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
-              revealBrickArea(bk); maybeDropFromBrick(bk);
+              revealBrickArea(bk); maybeDropCoinFromBrick(bk); maybeDropFromBrick(bk);
               spawnParticles(cx, cy, '#eeeeee', 24, 2.4, 4.0, 3.5);
               if(bk.explosive){ explodeAt(cx,cy); } else { bricks.splice(j,1); }
             } else updateHUD();
@@ -17100,7 +17249,7 @@ function generateLevel(lv, L){
               }
               revealBrickArea(bk);
               if(inRampage || b.piercing) playSFX('pierce');
-              if(!bk.boss) maybeDropFromBrick(bk);
+              if(!bk.boss){ maybeDropCoinFromBrick(bk); maybeDropFromBrick(bk); }
               if(bk.explosive){ explodeAt(cx,cy); }
               else { bricks.splice(hit,1); updateHUD(); }
             } else updateHUD();
@@ -17320,22 +17469,19 @@ function generateLevel(lv, L){
     }
 
     // 掉落道具移動/撿取
+    const pr = paddleRect();
     for(let i=powerups.length-1;i>=0;i--){
       const p = powerups[i];
-      // 根據方向更新位置
       if(p.horizontal){
         p.x -= p.speed;
       } else {
         p.y += p.speed;
       }
-      const pr = paddleRect();
-      // 命中檢查：根據擋板方向檢查碰撞
-      const hit = (!orientLeft)
+      const hit = pr && pr.w>0 && pr.h>0 && ((!orientLeft)
         ? (p.y + p.h >= pr.y && p.x + p.w >= pr.x && p.x <= pr.x + pr.w && p.y <= pr.y + pr.h)
-        : (p.x + p.w >= pr.x && p.x <= pr.x + pr.w && p.y + p.h >= pr.y && p.y <= pr.y + pr.h);
+        : (p.x + p.w >= pr.x && p.x <= pr.x + pr.w && p.y + p.h >= pr.y && p.y <= pr.y + pr.h));
       if(hit){
         applyPower(p.type);
-        // 撿到增益/特殊增益時更新最後拾取時間，以便自動掉落計時
         const def = GAME_CONFIG.powers[p.type];
         if(def && def.type !== 'debuff'){
           lastBeneficialPickupAt = performance.now();
@@ -17344,11 +17490,54 @@ function generateLevel(lv, L){
         powerups.splice(i,1);
         continue;
       }
-      // 超出畫面則移除
       if(p.horizontal){
-        if(p.x + p.w < 0){ powerups.splice(i,1); }
+        if(p.x + p.w < -40){ powerups.splice(i,1); }
       } else {
-        if(p.y > 710){ powerups.splice(i,1); }
+        if(p.y > 720){ powerups.splice(i,1); }
+      }
+    }
+
+    // 銀幣掉落移動/撿取
+    for(let i=coinDrops.length-1;i>=0;i--){
+      const c=coinDrops[i];
+      if(c.magnet && (!pr || pr.w<=0 || pr.h<=0)){ c.magnet=false; }
+      const centerX=c.x;
+      const centerY=c.y;
+      if(!c.magnet && pr && pr.w>0 && pr.h>0){
+        const padCx=pr.x + pr.w/2;
+        const padCy=pr.y + pr.h/2;
+        const dist=Math.hypot(centerX-padCx, centerY-padCy);
+        const trigger = orientLeft ? (centerX <= pr.x + pr.w + 80) : (centerY >= pr.y - 80);
+        if(dist < 150 || trigger){
+          c.magnet = true;
+        }
+      }
+      if(c.magnet && pr && pr.w>0 && pr.h>0){
+        const padCx=pr.x + pr.w/2;
+        const padCy=pr.y + pr.h/2;
+        const dx=padCx - centerX;
+        const dy=padCy - centerY;
+        const dist=Math.hypot(dx, dy) || 1;
+        const speed=c.magnetSpeed || 10;
+        c.x += (dx/dist) * speed;
+        c.y += (dy/dist) * speed;
+      }else{
+        if(c.horizontal){
+          c.x += c.vx ?? -c.speed;
+        }else{
+          c.y += c.vy ?? c.speed;
+        }
+      }
+      c.phase = (c.phase||0) + 0.12;
+      if(pr && pr.w>0 && pr.h>0 && circleIntersectsRect(c.x, c.y, c.radius, pr)){
+        collectCoinDrop(c);
+        coinDrops.splice(i,1);
+        continue;
+      }
+      if(!orientLeft){
+        if(c.y - c.radius > 730){ coinDrops.splice(i,1); }
+      }else{
+        if(c.x + c.radius < -60){ coinDrops.splice(i,1); }
       }
     }
 
