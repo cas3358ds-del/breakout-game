@@ -322,18 +322,20 @@
 
     /* === 武器商店 === */
     body.modal-open{overflow:hidden;}
-    #storeOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;}
+    #storeOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;padding:24px;box-sizing:border-box;overflow:auto;}
     #storeOverlay.show{display:flex;}
     #storeOverlay .backdrop{position:absolute;inset:0;background:rgba(6,12,28,0.82);backdrop-filter:blur(12px);}
-    #storeOverlay .store-panel{position:relative;z-index:2;display:flex;gap:28px;align-items:stretch;width:min(1040px,94vw);max-height:92vh;padding:28px;border:1px solid rgba(140,180,255,0.32);border-radius:22px;background:linear-gradient(140deg,rgba(16,24,48,0.92),rgba(12,18,34,0.88));box-shadow:0 30px 120px rgba(0,0,0,0.55);overflow:hidden;}
-    #storeOverlay .store-left{flex:0 0 320px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;}
-    #storeOverlay .store-left img{width:100%;height:100%;object-fit:cover;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,0.45);}
+    #storeOverlay .store-panel{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);grid-template-areas:"hero content";gap:28px;align-items:stretch;width:min(1000px,100%);max-height:calc(100vh - 48px);padding:28px;border:1px solid rgba(140,180,255,0.32);border-radius:22px;background:linear-gradient(140deg,rgba(16,24,48,0.92),rgba(12,18,34,0.88));box-shadow:0 30px 120px rgba(0,0,0,0.55);overflow:hidden;}
+    #storeOverlay .store-left{grid-area:hero;position:relative;display:flex;flex-direction:column;justify-content:flex-end;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.45);}
+    #storeOverlay .store-left img{width:100%;height:100%;object-fit:cover;display:block;}
     #storeOverlay .store-hero-label{position:absolute;left:16px;bottom:16px;padding:10px 16px;border-radius:999px;background:rgba(12,22,44,0.78);backdrop-filter:blur(8px);font-weight:650;letter-spacing:2px;text-transform:uppercase;font-size:12px;color:#dbe6ff;box-shadow:0 8px 26px rgba(0,0,0,0.32);}
-    #storeOverlay .store-content{flex:1;display:flex;flex-direction:column;gap:18px;min-height:0;}
-    #storeOverlay .store-header{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+    #storeOverlay .store-content{grid-area:content;display:grid;grid-template-rows:auto 1fr auto;gap:18px;min-height:0;}
+    #storeOverlay .store-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
     #storeOverlay .store-title{font-size:24px;font-weight:750;letter-spacing:1px;color:#f0f6ff;margin:0;}
     #storeOverlay .store-title small{display:block;font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0.5px;margin-top:2px;}
-    #storeOverlay .store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:14px;overflow-y:auto;padding-right:4px;}
+    #storeOverlay .store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-content:flex-start;gap:16px;overflow-y:auto;padding-right:6px;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:rgba(120,160,240,0.45) transparent;}
+    #storeOverlay .store-grid::-webkit-scrollbar{width:6px;}
+    #storeOverlay .store-grid::-webkit-scrollbar-thumb{background:rgba(120,160,240,0.45);border-radius:999px;}
     #storeOverlay .shop-item{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 14px;border-radius:16px;border:1px solid rgba(140,180,255,0.22);background:linear-gradient(160deg,rgba(24,34,66,0.85),rgba(20,30,62,0.7));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;min-height:0;gap:10px;text-align:center;}
     #storeOverlay .shop-item:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(0,0,0,0.4);}
     #storeOverlay .shop-item.selected{border-color:rgba(215,226,255,0.82);box-shadow:0 22px 50px rgba(64,110,255,0.28);}
@@ -342,7 +344,7 @@
     #storeOverlay .tier-badge{position:absolute;right:10px;bottom:10px;font-weight:700;font-size:18px;color:#f2f6ff;letter-spacing:1px;text-shadow:0 2px 6px rgba(0,0,0,0.45);}
     #storeOverlay .shop-name{margin:0;font-size:15px;font-weight:700;letter-spacing:0.6px;}
     #storeOverlay .shop-price{font-size:13px;color:#d0dcff;letter-spacing:0.4px;}
-    #storeOverlay .store-detail{flex:1;display:flex;flex-direction:column;gap:16px;padding:16px 18px;border-radius:18px;background:linear-gradient(150deg,rgba(15,22,46,0.84),rgba(12,20,38,0.78));border:1px solid rgba(130,170,250,0.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);min-height:180px;}
+    #storeOverlay .store-detail{display:flex;flex-direction:column;gap:16px;padding:16px 18px;border-radius:18px;background:linear-gradient(150deg,rgba(15,22,46,0.84),rgba(12,20,38,0.78));border:1px solid rgba(130,170,250,0.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);min-height:0;}
     #storeOverlay .store-detail h3{margin:0;font-size:22px;font-weight:760;letter-spacing:0.8px;color:#f4f8ff;}
     #storeOverlay .store-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:13px;color:#d0dcff;letter-spacing:0.4px;}
     #storeOverlay .store-meta span{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:999px;background:rgba(20,32,68,0.6);border:1px solid rgba(120,160,240,0.2);}
@@ -413,14 +415,24 @@
     .equip-slot.cooldown{opacity:0.88;}
 
     @media (max-width: 900px){
-      #storeOverlay .store-panel{flex-direction:column;max-height:94vh;padding:22px;}
-      #storeOverlay .store-left{flex:0 0 auto;height:220px;}
-      #storeOverlay .store-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      #storeOverlay{padding:18px;}
+      #storeOverlay .store-panel{grid-template-columns:1fr;grid-template-areas:"hero" "content";max-height:calc(100vh - 36px);width:100%;padding:22px;gap:22px;}
+      #storeOverlay .store-left{min-height:220px;}
+      #storeOverlay .store-content{grid-template-rows:auto 1fr auto;}
+      #storeOverlay .store-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
       #slotModal .slot-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
     }
     @media (max-width: 640px){
-      #storeOverlay .store-panel{padding:18px;gap:18px;}
-      #storeOverlay .store-grid{grid-template-columns:repeat(1,minmax(0,1fr));}
+      #storeOverlay{padding:14px;align-items:flex-start;}
+      #storeOverlay .store-panel{padding:18px;gap:18px;border-radius:20px;max-height:calc(100vh - 28px);}
+      #storeOverlay .store-left{min-height:200px;}
+      #storeOverlay .store-hero-label{left:12px;bottom:12px;font-size:11px;padding:8px 14px;}
+      #storeOverlay .store-title{font-size:22px;}
+      #storeOverlay .store-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding-right:4px;}
+      #storeOverlay .shop-item{padding:12px 10px;border-radius:14px;gap:8px;}
+      #storeOverlay .shop-thumb{border-radius:12px;padding:6px;}
+      #storeOverlay .store-actions{width:100%;flex-direction:column;}
+      #storeOverlay .store-actions .btn{width:100%;}
       #slotModal .slot-grid{grid-template-columns:repeat(1,minmax(0,1fr));}
       .equipment-slots{justify-content:space-between;gap:10px;}
       .equip-slot{flex:0 0 calc((100% - 20px)/3);}
