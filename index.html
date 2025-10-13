@@ -319,6 +319,109 @@
     .gallery-page .viewer{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.85);z-index:3}
     .gallery-page .viewer img{max-width:94vw;max-height:88vh;border-radius:16px;box-shadow:0 30px 120px rgba(0,0,0,.6)}
 
+    /* === 武器商店 === */
+    body.modal-open{overflow:hidden;}
+    #storeOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;}
+    #storeOverlay.show{display:flex;}
+    #storeOverlay .backdrop{position:absolute;inset:0;background:rgba(6,12,28,0.82);backdrop-filter:blur(12px);}
+    #storeOverlay .store-panel{position:relative;z-index:2;display:flex;gap:28px;align-items:stretch;width:min(1040px,94vw);max-height:92vh;padding:28px;border:1px solid rgba(140,180,255,0.32);border-radius:22px;background:linear-gradient(140deg,rgba(16,24,48,0.92),rgba(12,18,34,0.88));box-shadow:0 30px 120px rgba(0,0,0,0.55);overflow:hidden;}
+    #storeOverlay .store-left{flex:0 0 320px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;}
+    #storeOverlay .store-left img{width:100%;height:100%;object-fit:cover;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,0.45);}
+    #storeOverlay .store-hero-label{position:absolute;left:16px;bottom:16px;padding:10px 16px;border-radius:999px;background:rgba(12,22,44,0.78);backdrop-filter:blur(8px);font-weight:650;letter-spacing:2px;text-transform:uppercase;font-size:12px;color:#dbe6ff;box-shadow:0 8px 26px rgba(0,0,0,0.32);}
+    #storeOverlay .store-content{flex:1;display:flex;flex-direction:column;gap:18px;min-height:0;}
+    #storeOverlay .store-header{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+    #storeOverlay .store-title{font-size:24px;font-weight:750;letter-spacing:1px;color:#f0f6ff;margin:0;}
+    #storeOverlay .store-title small{display:block;font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0.5px;margin-top:2px;}
+    #storeOverlay .store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;overflow-y:auto;padding-right:4px;}
+    #storeOverlay .shop-item{position:relative;display:flex;flex-direction:column;align-items:flex-start;padding:14px;border-radius:16px;border:1px solid rgba(140,180,255,0.22);background:linear-gradient(160deg,rgba(24,34,66,0.85),rgba(20,30,62,0.7));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;min-height:132px;}
+    #storeOverlay .shop-item:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(0,0,0,0.4);}
+    #storeOverlay .shop-item.selected{border-color:rgba(215,226,255,0.82);box-shadow:0 22px 50px rgba(64,110,255,0.28);}
+    #storeOverlay .shop-thumb{width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;position:relative;border:2px solid rgba(130,160,255,0.5);box-shadow:0 8px 24px rgba(0,0,0,0.38);background:rgba(12,18,38,0.4);}
+    #storeOverlay .shop-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+    #storeOverlay .tier-badge{position:absolute;right:8px;bottom:8px;padding:4px 10px;border-radius:999px;font-weight:650;font-size:12px;background:rgba(6,12,28,0.8);border:1px solid rgba(255,255,255,0.45);color:#f2f6ff;letter-spacing:1px;box-shadow:0 6px 18px rgba(0,0,0,0.45);}
+    #storeOverlay .shop-name{margin:10px 0 4px;font-size:16px;font-weight:700;letter-spacing:0.6px;}
+    #storeOverlay .shop-price{font-size:13px;color:var(--muted);letter-spacing:0.4px;}
+    #storeOverlay .store-detail{flex:1;display:flex;flex-direction:column;gap:16px;padding:16px 18px;border-radius:18px;background:linear-gradient(150deg,rgba(15,22,46,0.84),rgba(12,20,38,0.78));border:1px solid rgba(130,170,250,0.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);min-height:180px;}
+    #storeOverlay .store-detail h3{margin:0;font-size:22px;font-weight:760;letter-spacing:0.8px;color:#f4f8ff;}
+    #storeOverlay .store-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:13px;color:#d0dcff;letter-spacing:0.4px;}
+    #storeOverlay .store-meta span{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:999px;background:rgba(20,32,68,0.6);border:1px solid rgba(120,160,240,0.2);}
+    #storeOverlay .store-desc{margin:0;font-size:14px;line-height:1.7;color:#c9d4f6;letter-spacing:0.3px;min-height:56px;}
+    #storeOverlay .store-feedback{min-height:20px;font-size:13px;color:#9bb4ff;letter-spacing:0.3px;}
+    #storeOverlay .store-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;}
+    #storeOverlay .store-actions .btn{min-width:140px;justify-content:center;font-weight:650;letter-spacing:0.6px;}
+    #storeOverlay .store-actions .btn.primary{background:linear-gradient(135deg,#3d6bff,#6c9dff);border-color:rgba(120,170,255,0.8);box-shadow:0 12px 30px rgba(60,110,255,0.45);}
+    #storeOverlay .store-actions .btn.primary:disabled{background:rgba(30,42,68,0.8);border-color:rgba(80,110,150,0.4);box-shadow:none;cursor:not-allowed;}
+    #storeOverlay .store-actions .btn.secondary{background:rgba(18,28,52,0.8);}
+
+    .grade-S .shop-thumb,.grade-S .equip-icon{border-color:rgba(255,220,120,0.9);box-shadow:0 0 20px rgba(255,220,120,0.55);}
+    .grade-A .shop-thumb,.grade-A .equip-icon{border-color:rgba(255,90,120,0.85);box-shadow:0 0 18px rgba(255,90,120,0.45);}
+    .grade-B .shop-thumb,.grade-B .equip-icon{border-color:rgba(90,150,255,0.85);box-shadow:0 0 16px rgba(90,150,255,0.4);}
+    .grade-C .shop-thumb,.grade-C .equip-icon{border-color:rgba(90,210,150,0.85);box-shadow:0 0 16px rgba(90,210,150,0.38);}
+    .grade-S .shop-name,.grade-S .equip-name{color:#ffe08a;}
+    .grade-A .shop-name,.grade-A .equip-name{color:#ff6a82;}
+    .grade-B .shop-name,.grade-B .equip-name{color:#69adff;}
+    .grade-C .shop-name,.grade-C .equip-name{color:#5fd6a0;}
+
+    #slotModal{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:4;padding:24px;}
+    #slotModal.show{display:flex;}
+    #slotModal::before{content:'';position:absolute;inset:0;background:rgba(8,12,26,0.78);backdrop-filter:blur(6px);}
+    #slotModal .slot-dialog{position:relative;z-index:1;width:min(640px,90vw);background:linear-gradient(150deg,rgba(18,26,52,0.95),rgba(12,18,34,0.92));border:1px solid rgba(130,170,250,0.35);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:18px;box-shadow:0 28px 80px rgba(0,0,0,0.55);}
+    #slotModal .slot-dialog h4{margin:0;font-size:20px;font-weight:720;color:#f0f6ff;letter-spacing:0.6px;}
+    #slotModal .slot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+    #slotModal .slot-choice{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:16px;border:1px solid rgba(120,160,240,0.28);background:rgba(18,26,48,0.82);cursor:pointer;transition:border-color .18s ease, transform .18s ease;min-height:120px;}
+    #slotModal .slot-choice:hover{border-color:rgba(200,220,255,0.8);transform:translateY(-2px);}
+    #slotModal .slot-choice .slot-name{font-size:15px;font-weight:650;color:#d8e6ff;}
+    #slotModal .slot-choice .slot-note{font-size:12px;color:var(--muted);}
+    #slotModal .slot-choice.empty .slot-name{color:#86a3d6;}
+    #slotModal .slot-confirm{display:none;flex-direction:column;gap:12px;padding-top:6px;border-top:1px solid rgba(110,150,240,0.22);}
+    #slotModal .slot-confirm.show{display:flex;}
+    #slotModal .slot-confirm p{margin:0;font-size:14px;color:#dfe7ff;line-height:1.6;}
+    #slotModal .slot-confirm .actions{display:flex;gap:10px;flex-wrap:wrap;}
+    #slotModal .slot-confirm .btn{min-width:110px;}
+
+    /* === 裝備列 === */
+    .equipment-bar{max-width:min(1080px,96vw);margin:20px auto 0;padding:18px;border-radius:20px;border:1px solid rgba(120,160,240,0.32);background:linear-gradient(160deg,rgba(14,22,46,0.82),rgba(12,20,40,0.74));backdrop-filter:blur(10px);box-shadow:0 18px 70px rgba(0,0,0,0.42);display:flex;flex-direction:column;gap:16px;}
+    .equipment-bar-header{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .equipment-bar-header h3{margin:0;font-size:18px;font-weight:720;letter-spacing:0.8px;color:#f0f6ff;}
+    .equipment-tip{font-size:12px;color:var(--muted);letter-spacing:0.4px;}
+    .equipment-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+    .equip-slot{position:relative;display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:16px;border:1px solid rgba(120,160,240,0.28);background:linear-gradient(160deg,rgba(18,26,50,0.9),rgba(16,24,46,0.74));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);cursor:pointer;transition:border-color .18s ease, transform .18s ease;min-height:126px;text-align:left;}
+    .equip-slot:hover{border-color:rgba(205,224,255,0.7);transform:translateY(-2px);}
+    .equip-slot.empty{border-style:dashed;border-color:rgba(110,150,210,0.3);background:rgba(14,22,40,0.6);box-shadow:none;}
+    .equip-slot.empty:hover{border-color:rgba(180,210,255,0.45);}
+    .equip-slot .equip-label{font-size:12px;color:var(--muted);letter-spacing:0.4px;text-transform:uppercase;}
+    .equip-slot .equip-name{font-size:16px;font-weight:650;letter-spacing:0.6px;}
+    .equip-slot .equip-type{font-size:12px;color:#a7b9e6;letter-spacing:0.4px;}
+    .equip-slot .equip-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:14px;border:2px solid rgba(130,160,255,0.5);overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,0.45);background:rgba(12,18,36,0.6);}
+    .equip-slot .equip-icon img{width:100%;height:100%;object-fit:cover;display:block;}
+    .equip-slot .equip-status{margin-top:auto;font-size:12px;color:#98acd9;letter-spacing:0.4px;display:flex;align-items:center;gap:6px;}
+    .equip-slot .tier-badge{position:absolute;top:6px;right:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:650;background:rgba(12,18,36,0.82);border:1px solid rgba(255,255,255,0.38);color:#f0f6ff;letter-spacing:1px;}
+    .equipment-bar.selecting{box-shadow:0 22px 80px rgba(80,120,255,0.28);}
+    .equipment-bar.selecting .equipment-tip{color:#a9beff;}
+    .equipment-status{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:#c6d6ff;letter-spacing:0.4px;}
+    .equipment-message{min-height:18px;}
+    .equipment-message.tone-info{color:#c6d6ff;}
+    .equipment-message.tone-success{color:#8fe4ff;}
+    .equipment-message.tone-warning{color:#ff9fb3;}
+    .shield-status{padding:6px 12px;border-radius:999px;background:rgba(40,120,255,0.18);border:1px solid rgba(80,140,255,0.45);color:#dbe6ff;font-size:12px;letter-spacing:0.6px;box-shadow:0 0 18px rgba(80,140,255,0.2);}
+    .equipment-bar.shielding{border-color:rgba(120,190,255,0.6);box-shadow:0 24px 80px rgba(70,130,255,0.32);}
+    .equip-slot.cooldown{opacity:0.88;}
+
+    @media (max-width: 900px){
+      #storeOverlay .store-panel{flex-direction:column;max-height:94vh;padding:22px;}
+      #storeOverlay .store-left{flex:0 0 auto;height:220px;}
+      #storeOverlay .store-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      #slotModal .slot-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
+    @media (max-width: 640px){
+      #storeOverlay .store-panel{padding:18px;gap:18px;}
+      #storeOverlay .store-grid{grid-template-columns:repeat(1,minmax(0,1fr));}
+      #slotModal .slot-grid{grid-template-columns:repeat(1,minmax(0,1fr));}
+      .equipment-slots{grid-template-columns:repeat(1,minmax(0,1fr));}
+      .equipment-bar{padding:16px;gap:14px;}
+      .equipment-tip{font-size:11px;}
+    }
+
     /* Leaderboard overlay */
     .rank-page{position:fixed;inset:0;display:none;z-index:75;align-items:center;justify-content:center;pointer-events:auto}
     .rank-page .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.8)}
@@ -746,12 +849,63 @@ select optgroup { color: #0b1022; }
         <canvas id="fx"></canvas>
         <canvas id="game" width="1100" height="700"></canvas>
         <div id="combo" class="combo"></div>
-        
+
+      </div>
+      <div class="equipment-bar" id="equipmentBar" aria-label="裝備欄">
+        <div class="equipment-bar-header">
+          <h3>裝備欄</h3>
+          <span class="equipment-tip" id="equipmentTip">主動與消耗型裝備可在此啟用</span>
+        </div>
+        <div class="equipment-slots" id="equipmentSlots" role="list">
+          <!-- 動態填入裝備欄位 -->
+        </div>
+        <div class="equipment-status">
+          <span class="equipment-message" id="equipmentMessage">尚未裝備任何武器。</span>
+          <span class="shield-status" id="shieldStatus" hidden>防護罩剩餘 <span id="shieldStatusTime">0.0</span>s</span>
+        </div>
       </div>
     </div>
 
     <!-- 覆蓋層/畫廊/勝利/結束/提示 -->
     <div class="overlay">
+      <div class="store-overlay" id="storeOverlay" aria-hidden="true">
+        <div class="backdrop"></div>
+        <div class="store-panel" role="dialog" aria-labelledby="storeTitle">
+          <div class="store-left">
+            <img src="images/S01.jpg" alt="武器商店店員" loading="lazy" />
+            <div class="store-hero-label">ASTRA ARMORY</div>
+          </div>
+          <div class="store-content">
+            <div class="store-header">
+              <h2 class="store-title" id="storeTitle">星光武裝商會 <small>整備下一場戰鬥吧</small></h2>
+            </div>
+            <div class="store-grid" id="storeGrid" role="list"></div>
+            <div class="store-detail">
+              <h3 id="storeItemName">選擇一件裝備</h3>
+              <div class="store-meta" id="storeItemMeta"></div>
+              <p class="store-desc" id="storeItemDesc">完成關卡後可使用銀幣購買裝備，打造專屬打法。</p>
+              <div class="store-feedback" id="storeFeedback"></div>
+              <div class="store-actions">
+                <button class="btn primary" id="storeBuyBtn" type="button" disabled>購買</button>
+                <button class="btn secondary" id="storeNextBtn" type="button">進入下一關 ▶</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="slot-modal" id="slotModal" aria-hidden="true">
+          <div class="slot-dialog">
+            <h4 id="slotModalTitle">選擇要安裝的裝備欄位</h4>
+            <div class="slot-grid" id="slotGrid"></div>
+            <div class="slot-confirm" id="slotConfirm">
+              <p id="slotConfirmText"></p>
+              <div class="actions">
+                <button class="btn primary" id="slotConfirmYes" type="button">是</button>
+                <button class="btn secondary" id="slotConfirmNo" type="button">否</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="gallery" id="gallery">
         <div class="backdrop"></div>
         <img id="galleryImg" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="關卡大圖" />
@@ -1205,6 +1359,12 @@ select optgroup { color: #0b1022; }
 
   function demonVoidOrbHit(now){
     if(now<paddleGoneUntil) return;
+    const pr=paddleRect();
+    const centerX=pr.x+pr.w/2;
+    const centerY=pr.y+pr.h/2;
+    if(blockDamageIfShielded({x:centerX,y:centerY})){
+      return;
+    }
     if(stats.lifeStart){
       const dur=(now-stats.lifeStart)/1000;
       if(dur<stats.fastestDeath) stats.fastestDeath=dur;
@@ -1213,9 +1373,6 @@ select optgroup { color: #0b1022; }
     stats.livesUsed++;
     if(buffs.BLACKHOLE.active){ buffs.BLACKHOLE.deaths=Math.min(8,(buffs.BLACKHOLE.deaths||0)+1); }
     if(buffs.ANNIHIL.active){ buffs.ANNIHIL.active=false; }
-    const pr=paddleRect();
-    const centerX=pr.x+pr.w/2;
-    const centerY=pr.y+pr.h/2;
     spawnParticles(centerX, centerY, '#a87dff', 70, 2.8, 3.8, 3.4);
     spawnParticles(centerX, centerY, '#f2dbff', 40, 2.2, 3.2, 3.0);
     spawnParticles(centerX, centerY, '#6930c3', 28, 2.0, 3.0, 2.8);
@@ -1378,6 +1535,537 @@ select optgroup { color: #0b1022; }
   const sfxOnEl = document.getElementById('sfxOn');
   const bgmOnEl = document.getElementById('bgmOn');
   const skinSel = document.getElementById('skinSel');
+  const storeOverlay=document.getElementById('storeOverlay');
+  const storeGrid=document.getElementById('storeGrid');
+  const storeItemName=document.getElementById('storeItemName');
+  const storeItemMeta=document.getElementById('storeItemMeta');
+  const storeItemDesc=document.getElementById('storeItemDesc');
+  const storeBuyBtn=document.getElementById('storeBuyBtn');
+  const storeNextBtn=document.getElementById('storeNextBtn');
+  const storeFeedback=document.getElementById('storeFeedback');
+  const slotModal=document.getElementById('slotModal');
+  const slotGrid=document.getElementById('slotGrid');
+  const slotConfirm=document.getElementById('slotConfirm');
+  const slotConfirmText=document.getElementById('slotConfirmText');
+  const slotConfirmYes=document.getElementById('slotConfirmYes');
+  const slotConfirmNo=document.getElementById('slotConfirmNo');
+  const equipmentBar=document.getElementById('equipmentBar');
+  const equipmentSlotsEl=document.getElementById('equipmentSlots');
+  const equipmentMessageEl=document.getElementById('equipmentMessage');
+  const equipmentTipEl=document.getElementById('equipmentTip');
+  const shieldStatusEl=document.getElementById('shieldStatus');
+  const shieldStatusTimeEl=document.getElementById('shieldStatusTime');
+
+  const EQUIPMENT_TYPE_LABEL={
+    passive:'被動型',
+    active:'主動型',
+    consumable:'消耗型'
+  };
+  const EQUIPMENT_LIST=[
+    {id:'power1',name:'強力Ⅰ',roman:'Ⅰ',icon:'W01.jpg',grade:'C',type:'passive',price:5,description:'球對磚塊攻擊力+1（對Boss無效）',effect:{brickDamage:1}},
+    {id:'power2',name:'強力Ⅱ',roman:'Ⅱ',icon:'W01.jpg',grade:'B',type:'passive',price:10,description:'球對磚塊攻擊力+2（對Boss無效）',effect:{brickDamage:2}},
+    {id:'power3',name:'強力Ⅲ',roman:'Ⅲ',icon:'W01.jpg',grade:'A',type:'passive',price:30,description:'球對磚塊攻擊力+3（對Boss無效）',effect:{brickDamage:3}},
+    {id:'shield1',name:'防護罩Ⅰ',roman:'Ⅰ',icon:'W02.jpg',grade:'C',type:'consumable',price:5,description:'獲得防護罩效果，5 秒內所有傷害無效，效果時間結束後裝備消失。',effect:{shieldDuration:5000}},
+    {id:'shield2',name:'防護罩Ⅱ',roman:'Ⅱ',icon:'W02.jpg',grade:'B',type:'active',price:10,description:'獲得防護罩效果，5 秒內所有傷害無效，冷卻時間 60 秒。',effect:{shieldDuration:5000,cooldown:60000}},
+    {id:'shield3',name:'防護罩Ⅲ',roman:'Ⅲ',icon:'W02.jpg',grade:'A',type:'active',price:30,description:'獲得防護罩效果，5 秒內所有傷害無效，冷卻時間 30 秒。',effect:{shieldDuration:5000,cooldown:30000}},
+    {id:'heal1',name:'補血包Ⅰ',roman:'Ⅰ',icon:'W03.jpg',grade:'C',type:'consumable',price:10,description:'恢復 1 點 HP（最大 HP 9），使用後消失。',effect:{heal:1}},
+    {id:'heal2',name:'補血包Ⅱ',roman:'Ⅱ',icon:'W03.jpg',grade:'B',type:'consumable',price:20,description:'恢復 2 點 HP（最大 HP 9），使用後消失。',effect:{heal:2}},
+    {id:'heal3',name:'補血包Ⅲ',roman:'Ⅲ',icon:'W03.jpg',grade:'A',type:'consumable',price:40,description:'恢復 3 點 HP（最大 HP 9），使用後消失。',effect:{heal:3}}
+  ];
+  const GRADE_COLOR={S:'#ffe08a',A:'#ff6a82',B:'#69adff',C:'#5fd6a0'};
+
+  const equipmentSlots=[null,null,null];
+  const equipmentSlotElements=[];
+  const storeItemButtons=new Map();
+  let selectedStoreItemId=null;
+  let pendingEquipItem=null;
+  let pendingSlotIndex=null;
+  let pendingNextLevel=null;
+  let equipmentMessageUntil=0;
+  let brickDamageBonus=0;
+  const shieldState={active:false,until:0,source:null};
+  let lastShieldAbsorbAt=0;
+
+  function getEquipmentById(id){
+    if(!id) return null;
+    return EQUIPMENT_LIST.find(item=>item.id===id)||null;
+  }
+  function renderStoreItems(){
+    if(!storeGrid) return;
+    storeGrid.innerHTML='';
+    storeItemButtons.clear();
+    for(const item of EQUIPMENT_LIST){
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className=`shop-item grade-${item.grade}`;
+      btn.dataset.id=item.id;
+      const thumb=document.createElement('div');
+      thumb.className='shop-thumb';
+      const img=document.createElement('img');
+      img.src=`images/${item.icon}`;
+      img.alt=item.name;
+      thumb.appendChild(img);
+      const badge=document.createElement('span');
+      badge.className='tier-badge';
+      badge.textContent=item.roman||'';
+      thumb.appendChild(badge);
+      btn.appendChild(thumb);
+      const name=document.createElement('span');
+      name.className='shop-name';
+      name.textContent=item.name;
+      btn.appendChild(name);
+      const price=document.createElement('span');
+      price.className='shop-price';
+      price.textContent=`${item.price} 銀幣`;
+      btn.appendChild(price);
+      btn.addEventListener('click',()=>selectStoreItem(item.id));
+      storeGrid.appendChild(btn);
+      storeItemButtons.set(item.id,btn);
+    }
+  }
+  function selectStoreItem(id,opts={}){
+    selectedStoreItemId=id;
+    for(const [itemId,btn] of storeItemButtons.entries()){
+      btn.classList.toggle('selected',itemId===id);
+    }
+    const item=getEquipmentById(id);
+    updateStoreDetail(item);
+    if(!opts.silent){
+      if(storeFeedback) storeFeedback.textContent=item?'':'請選擇一件裝備。';
+    }
+    refreshStoreAffordability();
+  }
+  function updateStoreDetail(item){
+    if(!storeItemName||!storeItemMeta||!storeItemDesc){
+      return;
+    }
+    if(!item){
+      storeItemName.textContent='選擇一件裝備';
+      storeItemMeta.innerHTML='';
+      storeItemDesc.textContent='完成關卡後可使用銀幣購買裝備。';
+      return;
+    }
+    storeItemName.textContent=item.name;
+    const gradeColor=GRADE_COLOR[item.grade]||'#f0f6ff';
+    const typeLabel=EQUIPMENT_TYPE_LABEL[item.type]||'';
+    storeItemMeta.innerHTML=`<span>等級：<strong style="color:${gradeColor}">${item.grade}</strong></span><span>類型：${typeLabel}</span><span>價格：${item.price} 銀幣</span>`;
+    storeItemDesc.textContent=item.description;
+  }
+  function refreshStoreAffordability(){
+    if(!storeBuyBtn) return;
+    if(slotModal && slotModal.classList.contains('show')){
+      storeBuyBtn.disabled=true;
+      return;
+    }
+    const item=getEquipmentById(selectedStoreItemId);
+    const canBuy=!!item && silverCoins>=item.price;
+    storeBuyBtn.disabled=!canBuy;
+  }
+  function handleStorePurchase(){
+    if(slotModal && slotModal.classList.contains('show')) return;
+    const item=getEquipmentById(selectedStoreItemId);
+    if(!item){
+      if(storeFeedback) storeFeedback.textContent='請選擇一件裝備。';
+      return;
+    }
+    if(silverCoins<item.price){
+      if(storeFeedback) storeFeedback.textContent=`銀幣不足，尚需 ${item.price-silverCoins} 枚銀幣。`;
+      return;
+    }
+    if(!spendSilverCoins(item.price)) return;
+    if(storeFeedback) storeFeedback.textContent=`已購買「${item.name}」，請選擇裝備欄位。`;
+    promptEquipSlot(item);
+  }
+  function promptEquipSlot(item){
+    if(!slotModal) return;
+    pendingEquipItem=item;
+    pendingSlotIndex=null;
+    renderSlotSelection();
+    if(slotConfirm) slotConfirm.classList.remove('show');
+    slotModal.classList.add('show');
+    slotModal.setAttribute('aria-hidden','false');
+    equipmentBar?.classList.add('selecting');
+    if(storeBuyBtn) storeBuyBtn.disabled=true;
+    if(storeNextBtn) storeNextBtn.disabled=true;
+  }
+  function renderSlotSelection(){
+    if(!slotGrid) return;
+    slotGrid.innerHTML='';
+    equipmentSlots.forEach((slot,idx)=>{
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='slot-choice';
+      if(!slot) btn.classList.add('empty');
+      btn.dataset.index=String(idx);
+      const name=document.createElement('div');
+      name.className='slot-name';
+      name.textContent=slot?`欄位 ${idx+1}：${slot.def.name}`:`欄位 ${idx+1}`;
+      btn.appendChild(name);
+      const note=document.createElement('div');
+      note.className='slot-note';
+      note.textContent=slot?`目前裝備：${slot.def.name}`:'尚未裝備';
+      btn.appendChild(note);
+      btn.addEventListener('click',()=>handleSlotChoice(idx));
+      slotGrid.appendChild(btn);
+    });
+  }
+  function handleSlotChoice(index){
+    if(pendingEquipItem==null) return;
+    pendingSlotIndex=index;
+    if(slotConfirmText){
+      const existing=equipmentSlots[index];
+      slotConfirmText.textContent=existing
+        ? `欄位 ${index+1} 目前裝備「${existing.def.name}」，是否改為「${pendingEquipItem.name}」？`
+        : `要將「${pendingEquipItem.name}」裝備到欄位 ${index+1} 嗎？`;
+    }
+    if(slotConfirm) slotConfirm.classList.add('show');
+  }
+  function closeSlotModal(restoreButtons=true){
+    if(!slotModal) return;
+    slotModal.classList.remove('show');
+    slotModal.setAttribute('aria-hidden','true');
+    if(slotConfirm) slotConfirm.classList.remove('show');
+    equipmentBar?.classList.remove('selecting');
+    pendingEquipItem=null;
+    pendingSlotIndex=null;
+    if(restoreButtons){
+      if(storeBuyBtn) refreshStoreAffordability();
+      if(storeNextBtn) storeNextBtn.disabled=false;
+    }
+  }
+  function createSlotState(itemDef){
+    return {
+      id:itemDef.id,
+      def:itemDef,
+      type:itemDef.type,
+      grade:itemDef.grade,
+      roman:itemDef.roman,
+      cooldownUntil:0,
+      lastUsed:0
+    };
+  }
+  function equipItemToSlot(index,itemDef){
+    if(index<0||index>=equipmentSlots.length) return;
+    equipmentSlots[index]=createSlotState(itemDef);
+    recalcEquipmentBonuses();
+    renderEquipmentSlots();
+    showEquipmentMessage(`「${itemDef.name}」已裝備於欄位 ${index+1}`,'success',2600);
+  }
+  function renderEquipmentSlots(){
+    if(!equipmentSlotsEl) return;
+    equipmentSlotsEl.innerHTML='';
+    equipmentSlotElements.length=0;
+    equipmentSlots.forEach((slot,idx)=>{
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='equip-slot';
+      btn.dataset.index=String(idx);
+      if(slot){
+        btn.classList.add(`grade-${slot.def.grade}`);
+      }else{
+        btn.classList.add('empty');
+      }
+      const label=document.createElement('span');
+      label.className='equip-label';
+      label.textContent=`欄位 ${idx+1}`;
+      btn.appendChild(label);
+      if(slot){
+        const name=document.createElement('span');
+        name.className='equip-name';
+        name.textContent=slot.def.name;
+        btn.appendChild(name);
+        const type=document.createElement('span');
+        type.className='equip-type';
+        type.textContent=EQUIPMENT_TYPE_LABEL[slot.def.type]||'';
+        btn.appendChild(type);
+        const iconWrapper=document.createElement('div');
+        iconWrapper.className='equip-icon';
+        const img=document.createElement('img');
+        img.src=`images/${slot.def.icon}`;
+        img.alt=slot.def.name;
+        iconWrapper.appendChild(img);
+        const badge=document.createElement('span');
+        badge.className='tier-badge';
+        badge.textContent=slot.def.roman||'';
+        iconWrapper.appendChild(badge);
+        btn.appendChild(iconWrapper);
+        const status=document.createElement('span');
+        status.className='equip-status';
+        status.textContent=slot.def.type==='passive'?'被動效果：持續生效':'點擊啟動';
+        btn.appendChild(status);
+        equipmentSlotElements.push({button:btn,statusEl:status,index:idx});
+      }else{
+        const name=document.createElement('span');
+        name.className='equip-name';
+        name.textContent='未裝備';
+        btn.appendChild(name);
+        const note=document.createElement('span');
+        note.className='equip-type';
+        note.textContent='從商店購買後可安裝';
+        btn.appendChild(note);
+        equipmentSlotElements.push({button:btn,statusEl:null,index:idx});
+      }
+      equipmentSlotsEl.appendChild(btn);
+    });
+    updateEquipmentHint();
+  }
+  function updateEquipmentHint(){
+    if(!equipmentMessageEl) return;
+    if(equipmentMessageUntil) return;
+    const hasEquip=equipmentSlots.some(Boolean);
+    equipmentMessageEl.textContent=hasEquip?'點擊主動或消耗型裝備即可使用。':'尚未裝備任何武器。';
+    equipmentMessageEl.classList.remove('tone-success','tone-warning','tone-info');
+  }
+  function showEquipmentMessage(text,tone='info',duration=2400){
+    if(!equipmentMessageEl) return;
+    equipmentMessageEl.textContent=text||'';
+    equipmentMessageEl.classList.remove('tone-success','tone-warning','tone-info');
+    if(tone==='success') equipmentMessageEl.classList.add('tone-success');
+    else if(tone==='warning') equipmentMessageEl.classList.add('tone-warning');
+    else equipmentMessageEl.classList.add('tone-info');
+    equipmentMessageUntil=performance.now()+Math.max(0,duration||2000);
+  }
+  function refreshEquipmentRuntime(now){
+    for(const entry of equipmentSlotElements){
+      const slot=equipmentSlots[entry.index];
+      if(!slot||!entry.statusEl) continue;
+      if(slot.def.type==='passive'){
+        entry.statusEl.textContent='被動效果：持續生效';
+        entry.button.classList.remove('cooldown');
+      }else if(slot.def.type==='active'){
+        if(slot.cooldownUntil && now<slot.cooldownUntil){
+          const remain=(slot.cooldownUntil-now)/1000;
+          entry.statusEl.textContent=`冷卻中 ${remain>=9?Math.ceil(remain):Math.max(0,remain).toFixed(1)}s`;
+          entry.button.classList.add('cooldown');
+        }else{
+          entry.statusEl.textContent='點擊啟動';
+          entry.button.classList.remove('cooldown');
+        }
+      }else if(slot.def.type==='consumable'){
+        entry.statusEl.textContent='點擊使用';
+        entry.button.classList.remove('cooldown');
+      }
+    }
+    if(equipmentMessageUntil && now>equipmentMessageUntil){
+      equipmentMessageUntil=0;
+      updateEquipmentHint();
+    }
+  }
+  function recalcEquipmentBonuses(){
+    brickDamageBonus=0;
+    for(const slot of equipmentSlots){
+      if(!slot) continue;
+      if(slot.def.effect?.brickDamage){
+        brickDamageBonus+=slot.def.effect.brickDamage;
+      }
+    }
+  }
+  function useEquipmentFromSlot(index){
+    const slot=equipmentSlots[index];
+    if(!slot) return;
+    const def=slot.def;
+    if(def.type==='passive'){
+      showEquipmentMessage(`「${def.name}」為被動型裝備，效果已自動生效。`,'info',2000);
+      return;
+    }
+    const now=performance.now();
+    if(def.type==='active' && slot.cooldownUntil && now<slot.cooldownUntil){
+      const remain=Math.ceil((slot.cooldownUntil-now)/1000);
+      showEquipmentMessage(`冷卻中，還需 ${remain} 秒。`,'warning',1800);
+      return;
+    }
+    if(def.effect?.shieldDuration){
+      const activated=activateShield(def.effect.shieldDuration,def);
+      if(!activated){
+        showEquipmentMessage('防護罩仍在作用中。','warning',1800);
+        return;
+      }
+      if(def.type==='consumable'){
+        equipmentSlots[index]=null;
+        recalcEquipmentBonuses();
+        renderEquipmentSlots();
+      }else{
+        const cd=def.effect.cooldown||0;
+        slot.cooldownUntil=now+cd;
+        slot.lastUsed=now;
+      }
+      return;
+    }
+    if(def.effect?.heal){
+      if(healPlayer(def.effect.heal)){
+        equipmentSlots[index]=null;
+        recalcEquipmentBonuses();
+        renderEquipmentSlots();
+      }else{
+        showEquipmentMessage('HP 已達上限。','warning',2000);
+      }
+      return;
+    }
+  }
+  function activateShield(durationMs,source){
+    if(!Number.isFinite(durationMs)||durationMs<=0) return false;
+    const now=performance.now();
+    if(shieldState.active && now<shieldState.until){
+      return false;
+    }
+    shieldState.active=true;
+    shieldState.until=now+durationMs;
+    shieldState.source=source?.id||null;
+    if(buffs?.SHIELD) buffs.SHIELD.active=true;
+    updateShieldVisual();
+    showEquipmentMessage(`防護罩啟動，${(durationMs/1000).toFixed(0)} 秒內所有傷害無效！`,'success',2600);
+    beep(860,0.09,0.05);
+    return true;
+  }
+  function updateShieldVisual(){
+    if(!shieldStatusEl||!equipmentBar) return;
+    const now=performance.now();
+    const active=shieldState.active && now<shieldState.until;
+    shieldStatusEl.hidden=!active;
+    equipmentBar.classList.toggle('shielding',active);
+    if(!active && shieldStatusTimeEl){
+      shieldStatusTimeEl.textContent='0.0';
+    }
+  }
+  function updateShieldRuntime(now){
+    if(shieldState.active && now>=shieldState.until){
+      shieldState.active=false;
+      updateShieldVisual();
+    }
+    if(shieldState.active){
+      const remain=Math.max(0,(shieldState.until-now)/1000);
+      if(shieldStatusTimeEl){
+        shieldStatusTimeEl.textContent=remain>=10?Math.ceil(remain).toString():remain.toFixed(1);
+      }
+      if(buffs?.SHIELD) buffs.SHIELD.active=true;
+    }else if(buffs?.SHIELD){
+      buffs.SHIELD.active=false;
+    }
+  }
+  function blockDamageIfShielded(opts={}){
+    if(!shieldState.active) return false;
+    const now=performance.now();
+    if(now>=shieldState.until){
+      shieldState.active=false;
+      updateShieldVisual();
+      return false;
+    }
+    showShieldAbsorbEffect(opts);
+    return true;
+  }
+  function showShieldAbsorbEffect(opts={}){
+    const now=performance.now();
+    const px=opts.x;
+    const py=opts.y;
+    if(Number.isFinite(px)&&Number.isFinite(py)){
+      spawnParticles(px,py,'#86d6ff',24,1.8,2.8,2.6);
+    }else if(typeof paddleRect==='function'){
+      const pr=paddleRect();
+      if(pr){
+        spawnParticles(pr.x+pr.w/2,pr.y+pr.h/2,'#86d6ff',20,1.8,2.6,2.4);
+      }
+    }
+    if(now-lastShieldAbsorbAt>400){
+      showEquipmentMessage('防護罩吸收了傷害！','info',1600);
+      lastShieldAbsorbAt=now;
+    }
+  }
+  function healPlayer(amount){
+    if(!Number.isFinite(amount)||amount<=0) return false;
+    const prev=lives;
+    const maxHP=9;
+    const next=Math.min(maxHP,prev+Math.floor(amount));
+    const gained=next-prev;
+    if(gained<=0){
+      return false;
+    }
+    lives=next;
+    updateHUD();
+    showEquipmentMessage(`HP +${gained}`,'success',2200);
+    beep(720,0.08,0.05);
+    return true;
+  }
+  function openStore(nextLevel){
+    if(!storeOverlay) return;
+    pendingNextLevel=nextLevel;
+    storeOverlay.classList.add('show');
+    storeOverlay.setAttribute('aria-hidden','false');
+    document.body.classList.add('modal-open');
+    if(storeFeedback) storeFeedback.textContent='';
+    if(selectedStoreItemId){
+      selectStoreItem(selectedStoreItemId,{silent:true});
+    }else if(EQUIPMENT_LIST.length){
+      selectStoreItem(EQUIPMENT_LIST[0].id,{silent:true});
+    }
+    if(storeNextBtn){
+      storeNextBtn.textContent=nextLevel?`進入下一關（Lv.${nextLevel}）`:'進入下一關 ▶';
+      storeNextBtn.disabled=false;
+    }
+    refreshStoreAffordability();
+  }
+  function closeStore(){
+    if(!storeOverlay) return;
+    closeSlotModal(false);
+    storeOverlay.classList.remove('show');
+    storeOverlay.setAttribute('aria-hidden','true');
+    document.body.classList.remove('modal-open');
+  }
+  function prepareNextLevel(nextLevel){
+    const target=Math.max(1,Math.min(GAME_CONFIG.totalLevels,nextLevel));
+    level=target;
+    updateHUD();
+    initBricks();
+    resetBalls();
+    paused=true;
+    running=false;
+    applyBGMThemeForLevel();
+    showCenter(`進入關卡 ${level}`,'按 Space 或點畫面開始');
+  }
+  function enterNextLevelFromStore(){
+    const target=pendingNextLevel||level+1;
+    closeStore();
+    prepareNextLevel(target);
+    pendingNextLevel=null;
+  }
+
+  storeBuyBtn?.addEventListener('click',handleStorePurchase);
+  storeNextBtn?.addEventListener('click',enterNextLevelFromStore);
+  slotConfirmYes?.addEventListener('click',()=>{
+    if(pendingEquipItem==null||pendingSlotIndex==null) return;
+    const item=pendingEquipItem;
+    const index=pendingSlotIndex;
+    equipItemToSlot(index,item);
+    pendingEquipItem=null;
+    pendingSlotIndex=null;
+    closeSlotModal();
+    if(storeFeedback) storeFeedback.textContent=`欄位 ${index+1} 已裝備「${item.name}」。`;
+    refreshStoreAffordability();
+    if(storeNextBtn) storeNextBtn.disabled=false;
+  });
+  slotConfirmNo?.addEventListener('click',()=>{
+    pendingSlotIndex=null;
+    if(slotConfirm) slotConfirm.classList.remove('show');
+  });
+  equipmentSlotsEl?.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.equip-slot');
+    if(!btn) return;
+    const index=parseInt(btn.dataset.index,10);
+    if(Number.isNaN(index)) return;
+    if(slotModal && slotModal.classList.contains('show') && pendingEquipItem){
+      handleSlotChoice(index);
+      return;
+    }
+    useEquipmentFromSlot(index);
+  });
+
+  renderStoreItems();
+  renderEquipmentSlots();
+  recalcEquipmentBonuses();
+  updateShieldVisual();
+  if(EQUIPMENT_LIST.length){
+    selectStoreItem(EQUIPMENT_LIST[0].id,{silent:true});
+  }
+  refreshStoreAffordability();
   const gallery=document.getElementById('gallery'), galleryImg=document.getElementById('galleryImg'), galleryHint=document.getElementById('galleryHint'), galleryDialog=document.getElementById('galleryDialog');
   const win=document.getElementById('win'), ring=document.getElementById('ring'), finalScore=document.getElementById('finalScore'), againBtn=document.getElementById('againBtn');
   let finalVictorySequence=null;
@@ -2952,6 +3640,13 @@ select optgroup { color: #0b1022; }
     if(demonAttackActive?.type==='bladeHell'){
       demonAttackActive.hitsTaken=(demonAttackActive.hitsTaken||0)+1;
     }
+    const pr=paddleRect();
+    const centerX=(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):(demonBladeHellLastPaddleCenter?.x||550);
+    const centerY=(pr.w>0 && pr.h>0)?(pr.y+pr.h/2):(demonBladeHellLastPaddleCenter?.y||640);
+    demonBladeHellLastPaddleCenter={x:centerX,y:centerY};
+    if(blockDamageIfShielded({x:centerX,y:centerY})){
+      return;
+    }
     if(stats.lifeStart){
       const dur=(now-stats.lifeStart)/1000;
       if(dur<stats.fastestDeath) stats.fastestDeath=dur;
@@ -2960,10 +3655,6 @@ select optgroup { color: #0b1022; }
     stats.livesUsed++;
     if(buffs.BLACKHOLE.active){ buffs.BLACKHOLE.deaths=Math.min(8,(buffs.BLACKHOLE.deaths||0)+1); }
     if(buffs.ANNIHIL.active){ buffs.ANNIHIL.active=false; }
-    const pr=paddleRect();
-    const centerX=(pr.w>0 && pr.h>0)?(pr.x+pr.w/2):(demonBladeHellLastPaddleCenter?.x||550);
-    const centerY=(pr.w>0 && pr.h>0)?(pr.y+pr.h/2):(demonBladeHellLastPaddleCenter?.y||640);
-    demonBladeHellLastPaddleCenter={x:centerX,y:centerY};
     if(cause==='beam'){
       spawnDemonSpearBlood(centerX, centerY);
       spawnParticles(centerX, centerY, '#3a0a18', 40, 3.4, 4.6, 4.0);
@@ -5544,7 +6235,15 @@ select optgroup { color: #0b1022; }
       const {x:tx, y:ty}=getPaddleTarget();
       const ang=Math.atan2(ty-bc.y, tx-bc.x);
       const speed=4.5;
-      hostileArcs.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, phase:0, amp:32, color:'silver', onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); screenShake=Math.max(screenShake,10); }});
+    hostileArcs.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, phase:0, amp:32, color:'silver', onHit:()=>{
+      const pr=paddleRect();
+      const cx=pr.x+pr.w/2;
+      const cy=pr.y+pr.h/2;
+      if(blockDamageIfShielded({x:cx,y:cy})) return;
+      lives=Math.max(0, lives-1);
+      updateHUD();
+      screenShake=Math.max(screenShake,10);
+    }});
       beep(900,0.12,0.07);
     },2000);
   }
@@ -5857,7 +6556,15 @@ select optgroup { color: #0b1022; }
     setTimeout(()=>{
       const {x:tx, y:ty}=getPaddleTarget();
       const ang=Math.atan2(ty-bc.y, tx-bc.x); const speed=7.2;
-      hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'red', hit:false, onHit:()=>{ lives=Math.max(0, lives-1); updateHUD(); screenShake=Math.max(screenShake,12); }});
+    hostileBeams.push({x:bc.x, y:bc.y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, color:'red', hit:false, onHit:()=>{
+      const pr=paddleRect();
+      const cx=pr.x+pr.w/2;
+      const cy=pr.y+pr.h/2;
+      if(blockDamageIfShielded({x:cx,y:cy})) return;
+      lives=Math.max(0, lives-1);
+      updateHUD();
+      screenShake=Math.max(screenShake,12);
+    }});
       beep(600,0.14,0.09);
     },2000);
   }
@@ -10037,6 +10744,9 @@ let balls=[]; function makeBall(stuck=false,x=null){
   function spaceBossBulletHit(pr){
     const centerX=pr.x+pr.w/2;
     const centerY=pr.y+pr.h/2;
+    if(blockDamageIfShielded({x:centerX,y:centerY})){
+      return;
+    }
     spawnParticles(centerX, centerY, '#ffdf9a', 26, 2.4, 3.6, 3.2);
     screenShake=Math.max(screenShake,4);
     const desired=desiredPaddleWidth();
@@ -10071,11 +10781,16 @@ let balls=[]; function makeBall(stuck=false,x=null){
 
   function spaceBossLaserStrike(){
     if(paddleGoneUntil>performance.now()) return;
+    const pr=paddleRect();
+    const hitX=pr.x+pr.w/2;
+    const hitY=pr.y+pr.h/2;
+    if(blockDamageIfShielded({x:hitX,y:hitY})){
+      return;
+    }
     lives=Math.max(0, lives-1);
     updateHUD();
     screenShake=Math.max(screenShake,12);
-    const pr=paddleRect();
-    spawnParticles(pr.x+pr.w/2, pr.y+pr.h/2, '#ff6a88', 60, 3.0, 4.6, 4.0);
+    spawnParticles(hitX, hitY, '#ff6a88', 60, 3.0, 4.6, 4.0);
     if(lives<=0){ running=false; paused=true; showGameOver(); return; }
     balls.length=0;
     paddleGoneUntil=performance.now()+1500;
@@ -10703,6 +11418,10 @@ let balls=[]; function makeBall(stuck=false,x=null){
     if(now<reaperLifeLossCooldownUntil) return;
     if(now<paddleGoneUntil) return;
     reaperLifeLossCooldownUntil = now + 600;
+    const pr=paddleRect();
+    const cx=pr.x+pr.w/2;
+    const cy=pr.y+pr.h/2;
+    if(blockDamageIfShielded({x:cx,y:cy})) return;
     if(stats.lifeStart){
       const dur=(now-stats.lifeStart)/1000;
       if(dur<stats.fastestDeath) stats.fastestDeath=dur;
@@ -10713,9 +11432,6 @@ let balls=[]; function makeBall(stuck=false,x=null){
     if(buffs.ANNIHIL.active){ buffs.ANNIHIL.active=false; }
     lives=Math.max(0, lives-1);
     updateHUD();
-    const pr=paddleRect();
-    const cx=pr.x+pr.w/2;
-    const cy=pr.y+pr.h/2;
     spawnParticles(cx, cy, '#ff6a9a', 70, 2.6, 3.8, 3.4);
     screenShake=Math.max(screenShake,12);
     playSFX('explosion');
@@ -14174,6 +14890,7 @@ function generateLevel(lv, L){
     silverCoins = Math.max(0, Math.floor(silverCoins + amount));
     saveSilverCoins();
     updateHUD();
+    refreshStoreAffordability();
     if(opts.x!=null && opts.y!=null){
       const type = opts.type || 'small';
       const primary = type==='extra' ? '#ffe4b0' : '#d5e8ff';
@@ -14181,6 +14898,16 @@ function generateLevel(lv, L){
       spawnParticles(opts.x, opts.y, '#ffffff', 8, 1.4, 2.0, 1.8);
     }
     playSFX('coin');
+  }
+
+  function spendSilverCoins(amount){
+    if(!Number.isFinite(amount) || amount<=0) return false;
+    if(silverCoins < amount) return false;
+    silverCoins = Math.max(0, Math.floor(silverCoins - amount));
+    saveSilverCoins();
+    updateHUD();
+    refreshStoreAffordability();
+    return true;
   }
 
   function collectCoin(coin){
@@ -16673,6 +17400,8 @@ function generateLevel(lv, L){
 
   function update(){
     const now=performance.now();
+    updateShieldRuntime(now);
+    refreshEquipmentRuntime(now);
     const prevPaddleX=paddle.x;
     if(cyclopsShakeUntil && now<cyclopsShakeUntil){ screenShake=Math.max(screenShake,6); }
     if(comboEl) comboEl.classList.toggle('star', buffs.COMBO.active);
@@ -17285,7 +18014,9 @@ function generateLevel(lv, L){
             if(bk.boss){ updateHUD(); }
           }else{
             const currentHp = (typeof bk.hp === 'number') ? bk.hp : 1;
-            bk.hp = currentHp - megaDamageMul;
+            const bonusDamage = bk.boss ? 0 : brickDamageBonus;
+            const appliedDamage = megaDamageMul + bonusDamage;
+            bk.hp = currentHp - appliedDamage;
             incrementCombo();
             if(bk.hp<=0){
               const cx=bk.x+bk.w/2, cy=bk.y+bk.h/2;
@@ -17506,13 +18237,21 @@ function generateLevel(lv, L){
       if(nowL<=spaceBossSuppressLifeLossUntil){
         // skip automatic life loss triggered by Space Boss abilities
       }else{
+        const pr=paddleRect();
+        const cx=pr.x+pr.w/2;
+        const cy=pr.y+pr.h/2;
+        if(blockDamageIfShielded({x:cx,y:cy})){
+          resetBalls(false);
+          startCountdown();
+          return;
+        }
         if(stats.lifeStart){ const dur=(nowL-stats.lifeStart)/1000; if(dur<stats.fastestDeath) stats.fastestDeath=dur; if(dur>stats.longestLife) stats.longestLife=dur; }
         stats.livesUsed++;
-      if(buffs.BLACKHOLE.active){ buffs.BLACKHOLE.deaths=Math.min(8,(buffs.BLACKHOLE.deaths||0)+1); }
-      if(buffs.ANNIHIL.active){ buffs.ANNIHIL.active=false; }
-      lives--; updateHUD();
-      if(lives<=0){ running=false; paused=true; showGameOver(); return; }
-      else { resetBalls(false); startCountdown(); return; }
+        if(buffs.BLACKHOLE.active){ buffs.BLACKHOLE.deaths=Math.min(8,(buffs.BLACKHOLE.deaths||0)+1); }
+        if(buffs.ANNIHIL.active){ buffs.ANNIHIL.active=false; }
+        lives--; updateHUD();
+        if(lives<=0){ running=false; paused=true; showGameOver(); return; }
+        else { resetBalls(false); startCountdown(); return; }
       }
     }
 
@@ -17634,8 +18373,21 @@ function generateLevel(lv, L){
         galleryDialog.style.display='none';
         if(galleryHint) galleryHint.textContent='點一下顯示台詞 ▶';
         gallery.style.display='flex'; requestAnimationFrame(()=>gallery.classList.add('show'));
-        const proceed=()=>{ gallery.classList.remove('show'); setTimeout(()=>{ gallery.style.display='none'; gallery.removeEventListener('click',proceed); },200); galleryDialog.style.display='none'; level++; updateHUD(); initBricks(); resetBalls(); paused=true; running=false; applyBGMThemeForLevel(); showCenter(`進入關卡 ${level}`,'按 Space 或點畫面開始'); };
-        const showLine=()=>{ const dlg=getRandomDialog(key); unlockDialog(key, dlg.idx); galleryDialog.textContent=dlg.text; galleryDialog.style.display='block'; if(galleryHint) galleryHint.textContent='點一下進入下一關 ▶'; gallery.removeEventListener('click',showLine); gallery.addEventListener('click',proceed,{once:true}); };
+        const proceed=()=>{
+          gallery.classList.remove('show');
+          const nextLevel=Math.min(GAME_CONFIG.totalLevels, level+1);
+          setTimeout(()=>{
+            gallery.style.display='none';
+            gallery.removeEventListener('click',proceed);
+            galleryDialog.style.display='none';
+            if(level < GAME_CONFIG.totalLevels){
+              openStore(nextLevel);
+            }else{
+              prepareNextLevel(nextLevel);
+            }
+          },200);
+        };
+        const showLine=()=>{ const dlg=getRandomDialog(key); unlockDialog(key, dlg.idx); galleryDialog.textContent=dlg.text; galleryDialog.style.display='block'; if(galleryHint) galleryHint.textContent='點一下進入補給商店 ▶'; gallery.removeEventListener('click',showLine); gallery.addEventListener('click',proceed,{once:true}); };
         gallery.addEventListener('click',showLine); return;
       }
     }
