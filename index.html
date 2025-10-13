@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' ry='12' fill='%230b1633'/%3E%3Cpath d='M16 44l16-24 16 24' stroke='%23eaf2ff' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Ccircle cx='32' cy='40' r='6' fill='%23ffb347'/%3E%3C/svg%3E">
   <style>
     /* 全面換用全新 UI 風格（取自 index_skin.html） */
     :root{
@@ -332,15 +333,15 @@
     #storeOverlay .store-header{display:flex;justify-content:space-between;align-items:center;gap:12px;}
     #storeOverlay .store-title{font-size:24px;font-weight:750;letter-spacing:1px;color:#f0f6ff;margin:0;}
     #storeOverlay .store-title small{display:block;font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0.5px;margin-top:2px;}
-    #storeOverlay .store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;overflow-y:auto;padding-right:4px;}
-    #storeOverlay .shop-item{position:relative;display:flex;flex-direction:column;align-items:flex-start;padding:14px;border-radius:16px;border:1px solid rgba(140,180,255,0.22);background:linear-gradient(160deg,rgba(24,34,66,0.85),rgba(20,30,62,0.7));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;min-height:132px;}
+    #storeOverlay .store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:14px;overflow-y:auto;padding-right:4px;}
+    #storeOverlay .shop-item{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 14px;border-radius:16px;border:1px solid rgba(140,180,255,0.22);background:linear-gradient(160deg,rgba(24,34,66,0.85),rgba(20,30,62,0.7));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;min-height:0;gap:10px;text-align:center;}
     #storeOverlay .shop-item:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(0,0,0,0.4);}
     #storeOverlay .shop-item.selected{border-color:rgba(215,226,255,0.82);box-shadow:0 22px 50px rgba(64,110,255,0.28);}
-    #storeOverlay .shop-thumb{width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;position:relative;border:2px solid rgba(130,160,255,0.5);box-shadow:0 8px 24px rgba(0,0,0,0.38);background:rgba(12,18,38,0.4);}
-    #storeOverlay .shop-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-    #storeOverlay .tier-badge{position:absolute;right:8px;bottom:8px;padding:4px 10px;border-radius:999px;font-weight:650;font-size:12px;background:rgba(6,12,28,0.8);border:1px solid rgba(255,255,255,0.45);color:#f2f6ff;letter-spacing:1px;box-shadow:0 6px 18px rgba(0,0,0,0.45);}
-    #storeOverlay .shop-name{margin:10px 0 4px;font-size:16px;font-weight:700;letter-spacing:0.6px;}
-    #storeOverlay .shop-price{font-size:13px;color:var(--muted);letter-spacing:0.4px;}
+    #storeOverlay .shop-thumb{width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;position:relative;border:2px solid rgba(130,160,255,0.5);box-shadow:0 8px 24px rgba(0,0,0,0.38);background:rgba(12,18,38,0.4);display:flex;align-items:center;justify-content:center;padding:6px;}
+    #storeOverlay .shop-thumb img{width:100%;height:100%;object-fit:contain;display:block;}
+    #storeOverlay .tier-badge{position:absolute;right:10px;bottom:10px;font-weight:700;font-size:18px;color:#f2f6ff;letter-spacing:1px;text-shadow:0 2px 6px rgba(0,0,0,0.45);}
+    #storeOverlay .shop-name{margin:0;font-size:15px;font-weight:700;letter-spacing:0.6px;}
+    #storeOverlay .shop-price{font-size:13px;color:#d0dcff;letter-spacing:0.4px;}
     #storeOverlay .store-detail{flex:1;display:flex;flex-direction:column;gap:16px;padding:16px 18px;border-radius:18px;background:linear-gradient(150deg,rgba(15,22,46,0.84),rgba(12,20,38,0.78));border:1px solid rgba(130,170,250,0.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);min-height:180px;}
     #storeOverlay .store-detail h3{margin:0;font-size:22px;font-weight:760;letter-spacing:0.8px;color:#f4f8ff;}
     #storeOverlay .store-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:13px;color:#d0dcff;letter-spacing:0.4px;}
@@ -353,10 +354,10 @@
     #storeOverlay .store-actions .btn.primary:disabled{background:rgba(30,42,68,0.8);border-color:rgba(80,110,150,0.4);box-shadow:none;cursor:not-allowed;}
     #storeOverlay .store-actions .btn.secondary{background:rgba(18,28,52,0.8);}
 
-    .grade-S .shop-thumb,.grade-S .equip-icon{border-color:rgba(255,220,120,0.9);box-shadow:0 0 20px rgba(255,220,120,0.55);}
-    .grade-A .shop-thumb,.grade-A .equip-icon{border-color:rgba(255,90,120,0.85);box-shadow:0 0 18px rgba(255,90,120,0.45);}
-    .grade-B .shop-thumb,.grade-B .equip-icon{border-color:rgba(90,150,255,0.85);box-shadow:0 0 16px rgba(90,150,255,0.4);}
-    .grade-C .shop-thumb,.grade-C .equip-icon{border-color:rgba(90,210,150,0.85);box-shadow:0 0 16px rgba(90,210,150,0.38);}
+    .grade-S .shop-thumb,.grade-S .equip-button{border-color:rgba(255,220,120,0.9);box-shadow:0 0 20px rgba(255,220,120,0.55);}
+    .grade-A .shop-thumb,.grade-A .equip-button{border-color:rgba(255,90,120,0.85);box-shadow:0 0 18px rgba(255,90,120,0.45);}
+    .grade-B .shop-thumb,.grade-B .equip-button{border-color:rgba(90,150,255,0.85);box-shadow:0 0 16px rgba(90,150,255,0.4);}
+    .grade-C .shop-thumb,.grade-C .equip-button{border-color:rgba(90,210,150,0.85);box-shadow:0 0 16px rgba(90,210,150,0.38);}
     .grade-S .shop-name,.grade-S .equip-name{color:#ffe08a;}
     .grade-A .shop-name,.grade-A .equip-name{color:#ff6a82;}
     .grade-B .shop-name,.grade-B .equip-name{color:#69adff;}
@@ -380,26 +381,30 @@
     #slotModal .slot-confirm .btn{min-width:110px;}
 
     /* === 裝備列 === */
-    .equipment-bar{max-width:min(1080px,96vw);margin:20px auto 0;padding:18px;border-radius:20px;border:1px solid rgba(120,160,240,0.32);background:linear-gradient(160deg,rgba(14,22,46,0.82),rgba(12,20,40,0.74));backdrop-filter:blur(10px);box-shadow:0 18px 70px rgba(0,0,0,0.42);display:flex;flex-direction:column;gap:16px;}
+    .equipment-bar{max-width:min(720px,96vw);margin:16px auto 0;padding:12px 16px;border-radius:18px;border:1px solid rgba(120,160,240,0.32);background:linear-gradient(160deg,rgba(14,22,46,0.82),rgba(12,20,40,0.74));backdrop-filter:blur(10px);box-shadow:0 14px 46px rgba(0,0,0,0.38);display:flex;flex-direction:column;gap:10px;}
     .equipment-bar-header{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-    .equipment-bar-header h3{margin:0;font-size:18px;font-weight:720;letter-spacing:0.8px;color:#f0f6ff;}
-    .equipment-tip{font-size:12px;color:var(--muted);letter-spacing:0.4px;}
-    .equipment-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
-    .equip-slot{position:relative;display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:16px;border:1px solid rgba(120,160,240,0.28);background:linear-gradient(160deg,rgba(18,26,50,0.9),rgba(16,24,46,0.74));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);cursor:pointer;transition:border-color .18s ease, transform .18s ease;min-height:126px;text-align:left;}
-    .equip-slot:hover{border-color:rgba(205,224,255,0.7);transform:translateY(-2px);}
+    .equipment-bar-header h3{margin:0;font-size:16px;font-weight:720;letter-spacing:0.8px;color:#f0f6ff;}
+    .equipment-tip{font-size:11px;color:var(--muted);letter-spacing:0.4px;}
+    .equipment-slots{display:flex;justify-content:center;gap:12px;}
+    .equip-slot{position:relative;flex:0 0 clamp(92px,24vw,128px);display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 6px;border-radius:14px;border:1px solid rgba(120,160,240,0.28);background:linear-gradient(160deg,rgba(18,26,50,0.9),rgba(16,24,46,0.74));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);cursor:pointer;transition:border-color .18s ease, transform .18s ease;text-align:center;min-height:0;}
+    .equip-slot:hover{border-color:rgba(205,224,255,0.7);transform:translateY(-1px);}
     .equip-slot.empty{border-style:dashed;border-color:rgba(110,150,210,0.3);background:rgba(14,22,40,0.6);box-shadow:none;}
     .equip-slot.empty:hover{border-color:rgba(180,210,255,0.45);}
-    .equip-slot .equip-label{font-size:12px;color:var(--muted);letter-spacing:0.4px;text-transform:uppercase;}
-    .equip-slot .equip-name{font-size:16px;font-weight:650;letter-spacing:0.6px;}
-    .equip-slot .equip-type{font-size:12px;color:#a7b9e6;letter-spacing:0.4px;}
-    .equip-slot .equip-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:14px;border:2px solid rgba(130,160,255,0.5);overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,0.45);background:rgba(12,18,36,0.6);}
-    .equip-slot .equip-icon img{width:100%;height:100%;object-fit:cover;display:block;}
-    .equip-slot .equip-status{margin-top:auto;font-size:12px;color:#98acd9;letter-spacing:0.4px;display:flex;align-items:center;gap:6px;}
-    .equip-slot .tier-badge{position:absolute;top:6px;right:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:650;background:rgba(12,18,36,0.82);border:1px solid rgba(255,255,255,0.38);color:#f0f6ff;letter-spacing:1px;}
+    .equip-slot .equip-label{display:none;}
+    .equip-slot .equip-name{font-size:13px;font-weight:650;letter-spacing:0.5px;color:#dce6ff;min-height:18px;}
+    .equip-slot .equip-type{font-size:11px;color:#8fa5da;letter-spacing:0.4px;}
+    .equip-slot .equip-button{position:relative;display:flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:16px;border:2px solid rgba(130,160,255,0.5);overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,0.45);background:rgba(12,18,36,0.6);}
+    .equip-slot .equip-button img{width:100%;height:100%;object-fit:contain;display:block;}
+    .equip-slot.empty .equip-button{border-style:dashed;border-color:rgba(110,150,210,0.4);background:rgba(14,22,40,0.52);color:#7f95c6;font-size:26px;font-weight:500;}
+    .equip-slot.empty .equip-button::after{content:'+';}
+    .equip-slot .equip-status{font-size:11px;color:#98acd9;letter-spacing:0.4px;min-height:16px;}
+    .equip-slot .equip-effect{display:none;font-size:11px;line-height:1.4;color:#cfd8ff;margin-top:2px;padding:0 4px;}
+    .equip-slot.show-effect .equip-effect{display:block;}
+    .equip-slot .tier-badge{position:absolute;top:6px;right:10px;font-size:16px;font-weight:700;color:#f0f6ff;text-shadow:0 2px 6px rgba(0,0,0,0.5);}
     .equipment-bar.selecting{box-shadow:0 22px 80px rgba(80,120,255,0.28);}
     .equipment-bar.selecting .equipment-tip{color:#a9beff;}
-    .equipment-status{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:#c6d6ff;letter-spacing:0.4px;}
-    .equipment-message{min-height:18px;}
+    .equipment-status{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#c6d6ff;letter-spacing:0.4px;}
+    .equipment-message{min-height:16px;}
     .equipment-message.tone-info{color:#c6d6ff;}
     .equipment-message.tone-success{color:#8fe4ff;}
     .equipment-message.tone-warning{color:#ff9fb3;}
@@ -417,9 +422,9 @@
       #storeOverlay .store-panel{padding:18px;gap:18px;}
       #storeOverlay .store-grid{grid-template-columns:repeat(1,minmax(0,1fr));}
       #slotModal .slot-grid{grid-template-columns:repeat(1,minmax(0,1fr));}
-      .equipment-slots{grid-template-columns:repeat(1,minmax(0,1fr));}
-      .equipment-bar{padding:16px;gap:14px;}
-      .equipment-tip{font-size:11px;}
+      .equipment-slots{justify-content:space-between;gap:10px;}
+      .equip-slot{flex:0 0 calc((100% - 20px)/3);}
+      .equipment-bar{padding:12px 14px;}
     }
 
     /* Leaderboard overlay */
@@ -854,7 +859,7 @@ select optgroup { color: #0b1022; }
       <div class="equipment-bar" id="equipmentBar" aria-label="裝備欄">
         <div class="equipment-bar-header">
           <h3>裝備欄</h3>
-          <span class="equipment-tip" id="equipmentTip">主動與消耗型裝備可在此啟用</span>
+          <span class="equipment-tip" id="equipmentTip">長按裝備查看效果，點擊可啟動主動／消耗型裝備</span>
         </div>
         <div class="equipment-slots" id="equipmentSlots" role="list">
           <!-- 動態填入裝備欄位 -->
@@ -1573,6 +1578,19 @@ select optgroup { color: #0b1022; }
     {id:'heal3',name:'補血包Ⅲ',roman:'Ⅲ',icon:'W03.jpg',grade:'A',type:'consumable',price:40,description:'恢復 3 點 HP（最大 HP 9），使用後消失。',effect:{heal:3}}
   ];
   const GRADE_COLOR={S:'#ffe08a',A:'#ff6a82',B:'#69adff',C:'#5fd6a0'};
+  const SILVER_COIN_KEY='breakout_silver_coins';
+  let silverCoins=0;
+  (function(){
+    try{
+      const stored=localStorage.getItem(SILVER_COIN_KEY);
+      if(stored!=null){
+        const parsed=parseInt(stored,10);
+        if(!Number.isNaN(parsed) && parsed>=0){
+          silverCoins=parsed;
+        }
+      }
+    }catch(e){}
+  })();
 
   const equipmentSlots=[null,null,null];
   const equipmentSlotElements=[];
@@ -1765,44 +1783,83 @@ select optgroup { color: #0b1022; }
       }else{
         btn.classList.add('empty');
       }
-      const label=document.createElement('span');
-      label.className='equip-label';
-      label.textContent=`欄位 ${idx+1}`;
-      btn.appendChild(label);
+      const name=document.createElement('span');
+      name.className='equip-name';
+      name.textContent=slot?slot.def.name:`欄位 ${idx+1}`;
+      btn.appendChild(name);
       if(slot){
-        const name=document.createElement('span');
-        name.className='equip-name';
-        name.textContent=slot.def.name;
-        btn.appendChild(name);
+        btn.title=slot.def.description||'';
         const type=document.createElement('span');
         type.className='equip-type';
         type.textContent=EQUIPMENT_TYPE_LABEL[slot.def.type]||'';
         btn.appendChild(type);
-        const iconWrapper=document.createElement('div');
-        iconWrapper.className='equip-icon';
+      }
+      else{
+        btn.title=`欄位 ${idx+1}`;
+      }
+      const iconWrapper=document.createElement('div');
+      iconWrapper.className='equip-button';
+      if(slot){
         const img=document.createElement('img');
         img.src=`images/${slot.def.icon}`;
         img.alt=slot.def.name;
         iconWrapper.appendChild(img);
-        const badge=document.createElement('span');
-        badge.className='tier-badge';
-        badge.textContent=slot.def.roman||'';
-        iconWrapper.appendChild(badge);
-        btn.appendChild(iconWrapper);
-        const status=document.createElement('span');
-        status.className='equip-status';
+        if(slot.def.roman){
+          const badge=document.createElement('span');
+          badge.className='tier-badge';
+          badge.textContent=slot.def.roman;
+          iconWrapper.appendChild(badge);
+        }
+      }
+      btn.appendChild(iconWrapper);
+      const status=document.createElement('span');
+      status.className='equip-status';
+      if(slot){
         status.textContent=slot.def.type==='passive'?'被動效果：持續生效':'點擊啟動';
-        btn.appendChild(status);
+      }else{
+        status.textContent='未裝備';
+      }
+      btn.appendChild(status);
+      if(slot){
+        const effect=document.createElement('span');
+        effect.className='equip-effect';
+        effect.textContent=slot.def.description||'';
+        btn.appendChild(effect);
+        const showEffect=()=>{
+          btn.classList.add('show-effect');
+        };
+        const hideEffect=()=>{
+          btn.classList.remove('show-effect');
+        };
+        btn.addEventListener('pointerdown',(ev)=>{
+          if(ev.button!=null && ev.button!==0) return;
+          if(typeof ev.pointerId==='number' && btn.setPointerCapture){
+            try{btn.setPointerCapture(ev.pointerId);}catch(e){}
+          }
+          showEffect();
+        });
+        btn.addEventListener('pointerup',(ev)=>{
+          if(typeof ev.pointerId==='number' && btn.hasPointerCapture?.(ev.pointerId)){
+            try{btn.releasePointerCapture(ev.pointerId);}catch(e){}
+          }
+          hideEffect();
+        });
+        btn.addEventListener('pointerleave',hideEffect);
+        btn.addEventListener('pointercancel',hideEffect);
+        btn.addEventListener('lostpointercapture',hideEffect);
+        btn.addEventListener('keydown',(ev)=>{
+          if(ev.code==='Space'||ev.code==='Enter'){
+            showEffect();
+          }
+        });
+        btn.addEventListener('keyup',(ev)=>{
+          if(ev.code==='Space'||ev.code==='Enter'){
+            hideEffect();
+          }
+        });
+        btn.addEventListener('blur',hideEffect);
         equipmentSlotElements.push({button:btn,statusEl:status,index:idx});
       }else{
-        const name=document.createElement('span');
-        name.className='equip-name';
-        name.textContent='未裝備';
-        btn.appendChild(name);
-        const note=document.createElement('span');
-        note.className='equip-type';
-        note.textContent='從商店購買後可安裝';
-        btn.appendChild(note);
         equipmentSlotElements.push({button:btn,statusEl:null,index:idx});
       }
       equipmentSlotsEl.appendChild(btn);
@@ -1813,7 +1870,7 @@ select optgroup { color: #0b1022; }
     if(!equipmentMessageEl) return;
     if(equipmentMessageUntil) return;
     const hasEquip=equipmentSlots.some(Boolean);
-    equipmentMessageEl.textContent=hasEquip?'點擊主動或消耗型裝備即可使用。':'尚未裝備任何武器。';
+    equipmentMessageEl.textContent=hasEquip?'點擊主動或消耗型裝備即可使用，長按可查看效果。':'尚未裝備任何武器。';
     equipmentMessageEl.classList.remove('tone-success','tone-warning','tone-info');
   }
   function showEquipmentMessage(text,tone='info',duration=2400){
@@ -2073,19 +2130,6 @@ select optgroup { color: #0b1022; }
 
   const bgmBtn=document.getElementById('bgmBtn'), bgmVol=document.getElementById('bgmVol');
 
-  const SILVER_COIN_KEY='breakout_silver_coins';
-  let silverCoins=0;
-  (function(){
-    try{
-      const stored=localStorage.getItem(SILVER_COIN_KEY);
-      if(stored!=null){
-        const parsed=parseInt(stored,10);
-        if(!Number.isNaN(parsed) && parsed>=0){
-          silverCoins=parsed;
-        }
-      }
-    }catch(e){}
-  })();
   function saveSilverCoins(){
     try{ localStorage.setItem(SILVER_COIN_KEY, String(Math.max(0, Math.floor(silverCoins)))); }catch(e){}
   }
