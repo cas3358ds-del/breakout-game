@@ -32,12 +32,7 @@
       font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-    .wrap{max-width:1200px;margin:0 auto;padding:0 12px 24px}
-    header{
-      padding:calc(8px + env(safe-area-inset-top)) 0 10px;
-      display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between
-    }
-    h1{font-size:clamp(16px,2.6vw,22px);margin:0 8px 0 0;letter-spacing:.4px;opacity:.95}
+    .wrap{max-width:1200px;margin:0 auto;padding:calc(8px + env(safe-area-inset-top)) 12px 24px}
     .small{font-size:12px;color:var(--muted)}
 
     /* HUD 與 UI */
@@ -325,7 +320,7 @@
     #storeOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;padding:24px;box-sizing:border-box;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;pointer-events:auto;}
     #storeOverlay.show{display:flex;}
     #storeOverlay .backdrop{position:absolute;inset:0;background:rgba(6,12,28,0.82);backdrop-filter:blur(12px);}
-    #storeOverlay .store-panel{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);grid-template-areas:"hero content";gap:28px;align-items:stretch;width:min(1000px,100%);max-height:calc(100vh - 48px);padding:28px;border:1px solid rgba(140,180,255,0.32);border-radius:22px;background:linear-gradient(140deg,rgba(16,24,48,0.92),rgba(12,18,34,0.88));box-shadow:0 30px 120px rgba(0,0,0,0.55);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+    #storeOverlay .store-panel{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);grid-template-areas:"hero content";gap:24px;align-items:stretch;width:min(1000px,100%);max-height:calc(100vh - 48px);padding:24px;border:1px solid rgba(140,180,255,0.32);border-radius:22px;background:linear-gradient(140deg,rgba(16,24,48,0.92),rgba(12,18,34,0.88));box-shadow:0 30px 120px rgba(0,0,0,0.55);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
     #storeOverlay .store-left{grid-area:hero;position:relative;display:flex;flex-direction:column;justify-content:flex-end;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.45);}
     #storeOverlay .store-left img{width:100%;height:100%;object-fit:cover;display:block;}
     #storeOverlay .store-hero-label{position:absolute;left:16px;bottom:16px;padding:10px 16px;border-radius:999px;background:rgba(12,22,44,0.78);backdrop-filter:blur(8px);font-weight:650;letter-spacing:2px;text-transform:uppercase;font-size:12px;color:#dbe6ff;box-shadow:0 8px 26px rgba(0,0,0,0.32);}
@@ -333,33 +328,40 @@
     #storeOverlay .store-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
     #storeOverlay .store-title{font-size:24px;font-weight:750;letter-spacing:1px;color:#f0f6ff;margin:0;}
     #storeOverlay .store-title small{display:block;font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0.5px;margin-top:2px;}
-    #storeOverlay .store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-content:flex-start;gap:16px;overflow-y:auto;padding-right:6px;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:rgba(120,160,240,0.45) transparent;}
+    #storeOverlay .store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-content:flex-start;gap:12px;overflow-y:auto;padding-right:4px;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:rgba(120,160,240,0.45) transparent;}
     #storeOverlay .store-grid::-webkit-scrollbar{width:6px;}
     #storeOverlay .store-grid::-webkit-scrollbar-thumb{background:rgba(120,160,240,0.45);border-radius:999px;}
-    #storeOverlay .shop-item{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 14px;border-radius:16px;border:1px solid rgba(140,180,255,0.22);background:linear-gradient(160deg,rgba(24,34,66,0.85),rgba(20,30,62,0.7));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;min-height:0;gap:10px;text-align:center;}
+    #storeOverlay .shop-item{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:12px 12px 10px;border-radius:14px;border:1px solid rgba(140,180,255,0.22);background:linear-gradient(160deg,rgba(24,34,66,0.85),rgba(20,30,62,0.7));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;min-height:0;gap:6px;text-align:center;}
     #storeOverlay .shop-item:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(0,0,0,0.4);}
     #storeOverlay .shop-item.selected{border-color:rgba(215,226,255,0.82);box-shadow:0 22px 50px rgba(64,110,255,0.28);}
-    #storeOverlay .shop-thumb{width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;position:relative;border:2px solid rgba(130,160,255,0.5);box-shadow:0 8px 24px rgba(0,0,0,0.38);background:rgba(12,18,38,0.4);display:flex;align-items:center;justify-content:center;padding:6px;}
+    #storeOverlay .shop-thumb{width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;position:relative;border:2px solid rgba(130,160,255,0.5);box-shadow:0 8px 24px rgba(0,0,0,0.38);background:rgba(12,18,38,0.4);display:flex;align-items:center;justify-content:center;padding:6px;margin-top:2px;}
     #storeOverlay .shop-thumb img{width:100%;height:100%;object-fit:contain;display:block;}
     #storeOverlay .tier-badge{position:absolute;right:10px;bottom:10px;font-weight:700;font-size:18px;color:#f2f6ff;letter-spacing:1px;text-shadow:0 2px 6px rgba(0,0,0,0.45);}
-    #storeOverlay .shop-name{margin:0;font-size:15px;font-weight:700;letter-spacing:0.6px;}
-    #storeOverlay .shop-price{font-size:13px;color:#d0dcff;letter-spacing:0.4px;}
-    #storeOverlay .store-detail{display:flex;flex-direction:column;gap:16px;padding:16px 18px;border-radius:18px;background:linear-gradient(150deg,rgba(15,22,46,0.84),rgba(12,20,38,0.78));border:1px solid rgba(130,170,250,0.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);min-height:0;}
-    #storeOverlay .store-detail h3{margin:0;font-size:22px;font-weight:760;letter-spacing:0.8px;color:#f4f8ff;}
-    #storeOverlay .store-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:13px;color:#d0dcff;letter-spacing:0.4px;}
-    #storeOverlay .store-meta span{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:999px;background:rgba(20,32,68,0.6);border:1px solid rgba(120,160,240,0.2);}
-    #storeOverlay .store-desc{margin:0;font-size:14px;line-height:1.7;color:#c9d4f6;letter-spacing:0.3px;min-height:56px;}
-    #storeOverlay .store-feedback{min-height:20px;font-size:13px;color:#9bb4ff;letter-spacing:0.3px;}
+    #storeOverlay .shop-name{margin:0;font-size:12px;font-weight:700;letter-spacing:0.6px;}
+    #storeOverlay .shop-price{font-size:calc(13px * 0.9);color:#d0dcff;letter-spacing:0.35px;}
+    #storeOverlay .store-detail{display:flex;flex-direction:column;gap:12px;padding:14px 16px;border-radius:16px;background:linear-gradient(150deg,rgba(15,22,46,0.84),rgba(12,20,38,0.78));border:1px solid rgba(130,170,250,0.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);min-height:0;}
+    #storeOverlay .store-headline{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    #storeOverlay .store-detail h3{margin:0;font-size:20px;font-weight:760;letter-spacing:0.8px;color:#f4f8ff;}
+    #storeOverlay .store-price-tag{font-size:15px;font-weight:680;color:#f4f8ff;letter-spacing:0.6px;white-space:nowrap;}
+    #storeOverlay .store-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:#d0dcff;letter-spacing:0.35px;}
+    #storeOverlay .store-meta span{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:999px;background:rgba(20,32,68,0.6);border:1px solid rgba(120,160,240,0.2);}
+    #storeOverlay .store-desc{margin:0;font-size:13px;line-height:1.55;color:#c9d4f6;letter-spacing:0.28px;}
+    #storeOverlay .store-feedback{min-height:0;font-size:12px;color:#9bb4ff;letter-spacing:0.28px;}
+    #storeOverlay .store-feedback:empty{display:none;}
     #storeOverlay .store-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;}
     #storeOverlay .store-actions .btn{min-width:140px;justify-content:center;font-weight:650;letter-spacing:0.6px;}
     #storeOverlay .store-actions .btn.primary{background:linear-gradient(135deg,#3d6bff,#6c9dff);border-color:rgba(120,170,255,0.8);box-shadow:0 12px 30px rgba(60,110,255,0.45);}
     #storeOverlay .store-actions .btn.primary:disabled{background:rgba(30,42,68,0.8);border-color:rgba(80,110,150,0.4);box-shadow:none;cursor:not-allowed;}
     #storeOverlay .store-actions .btn.secondary{background:rgba(18,28,52,0.8);}
 
-    .grade-S .shop-thumb,.grade-S .equip-button{border-color:rgba(255,220,120,0.9);box-shadow:0 0 20px rgba(255,220,120,0.55);}
-    .grade-A .shop-thumb,.grade-A .equip-button{border-color:rgba(255,90,120,0.85);box-shadow:0 0 18px rgba(255,90,120,0.45);}
-    .grade-B .shop-thumb,.grade-B .equip-button{border-color:rgba(90,150,255,0.85);box-shadow:0 0 16px rgba(90,150,255,0.4);}
-    .grade-C .shop-thumb,.grade-C .equip-button{border-color:rgba(90,210,150,0.85);box-shadow:0 0 16px rgba(90,210,150,0.38);}
+    .grade-S{--grade-color:#ffe08a;}
+    .grade-A{--grade-color:#ff6a82;}
+    .grade-B{--grade-color:#69adff;}
+    .grade-C{--grade-color:#5fd6a0;}
+    .grade-S .shop-thumb,.grade-S .equip-button{border-color:var(--grade-color);box-shadow:0 0 20px rgba(255,224,138,0.55);}
+    .grade-A .shop-thumb,.grade-A .equip-button{border-color:var(--grade-color);box-shadow:0 0 18px rgba(255,106,130,0.45);}
+    .grade-B .shop-thumb,.grade-B .equip-button{border-color:var(--grade-color);box-shadow:0 0 16px rgba(105,173,255,0.4);}
+    .grade-C .shop-thumb,.grade-C .equip-button{border-color:var(--grade-color);box-shadow:0 0 16px rgba(95,214,160,0.38);}
     .grade-S .shop-name,.grade-S .equip-name{color:#ffe08a;}
     .grade-A .shop-name,.grade-A .equip-name{color:#ff6a82;}
     .grade-B .shop-name,.grade-B .equip-name{color:#69adff;}
@@ -416,7 +418,7 @@
 
     @media (max-width: 900px){
       #storeOverlay{padding:18px;}
-      #storeOverlay .store-panel{grid-template-columns:1fr;grid-template-areas:"hero" "content";max-height:calc(100vh - 36px);width:100%;padding:22px;gap:22px;}
+      #storeOverlay .store-panel{grid-template-columns:1fr;grid-template-areas:"hero" "content";max-height:calc(100vh - 36px);width:100%;padding:20px;gap:20px;}
       #storeOverlay .store-left{min-height:220px;}
       #storeOverlay .store-content{grid-template-rows:auto 1fr auto;}
       #storeOverlay .store-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
@@ -428,8 +430,11 @@
       #storeOverlay .store-left{min-height:200px;}
       #storeOverlay .store-hero-label{left:12px;bottom:12px;font-size:11px;padding:8px 14px;}
       #storeOverlay .store-title{font-size:22px;}
-      #storeOverlay .store-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding-right:4px;}
-      #storeOverlay .shop-item{padding:12px 10px;border-radius:14px;gap:8px;}
+      #storeOverlay .store-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding-right:2px;}
+      #storeOverlay .shop-item{padding:10px 10px 9px;border-radius:12px;gap:6px;}
+      #storeOverlay .store-detail{padding:12px 14px;gap:10px;}
+      #storeOverlay .store-detail h3{font-size:18px;}
+      #storeOverlay .store-price-tag{font-size:14px;}
       #storeOverlay .shop-thumb{border-radius:12px;padding:6px;}
       #storeOverlay .store-actions{width:100%;flex-direction:column;}
       #storeOverlay .store-actions .btn{width:100%;}
@@ -802,9 +807,6 @@ select optgroup { color: #0b1022; }
 <body>
   <!-- 新增 UI 包裝 -->
   <div class="wrap" id="app">
-    <header>
-      <h1>Rock打磚塊 — <span id="skinTitle">經典風格</span></h1>
-    </header>
     <!-- 頂部 HUD -->
     <section class="hud" aria-label="遊戲 HUD">
       <div class="stats">
@@ -897,7 +899,10 @@ select optgroup { color: #0b1022; }
             </div>
             <div class="store-grid" id="storeGrid" role="list"></div>
             <div class="store-detail">
-              <h3 id="storeItemName">選擇一件裝備</h3>
+              <div class="store-headline">
+                <h3 id="storeItemName">選擇一件裝備</h3>
+                <span class="store-price-tag" id="storeItemPrice">—</span>
+              </div>
               <div class="store-meta" id="storeItemMeta"></div>
               <p class="store-desc" id="storeItemDesc">完成關卡後可使用銀幣購買裝備，打造專屬打法。</p>
               <div class="store-feedback" id="storeFeedback"></div>
@@ -1554,6 +1559,7 @@ select optgroup { color: #0b1022; }
   const storeOverlay=document.getElementById('storeOverlay');
   const storeGrid=document.getElementById('storeGrid');
   const storeItemName=document.getElementById('storeItemName');
+  const storeItemPrice=document.getElementById('storeItemPrice');
   const storeItemMeta=document.getElementById('storeItemMeta');
   const storeItemDesc=document.getElementById('storeItemDesc');
   const storeBuyBtn=document.getElementById('storeBuyBtn');
@@ -1665,19 +1671,21 @@ select optgroup { color: #0b1022; }
     refreshStoreAffordability();
   }
   function updateStoreDetail(item){
-    if(!storeItemName||!storeItemMeta||!storeItemDesc){
+    if(!storeItemName||!storeItemMeta||!storeItemDesc||!storeItemPrice){
       return;
     }
     if(!item){
       storeItemName.textContent='選擇一件裝備';
+      storeItemPrice.textContent='—';
       storeItemMeta.innerHTML='';
       storeItemDesc.textContent='完成關卡後可使用銀幣購買裝備。';
       return;
     }
     storeItemName.textContent=item.name;
+    storeItemPrice.textContent=`${item.price} 銀幣`;
     const gradeColor=GRADE_COLOR[item.grade]||'#f0f6ff';
     const typeLabel=EQUIPMENT_TYPE_LABEL[item.type]||'';
-    storeItemMeta.innerHTML=`<span>等級：<strong style="color:${gradeColor}">${item.grade}</strong></span><span>類型：${typeLabel}</span><span>價格：${item.price} 銀幣</span>`;
+    storeItemMeta.innerHTML=`<span>等級：<strong style="color:${gradeColor}">${item.grade}</strong></span><span>類型：${typeLabel}</span>`;
     storeItemDesc.textContent=item.description;
   }
   function refreshStoreAffordability(){
@@ -2145,7 +2153,7 @@ select optgroup { color: #0b1022; }
     pendingEquipItem=null;
     pendingSlotIndex=null;
     closeSlotModal();
-    if(storeFeedback) storeFeedback.textContent=`欄位 ${index+1} 已裝備「${item.name}」。`;
+    if(storeFeedback) storeFeedback.textContent='';
     refreshStoreAffordability();
     if(storeNextBtn) storeNextBtn.disabled=false;
   });
