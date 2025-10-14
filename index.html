@@ -804,7 +804,6 @@ select optgroup { color: #0b1022; }
   <div class="wrap" id="app">
     <header>
       <h1>Rock打磚塊 — <span id="skinTitle">經典風格</span></h1>
-      <span class="small" id="skinDesc">LED：三側一致深藍，右側鏡像，2s 呼吸。</span>
     </header>
     <!-- 頂部 HUD -->
     <section class="hud" aria-label="遊戲 HUD">
@@ -2514,9 +2513,7 @@ select optgroup { color: #0b1022; }
     // Provide a UI update callback on window so skin.js can call it.
     window.updateSkinUI = function (skin) {
       const titleEl = document.getElementById('skinTitle');
-      const descEl = document.getElementById('skinDesc');
       if (titleEl) titleEl.textContent = skin.label || '';
-      if (descEl) descEl.textContent = skin.desc || '';
     };
     // Determine the initial skin from localStorage, with fallback.
     let initKey;
@@ -18542,7 +18539,6 @@ function boot(){
   const $ = sel => document.querySelector(sel);
   const skinSel = $('#skinSel');
   const skinTitle = $('#skinTitle');
-  const skinDesc = $('#skinDesc');
 
   function populateSkinOptions(){
     if (!skinSel || !window.SKINS) return;
@@ -18560,7 +18556,6 @@ function boot(){
 
   window.updateSkinUI = function(skin){
     if (skinTitle) skinTitle.textContent = skin.label || skin.selectLabel || '經典風格';
-    if (skinDesc) skinDesc.textContent = skin.desc || '';
   };
 
   function restoreAndApply(){
