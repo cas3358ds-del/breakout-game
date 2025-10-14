@@ -155,12 +155,12 @@
     #promptsDock .prompt{
       flex:1 1 calc((100% - 16px)/3);
       max-width:calc((100% - 16px)/3);
-      min-width:0;height:48px;
-      padding:8px 10px;border:1px solid var(--stroke);border-radius:12px;
+      min-width:0;height:38px;
+      padding:6px 8px;border:1px solid var(--stroke);border-radius:12px;
       background:linear-gradient(180deg,var(--glass-1),var(--glass-2));
       backdrop-filter:blur(6px);
       box-shadow:0 8px 20px rgba(0,0,0,.3);
-      font-size:12px;line-height:1.45;color:#eaf2ff;white-space:normal;
+      font-size:calc(12px * 0.8);line-height:1.45;color:#eaf2ff;white-space:normal;
       word-break:break-word;overflow-wrap:anywhere;
       display:flex;align-items:center;justify-content:center;text-align:center;
       opacity:1;transition:opacity .4s
@@ -173,7 +173,7 @@
         flex-direction:column;justify-content:flex-start;
       }
       #promptsDock .prompt{
-        width:100%;height:60px;flex:none;
+        width:100%;height:48px;flex:none;
       }
     }
     /* Stage */
@@ -385,22 +385,20 @@
     #slotModal .slot-confirm .btn{min-width:110px;}
 
     /* === 裝備列 === */
-    .equipment-bar{max-width:min(720px,96vw);margin:16px auto 0;padding:12px 16px;border-radius:18px;border:1px solid rgba(120,160,240,0.32);background:linear-gradient(160deg,rgba(14,22,46,0.82),rgba(12,20,40,0.74));backdrop-filter:blur(10px);box-shadow:0 14px 46px rgba(0,0,0,0.38);display:flex;flex-direction:column;gap:10px;}
-    .equipment-bar-header{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-    .equipment-bar-header h3{margin:0;font-size:16px;font-weight:720;letter-spacing:0.8px;color:#f0f6ff;}
-    .equipment-slots{display:flex;justify-content:center;gap:12px;}
-    .equip-slot{position:relative;flex:0 0 clamp(92px,24vw,128px);display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 6px;border-radius:14px;border:1px solid rgba(120,160,240,0.28);background:linear-gradient(160deg,rgba(18,26,50,0.9),rgba(16,24,46,0.74));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);cursor:pointer;transition:border-color .18s ease, transform .18s ease;text-align:center;min-height:0;}
+    .equipment-bar{max-width:min(720px,96vw);margin:12px auto 0;padding:10px 14px;border-radius:18px;border:1px solid rgba(120,160,240,0.32);background:linear-gradient(160deg,rgba(14,22,46,0.82),rgba(12,20,40,0.74));backdrop-filter:blur(10px);box-shadow:0 14px 46px rgba(0,0,0,0.38);display:flex;flex-direction:column;gap:8px;}
+    .equipment-slots{display:flex;justify-content:center;gap:10px;}
+    .equip-slot{position:relative;flex:0 0 clamp(82px,22vw,112px);display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border-radius:14px;border:1px solid rgba(120,160,240,0.28);background:linear-gradient(160deg,rgba(18,26,50,0.9),rgba(16,24,46,0.74));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);cursor:pointer;transition:border-color .18s ease, transform .18s ease;text-align:center;min-height:0;}
     .equip-slot:hover{border-color:rgba(205,224,255,0.7);transform:translateY(-1px);}
     .equip-slot.empty{border-style:dashed;border-color:rgba(110,150,210,0.3);background:rgba(14,22,40,0.6);box-shadow:none;}
     .equip-slot.empty:hover{border-color:rgba(180,210,255,0.45);}
     .equip-slot .equip-label{display:none;}
-    .equip-slot .equip-name{font-size:13px;font-weight:650;letter-spacing:0.5px;color:#dce6ff;min-height:18px;}
-    .equip-slot .equip-type{font-size:11px;color:#8fa5da;letter-spacing:0.4px;}
-    .equip-slot .equip-button{position:relative;display:flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:16px;border:2px solid rgba(130,160,255,0.5);overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,0.45);background:rgba(12,18,36,0.6);}
+    .equip-slot .equip-name{font-size:12px;font-weight:650;letter-spacing:0.5px;color:#dce6ff;min-height:16px;}
+    .equip-slot .equip-type{font-size:10.5px;color:#8fa5da;letter-spacing:0.4px;}
+    .equip-slot .equip-button{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:16px;border:2px solid rgba(130,160,255,0.5);overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,0.45);background:rgba(12,18,36,0.6);}
     .equip-slot .equip-button img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;user-select:none;}
     .equip-slot.empty .equip-button{border-style:dashed;border-color:rgba(110,150,210,0.4);background:rgba(14,22,40,0.52);color:#7f95c6;font-size:26px;font-weight:500;}
     .equip-slot.empty .equip-button::after{content:'+';}
-    .equip-slot .equip-status{font-size:11px;color:#98acd9;letter-spacing:0.4px;min-height:16px;}
+    .equip-slot .equip-status{font-size:10px;color:#98acd9;letter-spacing:0.4px;min-height:14px;}
     .equip-slot .equip-effect{display:none;font-size:11px;line-height:1.4;color:#cfd8ff;margin-top:2px;padding:0 4px;}
     .equip-slot.show-effect .equip-effect{display:block;}
     .equip-slot .tier-badge{position:absolute;top:6px;right:10px;font-size:16px;font-weight:700;color:#f0f6ff;text-shadow:0 2px 6px rgba(0,0,0,0.5);}
@@ -441,9 +439,9 @@
       #storeOverlay .store-actions{width:100%;flex-direction:column;}
       #storeOverlay .store-actions .btn{width:100%;}
       #slotModal .slot-grid{grid-template-columns:repeat(1,minmax(0,1fr));}
-      .equipment-slots{justify-content:space-between;gap:10px;}
-      .equip-slot{flex:0 0 calc((100% - 20px)/3);}
-      .equipment-bar{padding:12px 14px;}
+      .equipment-slots{justify-content:space-between;gap:8px;}
+      .equip-slot{flex:0 0 calc((100% - 16px)/3);}
+      .equipment-bar{padding:10px 12px;}
     }
 
     /* Leaderboard overlay */
@@ -872,9 +870,6 @@ select optgroup { color: #0b1022; }
 
       </div>
       <div class="equipment-bar" id="equipmentBar" aria-label="裝備欄">
-        <div class="equipment-bar-header">
-          <h3>裝備欄</h3>
-        </div>
         <div class="equipment-slots" id="equipmentSlots" role="list">
           <!-- 動態填入裝備欄位 -->
         </div>
@@ -1886,9 +1881,7 @@ select optgroup { color: #0b1022; }
       const status=document.createElement('span');
       status.className='equip-status';
       if(slot){
-        if(slot.def.type==='passive'){
-          status.textContent='被動效果：持續生效';
-        }else if(slot.def.type==='active'){
+        if(slot.def.type==='active'){
           status.textContent='點擊啟動';
         }else{
           status.textContent='';
@@ -1964,7 +1957,7 @@ select optgroup { color: #0b1022; }
       const slot=equipmentSlots[entry.index];
       if(!slot||!entry.statusEl) continue;
       if(slot.def.type==='passive'){
-        entry.statusEl.textContent='被動效果：持續生效';
+        entry.statusEl.textContent='';
         entry.button.classList.remove('cooldown');
       }else if(slot.def.type==='active'){
         if(slot.cooldownUntil && now<slot.cooldownUntil){
