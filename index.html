@@ -1774,6 +1774,45 @@ select optgroup { color: #0b1022; }
       lastUsed:0
     };
   }
+  function exportEquipmentSlots(){
+    const now=performance.now();
+    return equipmentSlots.map((slot)=>{
+      if(!slot) return null;
+      const snapshot={id:slot.id};
+      if(slot.def.type==='active' && slot.cooldownUntil && slot.cooldownUntil>now){
+        snapshot.cooldownRemainingMs=Math.round(Math.max(0, slot.cooldownUntil-now));
+      }
+      return snapshot;
+    });
+  }
+  function importEquipmentSlots(snapshot){
+    if(!Array.isArray(snapshot)){
+      for(let i=0;i<equipmentSlots.length;i++) equipmentSlots[i]=null;
+      recalcEquipmentBonuses();
+      renderEquipmentSlots();
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    const now=performance.now();
+    for(let i=0;i<equipmentSlots.length;i++){
+      const entry=snapshot[i];
+      if(entry&&typeof entry.id==='string'){
+        const def=getEquipmentById(entry.id);
+        if(def){
+          const state=createSlotState(def);
+          if(def.type==='active'&&typeof entry.cooldownRemainingMs==='number'&&entry.cooldownRemainingMs>0){
+            state.cooldownUntil=now+Math.max(0, entry.cooldownRemainingMs);
+          }
+          equipmentSlots[i]=state;
+          continue;
+        }
+      }
+      equipmentSlots[i]=null;
+    }
+    recalcEquipmentBonuses();
+    renderEquipmentSlots();
+    refreshEquipmentRuntime(performance.now());
+  }
   function equipItemToSlot(index,itemDef){
     if(index<0||index>=equipmentSlots.length) return;
     equipmentSlots[index]=createSlotState(itemDef);
@@ -15459,7 +15498,7 @@ function generateLevel(lv, L){
 
   // === 存讀檔（含音效/BGM與影像選擇） ===
   function saveProgress(){ try{
-      const data={level,score,lives,difficulty:difficultySel.value, imageChoice, soundsOn, bgmOn, bgmVol: parseFloat(bgmVol.value), maxLevelReached};
+      const data={level,score,lives,difficulty:difficultySel.value, imageChoice, soundsOn, bgmOn, bgmVol: parseFloat(bgmVol.value), maxLevelReached, equipmentSlots: exportEquipmentSlots()};
       localStorage.setItem('breakout_save_v_final_cfg', JSON.stringify(data)); alert('已存檔！');
     }catch(e){ alert('存檔失敗：'+e); } }
   function loadProgress(){ try{ const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4'); if(!raw){ alert('沒有存檔'); return; } const data=JSON.parse(raw);
@@ -15471,6 +15510,7 @@ function generateLevel(lv, L){
       maxLevelReached=Math.max(maxLevelReached, level);
       try{ localStorage.setItem('breakout_max_level', String(maxLevelReached)); }catch(e){}
       if(typeof updateLevelJumpAvailability==='function') updateLevelJumpAvailability();
+      if(Array.isArray(data.equipmentSlots)) importEquipmentSlots(data.equipmentSlots); else importEquipmentSlots([]);
       soundsOn=!!data.soundsOn; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
       if(typeof data.bgmOn==='boolean'){ bgmOn=data.bgmOn; } if(typeof data.bgmVol==='number'){ bgmVol.value=String(data.bgmVol); if(bgmGain) bgmGain.gain.value=data.bgmVol; localStorage.setItem('bgm_vol', data.bgmVol); }
       resetGame(true); updateHUD(); alert(`已讀檔：等級 ${level}，分數 ${score}，生命 ${lives}`);}catch(e){ alert('讀檔失敗：'+e); } }
