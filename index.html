@@ -326,6 +326,8 @@
     #storeOverlay .store-hero-label{position:absolute;left:16px;bottom:16px;padding:10px 16px;border-radius:999px;background:rgba(12,22,44,0.78);backdrop-filter:blur(8px);font-weight:650;letter-spacing:2px;text-transform:uppercase;font-size:12px;color:#dbe6ff;box-shadow:0 8px 26px rgba(0,0,0,0.32);}
     #storeOverlay .store-content{grid-area:content;display:grid;grid-template-rows:auto 1fr auto;gap:18px;min-height:0;}
     #storeOverlay .store-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+    #storeOverlay .store-balance{margin-left:auto;padding:8px 14px;border-radius:12px;border:1px solid rgba(130,170,250,0.3);background:rgba(16,26,52,0.72);color:#dfe6ff;font-size:14px;font-weight:650;letter-spacing:0.4px;display:flex;align-items:center;gap:6px;}
+    #storeOverlay .store-balance span{color:#fff;font-weight:720;font-variant-numeric:tabular-nums;}
     #storeOverlay .store-title{font-size:24px;font-weight:750;letter-spacing:1px;color:#f0f6ff;margin:0;}
     #storeOverlay .store-title small{display:block;font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0.5px;margin-top:2px;}
     #storeOverlay .store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-content:flex-start;gap:12px;overflow-y:auto;padding-right:4px;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:rgba(120,160,240,0.45) transparent;}
@@ -367,22 +369,20 @@
     .grade-B .shop-name,.grade-B .equip-name{color:#69adff;}
     .grade-C .shop-name,.grade-C .equip-name{color:#5fd6a0;}
 
-    #slotModal{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:4;padding:24px;}
-    #slotModal.show{display:flex;}
-    #slotModal::before{content:'';position:absolute;inset:0;background:rgba(8,12,26,0.78);backdrop-filter:blur(6px);}
-    #slotModal .slot-dialog{position:relative;z-index:1;width:min(640px,90vw);background:linear-gradient(150deg,rgba(18,26,52,0.95),rgba(12,18,34,0.92));border:1px solid rgba(130,170,250,0.35);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:18px;box-shadow:0 28px 80px rgba(0,0,0,0.55);}
-    #slotModal .slot-dialog h4{margin:0;font-size:20px;font-weight:720;color:#f0f6ff;letter-spacing:0.6px;}
-    #slotModal .slot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
-    #slotModal .slot-choice{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:16px;border:1px solid rgba(120,160,240,0.28);background:rgba(18,26,48,0.82);cursor:pointer;transition:border-color .18s ease, transform .18s ease;min-height:120px;}
-    #slotModal .slot-choice:hover{border-color:rgba(200,220,255,0.8);transform:translateY(-2px);}
-    #slotModal .slot-choice .slot-name{font-size:15px;font-weight:650;color:#d8e6ff;}
-    #slotModal .slot-choice .slot-note{font-size:12px;color:var(--muted);}
+    #slotModal{display:none;margin-bottom:6px;padding:14px 16px;border-radius:14px;border:1px solid rgba(130,170,250,0.38);background:linear-gradient(150deg,rgba(18,26,52,0.92),rgba(12,18,36,0.86));box-shadow:0 16px 40px rgba(0,0,0,0.42);width:100%;max-width:420px;align-self:center;}
+    #slotModal.show{display:block;}
+    #slotModal h4{margin:0 0 10px;font-size:18px;font-weight:700;color:#f0f6ff;letter-spacing:0.6px;text-align:center;}
+    #slotModal .slot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+    #slotModal .slot-choice{display:flex;flex-direction:column;gap:4px;padding:10px;border-radius:12px;border:1px solid rgba(120,160,240,0.32);background:rgba(20,30,58,0.88);cursor:pointer;transition:border-color .18s ease, transform .18s ease;min-height:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);}
+    #slotModal .slot-choice:hover{border-color:rgba(204,220,255,0.85);transform:translateY(-1px);}
+    #slotModal .slot-choice .slot-name{font-size:13px;font-weight:650;color:#dce6ff;}
+    #slotModal .slot-choice .slot-note{font-size:11px;color:var(--muted);line-height:1.4;}
     #slotModal .slot-choice.empty .slot-name{color:#86a3d6;}
-    #slotModal .slot-confirm{display:none;flex-direction:column;gap:12px;padding-top:6px;border-top:1px solid rgba(110,150,240,0.22);}
+    #slotModal .slot-confirm{display:none;flex-direction:column;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(110,150,240,0.22);}
     #slotModal .slot-confirm.show{display:flex;}
-    #slotModal .slot-confirm p{margin:0;font-size:14px;color:#dfe7ff;line-height:1.6;}
-    #slotModal .slot-confirm .actions{display:flex;gap:10px;flex-wrap:wrap;}
-    #slotModal .slot-confirm .btn{min-width:110px;}
+    #slotModal .slot-confirm p{margin:0;font-size:13px;color:#dfe7ff;line-height:1.6;text-align:center;}
+    #slotModal .slot-confirm .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+    #slotModal .slot-confirm .btn{min-width:104px;}
 
     /* === 裝備列 === */
     .equipment-bar{max-width:min(720px,96vw);margin:12px auto 0;padding:10px 14px;border-radius:18px;border:1px solid rgba(120,160,240,0.32);background:linear-gradient(160deg,rgba(14,22,46,0.82),rgba(12,20,40,0.74));backdrop-filter:blur(10px);box-shadow:0 14px 46px rgba(0,0,0,0.38);display:flex;flex-direction:column;gap:8px;}
@@ -422,7 +422,6 @@
       #storeOverlay .store-left{min-height:220px;}
       #storeOverlay .store-content{grid-template-rows:auto 1fr auto;}
       #storeOverlay .store-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
-      #slotModal .slot-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
     }
     @media (max-width: 640px){
       #storeOverlay{padding:14px;align-items:flex-start;}
@@ -438,7 +437,6 @@
       #storeOverlay .shop-thumb{border-radius:12px;padding:6px;}
       #storeOverlay .store-actions{width:100%;flex-direction:column;}
       #storeOverlay .store-actions .btn{width:100%;}
-      #slotModal .slot-grid{grid-template-columns:repeat(1,minmax(0,1fr));}
       .equipment-slots{justify-content:space-between;gap:8px;}
       .equip-slot{flex:0 0 calc((100% - 16px)/3);}
       .equipment-bar{padding:10px 12px;}
@@ -892,9 +890,21 @@ select optgroup { color: #0b1022; }
           <div class="store-content">
             <div class="store-header">
               <h2 class="store-title" id="storeTitle">星光武裝商會 <small>整備下一場戰鬥吧</small></h2>
+              <div class="store-balance">持有銀幣: <span id="storeSilverCoins">0</span></div>
             </div>
             <div class="store-grid" id="storeGrid" role="list"></div>
             <div class="store-detail">
+              <div class="slot-modal" id="slotModal" aria-hidden="true">
+                <h4 id="slotModalTitle">選擇要安裝的裝備欄位</h4>
+                <div class="slot-grid" id="slotGrid"></div>
+                <div class="slot-confirm" id="slotConfirm">
+                  <p id="slotConfirmText"></p>
+                  <div class="actions">
+                    <button class="btn primary" id="slotConfirmYes" type="button">是</button>
+                    <button class="btn secondary" id="slotConfirmNo" type="button">否</button>
+                  </div>
+                </div>
+              </div>
               <div class="store-headline">
                 <h3 id="storeItemName">選擇一件裝備</h3>
                 <span class="store-price-tag" id="storeItemPrice">—</span>
@@ -905,19 +915,6 @@ select optgroup { color: #0b1022; }
               <div class="store-actions">
                 <button class="btn primary" id="storeBuyBtn" type="button" disabled>購買</button>
                 <button class="btn secondary" id="storeNextBtn" type="button">進入下一關 ▶</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="slot-modal" id="slotModal" aria-hidden="true">
-          <div class="slot-dialog">
-            <h4 id="slotModalTitle">選擇要安裝的裝備欄位</h4>
-            <div class="slot-grid" id="slotGrid"></div>
-            <div class="slot-confirm" id="slotConfirm">
-              <p id="slotConfirmText"></p>
-              <div class="actions">
-                <button class="btn primary" id="slotConfirmYes" type="button">是</button>
-                <button class="btn secondary" id="slotConfirmNo" type="button">否</button>
               </div>
             </div>
           </div>
@@ -1554,6 +1551,7 @@ select optgroup { color: #0b1022; }
   const skinSel = document.getElementById('skinSel');
   const storeOverlay=document.getElementById('storeOverlay');
   const storeGrid=document.getElementById('storeGrid');
+  const storeSilverCoinsEl=document.getElementById('storeSilverCoins');
   const storeItemName=document.getElementById('storeItemName');
   const storeItemPrice=document.getElementById('storeItemPrice');
   const storeItemMeta=document.getElementById('storeItemMeta');
@@ -1716,6 +1714,9 @@ select optgroup { color: #0b1022; }
     if(slotConfirm) slotConfirm.classList.remove('show');
     slotModal.classList.add('show');
     slotModal.setAttribute('aria-hidden','false');
+    if(typeof slotModal.scrollIntoView==='function'){
+      slotModal.scrollIntoView({block:'nearest', behavior:'smooth'});
+    }
     equipmentBar?.classList.add('selecting');
     if(storeBuyBtn) storeBuyBtn.disabled=true;
     if(storeNextBtn) storeNextBtn.disabled=true;
@@ -15426,6 +15427,9 @@ function generateLevel(lv, L){
     }
     if (silverCoinsEl) {
       silverCoinsEl.textContent = Math.max(0, Math.floor(silverCoins));
+    }
+    if (storeSilverCoinsEl) {
+      storeSilverCoinsEl.textContent = Math.max(0, Math.floor(silverCoins));
     }
     updateFireEnergy();
   }
