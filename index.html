@@ -322,7 +322,7 @@
 
     /* === 武器商店 === */
     body.modal-open{overflow:hidden;}
-    #storeOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;padding:24px;box-sizing:border-box;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+    #storeOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;padding:24px;box-sizing:border-box;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;pointer-events:auto;}
     #storeOverlay.show{display:flex;}
     #storeOverlay .backdrop{position:absolute;inset:0;background:rgba(6,12,28,0.82);backdrop-filter:blur(12px);}
     #storeOverlay .store-panel{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);grid-template-areas:"hero content";gap:28px;align-items:stretch;width:min(1000px,100%);max-height:calc(100vh - 48px);padding:28px;border:1px solid rgba(140,180,255,0.32);border-radius:22px;background:linear-gradient(140deg,rgba(16,24,48,0.92),rgba(12,18,34,0.88));box-shadow:0 30px 120px rgba(0,0,0,0.55);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
