@@ -1652,7 +1652,46 @@ select optgroup { color: #0b1022; }
     {id:'comboStar3',name:'連擊之星Ⅲ',roman:'Ⅲ',icon:'W10.jpg',grade:'A',type:'passive',price:30,description:'持續擁有連擊之星的加成效果。',effect:{comboStar:{mode:'passive'}}},
     {id:'luckyStar',name:'幸運星',icon:'W11.jpg',grade:'A',type:'passive',price:30,description:'關卡期間不再掉落減益道具。',effect:{preventDebuffDrops:true}},
     {id:'grandLuckyStar',name:'大幸運星',icon:'W12.jpg',grade:'S',type:'passive',price:100,description:'不會掉落減益道具，特殊增益掉落率翻倍。',effect:{preventDebuffDrops:true,specialDropRateMultiplier:2}},
-    {id:'doomSword',name:'災厄之劍',icon:'W13.jpg',grade:'A',type:'passive',price:30,description:'每持有 1 種減益效果，對敵方造成的傷害 +1。',effect:{curseSword:true}}
+    {id:'doomSword',name:'災厄之劍',icon:'W13.jpg',grade:'A',type:'passive',price:30,description:'每持有 1 種減益效果，對敵方造成的傷害 +1。',effect:{curseSword:true}},
+    {id:'splitBall1',name:'分裂球Ⅰ',roman:'Ⅰ',icon:'W14.jpg',grade:'C',type:'consumable',price:5,description:'啟動分裂球效果，立即複製球體，效果結束後裝備消失。',effect:{power:{key:'MULTI',mode:'consumable',duration:10000,message:'分裂球啟動，多球齊發！'}}},
+    {id:'splitBall2',name:'分裂球Ⅱ',roman:'Ⅱ',icon:'W14.jpg',grade:'B',type:'active',price:10,description:'啟動分裂球效果，立即複製球體，冷卻時間 60 秒。',effect:{power:{key:'MULTI',mode:'active',duration:10000,cooldown:60000,message:'分裂球啟動，多球齊發！'}}},
+    {id:'splitBall3',name:'分裂球Ⅲ',roman:'Ⅲ',icon:'W14.jpg',grade:'A',type:'active',price:30,description:'啟動分裂球效果，立即複製球體，冷卻時間 30 秒。',effect:{power:{key:'MULTI',mode:'active',duration:10000,cooldown:30000,message:'分裂球啟動，多球齊發！'}}},
+    {id:'pierceBall1',name:'穿透球Ⅰ',roman:'Ⅰ',icon:'W15.jpg',grade:'C',type:'consumable',price:5,description:'啟動穿透球效果，球體可穿透磚塊，效果結束後裝備消失。',effect:{power:{key:'PIERCE',mode:'consumable',message:'穿透球啟動，球體可穿越磚陣！'}}},
+    {id:'pierceBall2',name:'穿透球Ⅱ',roman:'Ⅱ',icon:'W15.jpg',grade:'B',type:'active',price:10,description:'啟動穿透球效果，球體可穿透磚塊，冷卻時間 60 秒。',effect:{power:{key:'PIERCE',mode:'active',cooldown:60000,message:'穿透球啟動，球體可穿越磚陣！'}}},
+    {id:'pierceBall3',name:'穿透球Ⅲ',roman:'Ⅲ',icon:'W15.jpg',grade:'A',type:'active',price:30,description:'啟動穿透球效果，球體可穿透磚塊，冷卻時間 30 秒。',effect:{power:{key:'PIERCE',mode:'active',cooldown:30000,message:'穿透球啟動，球體可穿越磚陣！'}}},
+    {id:'guardBall1',name:'護盾Ⅰ',roman:'Ⅰ',icon:'W16.jpg',grade:'C',type:'consumable',price:5,description:'啟動護盾效果，可阻擋下一次落球，使用後裝備消失。',effect:{power:{key:'SHIELD',mode:'consumable',message:'護盾展開，下一次失手將被保護。'}}},
+    {id:'guardBall2',name:'護盾Ⅱ',roman:'Ⅱ',icon:'W16.jpg',grade:'B',type:'active',price:10,description:'啟動護盾效果，可阻擋下一次落球，冷卻時間 60 秒。',effect:{power:{key:'SHIELD',mode:'active',cooldown:60000,message:'護盾展開，下一次失手將被保護。'}}},
+    {id:'guardBall3',name:'護盾Ⅲ',roman:'Ⅲ',icon:'W16.jpg',grade:'A',type:'active',price:30,description:'啟動護盾效果，可阻擋下一次落球，冷卻時間 30 秒。',effect:{power:{key:'SHIELD',mode:'active',cooldown:30000,message:'護盾展開，下一次失手將被保護。'}}},
+    {id:'plasmaBall1',name:'電漿球Ⅰ',roman:'Ⅰ',icon:'W17.jpg',grade:'C',type:'consumable',price:5,description:'啟動電漿球效果，擊中會釋放電漿圈，效果結束後裝備消失。',effect:{power:{key:'PLASMA',mode:'consumable',message:'電漿球啟動，擊中會釋放電漿圈！'}}},
+    {id:'plasmaBall2',name:'電漿球Ⅱ',roman:'Ⅱ',icon:'W17.jpg',grade:'B',type:'active',price:10,description:'啟動電漿球效果，擊中會釋放電漿圈，冷卻時間 60 秒。',effect:{power:{key:'PLASMA',mode:'active',cooldown:60000,message:'電漿球啟動，擊中會釋放電漿圈！'}}},
+    {id:'plasmaBall3',name:'電漿球Ⅲ',roman:'Ⅲ',icon:'W17.jpg',grade:'A',type:'active',price:30,description:'啟動電漿球效果，擊中會釋放電漿圈，冷卻時間 30 秒。',effect:{power:{key:'PLASMA',mode:'active',cooldown:30000,message:'電漿球啟動，擊中會釋放電漿圈！'}}},
+    {id:'freezeBall1',name:'凍結球Ⅰ',roman:'Ⅰ',icon:'W18.jpg',grade:'C',type:'consumable',price:5,description:'啟動凍結球效果，擊中後使時間短暫凝結，效果結束後裝備消失。',effect:{power:{key:'FREEZE',mode:'consumable',message:'凍結球啟動，擊中後時間將凝結！'}}},
+    {id:'freezeBall2',name:'凍結球Ⅱ',roman:'Ⅱ',icon:'W18.jpg',grade:'B',type:'active',price:10,description:'啟動凍結球效果，擊中後使時間短暫凝結，冷卻時間 60 秒。',effect:{power:{key:'FREEZE',mode:'active',cooldown:60000,message:'凍結球啟動，擊中後時間將凝結！'}}},
+    {id:'freezeBall3',name:'凍結球Ⅲ',roman:'Ⅲ',icon:'W18.jpg',grade:'A',type:'active',price:30,description:'啟動凍結球效果，擊中後使時間短暫凝結，冷卻時間 30 秒。',effect:{power:{key:'FREEZE',mode:'active',cooldown:30000,message:'凍結球啟動，擊中後時間將凝結！'}}},
+    {id:'holyBall1',name:'神聖球Ⅰ',roman:'Ⅰ',icon:'W19.jpg',grade:'C',type:'consumable',price:5,description:'啟動神聖球效果，聖光十字掃蕩磚陣，效果結束後裝備消失。',effect:{power:{key:'HOLY',mode:'consumable',message:'神聖球啟動，聖光十字橫掃戰場！'}}},
+    {id:'holyBall2',name:'神聖球Ⅱ',roman:'Ⅱ',icon:'W19.jpg',grade:'B',type:'active',price:10,description:'啟動神聖球效果，聖光十字掃蕩磚陣，冷卻時間 60 秒。',effect:{power:{key:'HOLY',mode:'active',cooldown:60000,message:'神聖球啟動，聖光十字橫掃戰場！'}}},
+    {id:'holyBall3',name:'神聖球Ⅲ',roman:'Ⅲ',icon:'W19.jpg',grade:'A',type:'active',price:30,description:'啟動神聖球效果，聖光十字掃蕩磚陣，冷卻時間 30 秒。',effect:{power:{key:'HOLY',mode:'active',cooldown:30000,message:'神聖球啟動，聖光十字橫掃戰場！'}}},
+    {id:'trackBall1',name:'追蹤球Ⅰ',roman:'Ⅰ',icon:'W20.jpg',grade:'C',type:'consumable',price:5,description:'啟動追蹤球效果，軌跡自動修正，效果結束後裝備消失。',effect:{power:{key:'TRACK',mode:'consumable',message:'追蹤球啟動，軌跡自動鎖定目標！'}}},
+    {id:'trackBall2',name:'追蹤球Ⅱ',roman:'Ⅱ',icon:'W20.jpg',grade:'B',type:'active',price:10,description:'啟動追蹤球效果，軌跡自動修正，冷卻時間 60 秒。',effect:{power:{key:'TRACK',mode:'active',cooldown:60000,message:'追蹤球啟動，軌跡自動鎖定目標！'}}},
+    {id:'trackBall3',name:'追蹤球Ⅲ',roman:'Ⅲ',icon:'W20.jpg',grade:'A',type:'active',price:30,description:'啟動追蹤球效果，軌跡自動修正，冷卻時間 30 秒。',effect:{power:{key:'TRACK',mode:'active',cooldown:30000,message:'追蹤球啟動，軌跡自動鎖定目標！'}}},
+    {id:'missileBall1',name:'飛彈球Ⅰ',roman:'Ⅰ',icon:'W21.jpg',grade:'C',type:'consumable',price:5,description:'啟動飛彈球效果，擋板反彈時發射飛彈，效果結束後裝備消失。',effect:{power:{key:'MISSILE',mode:'consumable',message:'飛彈球啟動，擋板將釋放導彈！'}}},
+    {id:'missileBall2',name:'飛彈球Ⅱ',roman:'Ⅱ',icon:'W21.jpg',grade:'B',type:'active',price:10,description:'啟動飛彈球效果，擋板反彈時發射飛彈，冷卻時間 60 秒。',effect:{power:{key:'MISSILE',mode:'active',cooldown:60000,message:'飛彈球啟動，擋板將釋放導彈！'}}},
+    {id:'missileBall3',name:'飛彈球Ⅲ',roman:'Ⅲ',icon:'W21.jpg',grade:'A',type:'active',price:30,description:'啟動飛彈球效果，擋板反彈時發射飛彈，冷卻時間 30 秒。',effect:{power:{key:'MISSILE',mode:'active',cooldown:30000,message:'飛彈球啟動，擋板將釋放導彈！'}}},
+    {id:'hellBall1',name:'地獄球Ⅰ',roman:'Ⅰ',icon:'W22.jpg',grade:'C',type:'consumable',price:5,description:'啟動地獄球效果，召喚黑洞吞噬磚塊，效果結束後裝備消失。',effect:{power:{key:'HELL',mode:'consumable',message:'地獄球啟動，黑洞能吞噬磚陣！'}}},
+    {id:'hellBall2',name:'地獄球Ⅱ',roman:'Ⅱ',icon:'W22.jpg',grade:'B',type:'active',price:10,description:'啟動地獄球效果，召喚黑洞吞噬磚塊，冷卻時間 60 秒。',effect:{power:{key:'HELL',mode:'active',cooldown:60000,message:'地獄球啟動，黑洞能吞噬磚陣！'}}},
+    {id:'hellBall3',name:'地獄球Ⅲ',roman:'Ⅲ',icon:'W22.jpg',grade:'A',type:'active',price:30,description:'啟動地獄球效果，召喚黑洞吞噬磚塊，冷卻時間 30 秒。',effect:{power:{key:'HELL',mode:'active',cooldown:30000,message:'地獄球啟動，黑洞能吞噬磚陣！'}}},
+    {id:'megaBall1',name:'特大球Ⅰ',roman:'Ⅰ',icon:'W23.jpg',grade:'C',type:'consumable',price:5,description:'啟動特大球效果，球體巨大化並增傷，效果結束後裝備消失。',effect:{power:{key:'MEGA',mode:'consumable',message:'特大球啟動，球體瞬間巨大化！'}}},
+    {id:'megaBall2',name:'特大球Ⅱ',roman:'Ⅱ',icon:'W23.jpg',grade:'B',type:'active',price:10,description:'啟動特大球效果，球體巨大化並增傷，冷卻時間 60 秒。',effect:{power:{key:'MEGA',mode:'active',cooldown:60000,message:'特大球啟動，球體瞬間巨大化！'}}},
+    {id:'megaBall3',name:'特大球Ⅲ',roman:'Ⅲ',icon:'W23.jpg',grade:'A',type:'active',price:30,description:'啟動特大球效果，球體巨大化並增傷，冷卻時間 30 秒。',effect:{power:{key:'MEGA',mode:'active',cooldown:30000,message:'特大球啟動，球體瞬間巨大化！'}}},
+    {id:'fireBall1',name:'火焰球Ⅰ',roman:'Ⅰ',icon:'W24.jpg',grade:'C',type:'consumable',price:5,description:'啟動火焰球效果，蓄能爆炸清場，效果結束後裝備消失。',effect:{power:{key:'FIRE',mode:'consumable',message:'火焰球啟動，蓄能引爆烈焰！'}}},
+    {id:'fireBall2',name:'火焰球Ⅱ',roman:'Ⅱ',icon:'W24.jpg',grade:'B',type:'active',price:10,description:'啟動火焰球效果，蓄能爆炸清場，冷卻時間 60 秒。',effect:{power:{key:'FIRE',mode:'active',cooldown:60000,message:'火焰球啟動，蓄能引爆烈焰！'}}},
+    {id:'fireBall3',name:'火焰球Ⅲ',roman:'Ⅲ',icon:'W24.jpg',grade:'A',type:'active',price:30,description:'啟動火焰球效果，蓄能爆炸清場，冷卻時間 30 秒。',effect:{power:{key:'FIRE',mode:'active',cooldown:30000,message:'火焰球啟動，蓄能引爆烈焰！'}}},
+    {id:'poisonBall1',name:'劇毒球Ⅰ',roman:'Ⅰ',icon:'W25.jpg',grade:'C',type:'consumable',price:5,description:'啟動劇毒球效果，命中附帶毒素，效果結束後裝備消失。',effect:{power:{key:'POISON',mode:'consumable',message:'劇毒球啟動，命中將持續腐蝕！'}}},
+    {id:'poisonBall2',name:'劇毒球Ⅱ',roman:'Ⅱ',icon:'W25.jpg',grade:'B',type:'active',price:10,description:'啟動劇毒球效果，命中附帶毒素，冷卻時間 60 秒。',effect:{power:{key:'POISON',mode:'active',cooldown:60000,message:'劇毒球啟動，命中將持續腐蝕！'}}},
+    {id:'poisonBall3',name:'劇毒球Ⅲ',roman:'Ⅲ',icon:'W25.jpg',grade:'A',type:'active',price:30,description:'啟動劇毒球效果，命中附帶毒素，冷卻時間 30 秒。',effect:{power:{key:'POISON',mode:'active',cooldown:30000,message:'劇毒球啟動，命中將持續腐蝕！'}}},
+    {id:'blinkBall1',name:'瞬移球Ⅰ',roman:'Ⅰ',icon:'W16.jpg',grade:'C',type:'consumable',price:5,description:'啟動瞬移球效果，反彈後瞬移至頂部，效果結束後裝備消失。',effect:{power:{key:'BLINK',mode:'consumable',message:'瞬移球啟動，球體將瞬間移位！'}}},
+    {id:'blinkBall2',name:'瞬移球Ⅱ',roman:'Ⅱ',icon:'W16.jpg',grade:'B',type:'active',price:10,description:'啟動瞬移球效果，反彈後瞬移至頂部，冷卻時間 60 秒。',effect:{power:{key:'BLINK',mode:'active',cooldown:60000,message:'瞬移球啟動，球體將瞬間移位！'}}},
+    {id:'blinkBall3',name:'瞬移球Ⅲ',roman:'Ⅲ',icon:'W16.jpg',grade:'A',type:'active',price:30,description:'啟動瞬移球效果，反彈後瞬移至頂部，冷卻時間 30 秒。',effect:{power:{key:'BLINK',mode:'active',cooldown:30000,message:'瞬移球啟動，球體將瞬間移位！'}}}
   ];
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
@@ -2288,6 +2327,51 @@ select optgroup { color: #0b1022; }
       if(effect.curseSword) equipmentCurseSwordActive=true;
     }
   }
+  function activateEquipmentPower(index,slot,powerCfg={}){
+    if(!slot||!powerCfg||typeof powerCfg!=='object') return false;
+    const powerKey=powerCfg.key;
+    if(!powerKey){
+      return false;
+    }
+    const powerDef=GAME_CONFIG.powers?.[powerKey]||null;
+    applyPower(powerKey);
+    const now=performance.now();
+    const mode=powerCfg.mode|| (slot.def?.type==='active'?'active':'consumable');
+    const durationSource=powerCfg.duration;
+    const duration=Number.isFinite(durationSource)?Math.max(0,durationSource):Math.max(0,(powerDef?.durationMs)||0);
+    const cooldownSource=powerCfg.cooldown;
+    const cooldown=Number.isFinite(cooldownSource)?Math.max(0,cooldownSource): (mode==='active'?Math.max(0,slot.def?.effect?.cooldown||0):0);
+    const label=powerDef?.label||powerKey;
+    const message=powerCfg.message||`${label.replace(/（.*?）|\(.*?\)/g,'')}效果啟動！`;
+    const tone=powerCfg.tone||'success';
+    const messageDuration=Number.isFinite(powerCfg.messageDuration)?powerCfg.messageDuration:2400;
+    slot.lastUsed=now;
+    slot.pendingRemoval=false;
+    if(duration>0){
+      slot.activeUntil=now+duration;
+    }else{
+      slot.activeUntil=0;
+    }
+    let removed=false;
+    if(mode==='consumable'){
+      slot.cooldownUntil=0;
+      if(duration>0){
+        slot.pendingRemoval=true;
+      }else{
+        equipmentSlots[index]=null;
+        recalcEquipmentBonuses();
+        renderEquipmentSlots();
+        removed=true;
+      }
+    }else if(mode==='active'){
+      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+    }
+    showEquipmentMessage(message,tone,messageDuration);
+    if(!removed){
+      refreshEquipmentRuntime(performance.now());
+    }
+    return true;
+  }
   function useEquipmentFromSlot(index){
     const slot=equipmentSlots[index];
     if(!slot) return;
@@ -2410,6 +2494,10 @@ select optgroup { color: #0b1022; }
       beep(520,0.12,0.05);
       refreshEquipmentRuntime(performance.now());
       return;
+    }
+    if(effect.power){
+      const used=activateEquipmentPower(index,slot,effect.power);
+      if(used) return;
     }
   }
   function activateShield(durationMs,source){
