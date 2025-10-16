@@ -1641,9 +1641,18 @@ select optgroup { color: #0b1022; }
     {id:'heal1',name:'補血包Ⅰ',roman:'Ⅰ',icon:'W03.jpg',grade:'C',type:'consumable',price:10,description:'恢復 1 點 HP（最大 HP 9），使用後消失。',effect:{heal:1}},
     {id:'heal2',name:'補血包Ⅱ',roman:'Ⅱ',icon:'W03.jpg',grade:'B',type:'consumable',price:20,description:'恢復 2 點 HP（最大 HP 9），使用後消失。',effect:{heal:2}},
     {id:'heal3',name:'補血包Ⅲ',roman:'Ⅲ',icon:'W03.jpg',grade:'A',type:'consumable',price:40,description:'恢復 3 點 HP（最大 HP 9），使用後消失。',effect:{heal:3}},
-    {id:'power4',name:'強力Ⅳ',roman:'Ⅳ',icon:'W04.jpg',grade:'S',type:'passive',price:80,description:'球對磚塊攻擊力+4（對Boss無效）。',effect:{brickDamage:4}},
-    {id:'shield4',name:'防護罩Ⅳ',roman:'Ⅳ',icon:'W05.jpg',grade:'S',type:'active',price:80,description:'獲得防護罩效果，5 秒內所有傷害無效，冷卻時間 20 秒。',effect:{shieldDuration:5000,cooldown:20000}},
-    {id:'heal4',name:'補血包Ⅳ',roman:'Ⅳ',icon:'W06.jpg',grade:'S',type:'consumable',price:80,description:'恢復 5 點 HP（最大 HP 9），使用後消失。',effect:{heal:5}}
+    {id:'ninecat',name:'九命怪貓',icon:'W04.jpg',grade:'S',type:'consumable',price:100,description:'使用後立即獲得九命怪貓效果（上限 3 次）。',effect:{nineLives:true}},
+    {id:'speedReset',name:'速度重置',icon:'W05.jpg',grade:'B',type:'consumable',price:10,description:'使用後立即將球速恢復為目前關卡的初始速度。',effect:{resetSpeed:true}},
+    {id:'attractor',name:'吸引力',icon:'W06.jpg',grade:'A',type:'passive',price:30,description:'自動吸引靠近擋板的增益與特殊增益道具。',effect:{attract:true}},
+    {id:'repulsor',name:'排斥力',icon:'W07.jpg',grade:'A',type:'passive',price:30,description:'自動排斥靠近擋板的減益道具。',effect:{repel:true}},
+    {id:'bossSlayer',name:'王者剋星',icon:'W08.jpg',grade:'S',type:'passive',price:100,description:'對 Boss 傷害 x2，並附帶華麗金色特效。',effect:{bossDamageMultiplier:2,bossDamageFx:true}},
+    {id:'bloodblade',name:'嗜血魔刃',icon:'W09.jpg',grade:'S',type:'active',price:100,description:'消耗 1 HP，10 秒內所有造成的傷害 x3，冷卻時間 60 秒。',effect:{bloodBlade:{hpCost:1,duration:10000,damageMultiplier:3,cooldown:60000}}},
+    {id:'comboStar1',name:'連擊之星Ⅰ',roman:'Ⅰ',icon:'W10.jpg',grade:'C',type:'consumable',price:5,description:'啟動連擊之星效果 30 秒，效果結束後裝備消失。',effect:{comboStar:{mode:'consumable',duration:30000}}},
+    {id:'comboStar2',name:'連擊之星Ⅱ',roman:'Ⅱ',icon:'W10.jpg',grade:'B',type:'active',price:10,description:'啟動連擊之星效果 30 秒，冷卻時間 60 秒。',effect:{comboStar:{mode:'active',duration:30000,cooldown:60000}}},
+    {id:'comboStar3',name:'連擊之星Ⅲ',roman:'Ⅲ',icon:'W10.jpg',grade:'A',type:'passive',price:30,description:'持續擁有連擊之星的加成效果。',effect:{comboStar:{mode:'passive'}}},
+    {id:'luckyStar',name:'幸運星',icon:'W11.jpg',grade:'A',type:'passive',price:30,description:'關卡期間不再掉落減益道具。',effect:{preventDebuffDrops:true}},
+    {id:'grandLuckyStar',name:'大幸運星',icon:'W12.jpg',grade:'S',type:'passive',price:100,description:'不會掉落減益道具，特殊增益掉落率翻倍。',effect:{preventDebuffDrops:true,specialDropRateMultiplier:2}},
+    {id:'doomSword',name:'災厄之劍',icon:'W13.jpg',grade:'A',type:'passive',price:30,description:'每持有 1 種減益效果，對敵方造成的傷害 +1。',effect:{curseSword:true}}
   ];
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
@@ -1684,6 +1693,18 @@ select optgroup { color: #0b1022; }
   let pendingNextLevel=null;
   let equipmentMessageUntil=0;
   let brickDamageBonus=0;
+  let equipmentAttractBeneficial=false;
+  let equipmentRepelDebuff=false;
+  let equipmentBossDamageMultiplier=1;
+  let equipmentBossDamageFx=false;
+  let equipmentComboStarPermanent=false;
+  let equipmentPreventDebuffDrops=false;
+  let equipmentSpecialDropRateMultiplier=1;
+  let equipmentCurseSwordActive=false;
+  const BLOOD_BLADE_DEFAULTS={damageMultiplier:3,duration:10000,cooldown:60000,hpCost:1};
+  let bloodBladeActive=false;
+  let bloodBladeActiveUntil=0;
+  let bloodBladeDamageMultiplier=BLOOD_BLADE_DEFAULTS.damageMultiplier;
   const shieldState={active:false,until:0,source:null};
   let lastShieldAbsorbAt=0;
 
@@ -1998,7 +2019,9 @@ select optgroup { color: #0b1022; }
       grade:itemDef.grade,
       roman:itemDef.roman,
       cooldownUntil:0,
-      lastUsed:0
+      lastUsed:0,
+      activeUntil:0,
+      pendingRemoval:false
     };
   }
   function exportEquipmentSlots(){
@@ -2009,6 +2032,10 @@ select optgroup { color: #0b1022; }
       if(slot.def.type==='active' && slot.cooldownUntil && slot.cooldownUntil>now){
         snapshot.cooldownRemainingMs=Math.round(Math.max(0, slot.cooldownUntil-now));
       }
+      if(slot.activeUntil && slot.activeUntil>now){
+        snapshot.activeRemainingMs=Math.round(Math.max(0, slot.activeUntil-now));
+        if(slot.pendingRemoval) snapshot.pendingRemoval=true;
+      }
       return snapshot;
     });
   }
@@ -2018,6 +2045,9 @@ select optgroup { color: #0b1022; }
       return;
     }
     const now=performance.now();
+    bloodBladeActive=false;
+    bloodBladeActiveUntil=0;
+    bloodBladeDamageMultiplier=BLOOD_BLADE_DEFAULTS.damageMultiplier;
     for(let i=0;i<equipmentSlots.length;i++){
       const entry=snapshot[i];
       if(entry&&typeof entry.id==='string'){
@@ -2027,6 +2057,16 @@ select optgroup { color: #0b1022; }
           if(def.type==='active'&&typeof entry.cooldownRemainingMs==='number'&&entry.cooldownRemainingMs>0){
             state.cooldownUntil=now+Math.max(0, entry.cooldownRemainingMs);
           }
+          if(typeof entry.activeRemainingMs==='number'&&entry.activeRemainingMs>0){
+            state.activeUntil=now+Math.max(0, entry.activeRemainingMs);
+            state.pendingRemoval=!!entry.pendingRemoval;
+            if(state.def.effect?.bloodBlade){
+              bloodBladeActiveUntil=Math.max(bloodBladeActiveUntil,state.activeUntil);
+              bloodBladeActive=true;
+              const mul=Number(state.def.effect.bloodBlade?.damageMultiplier)||BLOOD_BLADE_DEFAULTS.damageMultiplier;
+              bloodBladeDamageMultiplier=Math.max(1, mul);
+            }
+          }
           equipmentSlots[i]=state;
           continue;
         }
@@ -2035,6 +2075,7 @@ select optgroup { color: #0b1022; }
     }
     recalcEquipmentBonuses();
     renderEquipmentSlots();
+    bloodBladeActive=bloodBladeActiveUntil>now;
     refreshEquipmentRuntime(performance.now());
   }
   function clearEquipmentSlots(){
@@ -2045,6 +2086,9 @@ select optgroup { color: #0b1022; }
     renderEquipmentSlots();
     equipmentMessageUntil=0;
     refreshEquipmentRuntime(performance.now());
+    bloodBladeActive=false;
+    bloodBladeActiveUntil=0;
+    bloodBladeDamageMultiplier=BLOOD_BLADE_DEFAULTS.damageMultiplier;
     shieldState.active=false;
     shieldState.until=0;
     shieldState.source=null;
@@ -2181,21 +2225,30 @@ select optgroup { color: #0b1022; }
     for(const entry of equipmentSlotElements){
       const slot=equipmentSlots[entry.index];
       if(!slot||!entry.statusEl) continue;
+      const activeRemain=slot.activeUntil && now<slot.activeUntil;
+      entry.button.classList.toggle('cooldown',false);
+      entry.button.classList.toggle('active',activeRemain);
       if(slot.def.type==='passive'){
         entry.statusEl.textContent='';
         entry.button.classList.remove('cooldown');
       }else if(slot.def.type==='active'){
-        if(slot.cooldownUntil && now<slot.cooldownUntil){
+        if(activeRemain){
+          const remain=(slot.activeUntil-now)/1000;
+          entry.statusEl.textContent=`持續中 ${remain>=9?Math.ceil(remain):Math.max(0,remain).toFixed(1)}s`;
+        }else if(slot.cooldownUntil && now<slot.cooldownUntil){
           const remain=(slot.cooldownUntil-now)/1000;
           entry.statusEl.textContent=`冷卻中 ${remain>=9?Math.ceil(remain):Math.max(0,remain).toFixed(1)}s`;
           entry.button.classList.add('cooldown');
         }else{
           entry.statusEl.textContent='點擊啟動';
-          entry.button.classList.remove('cooldown');
         }
       }else if(slot.def.type==='consumable'){
-        entry.statusEl.textContent='';
-        entry.button.classList.remove('cooldown');
+        if(activeRemain){
+          const remain=(slot.activeUntil-now)/1000;
+          entry.statusEl.textContent=`持續中 ${remain>=9?Math.ceil(remain):Math.max(0,remain).toFixed(1)}s`;
+        }else{
+          entry.statusEl.textContent='';
+        }
       }
     }
     if(equipmentMessageUntil && now>equipmentMessageUntil){
@@ -2205,11 +2258,34 @@ select optgroup { color: #0b1022; }
   }
   function recalcEquipmentBonuses(){
     brickDamageBonus=0;
+    equipmentAttractBeneficial=false;
+    equipmentRepelDebuff=false;
+    equipmentBossDamageMultiplier=1;
+    equipmentBossDamageFx=false;
+    equipmentComboStarPermanent=false;
+    equipmentPreventDebuffDrops=false;
+    equipmentSpecialDropRateMultiplier=1;
+    equipmentCurseSwordActive=false;
     for(const slot of equipmentSlots){
       if(!slot) continue;
-      if(slot.def.effect?.brickDamage){
-        brickDamageBonus+=slot.def.effect.brickDamage;
+      const effect=slot.def.effect||{};
+      if(effect.brickDamage){
+        brickDamageBonus+=effect.brickDamage;
       }
+      if(effect.attract) equipmentAttractBeneficial=true;
+      if(effect.repel) equipmentRepelDebuff=true;
+      if(effect.bossDamageMultiplier){
+        const mul=Math.max(1, Number(effect.bossDamageMultiplier)||1);
+        equipmentBossDamageMultiplier*=mul;
+      }
+      if(effect.bossDamageFx) equipmentBossDamageFx=true;
+      if(effect.comboStar?.mode==='passive') equipmentComboStarPermanent=true;
+      if(effect.preventDebuffDrops) equipmentPreventDebuffDrops=true;
+      if(effect.specialDropRateMultiplier){
+        const mul=Math.max(1, Number(effect.specialDropRateMultiplier)||1);
+        equipmentSpecialDropRateMultiplier*=mul;
+      }
+      if(effect.curseSword) equipmentCurseSwordActive=true;
     }
   }
   function useEquipmentFromSlot(index){
@@ -2251,6 +2327,88 @@ select optgroup { color: #0b1022; }
       }else{
         showEquipmentMessage('HP 已達上限。','warning',2000);
       }
+      return;
+    }
+    const effect=def.effect||{};
+    if(effect.nineLives){
+      if(nineCatEaten>=3){
+        showEquipmentMessage('已達九命怪貓效果上限。','warning',2000);
+        return;
+      }
+      lives=9;
+      nineCatEaten++;
+      updateHUD();
+      spawnParticles(550,350,'#ffd',40,2.2,3.5,4);
+      beep(880,0.1,0.06);
+      showEquipmentMessage('九命怪貓守護著你，HP 已回滿！','success',2400);
+      if(def.type==='consumable'){
+        equipmentSlots[index]=null;
+        recalcEquipmentBonuses();
+        renderEquipmentSlots();
+      }
+      return;
+    }
+    if(effect.resetSpeed){
+      const restored=resetBallSpeeds();
+      if(restored){
+        showEquipmentMessage('球速已重置為初始值。','success',2000);
+        beep(700,0.07,0.05);
+        if(def.type==='consumable'){
+          equipmentSlots[index]=null;
+          recalcEquipmentBonuses();
+          renderEquipmentSlots();
+        }
+      }else{
+        showEquipmentMessage('目前沒有可重置的球。','warning',2000);
+      }
+      return;
+    }
+    if(effect.comboStar){
+      const mode=effect.comboStar.mode||'consumable';
+      const duration=Math.max(0, effect.comboStar.duration??(GAME_CONFIG.powers.COMBO?.durationMs||30000));
+      if(mode==='passive'){
+        showEquipmentMessage('連擊之星效果持續生效中。','info',2000);
+        return;
+      }
+      applyPower('COMBO');
+      slot.activeUntil=now+duration;
+      slot.lastUsed=now;
+      if(mode==='consumable'){
+        slot.pendingRemoval=true;
+      }else{
+        const cd=Math.max(0, effect.comboStar.cooldown??60000);
+        slot.cooldownUntil=now+cd;
+      }
+      showEquipmentMessage('連擊之星啟動！ 連擊效果提升。','success',2200);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.bloodBlade){
+      const cfg={...BLOOD_BLADE_DEFAULTS,...effect.bloodBlade};
+      const hpCost=Math.max(1, Math.floor(cfg.hpCost||1));
+      if(lives<=hpCost){
+        showEquipmentMessage('HP 不足，無法啟動嗜血魔刃。','warning',2200);
+        return;
+      }
+      lives=Math.max(0,lives-hpCost);
+      stats.livesUsed+=hpCost;
+      updateHUD();
+      const duration=Math.max(0, cfg.duration||BLOOD_BLADE_DEFAULTS.duration);
+      const cooldown=Math.max(0, cfg.cooldown||BLOOD_BLADE_DEFAULTS.cooldown);
+      const dmgMul=Math.max(1, Number(cfg.damageMultiplier)||BLOOD_BLADE_DEFAULTS.damageMultiplier);
+      bloodBladeDamageMultiplier=dmgMul;
+      bloodBladeActiveUntil=Math.max(bloodBladeActiveUntil, now+duration);
+      bloodBladeActive=true;
+      slot.activeUntil=now+duration;
+      slot.cooldownUntil=now+cooldown;
+      slot.lastUsed=now;
+      showEquipmentMessage(`嗜血魔刃啟動！ 接下來 ${(duration/1000).toFixed(0)} 秒傷害 x${dmgMul}。`,'success',2600);
+      const pr=paddleRect();
+      if(pr){
+        spawnParticles(pr.x+pr.w/2,pr.y,'#ff4d6a',24,1.8,3.2,2.6);
+      }
+      beep(520,0.12,0.05);
+      refreshEquipmentRuntime(performance.now());
       return;
     }
   }
@@ -2304,6 +2462,67 @@ select optgroup { color: #0b1022; }
     }
     showShieldAbsorbEffect(opts);
     return true;
+  }
+  function resetBallSpeeds(){
+    if(!Array.isArray(balls)||balls.length===0) return false;
+    const targetSpeed=speedForLevel(level);
+    let changed=false;
+    for(const ball of balls){
+      if(!ball) continue;
+      if(ball.stuck||ball.capturedByBladeHell) continue;
+      if(ball.freeze && ball.freeze.state==='stopped') continue;
+      const currentSpeed=Math.hypot(ball.vx||0,ball.vy||0);
+      let ang;
+      if(currentSpeed<=0.0001){
+        ang=-Math.PI/3;
+      }else{
+        ang=Math.atan2(ball.vy,ball.vx);
+      }
+      if(!Number.isFinite(ang)) ang=-Math.PI/3;
+      ball.vx=Math.cos(ang)*targetSpeed;
+      ball.vy=Math.sin(ang)*targetSpeed;
+      if(Math.abs(currentSpeed-targetSpeed)>0.01) changed=true;
+    }
+    return changed;
+  }
+  function checkEquipmentExpirations(now){
+    let changed=false;
+    const expiredNames=[];
+    for(let i=0;i<equipmentSlots.length;i++){
+      const slot=equipmentSlots[i];
+      if(!slot) continue;
+      if(slot.pendingRemoval && slot.activeUntil && now>=slot.activeUntil){
+        expiredNames.push(slot.def.name);
+        equipmentSlots[i]=null;
+        changed=true;
+        continue;
+      }
+      if(slot.def.effect?.bloodBlade && slot.activeUntil && now>=slot.activeUntil){
+        slot.activeUntil=0;
+      }
+    }
+    if(changed){
+      recalcEquipmentBonuses();
+      renderEquipmentSlots();
+      if(expiredNames.length){
+        showEquipmentMessage(`${expiredNames.join('、')} 的效果已結束。`,'info',2000);
+      }
+    }
+  }
+  function updateBloodBladeState(now){
+    const wasActive=bloodBladeActive;
+    const active=bloodBladeActiveUntil>now;
+    if(wasActive && !active){
+      bloodBladeActiveUntil=0;
+      for(const slot of equipmentSlots){
+        if(slot?.def.effect?.bloodBlade){
+          slot.activeUntil=0;
+        }
+      }
+      showEquipmentMessage('嗜血魔刃的暴走已平息。','info',2000);
+      bloodBladeDamageMultiplier=BLOOD_BLADE_DEFAULTS.damageMultiplier;
+    }
+    bloodBladeActive=active;
   }
   function showShieldAbsorbEffect(opts={}){
     const now=performance.now();
@@ -2939,6 +3158,44 @@ select optgroup { color: #0b1022; }
   let comboLastTime=0;
   const comboEl=document.getElementById('combo');
   let comboNoticeTriggered={50:false,100:false,200:false,300:false,400:false,500:false,800:false,1000:false};
+  function comboStarConfig(){
+    return GAME_CONFIG.powers?.COMBO?.combo||{timeMul:1,scoreMul:1};
+  }
+  function isComboStarActive(now=performance.now()){
+    if(equipmentComboStarPermanent) return true;
+    const buff=buffs.COMBO;
+    if(!buff||!buff.active) return false;
+    if(buff.until && now>buff.until) return false;
+    return true;
+  }
+  function getComboStarTimeMultiplier(now=performance.now()){
+    return isComboStarActive(now)?(comboStarConfig().timeMul||1):1;
+  }
+  function getComboStarScoreMultiplier(now=performance.now()){
+    return isComboStarActive(now)?(comboStarConfig().scoreMul||1):1;
+  }
+  function countActiveDebuffEffects(now=performance.now()){
+    let count=0;
+    for(const key of Object.keys(GAME_CONFIG.powers||{})){
+      const def=GAME_CONFIG.powers[key];
+      if(!def || def.type!=='debuff') continue;
+      const state=buffs[key];
+      if(!state) continue;
+      if(Array.isArray(state.stacks)){
+        if(state.stacks.some(t=>t>now)) count++;
+      }else if(state.active && (!state.until || state.until>now)){
+        count++;
+      }
+    }
+    return count;
+  }
+  function getCurseSwordBonus(now=performance.now()){
+    if(!equipmentCurseSwordActive) return 0;
+    return countActiveDebuffEffects(now);
+  }
+  function getBloodBladeMultiplier(now=performance.now()){
+    return (bloodBladeActiveUntil && now<bloodBladeActiveUntil)?bloodBladeDamageMultiplier:1;
+  }
   let stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
   unlockLevel(level);
   const SPACE_BOSS_MAX_HP = 30;
@@ -4164,7 +4421,7 @@ select optgroup { color: #0b1022; }
     spawnBladeHellBlood(cx, cy);
     screenShake=Math.max(screenShake,11);
     playSFX('sword');
-    damageDemonBoss(3,'bladeHellReflect',{x:cx,y:cy},{ignoreCooldown:true,cooldown:60,screenShake:11});
+        damageActiveBoss(3,'bladeHellReflect',{x:cx,y:cy},{ignoreCooldown:true,cooldown:60,screenShake:11});
   }
 
   function updateDemonBladeHellCounterstrike(now){
@@ -6374,7 +6631,7 @@ select optgroup { color: #0b1022; }
     else if(combo>=30){ comboEl.classList.add('tier3'); }
     else if(combo>=10){ comboEl.classList.add('tier2'); }
     else { comboEl.classList.add('tier1'); }
-    if(buffs.COMBO?.active){ comboEl.classList.add('star'); }
+    if(isComboStarActive()){ comboEl.classList.add('star'); }
     comboEl.classList.add('pop'); setTimeout(()=>comboEl.classList.remove('pop'),500);
     comboEl.style.opacity=1;
     if(combo===50 && !comboNoticeTriggered[50]){ comboNoticeTriggered[50]=true; showComboNotice('看來是個高手呢！'); }
@@ -6401,7 +6658,7 @@ select optgroup { color: #0b1022; }
   }
   function addScore(base){
     let mul=getComboMultiplier();
-    if(buffs.COMBO?.active){ mul*=GAME_CONFIG.powers.COMBO.combo.scoreMul; }
+    mul*=getComboStarScoreMultiplier();
     const d=difficultySel?.value;
     if(d==='easy') mul*=0.5;
     else if(d==='hard') mul*=1.2;
@@ -8779,8 +9036,10 @@ select optgroup { color: #0b1022; }
     }else{
       demonBoss.hitCooldownUntil=now+140;
     }
+    const dmg=Math.max(0, Math.floor(amount));
+    if(!dmg) return false;
     const prevHp=demonBoss.hp;
-    demonBoss.hp=Math.max(0, demonBoss.hp-amount);
+    demonBoss.hp=Math.max(0, demonBoss.hp-dmg);
     if(demonBoss.hp<prevHp){ incrementCombo(); }
     if(source==='ball'){
       addScore(BOSS_HIT_SCORE);
@@ -8789,7 +9048,7 @@ select optgroup { color: #0b1022; }
     demonBoss.hitFlashUntil=now+220;
     const ix=(impact&&impact.x!=null)?impact.x:demonBoss.x;
     const iy=(impact&&impact.y!=null)?impact.y:demonBoss.y;
-    spawnParticles(ix,iy,'#dcb6ff',24,1.8,3.0,2.8);
+    spawnParticles(ix,iy,opts.goldenFx?'#ffe07a':'#dcb6ff',24,1.8,3.0,2.8);
     const shakeStrength = opts.screenShake || 4;
     screenShake=Math.max(screenShake,shakeStrength);
     if(demonBoss.recentHits && Array.isArray(demonBoss.recentHits)){
@@ -10795,11 +11054,12 @@ let balls=[]; function makeBall(stuck=false,x=null){
     scheduleNextTreasureBrick(now);
   }
 
-  function damageSpaceBoss(amount=1, source='generic', impact){
+  function damageSpaceBoss(amount=1, source='generic', impact, options=null){
     if(spaceBossPhase!=='active' || !spaceBoss) return false;
     const now=performance.now();
+    const opts=options||{};
     if(spaceBoss.hitCooldownUntil && now<spaceBoss.hitCooldownUntil) return false;
-    const dmg = amount>0 ? 1 : 0;
+    const dmg = Math.max(0, Math.floor(amount));
     if(!dmg) return false;
     spaceBoss.hitCooldownUntil = now + 140;
     const prevHp=spaceBoss.hp;
@@ -10821,12 +11081,15 @@ let balls=[]; function makeBall(stuck=false,x=null){
       phoenix:'255,210,200',
       sword:'255,240,220'
     };
-    const burstColor=colorMap[source]||'160,220,255';
+    let burstColor=colorMap[source]||'160,220,255';
+    if(opts.goldenFx){
+      burstColor='255,220,140';
+    }
     spaceBossBursts.push({type:'spark',x:spaceBoss.x+jitterX,y:spaceBoss.y+jitterY,r0:0,r1:140,t0:now,life:600,color:burstColor});
     if(impact && impact.x!=null && impact.y!=null){
       spawnParticles(impact.x, impact.y, '#b8d6ff', 22, 1.6, 2.6, 2.4);
     }
-    spawnParticles(spaceBoss.x+jitterX, spaceBoss.y+jitterY, '#8fbaff', 18, 1.5, 2.6, 2.3);
+    spawnParticles(spaceBoss.x+jitterX, spaceBoss.y+jitterY, opts.goldenFx?'#ffd76a':'#8fbaff', 18, 1.5, 2.6, 2.3);
     screenShake=Math.max(screenShake,5);
     const toneMap={laser:820, missile:680, gatling:720, plasma:760, blackhole:640, phoenix:700, ball:780, sword:840};
     const freq=toneMap[source]||760;
@@ -12041,12 +12304,13 @@ let balls=[]; function makeBall(stuck=false,x=null){
     }
   }
 
-  function damageReaperBoss(amount=1, source='generic', impact){
+  function damageReaperBoss(amount=1, source='generic', impact, options=null){
     if(reaperPhase!=='active' || !reaperBoss) return false;
     const now=performance.now();
+    const opts=options||{};
     if(reaperBoss.hiddenUntil && now<reaperBoss.hiddenUntil) return false;
     if(reaperBoss.hitCooldownUntil && now<reaperBoss.hitCooldownUntil) return false;
-    const dmg = amount>0?1:0;
+    const dmg = Math.max(0, Math.floor(amount));
     if(!dmg) return false;
     reaperBoss.hitCooldownUntil = now + 160;
     const prevHp=reaperBoss.hp;
@@ -12069,9 +12333,12 @@ let balls=[]; function makeBall(stuck=false,x=null){
       sword:'255,200,220',
       holy:'255,240,220'
     };
-    const burstColor=colorMap[source]||'210,150,255';
+    let burstColor=colorMap[source]||'210,150,255';
+    if(opts.goldenFx){
+      burstColor='255,215,140';
+    }
     reaperBursts.push({type:'spark',x:reaperBoss.x+jitterX,y:reaperBoss.y+jitterY,r0:0,r1:150,t0:now,life:720,color:burstColor});
-    spawnParticles(reaperBoss.x+jitterX, reaperBoss.y+jitterY, '#d9c7ff', 20, 1.5, 2.6, 2.4);
+    spawnParticles(reaperBoss.x+jitterX, reaperBoss.y+jitterY, opts.goldenFx?'#ffe27a':'#d9c7ff', 20, 1.5, 2.6, 2.4);
     if(impact && impact.x!=null && impact.y!=null){
       spawnParticles(impact.x, impact.y, '#ff9bd0', 16, 1.4, 2.4, 2.2);
     }
@@ -13021,13 +13288,16 @@ let balls=[]; function makeBall(stuck=false,x=null){
     };
   }
 
-  function damageDragonBoss(amount=1, source='generic', impact){
+  function damageDragonBoss(amount=1, source='generic', impact, options=null){
     if(dragonPhase!=='active' || !dragonBoss) return false;
     const now=performance.now();
+    const opts=options||{};
     if(dragonBoss.hitCooldownUntil && now<dragonBoss.hitCooldownUntil) return false;
     dragonBoss.hitCooldownUntil=now+140;
+    const dmg=Math.max(0, Math.floor(amount));
+    if(!dmg) return false;
     const prevHp=dragonBoss.hp;
-    dragonBoss.hp=Math.max(0, dragonBoss.hp-amount);
+    dragonBoss.hp=Math.max(0, dragonBoss.hp-dmg);
     if(dragonBoss.hp<prevHp){ incrementCombo(); }
     if(source==='ball'){
       addScore(BOSS_HIT_SCORE);
@@ -13036,8 +13306,8 @@ let balls=[]; function makeBall(stuck=false,x=null){
     dragonBoss.hitFlashUntil=now+220;
     const ix=(impact&&impact.x!=null)?impact.x:dragonBoss.x;
     const iy=(impact&&impact.y!=null)?impact.y:dragonBoss.y;
-    dragonBursts.push({type:'ember',x:ix,y:iy,t0:now,life:600});
-    spawnParticles(ix,iy,'#ffd97a',18,2.0,3.0,3.2);
+    dragonBursts.push({type:'ember',x:ix,y:iy,t0:now,life:600,color:opts.goldenFx?'255,220,140':undefined});
+    spawnParticles(ix,iy,opts.goldenFx?'#ffe07a':'#ffd97a',18,2.0,3.0,3.2);
     screenShake=Math.max(screenShake,4);
     if(dragonBoss.hp<=0){ defeatDragonBoss(); }
     return true;
@@ -14803,11 +15073,20 @@ let balls=[]; function makeBall(stuck=false,x=null){
     return {x:fromX, y:fromY};
   }
 
-  function damageActiveBoss(amount=1, source='generic', impact){
-    if(isSpaceBossActive()) return damageSpaceBoss(amount, source, impact);
-    if(isReaperActive()) return damageReaperBoss(amount, source, impact);
-    if(isDragonActive()) return damageDragonBoss(amount, source, impact);
-    if(isDemonActive()) return damageDemonBoss(amount, source, impact);
+  function damageActiveBoss(amount=1, source='generic', impact, options=null){
+    const now=performance.now();
+    const opts={...(options||{})};
+    let total=Math.max(0, Number(amount)||0);
+    total+=getCurseSwordBonus(now);
+    total*=getBloodBladeMultiplier(now);
+    if(equipmentBossDamageMultiplier>1){
+      total*=equipmentBossDamageMultiplier;
+    }
+    if(equipmentBossDamageFx) opts.goldenFx=true;
+    if(isSpaceBossActive()) return damageSpaceBoss(total, source, impact, opts);
+    if(isReaperActive()) return damageReaperBoss(total, source, impact, opts);
+    if(isDragonActive()) return damageDragonBoss(total, source, impact, opts);
+    if(isDemonActive()) return damageDemonBoss(total, source, impact, opts);
     return false;
   }
 
@@ -15090,7 +15369,21 @@ function generateLevel(lv, L){
     else if(sfx!=='none'){ playSFX(sfx); }
     revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); updateHUD();
   }
-  function damageBrick(i, dmg, sfx='default'){ for(let k=0;k<dmg;k++){ if(!bricks[i]) break; destroyBrick(i, sfx); } }
+  function damageBrick(i, dmg, sfx='default'){
+    const brick=bricks[i];
+    if(!brick) return;
+    const now=performance.now();
+    let amount=Math.max(0, Math.floor(dmg));
+    if(amount<=0) return;
+    if(!brick.boss){
+      amount+=getCurseSwordBonus(now);
+    }
+    amount=Math.max(1, Math.floor(amount*getBloodBladeMultiplier(now)));
+    for(let k=0;k<amount;k++){
+      if(!bricks[i]) break;
+      destroyBrick(i, sfx);
+    }
+  }
   function destroyNeighbors(idx){ const b=bricks[idx]; if(!b) return; const L=layout(); const near=[]; for(let j=bricks.length-1;j>=0;j--){ if(j===idx) continue; const t=bricks[j]; const dx=Math.abs((t.x+t.w/2)-(b.x+b.w/2)); const dy=Math.abs((t.y+t.h/2)-(b.y+b.h/2)); const thx=brickW+L.pad+2, thy=brickH+L.pad+2; if(dx<=thx && dy<=thy){ // 鄰近一格
         if(canDestroyBrick(t)){
           if(t.boss){
@@ -15306,7 +15599,26 @@ function generateLevel(lv, L){
       });
     }
     if(!pool.length) return;
-    const type = pool[Math.floor(Math.random()*pool.length)];
+    let type;
+    if(!powerups.some(p=>p.isSpecial) && equipmentSpecialDropRateMultiplier>1){
+      const specials=pool.filter(k=>GAME_CONFIG.powers[k]?.type==='special');
+      const nonSpecials=pool.filter(k=>GAME_CONFIG.powers[k]?.type!=='special');
+      if(specials.length && nonSpecials.length){
+        const baseProb=specials.length/pool.length;
+        const targetProb=Math.min(1, baseProb*equipmentSpecialDropRateMultiplier);
+        if(Math.random()<targetProb){
+          type=specials[Math.floor(Math.random()*specials.length)];
+        }else{
+          type=nonSpecials[Math.floor(Math.random()*nonSpecials.length)];
+        }
+      }else if(specials.length){
+        type=specials[Math.floor(Math.random()*specials.length)];
+      }else{
+        type=pool[Math.floor(Math.random()*pool.length)];
+      }
+    }else{
+      type = pool[Math.floor(Math.random()*pool.length)];
+    }
     const def = GAME_CONFIG.powers[type];
     if(!def) return;
     const isSpecial = (def.type === 'special');
@@ -15432,9 +15744,30 @@ function generateLevel(lv, L){
           pool = pool.filter(k => { const t = GAME_CONFIG.powers[k].type; return t !== 'special'; });
         }
       }
+      if(equipmentPreventDebuffDrops){
+        pool = pool.filter(k => (GAME_CONFIG.powers[k]?.type !== 'debuff'));
+      }
       pool = pool.filter(k=>k!=='NINE');
       if(!pool.length) return;
-      type = pool[Math.floor(Math.random()*pool.length)];
+      if(!existingSpecial && equipmentSpecialDropRateMultiplier>1){
+        const specials = pool.filter(k=>GAME_CONFIG.powers[k]?.type==='special');
+        const nonSpecials = pool.filter(k=>GAME_CONFIG.powers[k]?.type!=='special');
+        if(specials.length && nonSpecials.length){
+          const baseProb = specials.length / pool.length;
+          const targetProb = Math.min(1, baseProb * equipmentSpecialDropRateMultiplier);
+          if(Math.random()<targetProb){
+            type = specials[Math.floor(Math.random()*specials.length)];
+          }else{
+            type = nonSpecials[Math.floor(Math.random()*nonSpecials.length)];
+          }
+        }else if(specials.length){
+          type = specials[Math.floor(Math.random()*specials.length)];
+        }else{
+          type = pool[Math.floor(Math.random()*pool.length)];
+        }
+      }else{
+        type = pool[Math.floor(Math.random()*pool.length)];
+      }
     }
     const def = GAME_CONFIG.powers[type];
     if(!def) return;
@@ -17773,13 +18106,15 @@ function generateLevel(lv, L){
   function update(){
     const now=performance.now();
     updateShieldRuntime(now);
+    checkEquipmentExpirations(now);
+    updateBloodBladeState(now);
     refreshEquipmentRuntime(now);
     const prevPaddleX=paddle.x;
     if(cyclopsShakeUntil && now<cyclopsShakeUntil){ screenShake=Math.max(screenShake,6); }
-    if(comboEl) comboEl.classList.toggle('star', buffs.COMBO.active);
+    if(comboEl) comboEl.classList.toggle('star', isComboStarActive(now));
     if(combo>0){
       const elapsed=now-comboLastTime;
-      const mul=buffs.COMBO.active?GAME_CONFIG.powers.COMBO.combo.timeMul:1;
+      const mul=getComboStarTimeMultiplier(now);
       const fadeStart=3000*mul, resetTime=5000*mul;
       if(elapsed>fadeStart && elapsed<resetTime){ comboEl.style.opacity=1-((elapsed-fadeStart)/(resetTime-fadeStart)); }
       else if(elapsed>=resetTime){ resetCombo(); }
@@ -18387,7 +18722,9 @@ function generateLevel(lv, L){
           }else{
             const currentHp = (typeof bk.hp === 'number') ? bk.hp : 1;
             const bonusDamage = bk.boss ? 0 : brickDamageBonus;
-            const appliedDamage = megaDamageMul + bonusDamage;
+            const curseBonus = bk.boss ? 0 : getCurseSwordBonus(now);
+            let appliedDamage = megaDamageMul + bonusDamage + curseBonus;
+            appliedDamage = Math.max(1, Math.floor(appliedDamage * getBloodBladeMultiplier(now)));
             bk.hp = currentHp - appliedDamage;
             incrementCombo();
             if(bk.hp<=0){
@@ -18687,6 +19024,33 @@ function generateLevel(lv, L){
         p.y += p.speed;
       }
       const pr = paddleRect();
+      if(pr){
+        const paddleCx = pr.x + pr.w/2;
+        const paddleCy = pr.y + pr.h/2;
+        const centerX = p.x + p.w/2;
+        const centerY = p.y + p.h/2;
+        const dx = centerX - paddleCx;
+        const dy = centerY - paddleCy;
+        const dist = Math.hypot(dx, dy) || 1;
+        if(equipmentAttractBeneficial && !p.isDebuff){
+          const range = 220;
+          if(dist < range){
+            const pull = 1 - dist/range;
+            const seek = p.speed + 2.2 * pull;
+            p.x -= (dx/dist) * seek * 0.6;
+            p.y -= (dy/dist) * seek * 0.85;
+          }
+        }
+        if(equipmentRepelDebuff && p.isDebuff){
+          const range = 220;
+          if(dist < range){
+            const push = 1 - dist/range;
+            const repel = p.speed + 2.6 * push;
+            p.x += (dx/dist) * repel * 0.7;
+            p.y += (dy/dist) * repel * 0.9;
+          }
+        }
+      }
       // 命中檢查：根據擋板方向檢查碰撞
       const hit = (!orientLeft)
         ? (p.y + p.h >= pr.y && p.x + p.w >= pr.x && p.x <= pr.x + pr.w && p.y <= pr.y + pr.h)
