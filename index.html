@@ -420,14 +420,14 @@
     .equip-slot .equip-label{display:none;}
     .equip-slot .equip-name{font-size:12px;font-weight:650;letter-spacing:0.5px;color:#dce6ff;min-height:16px;}
     .equip-slot .equip-type{font-size:10.5px;color:#8fa5da;letter-spacing:0.4px;}
-    .equip-slot .equip-button{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:16px;border:2px solid rgba(130,160,255,0.5);overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,0.45);background:rgba(12,18,36,0.6);}
+    .equip-slot .equip-button{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:16px;border:2px solid rgba(130,160,255,0.5);overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,0.45);background:rgba(12,18,36,0.6);isolation:isolate;}
     .equip-slot .equip-button img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;user-select:none;}
     .equip-slot.empty .equip-button{border-style:dashed;border-color:rgba(110,150,210,0.4);background:rgba(14,22,40,0.52);color:#7f95c6;font-size:26px;font-weight:500;}
     .equip-slot.empty .equip-button::after{content:'+';}
     .equip-slot .equip-status{font-size:10px;color:#98acd9;letter-spacing:0.4px;min-height:14px;}
     .equip-slot .equip-effect{display:none;font-size:11px;line-height:1.4;color:#cfd8ff;margin-top:2px;padding:0 4px;}
     .equip-slot.show-effect .equip-effect{display:block;}
-    .equip-slot .tier-badge{position:absolute;top:6px;right:10px;font-size:16px;font-weight:700;color:#f0f6ff;text-shadow:0 2px 6px rgba(0,0,0,0.5);}
+    .equip-slot .tier-badge{position:absolute;top:6px;right:10px;font-size:16px;font-weight:700;color:#f0f6ff;text-shadow:0 2px 6px rgba(0,0,0,0.5);z-index:4;}
     .equip-slot.grade-S .equip-button{border-color:#ffe08a;box-shadow:0 12px 28px rgba(255,224,138,0.35);}
     .equip-slot.grade-A .equip-button{border-color:#ff6a82;box-shadow:0 12px 28px rgba(255,106,130,0.32);}
     .equip-slot.grade-B .equip-button{border-color:#69adff;box-shadow:0 12px 28px rgba(105,173,255,0.32);}
@@ -441,6 +441,13 @@
     .shield-status{padding:6px 12px;border-radius:999px;background:rgba(40,120,255,0.18);border:1px solid rgba(80,140,255,0.45);color:#dbe6ff;font-size:12px;letter-spacing:0.6px;box-shadow:0 0 18px rgba(80,140,255,0.2);}
     .equipment-bar.shielding{border-color:rgba(120,190,255,0.6);box-shadow:0 24px 80px rgba(70,130,255,0.32);}
     .equip-slot.cooldown{opacity:0.88;}
+    .equip-slot .equip-cooldown-cover{position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at 50% 45%, rgba(18,28,52,0.75) 0%, rgba(8,16,32,0.88) 70%, rgba(6,12,24,0.94) 100%);backdrop-filter:blur(1.2px);opacity:0;transition:opacity .2s ease;pointer-events:none;z-index:1;}
+    .equip-slot .equip-cooldown-label{position:absolute;inset:0;display:grid;place-items:center;font-size:18px;font-weight:700;color:#f5f8ff;text-shadow:0 0 10px rgba(0,0,0,0.7);letter-spacing:0.5px;opacity:0;transition:opacity .2s ease;pointer-events:none;z-index:2;}
+    .equip-slot .equip-cooldown-ring{position:absolute;inset:4px;pointer-events:none;transform:rotate(-90deg);opacity:0;transition:opacity .2s ease;z-index:3;}
+    .equip-slot .equip-cooldown-ring circle{fill:none;stroke:rgba(130,180,255,0.9);stroke-width:3.2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 0 6px rgba(90,150,255,0.55));transition:stroke-dashoffset .1s linear;}
+    .equip-slot.cooldown .equip-cooldown-cover,
+    .equip-slot.cooldown .equip-cooldown-label,
+    .equip-slot.cooldown .equip-cooldown-ring{opacity:1;}
 
     @media (max-width: 900px){
       #storeOverlay{padding:18px;}
@@ -2058,6 +2065,8 @@ select optgroup { color: #0b1022; }
       grade:itemDef.grade,
       roman:itemDef.roman,
       cooldownUntil:0,
+      cooldownDuration:Math.max(0, Number(itemDef.effect?.cooldown)||0),
+      cooldownStarted:0,
       lastUsed:0,
       activeUntil:0,
       pendingRemoval:false
@@ -2070,6 +2079,9 @@ select optgroup { color: #0b1022; }
       const snapshot={id:slot.id};
       if(slot.def.type==='active' && slot.cooldownUntil && slot.cooldownUntil>now){
         snapshot.cooldownRemainingMs=Math.round(Math.max(0, slot.cooldownUntil-now));
+        if(Number.isFinite(slot.cooldownDuration) && slot.cooldownDuration>0){
+          snapshot.cooldownDurationMs=Math.round(slot.cooldownDuration);
+        }
       }
       if(slot.activeUntil && slot.activeUntil>now){
         snapshot.activeRemainingMs=Math.round(Math.max(0, slot.activeUntil-now));
@@ -2094,7 +2106,15 @@ select optgroup { color: #0b1022; }
         if(def){
           const state=createSlotState(def);
           if(def.type==='active'&&typeof entry.cooldownRemainingMs==='number'&&entry.cooldownRemainingMs>0){
-            state.cooldownUntil=now+Math.max(0, entry.cooldownRemainingMs);
+            const remainingMs=Math.max(0, entry.cooldownRemainingMs);
+            state.cooldownUntil=now+remainingMs;
+            const snapshotDuration=Number(entry.cooldownDurationMs);
+            if(Number.isFinite(snapshotDuration) && snapshotDuration>0){
+              state.cooldownDuration=snapshotDuration;
+            }else{
+              state.cooldownDuration=Math.max(state.cooldownDuration, remainingMs, Number(def.effect?.cooldown)||0);
+            }
+            state.cooldownStarted=Math.max(0, state.cooldownUntil-state.cooldownDuration);
           }
           if(typeof entry.activeRemainingMs==='number'&&entry.activeRemainingMs>0){
             state.activeUntil=now+Math.max(0, entry.activeRemainingMs);
@@ -2145,6 +2165,7 @@ select optgroup { color: #0b1022; }
     if(!equipmentSlotsEl) return;
     equipmentSlotsEl.innerHTML='';
     equipmentSlotElements.length=0;
+    const svgNS='http://www.w3.org/2000/svg';
     equipmentSlots.forEach((slot,idx)=>{
       const btn=document.createElement('button');
       btn.type='button';
@@ -2185,6 +2206,22 @@ select optgroup { color: #0b1022; }
           iconWrapper.appendChild(badge);
         }
       }
+      const cooldownCover=document.createElement('span');
+      cooldownCover.className='equip-cooldown-cover';
+      iconWrapper.appendChild(cooldownCover);
+      const cooldownLabel=document.createElement('span');
+      cooldownLabel.className='equip-cooldown-label';
+      iconWrapper.appendChild(cooldownLabel);
+      const cooldownSvg=document.createElementNS(svgNS,'svg');
+      cooldownSvg.setAttribute('viewBox','0 0 44 44');
+      cooldownSvg.classList.add('equip-cooldown-ring');
+      const cooldownCircle=document.createElementNS(svgNS,'circle');
+      cooldownCircle.setAttribute('cx','22');
+      cooldownCircle.setAttribute('cy','22');
+      cooldownCircle.setAttribute('r','20');
+      cooldownCircle.setAttribute('pathLength','1');
+      cooldownSvg.appendChild(cooldownCircle);
+      iconWrapper.appendChild(cooldownSvg);
       btn.appendChild(iconWrapper);
       const status=document.createElement('span');
       status.className='equip-status';
@@ -2236,9 +2273,9 @@ select optgroup { color: #0b1022; }
           }
         });
         btn.addEventListener('blur',hideEffect);
-        equipmentSlotElements.push({button:btn,statusEl:status,index:idx});
+        equipmentSlotElements.push({button:btn,statusEl:status,index:idx,cooldownLabel,cooldownCircle});
       }else{
-        equipmentSlotElements.push({button:btn,statusEl:null,index:idx});
+        equipmentSlotElements.push({button:btn,statusEl:null,index:idx,cooldownLabel:null,cooldownCircle:null});
       }
       equipmentSlotsEl.appendChild(btn);
     });
@@ -2267,6 +2304,8 @@ select optgroup { color: #0b1022; }
       const activeRemain=slot.activeUntil && now<slot.activeUntil;
       entry.button.classList.toggle('cooldown',false);
       entry.button.classList.toggle('active',activeRemain);
+      if(entry.cooldownLabel) entry.cooldownLabel.textContent='';
+      if(entry.cooldownCircle) entry.cooldownCircle.style.strokeDashoffset='1';
       if(slot.def.type==='passive'){
         entry.statusEl.textContent='';
         entry.button.classList.remove('cooldown');
@@ -2275,9 +2314,32 @@ select optgroup { color: #0b1022; }
           const remain=(slot.activeUntil-now)/1000;
           entry.statusEl.textContent=`持續中 ${remain>=9?Math.ceil(remain):Math.max(0,remain).toFixed(1)}s`;
         }else if(slot.cooldownUntil && now<slot.cooldownUntil){
-          const remain=(slot.cooldownUntil-now)/1000;
+          const remainMs=Math.max(0, slot.cooldownUntil-now);
+          const remain=remainMs/1000;
           entry.statusEl.textContent=`冷卻中 ${remain>=9?Math.ceil(remain):Math.max(0,remain).toFixed(1)}s`;
           entry.button.classList.add('cooldown');
+          const totalMs=slot.cooldownDuration>0?slot.cooldownDuration:Math.max(remainMs, Number(slot.def.effect?.cooldown)||0);
+          if(totalMs>0){
+            slot.cooldownDuration=totalMs;
+            slot.cooldownStarted=Math.max(0, slot.cooldownUntil-totalMs);
+            if(entry.cooldownCircle){
+              const progress=Math.min(1, remainMs/totalMs);
+              entry.cooldownCircle.style.strokeDashoffset=progress.toFixed(4);
+            }
+          }else if(entry.cooldownCircle){
+            entry.cooldownCircle.style.strokeDashoffset='0';
+          }
+          if(entry.cooldownLabel){
+            let labelText;
+            if(remain>=9.5){
+              labelText=String(Math.ceil(remain));
+            }else if(remain>=1){
+              labelText=Math.max(0,remain).toFixed(1).replace(/\.0$/, '');
+            }else{
+              labelText=Math.max(0,remain).toFixed(1);
+            }
+            entry.cooldownLabel.textContent=labelText;
+          }
         }else{
           entry.statusEl.textContent='點擊啟動';
         }
@@ -2355,6 +2417,8 @@ select optgroup { color: #0b1022; }
     let removed=false;
     if(mode==='consumable'){
       slot.cooldownUntil=0;
+      slot.cooldownDuration=0;
+      slot.cooldownStarted=0;
       if(duration>0){
         slot.pendingRemoval=true;
       }else{
@@ -2364,6 +2428,8 @@ select optgroup { color: #0b1022; }
         removed=true;
       }
     }else if(mode==='active'){
+      slot.cooldownDuration=cooldown>0?cooldown:0;
+      slot.cooldownStarted=cooldown>0?now:0;
       slot.cooldownUntil=cooldown>0?now+cooldown:0;
     }
     showEquipmentMessage(message,tone,messageDuration);
@@ -2398,6 +2464,8 @@ select optgroup { color: #0b1022; }
         renderEquipmentSlots();
       }else{
         const cd=def.effect.cooldown||0;
+        slot.cooldownDuration=Math.max(0,cd);
+        slot.cooldownStarted=cd>0?now:0;
         slot.cooldownUntil=now+cd;
         slot.lastUsed=now;
       }
@@ -2461,6 +2529,8 @@ select optgroup { color: #0b1022; }
         slot.pendingRemoval=true;
       }else{
         const cd=Math.max(0, effect.comboStar.cooldown??60000);
+        slot.cooldownDuration=cd;
+        slot.cooldownStarted=cd>0?now:0;
         slot.cooldownUntil=now+cd;
       }
       showEquipmentMessage('連擊之星啟動！ 連擊效果提升。','success',2200);
@@ -2484,6 +2554,8 @@ select optgroup { color: #0b1022; }
       bloodBladeActiveUntil=Math.max(bloodBladeActiveUntil, now+duration);
       bloodBladeActive=true;
       slot.activeUntil=now+duration;
+      slot.cooldownDuration=cooldown;
+      slot.cooldownStarted=cooldown>0?now:0;
       slot.cooldownUntil=now+cooldown;
       slot.lastUsed=now;
       showEquipmentMessage(`嗜血魔刃啟動！ 接下來 ${(duration/1000).toFixed(0)} 秒傷害 x${dmgMul}。`,'success',2600);
