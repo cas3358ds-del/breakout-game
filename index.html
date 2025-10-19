@@ -1810,7 +1810,13 @@ select optgroup { color: #0b1022; }
     {id:'poisonBall3',name:'劇毒球Ⅲ',roman:'Ⅲ',icon:'W25.jpg',grade:'A',type:'active',price:30,description:'啟動劇毒球效果，命中附帶毒素，冷卻時間 30 秒。',effect:{power:{key:'POISON',mode:'active',cooldown:30000,message:'劇毒球啟動，命中將持續腐蝕！'}}},
     {id:'blinkBall1',name:'瞬移球Ⅰ',roman:'Ⅰ',icon:'W26.jpg',grade:'C',type:'consumable',price:5,description:'啟動瞬移球效果，反彈後瞬移至頂部，效果結束後裝備消失。',effect:{power:{key:'BLINK',mode:'consumable',message:'瞬移球啟動，球體將瞬間移位！'}}},
     {id:'blinkBall2',name:'瞬移球Ⅱ',roman:'Ⅱ',icon:'W26.jpg',grade:'B',type:'active',price:10,description:'啟動瞬移球效果，反彈後瞬移至頂部，冷卻時間 60 秒。',effect:{power:{key:'BLINK',mode:'active',cooldown:60000,message:'瞬移球啟動，球體將瞬間移位！'}}},
-    {id:'blinkBall3',name:'瞬移球Ⅲ',roman:'Ⅲ',icon:'W26.jpg',grade:'A',type:'active',price:30,description:'啟動瞬移球效果，反彈後瞬移至頂部，冷卻時間 30 秒。',effect:{power:{key:'BLINK',mode:'active',cooldown:30000,message:'瞬移球啟動，球體將瞬間移位！'}}}
+    {id:'blinkBall3',name:'瞬移球Ⅲ',roman:'Ⅲ',icon:'W26.jpg',grade:'A',type:'active',price:30,description:'啟動瞬移球效果，反彈後瞬移至頂部，冷卻時間 30 秒。',effect:{power:{key:'BLINK',mode:'active',cooldown:30000,message:'瞬移球啟動，球體將瞬間移位！'}}},
+    {id:'triplePlasma',name:'三重雷電',icon:'W27.jpg',grade:'A',type:'passive',price:30,description:'被動：電漿生成時改為三重放電，並朝不同方向飛行。',effect:{plasmaTriple:true}},
+    {id:'thunderDevour',name:'雷神噬',icon:'W28.jpg',grade:'S',type:'passive',price:100,description:'被動：電漿存在時間與飛行速度加倍，每 2 秒於鄰近電漿之間釋放閃電鏈。',effect:{plasmaLifeMultiplier:2,plasmaSpeedMultiplier:2,plasmaChain:{intervalMs:2000,range:220}}},
+    {id:'plasmaBloom',name:'雷電展開',icon:'W29.jpg',grade:'A',type:'passive',price:30,description:'被動：電漿消除磚塊時，會在該處再度生成電漿。',effect:{plasmaSpawnOnKill:true}},
+    {id:'pierceThunder',name:'穿雷擊',icon:'W30.jpg',grade:'A',type:'passive',price:30,description:'被動：啟動穿透球時，同步在球體位置引發電漿。',effect:{pierceSpawnPlasma:true}},
+    {id:'holyJudgment',name:'輝光裁決',icon:'W31.jpg',grade:'S',type:'passive',price:100,description:'被動：神聖球的十字掃蕩升級為米字清線。',effect:{holyPattern:'miz'}},
+    {id:'holyBlessing',name:'神聖加持',icon:'W32.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得神聖球時的持續時間翻倍。',effect:{holyDurationMultiplier:2}}
   ];
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
@@ -1859,6 +1865,17 @@ select optgroup { color: #0b1022; }
   let equipmentPreventDebuffDrops=false;
   let equipmentSpecialDropRateMultiplier=1;
   let equipmentCurseSwordActive=false;
+  let equipmentPlasmaTriple=false;
+  let equipmentPlasmaLifeMultiplier=1;
+  let equipmentPlasmaSpeedMultiplier=1;
+  let equipmentPlasmaChainActive=false;
+  let equipmentPlasmaChainInterval=0;
+  let equipmentPlasmaChainRange=0;
+  let equipmentPlasmaSpawnOnKill=false;
+  let equipmentPierceSpawnPlasma=false;
+  let equipmentHolyPattern='cross';
+  let equipmentHolyDurationMultiplier=1;
+  let plasmaChainNextAt=0;
   const BLOOD_BLADE_DEFAULTS={damageMultiplier:3,duration:10000,cooldown:60000,hpCost:1};
   let bloodBladeActive=false;
   let bloodBladeActiveUntil=0;
@@ -2576,6 +2593,17 @@ select optgroup { color: #0b1022; }
     equipmentPreventDebuffDrops=false;
     equipmentSpecialDropRateMultiplier=1;
     equipmentCurseSwordActive=false;
+    equipmentPlasmaTriple=false;
+    equipmentPlasmaLifeMultiplier=1;
+    equipmentPlasmaSpeedMultiplier=1;
+    equipmentPlasmaChainActive=false;
+    equipmentPlasmaChainInterval=0;
+    equipmentPlasmaChainRange=0;
+    equipmentPlasmaSpawnOnKill=false;
+    equipmentPierceSpawnPlasma=false;
+    equipmentHolyPattern='cross';
+    equipmentHolyDurationMultiplier=1;
+    plasmaChainNextAt=0;
     for(const slot of equipmentSlots){
       if(!slot) continue;
       const effect=slot.def.effect||{};
@@ -2596,6 +2624,35 @@ select optgroup { color: #0b1022; }
         equipmentSpecialDropRateMultiplier*=mul;
       }
       if(effect.curseSword) equipmentCurseSwordActive=true;
+      if(effect.plasmaTriple) equipmentPlasmaTriple=true;
+      if(effect.plasmaLifeMultiplier){
+        const mul=Math.max(0, Number(effect.plasmaLifeMultiplier)||0);
+        if(mul>0) equipmentPlasmaLifeMultiplier*=mul;
+      }
+      if(effect.plasmaSpeedMultiplier){
+        const mul=Math.max(0, Number(effect.plasmaSpeedMultiplier)||0);
+        if(mul>0) equipmentPlasmaSpeedMultiplier*=mul;
+      }
+      if(effect.plasmaChain){
+        equipmentPlasmaChainActive=true;
+        const interval=Math.max(200, Number(effect.plasmaChain.intervalMs)||0);
+        const range=Math.max(10, Number(effect.plasmaChain.range)||0);
+        if(interval>0) equipmentPlasmaChainInterval=interval;
+        if(range>0) equipmentPlasmaChainRange=Math.max(equipmentPlasmaChainRange, range);
+      }
+      if(effect.plasmaSpawnOnKill) equipmentPlasmaSpawnOnKill=true;
+      if(effect.pierceSpawnPlasma) equipmentPierceSpawnPlasma=true;
+      if(effect.holyPattern){
+        equipmentHolyPattern=String(effect.holyPattern);
+      }
+      if(effect.holyDurationMultiplier){
+        const mul=Math.max(0, Number(effect.holyDurationMultiplier)||0);
+        if(mul>0) equipmentHolyDurationMultiplier*=mul;
+      }
+    }
+    if(equipmentPlasmaChainActive && equipmentPlasmaChainInterval>0){
+      const now=typeof performance!=='undefined'?performance.now():0;
+      plasmaChainNextAt=now+equipmentPlasmaChainInterval;
     }
   }
   function activateEquipmentPower(index,slot,powerCfg={}){
@@ -3517,7 +3574,7 @@ select optgroup { color: #0b1022; }
       if(spaceBossDeathAnim){ spaceBossDeathAnim.start+=delta; spaceBossDeathAnim.explosionAt+=delta; spaceBossDeathAnim.end+=delta; spaceBossDeathAnim.lastBurst+=delta; }
       if(spaceBossSuppressLifeLossUntil) spaceBossSuppressLifeLossUntil += delta;
       // 調整各種特效物件（粒子、雷射、黑洞等）的 till/until 終止時間
-      const lists = [plasmas, holyFlashes, blackHoles, laserBeams, laserImpacts, missiles, hostileBeams, hostileArcs, hostileColumns, hazardClouds];
+      const lists = [plasmas, plasmaChains, holyFlashes, blackHoles, laserBeams, laserImpacts, missiles, hostileBeams, hostileArcs, hostileColumns, hazardClouds];
       for(const arr of lists){
         if(!arr) continue;
         for(const item of arr){
@@ -3874,20 +3931,111 @@ select optgroup { color: #0b1022; }
     return {impactX, impactY, bounceAxis};
   }
 
+  function spawnPlasmaBurst(x,y,opts={}){
+    const cfg=GAME_CONFIG.powers?.PLASMA?.plasma;
+    if(!cfg) return;
+    const now=performance.now();
+    const baseCount=Math.max(1, Math.floor(opts.count||1));
+    const count=equipmentPlasmaTriple?Math.max(3, baseCount):baseCount;
+    const lifeMultiplier=(opts.lifeMultiplier||1)*equipmentPlasmaLifeMultiplier;
+    const speedMultiplier=(opts.speedMultiplier||1)*equipmentPlasmaSpeedMultiplier;
+    const radius=cfg.radius||0;
+    const drift=(cfg.drift||0)*speedMultiplier;
+    const baseLife=Math.max(0, cfg.lifeMs||0);
+    const lifeMs=Math.max(0, baseLife*lifeMultiplier);
+    if(lifeMs<=0) return;
+    const baseAngle=opts.baseAngle ?? Math.random()*Math.PI*2;
+    for(let i=0;i<count;i++){
+      const angle = count===1 ? (opts.angle ?? baseAngle) : baseAngle + i*(Math.PI*2/count);
+      const vx=Math.cos(angle)*drift;
+      const vy=Math.sin(angle)*drift;
+      plasmas.push({
+        x,
+        y,
+        vx,
+        vy,
+        until:now+lifeMs,
+        radius,
+        phase:Math.random()*Math.PI*2,
+        spawnAt:now
+      });
+    }
+    if(opts.sound!==false){
+      playSFX('plasma');
+    }
+  }
+
+  function applyHolyStrike(cx, cy){
+    const now=performance.now();
+    const pattern=(equipmentHolyPattern==='miz')?'miz':'cross';
+    playSFX('holy');
+    holyFlashes.push({x:cx, y:cy, until:now+350, pattern});
+    const L=layout();
+    const rowIdx=Math.round((cy - L.top)/(brickH + L.pad));
+    const colIdx=Math.round((cx - L.pad)/(brickW + L.pad));
+    const diagMode=pattern==='miz';
+    for(let i=bricks.length-1;i>=0;i--){
+      const t=bricks[i];
+      if(!t) continue;
+      const row=Math.round((t.y - L.top)/(brickH + L.pad));
+      const col=Math.round((t.x - L.pad)/(brickW + L.pad));
+      const sameRow=row===rowIdx;
+      const sameCol=col===colIdx;
+      const onDiag=diagMode && Math.abs(row-rowIdx)===Math.abs(col-colIdx);
+      if(sameRow || sameCol || onDiag){
+        destroyBrick(i,'none');
+      }
+    }
+    if(isSpecialBossActive()){
+      const bounds=getActiveBossBounds();
+      if(bounds){
+        const hits=[];
+        const rowY=L.top + rowIdx*(brickH + L.pad) + brickH/2;
+        if(rowIdx>=0 && rowY>=bounds.y && rowY<=bounds.y+bounds.h){
+          hits.push({impact:{x:bounds.x+bounds.w/2,y:rowY},key:'row'});
+        }
+        const colX=L.pad + colIdx*(brickW + L.pad) + brickW/2;
+        if(colIdx>=0 && colX>=bounds.x && colX<=bounds.x+bounds.w){
+          hits.push({impact:{x:colX,y:bounds.y+bounds.h/2},key:'col'});
+        }
+        if(diagMode){
+          const diag1Const=cy-cx;
+          const diag2Const=cy+cx;
+          const corners=[
+            {x:bounds.x,y:bounds.y},
+            {x:bounds.x+bounds.w,y:bounds.y},
+            {x:bounds.x,y:bounds.y+bounds.h},
+            {x:bounds.x+bounds.w,y:bounds.y+bounds.h}
+          ];
+          const minusVals=corners.map(p=>p.y-p.x);
+          const plusVals=corners.map(p=>p.y+p.x);
+          const minMinus=Math.min(...minusVals);
+          const maxMinus=Math.max(...minusVals);
+          const minPlus=Math.min(...plusVals);
+          const maxPlus=Math.max(...plusVals);
+          if(diag1Const>=minMinus && diag1Const<=maxMinus){
+            hits.push({impact:{x:bounds.x+bounds.w/2,y:bounds.y+bounds.h/2},key:'diag1'});
+          }
+          if(diag2Const>=minPlus && diag2Const<=maxPlus){
+            hits.push({impact:{x:bounds.x+bounds.w/2,y:bounds.y+bounds.h/2},key:'diag2'});
+          }
+        }
+        const seen=new Set();
+        for(const hit of hits){
+          if(!hit||!hit.impact) continue;
+          const key=hit.key||`${hit.impact.x.toFixed(1)}:${hit.impact.y.toFixed(1)}`;
+          if(seen.has(key)) continue;
+          seen.add(key);
+          damageActiveBoss(1,'holy',hit.impact);
+        }
+      }
+    }
+    screenShake=Math.max(screenShake,4);
+  }
+
   function triggerBallBuffEffectsOnBossHit(ball, impactX, impactY, now){
     if(buffs.PLASMA.active){
-      const cfg=GAME_CONFIG.powers.PLASMA.plasma;
-      const ang=Math.random()*Math.PI*2;
-      plasmas.push({
-        x:impactX,
-        y:impactY,
-        vx:Math.cos(ang)*cfg.drift,
-        vy:Math.sin(ang)*cfg.drift,
-        until:now+cfg.lifeMs,
-        radius:cfg.radius,
-        phase:Math.random()*Math.PI*2
-      });
-      playSFX('plasma');
+      spawnPlasmaBurst(impactX, impactY);
     }
 
     if(buffs.FREEZE.active && (ball.freeze.state==='idle' || !ball.freeze.state)){
@@ -3901,33 +4049,7 @@ select optgroup { color: #0b1022; }
     }
 
     if(buffs.HOLY.active){
-      playSFX('holy');
-      holyFlashes.push({x:impactX, y:impactY, until:now+350});
-      const L=layout();
-      const rowIdx=Math.round((impactY - L.top) / (brickH + L.pad));
-      const colIdx=Math.round((impactX - L.pad) / (brickW + L.pad));
-      const rowY=L.top + rowIdx*(brickH + L.pad) + brickH/2;
-      const colX=L.pad + colIdx*(brickW + L.pad) + brickW/2;
-      for(let i=bricks.length-1;i>=0;i--){
-        const t=bricks[i];
-        const sameRow=Math.abs((t.y+t.h/2) - rowY)<1;
-        const sameCol=Math.abs((t.x+t.w/2) - colX)<1;
-        if(sameRow || sameCol){ destroyBrick(i,'none'); }
-      }
-      if(isSpecialBossActive()){
-        const bounds=getActiveBossBounds();
-        let bossHit=false;
-        if(bounds && rowY>=bounds.y && rowY<=bounds.y+bounds.h){
-          const cx=bounds.x+bounds.w/2;
-          damageActiveBoss(1,'holy',{x:cx,y:rowY});
-          bossHit=true;
-        }
-        if(bounds && !bossHit && colX>=bounds.x && colX<=bounds.x+bounds.w){
-          const cy=bounds.y+bounds.h/2;
-          damageActiveBoss(1,'holy',{x:colX,y:cy});
-        }
-      }
-      screenShake=Math.max(screenShake,4);
+      applyHolyStrike(impactX, impactY);
     }
 
     if(buffs.HELL.active){
@@ -7175,7 +7297,8 @@ select optgroup { color: #0b1022; }
   // 粒子 / 特效容器
   const particles=[]; // {x,y,vx,vy,life,size,color}
   const plasmas=[];   // {x,y,vx,vy,until,radius}
-  const holyFlashes=[]; // {x,y,until}
+  const plasmaChains=[]; // {x1,y1,x2,y2,until}
+  const holyFlashes=[]; // {x,y,until,pattern}
   let phoenixAnim=null; // {x, tEnd}
   const fireBursts=[];  // 火焰片段 {x,y,life}
   const fireExplosions=[]; // 火焰球爆炸效果 {x,y,r,t0,life}
@@ -16234,6 +16357,8 @@ function generateLevel(lv, L){
   function applyPower(type){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type) stats.buffs++; }
     const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
+    const baseDurationMs=def.durationMs||0;
+    const durationMs=type==='HOLY'?Math.round(baseDurationMs*equipmentHolyDurationMultiplier):baseDurationMs;
     const fullLabel = def.label + (def.desc ? `(${def.desc})` : '');
     let promptText='';
     if(def.type==='buff') promptText=`增益：${fullLabel}`;
@@ -16287,35 +16412,35 @@ function generateLevel(lv, L){
         megaBuff.applied = true;
       }
     }
-    if(def.durationMs){ if(type!=='LONG'){ const b=buffs[type]||(buffs[type]={active:false,until:0}); b.active=true; b.until=now+def.durationMs; } }
-    if(def.paddleWidthAdd){ buffs.WIDE.active=true; buffs.WIDE.until=now+def.durationMs; }
-    if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const max=def.stacksMax??2; if(act.length<max){ buffs.LONG.stacks.push(now+def.durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+def.durationMs; } }
-    if(def.sticky){ buffs.STICKY.active=true; buffs.STICKY.until=now+def.durationMs; }
+    if(durationMs){ if(type!=='LONG'){ const b=buffs[type]||(buffs[type]={active:false,until:0}); b.active=true; b.until=now+durationMs; } }
+    if(def.paddleWidthAdd){ buffs.WIDE.active=true; buffs.WIDE.until=now+durationMs; }
+    if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const max=def.stacksMax??2; if(act.length<max){ buffs.LONG.stacks.push(now+durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+durationMs; } }
+    if(def.sticky){ buffs.STICKY.active=true; buffs.STICKY.until=now+durationMs; }
     if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; b1.capturedByBladeHell=false; news.push(b1);} balls=balls.concat(news); const cap=def.maxBalls??4; if(balls.length>cap) balls.length=cap; } }
-    if(def.speedMul){ buffs.SLOW.active=true; buffs.SLOW.until=now+def.durationMs; }
-    if(def.piercing){ buffs.PIERCE.active=true; buffs.PIERCE.until=now+def.durationMs; for(const b of balls) b.piercing=true; }
+    if(def.speedMul){ buffs.SLOW.active=true; buffs.SLOW.until=now+durationMs; }
+    if(def.piercing){ buffs.PIERCE.active=true; buffs.PIERCE.until=now+durationMs; for(const b of balls) b.piercing=true; if(equipmentPierceSpawnPlasma && balls.length){ let played=false; for(const ball of balls){ spawnPlasmaBurst(ball.x, ball.y, {sound:!played}); played=true; } } }
     if(def.oneShotShield){ buffs.SHIELD.active=true; }
-    if(def.forcePiercing && def.rampageMs){ buffs.RAMPAGE.active=true; buffs.RAMPAGE.until=now+def.durationMs; for(const b of balls){ b.rampageUntil=now+def.rampageMs; b.piercing=true; } }
-    if(def.globalSpeedMul){ buffs.FAST.active=true; buffs.FAST.until=now+def.durationMs; if(def.screenShakeOnApply) screenShake=def.screenShakeOnApply; }
-    if(def.wavy){ buffs.WAVY.active=true; buffs.WAVY.until=now+def.durationMs; buffs.WAVY.start=now; }
-    if(type==='PLASMA'){ buffs.PLASMA.active=true; buffs.PLASMA.until=now+def.durationMs; }
-    if(type==='FREEZE'){ buffs.FREEZE.active=true; buffs.FREEZE.until=now+def.durationMs; }
-    if(type==='HOLY'){ buffs.HOLY.active=true; buffs.HOLY.until=now+def.durationMs; }
-    if(type==='FIRE'){ buffs.FIRE.active=true; buffs.FIRE.until=now+def.durationMs; fireEnergy=0; updateFireEnergy(); }
-    if(type==='POISON'){ buffs.POISON.active=true; buffs.POISON.until=now+def.durationMs; }
-    if(type==='BLINK'){ buffs.BLINK.active=true; buffs.BLINK.until=now+def.durationMs; }
-    if(type==='COMBO'){ buffs.COMBO.active=true; buffs.COMBO.until=now+def.durationMs; }
+    if(def.forcePiercing && def.rampageMs){ buffs.RAMPAGE.active=true; buffs.RAMPAGE.until=now+durationMs; for(const b of balls){ b.rampageUntil=now+def.rampageMs; b.piercing=true; } }
+    if(def.globalSpeedMul){ buffs.FAST.active=true; buffs.FAST.until=now+durationMs; if(def.screenShakeOnApply) screenShake=def.screenShakeOnApply; }
+    if(def.wavy){ buffs.WAVY.active=true; buffs.WAVY.until=now+durationMs; buffs.WAVY.start=now; }
+    if(type==='PLASMA'){ buffs.PLASMA.active=true; buffs.PLASMA.until=now+durationMs; }
+    if(type==='FREEZE'){ buffs.FREEZE.active=true; buffs.FREEZE.until=now+durationMs; }
+    if(type==='HOLY'){ buffs.HOLY.active=true; buffs.HOLY.until=now+durationMs; }
+    if(type==='FIRE'){ buffs.FIRE.active=true; buffs.FIRE.until=now+durationMs; fireEnergy=0; updateFireEnergy(); }
+    if(type==='POISON'){ buffs.POISON.active=true; buffs.POISON.until=now+durationMs; }
+    if(type==='BLINK'){ buffs.BLINK.active=true; buffs.BLINK.until=now+durationMs; }
+    if(type==='COMBO'){ buffs.COMBO.active=true; buffs.COMBO.until=now+durationMs; }
 
-    if(type==='TRACK'){ buffs.TRACK.active=true; buffs.TRACK.until=now+def.durationMs; }
-    if(type==='MISSILE'){ buffs.MISSILE.active=true; buffs.MISSILE.until=now+def.durationMs; }
-    if(type==='HELL'){ buffs.HELL.active=true; buffs.HELL.until=now+def.durationMs; }
-    if(type==='MEGA'){ buffs.MEGA.active=true; buffs.MEGA.until=now+def.durationMs; }
-    if(type==='CHAIN'){ buffs.CHAIN.active=true; buffs.CHAIN.until=now+def.durationMs; }
-    if(type==='NARROW'){ buffs.NARROW.active=true; buffs.NARROW.until=now+def.durationMs; }
-    if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+def.durationMs; showComboNotice('注意看! 你破洞啦!',5000,3000); }
-    if(type==='PADSPIN'){ buffs.PADSPIN.active=true; buffs.PADSPIN.until=now+def.durationMs; buffs.PADSPIN.start=now; }
+    if(type==='TRACK'){ buffs.TRACK.active=true; buffs.TRACK.until=now+durationMs; }
+    if(type==='MISSILE'){ buffs.MISSILE.active=true; buffs.MISSILE.until=now+durationMs; }
+    if(type==='HELL'){ buffs.HELL.active=true; buffs.HELL.until=now+durationMs; }
+    if(type==='MEGA'){ buffs.MEGA.active=true; buffs.MEGA.until=now+durationMs; }
+    if(type==='CHAIN'){ buffs.CHAIN.active=true; buffs.CHAIN.until=now+durationMs; }
+    if(type==='NARROW'){ buffs.NARROW.active=true; buffs.NARROW.until=now+durationMs; }
+    if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+durationMs; showComboNotice('注意看! 你破洞啦!',5000,3000); }
+    if(type==='PADSPIN'){ buffs.PADSPIN.active=true; buffs.PADSPIN.until=now+durationMs; buffs.PADSPIN.start=now; }
     if(type==='PADBOOM'){ buffs.PADBOOM.active=true; buffs.PADBOOM.explodeAt=now+(def.explosion?.flashMs||3000); buffs.PADBOOM.returnAt=buffs.PADBOOM.explodeAt+(def.explosion?.goneMs||3000); buffs.PADBOOM.until=buffs.PADBOOM.returnAt; buffs.PADBOOM.exploded=false; }
-    if(type==='GATLING'){ buffs.GATLING.active=true; buffs.GATLING.until=now+def.durationMs; const g=GAME_CONFIG.powers.GATLING.gatling; const pr=paddleRect(); gatling={x:pr.x+pr.w/2,y:pr.y,chargeUntil:now+(g.chargeMs||3000),fireStart:now+(g.chargeMs||3000),fireUntil:now+(g.chargeMs||3000)+(g.fireMs||8000),lastShot:0,angle:0}; }
+    if(type==='GATLING'){ buffs.GATLING.active=true; buffs.GATLING.until=now+durationMs; const g=GAME_CONFIG.powers.GATLING.gatling; const pr=paddleRect(); gatling={x:pr.x+pr.w/2,y:pr.y,chargeUntil:now+(g.chargeMs||3000),fireStart:now+(g.chargeMs||3000),fireUntil:now+(g.chargeMs||3000)+(g.fireMs||8000),lastShot:0,angle:0}; }
     if(type==='FLIP'){
       // 天地翻轉：延遲啟用並紀錄起止時間。啟用及結束均由 update 中判斷。
       const delay = 2000;
@@ -16325,16 +16450,16 @@ function generateLevel(lv, L){
       f.pending = true;
       f.active = false;
       f.startAt = now + delay;
-      f.endAt = f.startAt + def.durationMs;
+      f.endAt = f.startAt + durationMs;
       // 使用 until 顯示剩餘時間條
       f.until = f.endAt;
       return;
     }
-    if(type==='GODSPEED'){ buffs.GODSPEED.active=true; buffs.GODSPEED.until=now+def.durationMs; }
-    if(type==='LASER'){ buffs.LASER.active=true; buffs.LASER.until=now+def.durationMs; buffs.LASER.lastShot=0; }
-    if(type==='SWORD'){ buffs.SWORD.active=true; buffs.SWORD.until=now+def.durationMs; swordFireStart=0; }
-    if(type==='STORM'){ buffs.STORM.active=true; buffs.STORM.until=now+def.durationMs; const pr=paddleRect(); stormTurret={x:pr.x+pr.w/2,y:pr.y,chargeUntil:now+3000,fireAt:now+4000,shots:Math.max(0,21-lives),lastShot:0}; }
-    if(type==='BLACKHOLE'){ buffs.BLACKHOLE.active=true; buffs.BLACKHOLE.until=now+def.durationMs; buffs.BLACKHOLE.deaths=0; }
+    if(type==='GODSPEED'){ buffs.GODSPEED.active=true; buffs.GODSPEED.until=now+durationMs; }
+    if(type==='LASER'){ buffs.LASER.active=true; buffs.LASER.until=now+durationMs; buffs.LASER.lastShot=0; }
+    if(type==='SWORD'){ buffs.SWORD.active=true; buffs.SWORD.until=now+durationMs; swordFireStart=0; }
+    if(type==='STORM'){ buffs.STORM.active=true; buffs.STORM.until=now+durationMs; const pr=paddleRect(); stormTurret={x:pr.x+pr.w/2,y:pr.y,chargeUntil:now+3000,fireAt:now+4000,shots:Math.max(0,21-lives),lastShot:0}; }
+    if(type==='BLACKHOLE'){ buffs.BLACKHOLE.active=true; buffs.BLACKHOLE.until=now+durationMs; buffs.BLACKHOLE.deaths=0; }
     if(type==='ANNIHIL'){ buffs.ANNIHIL.active=true; buffs.ANNIHIL.start=now; buffs.ANNIHIL.next=now+1000; buffs.ANNIHIL.until=0; }
 
     updateBuffBadges();
@@ -16482,6 +16607,7 @@ function generateLevel(lv, L){
     coins.length=0;
     particles.length=0;
     plasmas.length=0;
+    plasmaChains.length=0;
     holyFlashes.length=0;
     phoenixAnim=null;
     fireBursts.length=0;
@@ -17167,10 +17293,10 @@ function generateLevel(lv, L){
     ctx.restore();
   }
 
-  function drawPlasmas(){ const now=performance.now(); ctx.save(); for(let i=plasmas.length-1;i>=0;i--){ const P=plasmas[i]; P.x+=P.vx; P.y+=P.vy; P.vx*=0.995; P.vy*=0.995; P.phase=(P.phase||0)+0.2; if(now>P.until){ plasmas.splice(i,1); continue; }
+  function drawPlasmas(){ const now=performance.now(); const spawnPositions=[]; const spawnKeys=new Set(); const recordSpawn=(sx,sy)=>{ const key=`${Math.round(sx)}:${Math.round(sy)}`; if(!spawnKeys.has(key)){ spawnKeys.add(key); spawnPositions.push({x:sx,y:sy}); } };
+    ctx.save(); for(let i=plasmas.length-1;i>=0;i--){ const P=plasmas[i]; P.x+=P.vx; P.y+=P.vy; P.vx*=0.995; P.vy*=0.995; P.phase=(P.phase||0)+0.2; if(now>P.until){ plasmas.splice(i,1); continue; }
       const x=P.x*scaleX, y=P.y*scaleY, r=P.radius*((scaleX+scaleY)/2); const grd=ctx.createRadialGradient(x,y,0,x,y,r); grd.addColorStop(0,'rgba(200,255,255,0.9)'); grd.addColorStop(0.3,'rgba(150,200,255,0.6)'); grd.addColorStop(0.6,'rgba(120,150,255,0.3)'); grd.addColorStop(1,'rgba(120,150,255,0)'); ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
       ctx.save(); ctx.globalCompositeOperation='lighter'; for(let k=0;k<3;k++){ const a=P.phase+k*Math.PI*2/3; ctx.strokeStyle='rgba(180,240,255,0.6)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,r*0.8,a,a+Math.PI/3); ctx.stroke(); } ctx.restore();
-      // 沿途清除磚塊（Boss/不可破壞豁免）
       for(let j=bricks.length-1;j>=0;j--){ const b=bricks[j]; const bx=b.x+b.w/2, by=b.y+b.h/2; if(Math.hypot(P.x-bx,P.y-by)<=P.radius){
           if(b.unbreakable) continue;
           if(b.boss){
@@ -17178,7 +17304,7 @@ function generateLevel(lv, L){
             if(b.hp<=0){ bossKillEffect(b); revealBrickArea(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); stats.bossKills++; updateHUD(); }
           }
           else {
-            revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD(); playSFX('plasmaHit');
+            revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(b)); if(b.elite) stats.eliteKills++; updateHUD(); playSFX('plasmaHit'); recordSpawn(bx,by);
           }
         }
       }
@@ -17186,11 +17312,54 @@ function generateLevel(lv, L){
         const impact=activeBossClampPoint(P.x, P.y);
         damageActiveBoss(1,'plasma',impact);
       }
-    } ctx.restore(); }
+    } ctx.restore();
+    if(equipmentPlasmaChainActive && equipmentPlasmaChainInterval>0){ const chainSpawns=triggerPlasmaChainLightning(now); for(const pos of chainSpawns){ recordSpawn(pos.x,pos.y); } }
+    if(equipmentPlasmaSpawnOnKill && spawnPositions.length){ let played=false; for(const pos of spawnPositions){ spawnPlasmaBurst(pos.x,pos.y,{sound:!played}); played=true; } }
+  }
 
-  function drawHoly(){ const now=performance.now(); for(let i=holyFlashes.length-1;i>=0;i--){ const H=holyFlashes[i]; if(now>H.until){ holyFlashes.splice(i,1); continue; } const a=Math.max(0, (H.until-now)/300); ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle=`rgba(255,240,180,${0.6*a})`; ctx.lineWidth=4;
-      ctx.beginPath(); ctx.moveTo(0, H.y*scaleY); ctx.lineTo(canvas.width, H.y*scaleY); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(H.x*scaleX, 0); ctx.lineTo(H.x*scaleX, canvas.height); ctx.stroke(); ctx.restore(); } }
+  function distancePointToSegment(px,py,x1,y1,x2,y2){ const dx=x2-x1, dy=y2-y1; if(Math.abs(dx)<1e-6 && Math.abs(dy)<1e-6){ return Math.hypot(px-x1, py-y1); } const t=((px-x1)*dx + (py-y1)*dy)/(dx*dx+dy*dy); const clamped=Math.max(0,Math.min(1,t)); const projX=x1+clamped*dx; const projY=y1+clamped*dy; return Math.hypot(px-projX, py-projY); }
+
+  function triggerPlasmaChainLightning(now){ if(!equipmentPlasmaChainActive || equipmentPlasmaChainInterval<=0) return []; if(plasmas.length<2) return []; if(plasmaChainNextAt && now<plasmaChainNextAt) return []; plasmaChainNextAt=now+equipmentPlasmaChainInterval; const range=equipmentPlasmaChainRange>0?equipmentPlasmaChainRange:200; const rangeSq=range*range; const pairs=[];
+    for(let i=0;i<plasmas.length;i++){ const a=plasmas[i]; for(let j=i+1;j<plasmas.length;j++){ const b=plasmas[j]; const dx=a.x-b.x, dy=a.y-b.y; if(dx*dx+dy*dy<=rangeSq){ pairs.push({a,b}); } } }
+    if(!pairs.length) return []; const toDestroy=new Set(); const destroyedPositions=[]; const threshold=Math.max(brickW, brickH)*0.6;
+    for(const {a,b} of pairs){ plasmaChains.push({x1:a.x,y1:a.y,x2:b.x,y2:b.y,until:now+240}); for(const brick of bricks){ if(!brick) continue; if(!canDestroyBrick(brick)) continue; const cx=brick.x+brick.w/2; const cy=brick.y+brick.h/2; const dist=distancePointToSegment(cx,cy,a.x,a.y,b.x,b.y); if(dist<=threshold){ toDestroy.add(brick); } } }
+    if(!toDestroy.size) return destroyedPositions; screenShake=Math.max(screenShake,3);
+    for(let i=bricks.length-1;i>=0;i--){ const brick=bricks[i]; if(!brick || !toDestroy.has(brick)) continue; const spawnable=!brick.boss; const cx=brick.x+brick.w/2; const cy=brick.y+brick.h/2; destroyBrick(i,'plasmaHit'); if(spawnable){ destroyedPositions.push({x:cx,y:cy}); } }
+    return destroyedPositions;
+  }
+
+  function drawPlasmaChains(){ const now=performance.now(); ctx.save(); ctx.globalCompositeOperation='lighter'; const width=Math.max(2,((scaleX+scaleY)/2)*2.4); for(let i=plasmaChains.length-1;i>=0;i--){ const chain=plasmaChains[i]; if(now>chain.until){ plasmaChains.splice(i,1); continue; } const alpha=Math.max(0,(chain.until-now)/240); ctx.strokeStyle=`rgba(210,240,255,${0.5*alpha})`; ctx.lineWidth=width; ctx.shadowBlur=18; ctx.shadowColor='rgba(210,240,255,0.6)'; ctx.beginPath(); ctx.moveTo(chain.x1*scaleX, chain.y1*scaleY); ctx.lineTo(chain.x2*scaleX, chain.y2*scaleY); ctx.stroke(); }
+    ctx.restore(); }
+
+  function drawHoly(){ const now=performance.now(); for(let i=holyFlashes.length-1;i>=0;i--){ const H=holyFlashes[i]; if(now>H.until){ holyFlashes.splice(i,1); continue; } const a=Math.max(0, (H.until-now)/300); const pattern=H.pattern||'cross'; ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle=`rgba(255,240,180,${0.6*a})`; ctx.lineWidth=4;
+      const y=H.y*scaleY; const x=H.x*scaleX;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      if(pattern==='miz'){
+        const computeDiag=(slope)=>{
+          const pts=[]; const cx=H.x; const cy=H.y; const xMin=0, xMax=1100, yMin=0, yMax=700; const seen=new Set();
+          if(slope===1){ const b=cy-cx; const candidates=[
+            {x:xMin, y:b},
+            {x:xMax, y:xMax+b},
+            {x:cx-cy, y:yMin},
+            {x:700-b, y:yMax}
+          ];
+            for(const p of candidates){ if(p.x>=xMin && p.x<=xMax && p.y>=yMin && p.y<=yMax){ const key=`${p.x.toFixed(2)}:${p.y.toFixed(2)}`; if(!seen.has(key)){ seen.add(key); pts.push(p); } } }
+          }else{ const c=cy+cx; const candidates=[
+            {x:xMin, y:c},
+            {x:xMax, y:c-xMax},
+            {x:c, y:yMin},
+            {x:c-700, y:yMax}
+          ];
+            for(const p of candidates){ if(p.x>=xMin && p.x<=xMax && p.y>=yMin && p.y<=yMax){ const key=`${p.x.toFixed(2)}:${p.y.toFixed(2)}`; if(!seen.has(key)){ seen.add(key); pts.push(p); } } }
+          }
+          if(pts.length<2) return null; pts.sort((p1,p2)=> p1.x===p2.x ? p1.y-p2.y : p1.x-p2.x); return {p1:pts[0], p2:pts[pts.length-1]};
+        };
+        const diag1=computeDiag(1); const diag2=computeDiag(-1);
+        if(diag1){ ctx.beginPath(); ctx.moveTo(diag1.p1.x*scaleX, diag1.p1.y*scaleY); ctx.lineTo(diag1.p2.x*scaleX, diag1.p2.y*scaleY); ctx.stroke(); }
+        if(diag2){ ctx.beginPath(); ctx.moveTo(diag2.p1.x*scaleX, diag2.p1.y*scaleY); ctx.lineTo(diag2.p2.x*scaleX, diag2.p2.y*scaleY); ctx.stroke(); }
+      }
+      ctx.restore(); } }
 
   function drawPhoenix(){ if(!phoenixAnim) return; const now=performance.now(); const t=phoenixAnim; const prog=1-Math.max(0,(t.tEnd-now)/1200); const logicW=1100; const xLogic=(1-prog)*(logicW+200)-200; const x=xLogic*scaleX;
     ctx.save(); ctx.globalCompositeOperation='lighter';
@@ -17334,7 +17503,7 @@ function generateLevel(lv, L){
     drawDemonLayer(now);
     drawDemonBlackSpears(now);
     drawDemonCloakWraps(now,'behind');
-    drawPlasmas(); drawHoly(); drawPhoenix(); drawSwords();
+    drawPlasmas(); drawPlasmaChains(); drawHoly(); drawPhoenix(); drawSwords();
 
       // Boss wind-up glow
       if(bossChargeUntil && performance.now()<bossChargeUntil){
@@ -19266,9 +19435,9 @@ function generateLevel(lv, L){
         if(bk.strong){ const skipAccel = suppressBrickAccel || isSpeedSuppressed(b, now); if(!skipAccel){ const sp=Math.min(Math.hypot(b.vx,b.vy)*1.08, b.speedCap); const ang=Math.atan2(b.vy,b.vx); b.vx=Math.cos(ang)*sp; b.vy=Math.sin(ang)*sp; } screenShake=Math.max(screenShake,3); }
 
         // 特效觸發
-        if(buffs.PLASMA.active){ const cfg=GAME_CONFIG.powers.PLASMA.plasma; const ang=Math.random()*Math.PI*2; plasmas.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,vx:Math.cos(ang)*cfg.drift,vy:Math.sin(ang)*cfg.drift,until:now+cfg.lifeMs,radius:cfg.radius,phase:Math.random()*Math.PI*2}); playSFX('plasma'); }
+        if(buffs.PLASMA.active){ spawnPlasmaBurst(bk.x+bk.w/2, bk.y+bk.h/2); }
         if(buffs.FREEZE.active && (b.freeze.state==='idle' || !b.freeze.state)){ const f=GAME_CONFIG.powers.FREEZE.freeze; b.freeze.state = 'delay'; b.freeze.t0 = now; b.freeze.delay = f.delayMs; b.freeze.stop = f.stopMs; b.freeze.oldVX = b.vx; b.freeze.oldVY = b.vy; }
-        if(buffs.HOLY.active){ playSFX('holy'); holyFlashes.push({x:bk.x+bk.w/2, y:bk.y+bk.h/2, until:now+350}); for(let i=bricks.length-1;i>=0;i--){ const t=bricks[i]; const sameRow=Math.abs(t.y-bk.y)<1; const sameCol=Math.abs(t.x-bk.x)<1; if(sameRow||sameCol){ destroyBrick(i,'none'); } } if(isSpecialBossActive()){ const bounds=getActiveBossBounds(); const rowY=bk.y+bk.h/2; const colX=bk.x+bk.w/2; let bossHit=false; if(bounds && rowY>=bounds.y && rowY<=bounds.y+bounds.h){ const cx=bounds.x+bounds.w/2; damageActiveBoss(1,'holy',{x:cx,y:rowY}); bossHit=true; } if(bounds && !bossHit && colX>=bounds.x && colX<=bounds.x+bounds.w){ const cy=bounds.y+bounds.h/2; damageActiveBoss(1,'holy',{x:colX,y:cy}); } } screenShake=Math.max(screenShake,4); }
+        if(buffs.HOLY.active){ applyHolyStrike(bk.x+bk.w/2, bk.y+bk.h/2); }
         if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
         if(buffs.HELL.active){ const holeSpin=(Math.random()>0.5?1:-1); blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,r:40,until:now+GAME_CONFIG.powers.HELL.hell.haloMs,start:performance.now(),spinDir:holeSpin}); playSFX('blackhole'); destroyNeighbors(hit); destroyBrick(hit,'none'); }
         if(buffs.POISON.active){ bk.poisonUntil = now + (GAME_CONFIG.powers.POISON.durationMs||12000); bk.poisonTick = now + (GAME_CONFIG.powers.POISON.poison?.tickMs||2000); }
