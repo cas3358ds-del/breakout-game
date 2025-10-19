@@ -1911,16 +1911,22 @@ select optgroup { color: #0b1022; }
     }
     return entries[entries.length-1][0];
   }
-  function pickEquipmentForGrade(desiredGrade){
+  function pickEquipmentForGrade(desiredGrade, usedItemIds){
     const order=[desiredGrade,...GRADE_PRIORITY.filter(g=>g!==desiredGrade)];
     for(const grade of order){
       const pool=EQUIPMENT_BY_GRADE.get(grade);
       if(pool && pool.length){
-        return pool[Math.floor(Math.random()*pool.length)];
+        const candidates=usedItemIds?pool.filter(item=>!usedItemIds.has(item.id)):pool;
+        if(candidates.length){
+          return candidates[Math.floor(Math.random()*candidates.length)];
+        }
       }
     }
-    if(EQUIPMENT_LIST.length){
-      return EQUIPMENT_LIST[Math.floor(Math.random()*EQUIPMENT_LIST.length)];
+    const fallbackPool=usedItemIds
+      ?EQUIPMENT_LIST.filter(item=>!usedItemIds.has(item.id))
+      :EQUIPMENT_LIST;
+    if(fallbackPool.length){
+      return fallbackPool[Math.floor(Math.random()*fallbackPool.length)];
     }
     return null;
   }
@@ -1932,12 +1938,16 @@ select optgroup { color: #0b1022; }
       storeHeroImg.alt=`商店店員 ${label}`;
     }
     currentStoreItems=[];
+    const usedItemIds=new Set();
     for(let i=0;i<STORE_GRID_SIZE;i++){
       const desired=rollGrade(cfg.probabilities);
-      const item=pickEquipmentForGrade(desired);
+      const item=pickEquipmentForGrade(desired,usedItemIds);
       if(item){
         const key=`${item.id}#${level}-${i}-${Math.random().toString(36).slice(2,6)}`;
         currentStoreItems.push({key,item});
+        usedItemIds.add(item.id);
+      }else{
+        break;
       }
     }
     if(!currentStoreItems.length){
