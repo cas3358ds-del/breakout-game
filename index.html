@@ -1826,7 +1826,15 @@ select optgroup { color: #0b1022; }
     {id:'multiPoison',name:'多重劇毒',icon:'W39.jpg',grade:'B',type:'passive',price:10,description:'被動：獲得劇毒球效果時，也獲得多球效果。',effect:{poisonAlsoMulti:true}},
     {id:'doubleMissile',name:'雙倍飛彈',icon:'W40.jpg',grade:'A',type:'passive',price:30,description:'被動：每次發射的飛彈數量翻倍。',effect:{missileDoubleShots:true}},
     {id:'missileVolley',name:'飛彈連射',icon:'W41.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得飛彈球效果時，球擊破磚塊也會發射飛彈。',effect:{missileVolleyOnBreak:true}},
-    {id:'deathBarrage',name:'死亡彈幕',icon:'W42.jpg',grade:'S',type:'active',price:100,description:'主動：發射 20 發追蹤飛彈，冷卻時間 60 秒。',effect:{missileBarrage:{count:20,cooldown:60000}}}
+    {id:'deathBarrage',name:'死亡彈幕',icon:'W42.jpg',grade:'S',type:'active',price:100,description:'主動：發射 20 發追蹤飛彈，冷卻時間 60 秒。',effect:{missileBarrage:{count:20,cooldown:60000}}},
+    {id:'powderBoost',name:'火藥提升',icon:'W43.jpg',grade:'A',type:'passive',price:30,description:'被動：飛彈擊中時引發 3×3 範圍的大爆炸。',effect:{missileExplosion:true}},
+    {id:'plasmaMissile',name:'電漿飛彈',icon:'W44.jpg',grade:'A',type:'passive',price:30,description:'被動：飛彈命中時在落點生成電漿。',effect:{missilePlasma:true}},
+    {id:'bombDevil',name:'炸彈惡魔',icon:'W45.jpg',grade:'S',type:'active',price:100,description:'主動：10 秒內球撞磚觸發連鎖爆破，冷卻時間 30 秒。',effect:{bombDevil:{duration:10000,cooldown:30000,intervalMs:300}}},
+    {id:'divineMissile',name:'神威飛彈',icon:'W46.jpg',grade:'S',type:'passive',price:100,description:'被動：飛彈命中時追加十字清線。',effect:{missileHolyStrike:true}},
+    {id:'crimsonFlame',name:'紅蓮之力',icon:'W47.jpg',grade:'B',type:'passive',price:10,description:'被動：獲得火焰球時立即滿蓄能。',effect:{fireInstantCharge:true}},
+    {id:'scatterFirework',name:'散落花火',icon:'W48.jpg',grade:'A',type:'passive',price:30,description:'被動：火焰球爆炸時額外在 3 處引爆花火。',effect:{fireScatter:true}},
+    {id:'instantFlare',name:'瞬爆',icon:'W49.jpg',grade:'B',type:'active',price:10,description:'主動：立刻引爆火焰球，冷卻時間 10 秒。',effect:{fireInstantDetonate:{cooldown:10000}}},
+    {id:'chainDetonate',name:'連環爆炸',icon:'W50.jpg',grade:'A',type:'active',price:30,description:'主動：立刻引爆場上所有爆炸磚，冷卻時間 10 秒。',effect:{massExplode:{cooldown:10000}}}
   ];
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
@@ -1907,10 +1915,24 @@ select optgroup { color: #0b1022; }
   let equipmentPoisonAlsoMulti=false;
   let equipmentMissileDoubleShots=false;
   let equipmentMissileVolleyOnBreak=false;
+  let equipmentMissileExplosion=false;
+  let equipmentMissilePlasma=false;
+  let equipmentMissileHolyStrike=false;
+  let equipmentFireInstantCharge=false;
+  let equipmentFireScatter=false;
   let plasmaChainNextAt=0;
   let applyingLinkedMulti=false;
   let applyingLinkedMega=false;
   const BLOOD_BLADE_DEFAULTS={damageMultiplier:3,duration:10000,cooldown:60000,hpCost:1};
+  const BOMB_DEVIL_DEFAULTS={duration:10000,cooldown:30000,intervalMs:300};
+  const FIRE_SCATTER_COUNT=3;
+  const FIRE_SCATTER_DELAY=500;
+  const FIRE_MAX_CHARGE=16;
+  let bombDevilActiveUntil=0;
+  let bombDevilIntervalMs=BOMB_DEVIL_DEFAULTS.intervalMs;
+  const bombDevilQueues=[];
+  const bombDevilRowCooldown=new Map();
+  const fireScatterQueue=[];
   let bloodBladeActive=false;
   let bloodBladeActiveUntil=0;
   let bloodBladeDamageMultiplier=BLOOD_BLADE_DEFAULTS.damageMultiplier;
@@ -2663,6 +2685,11 @@ select optgroup { color: #0b1022; }
     equipmentPoisonAlsoMulti=false;
     equipmentMissileDoubleShots=false;
     equipmentMissileVolleyOnBreak=false;
+    equipmentMissileExplosion=false;
+    equipmentMissilePlasma=false;
+    equipmentMissileHolyStrike=false;
+    equipmentFireInstantCharge=false;
+    equipmentFireScatter=false;
     plasmaChainNextAt=0;
     for(const slot of equipmentSlots){
       if(!slot) continue;
@@ -2719,6 +2746,11 @@ select optgroup { color: #0b1022; }
       if(effect.poisonAlsoMulti) equipmentPoisonAlsoMulti=true;
       if(effect.missileDoubleShots) equipmentMissileDoubleShots=true;
       if(effect.missileVolleyOnBreak) equipmentMissileVolleyOnBreak=true;
+      if(effect.missileExplosion) equipmentMissileExplosion=true;
+      if(effect.missilePlasma) equipmentMissilePlasma=true;
+      if(effect.missileHolyStrike) equipmentMissileHolyStrike=true;
+      if(effect.fireInstantCharge) equipmentFireInstantCharge=true;
+      if(effect.fireScatter) equipmentFireScatter=true;
     }
     if(equipmentPlasmaChainActive && equipmentPlasmaChainInterval>0){
       const now=typeof performance!=='undefined'?performance.now():0;
@@ -2922,6 +2954,57 @@ select optgroup { color: #0b1022; }
       slot.cooldownUntil=cooldown>0?now+cooldown:0;
       slot.lastUsed=now;
       showEquipmentMessage('死亡彈幕啟動！ 飛彈全方位出擊。','success',2600);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.bombDevil){
+      const cfg={...BOMB_DEVIL_DEFAULTS,...effect.bombDevil};
+      const duration=Math.max(0, Number(cfg.duration)||BOMB_DEVIL_DEFAULTS.duration);
+      if(duration<=0){
+        showEquipmentMessage('炸彈惡魔目前無法啟動。','warning',2200);
+        return;
+      }
+      const cooldown=Math.max(0, Number(cfg.cooldown)||BOMB_DEVIL_DEFAULTS.cooldown);
+      bombDevilActiveUntil=Math.max(bombDevilActiveUntil, now+duration);
+      bombDevilIntervalMs=Math.max(50, Number(cfg.intervalMs)||BOMB_DEVIL_DEFAULTS.intervalMs);
+      bombDevilRowCooldown.clear();
+      slot.activeUntil=now+duration;
+      slot.activeDuration=duration;
+      slot.cooldownDuration=cooldown;
+      slot.cooldownStarted=cooldown>0?now:0;
+      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      slot.lastUsed=now;
+      showEquipmentMessage('炸彈惡魔啟動！球擊中磚塊會引爆整列。','success',2600);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.fireInstantDetonate){
+      const detonated=detonateFireballNow();
+      if(!detonated){
+        showEquipmentMessage('目前沒有火焰球可引爆。','warning',2000);
+        return;
+      }
+      const cooldown=Math.max(0, Number(effect.fireInstantDetonate.cooldown)||10000);
+      slot.cooldownDuration=cooldown;
+      slot.cooldownStarted=cooldown>0?now:0;
+      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      slot.lastUsed=now;
+      showEquipmentMessage('火焰球提前引爆！','success',2200);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.massExplode){
+      const triggered=triggerMassExplosiveDetonation();
+      if(!triggered){
+        showEquipmentMessage('目前沒有爆炸磚可引爆。','warning',2000);
+        return;
+      }
+      const cooldown=Math.max(0, Number(effect.massExplode.cooldown)||10000);
+      slot.cooldownDuration=cooldown;
+      slot.cooldownStarted=cooldown>0?now:0;
+      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      slot.lastUsed=now;
+      showEquipmentMessage('爆炸磚引爆完成！','success',2400);
       refreshEquipmentRuntime(performance.now());
       return;
     }
@@ -7477,6 +7560,15 @@ select optgroup { color: #0b1022; }
       for(let i=0;i<repeats;i++){
         spawnMissileForTarget(src,target,now);
       }
+    }
+  }
+  function handleMissileImpact(x,y){
+    if(!Number.isFinite(x) || !Number.isFinite(y)) return;
+    if(equipmentMissilePlasma){
+      spawnPlasmaBurst(x,y);
+    }
+    if(equipmentMissileHolyStrike){
+      applyHolyStrike(x,y);
     }
   }
   const blackHoles=[]; // {x,y,until}
@@ -16271,7 +16363,7 @@ function generateLevel(lv, L){
     updateHUD();
   }
 
-  function explodeAt(cx,cy){
+  function explodeAt(cx,cy,opts={}){
     const radius=Math.max(brickW,brickH)*1.3;
     for(let i=bricks.length-1;i>=0;i--){
       const b=bricks[i];
@@ -16293,10 +16385,13 @@ function generateLevel(lv, L){
       const impact=center?{x:center.x,y:center.y}:{x:cx,y:cy};
       damageActiveBoss(1,'fire',impact);
     }
-    spawnParticles(cx,cy,'#ffbb55',24,2.1,3.2,4); updateHUD(); playSFX('explosion');
+    spawnParticles(cx,cy,'#ffbb55',24,2.1,3.2,4); updateHUD();
+    if(opts.sound!==false){
+      playSFX('explosion');
+    }
   }
 
-  function fireExplosionAt(cx,cy,radius){
+  function fireExplosionAt(cx,cy,radius,opts={}){
     for(let i=bricks.length-1;i>=0;i--){
       const b=bricks[i];
       const bx=b.x+b.w/2, by=b.y+b.h/2; const d=Math.hypot(bx-cx,by-cy);
@@ -16322,7 +16417,165 @@ function generateLevel(lv, L){
     spawnParticles(cx,cy,'#ff5500',60,2.6,3.8,4.5);
     spawnParticles(cx,cy,'#ffaa33',40,2.8,4.0,3.8);
     spawnParticles(cx,cy,'#fff4cc',20,3.0,4.2,3.0);
-    screenShake=Math.max(screenShake,6); updateHUD(); playSFX('fireExplosion');
+    screenShake=Math.max(screenShake,6);
+    updateHUD();
+    if(equipmentFireScatter && !opts.noScatter){
+      queueFireScatterExplosions(radius);
+    }
+    playSFX('fireExplosion');
+  }
+
+  function queueFireScatterExplosions(radius){
+    if(!Number.isFinite(radius) || radius<=0) return;
+    const now=performance.now();
+    const L=layout();
+    const pad=L.pad||0;
+    const stageLeft=pad;
+    const stageRight=1100-pad;
+    const stageTop=L.top||0;
+    const totalRows=Math.max(1,L.rows||1);
+    const totalHeight=totalRows*(brickH+pad)-pad;
+    const stageBottom=stageTop+Math.max(totalHeight, 200);
+    const candidates=bricks.filter(b=>canDestroyBrick(b));
+    const pool=[...candidates];
+    for(let i=0;i<FIRE_SCATTER_COUNT;i++){
+      let entry=null;
+      if(pool.length){
+        const idx=Math.floor(Math.random()*pool.length);
+        const chosen=pool.splice(idx,1)[0];
+        entry={brick:chosen,x:chosen.x+chosen.w/2,y:chosen.y+chosen.h/2};
+      }
+      if(!entry){
+        const x=stageLeft + Math.random()*Math.max(10, stageRight-stageLeft);
+        const y=stageTop + Math.random()*Math.max(10, stageBottom-stageTop);
+        entry={x,y};
+      }
+      entry.triggerAt=now+(i+1)*FIRE_SCATTER_DELAY;
+      entry.radius=radius;
+      fireScatterQueue.push(entry);
+    }
+  }
+
+  function updateFireScatter(now){
+    for(let i=fireScatterQueue.length-1;i>=0;i--){
+      const evt=fireScatterQueue[i];
+      if(now<evt.triggerAt) continue;
+      let x=evt.x;
+      let y=evt.y;
+      if(evt.brick){
+        const idx=bricks.indexOf(evt.brick);
+        if(idx>=0){
+          const b=bricks[idx];
+          x=b.x+b.w/2;
+          y=b.y+b.h/2;
+        }
+      }
+      if(Number.isFinite(x) && Number.isFinite(y)){
+        fireExplosionAt(x,y,evt.radius,{noScatter:true});
+      }
+      fireScatterQueue.splice(i,1);
+    }
+  }
+
+  function triggerBombDevilForBrick(brick){
+    if(!brick) return;
+    const now=performance.now();
+    if(now>=bombDevilActiveUntil) return;
+    if(!canDestroyBrick(brick)) return;
+    const L=layout();
+    const pad=L.pad||0;
+    const rowIdx=Math.round((brick.y - (L.top||0))/(brickH + pad));
+    if(!Number.isFinite(rowIdx)) return;
+    const last=bombDevilRowCooldown.get(rowIdx)||0;
+    if(now-last<150) return;
+    bombDevilRowCooldown.set(rowIdx,now);
+    const rowBricks=[];
+    for(const b of bricks){
+      if(!b) continue;
+      const r=Math.round((b.y - (L.top||0))/(brickH + pad));
+      if(r===rowIdx && canDestroyBrick(b)){
+        rowBricks.push(b);
+      }
+    }
+    if(!rowBricks.length) return;
+    rowBricks.sort((a,b)=>(b.y+b.h/2)-(a.y+a.h/2));
+    const events=rowBricks.map((b,i)=>({brick:b,triggerAt:now+i*bombDevilIntervalMs,triggered:false}));
+    bombDevilQueues.push({events,playedSound:false});
+  }
+
+  function updateBombDevil(now){
+    for(let i=bombDevilQueues.length-1;i>=0;i--){
+      const seq=bombDevilQueues[i];
+      let done=true;
+      for(const evt of seq.events){
+        if(evt.triggered){
+          continue;
+        }
+        if(now<evt.triggerAt){
+          done=false;
+          continue;
+        }
+        evt.triggered=true;
+        const brick=evt.brick;
+        if(!brick) continue;
+        const idx=bricks.indexOf(brick);
+        if(idx<0) continue;
+        const target=bricks[idx];
+        const cx=target.x+target.w/2;
+        const cy=target.y+target.h/2;
+        if(target.explosive){
+          explodeAt(cx,cy);
+          seq.playedSound=true;
+        }else{
+          destroyBrick(idx,'none');
+          spawnParticles(cx,cy,'#ff9966',24,1.8,2.6,3.2);
+          if(!seq.playedSound){
+            playSFX('explosion');
+            seq.playedSound=true;
+          }
+        }
+      }
+      if(done || seq.events.every(e=>e.triggered)){
+        bombDevilQueues.splice(i,1);
+      }
+    }
+    if(now>=bombDevilActiveUntil && bombDevilRowCooldown.size){
+      bombDevilRowCooldown.clear();
+    }
+  }
+
+  function detonateFireballNow(){
+    if(!buffs.FIRE?.active) return false;
+    if(!balls.length) return false;
+    const now=performance.now();
+    const ball=balls[0];
+    const energy=Math.max(1, fireEnergy||0);
+    const radius=energy<=3?100:energy<=8?150:energy<=14?200:300;
+    fireExplosionAt(ball.x,ball.y,radius);
+    fireEnergy=0;
+    updateFireEnergy();
+    buffs.FIRE.active=false;
+    buffs.FIRE.until=now;
+    return true;
+  }
+
+  function triggerMassExplosiveDetonation(){
+    const coords=[];
+    for(const b of bricks){
+      if(!b) continue;
+      if(!b.explosive) continue;
+      if(!canDestroyBrick(b)) continue;
+      coords.push({x:b.x+b.w/2,y:b.y+b.h/2});
+    }
+    if(!coords.length) return false;
+    coords.forEach((pos,idx)=>{
+      if(idx===0){
+        explodeAt(pos.x,pos.y);
+      }else{
+        explodeAt(pos.x,pos.y,{sound:false});
+      }
+    });
+    return true;
   }
 
   function fireCollide(){ if(buffs.FIRE.active){ fireEnergy++; updateFireEnergy(); } }
@@ -16783,7 +17036,12 @@ function generateLevel(lv, L){
     if(type==='PLASMA'){ buffs.PLASMA.active=true; buffs.PLASMA.until=now+durationMs; }
     if(type==='FREEZE'){ buffs.FREEZE.active=true; buffs.FREEZE.until=now+durationMs; }
     if(type==='HOLY'){ buffs.HOLY.active=true; buffs.HOLY.until=now+durationMs; }
-    if(type==='FIRE'){ buffs.FIRE.active=true; buffs.FIRE.until=now+durationMs; fireEnergy=0; updateFireEnergy(); }
+    if(type==='FIRE'){
+      buffs.FIRE.active=true;
+      buffs.FIRE.until=now+durationMs;
+      fireEnergy=equipmentFireInstantCharge?FIRE_MAX_CHARGE:0;
+      updateFireEnergy();
+    }
     if(type==='POISON'){
       buffs.POISON.active=true;
       buffs.POISON.until=now+durationMs;
@@ -17040,6 +17298,11 @@ function generateLevel(lv, L){
     blackHoles.length=0;
     laserBeams.length=0;
     laserImpacts.length=0;
+    bombDevilQueues.length=0;
+    bombDevilRowCooldown.clear();
+    bombDevilActiveUntil=0;
+    bombDevilIntervalMs=BOMB_DEVIL_DEFAULTS.intervalMs;
+    fireScatterQueue.length=0;
     hostileBeams.length=0;
     hostileArcs.length=0;
     hostileColumns.length=0;
@@ -19240,6 +19503,8 @@ function generateLevel(lv, L){
     updateShieldRuntime(now);
     checkEquipmentExpirations(now);
     updateBloodBladeState(now);
+    updateBombDevil(now);
+    updateFireScatter(now);
     refreshEquipmentRuntime(now);
     const prevPaddleX=paddle.x;
     if(cyclopsShakeUntil && now<cyclopsShakeUntil){ screenShake=Math.max(screenShake,6); }
@@ -19826,6 +20091,7 @@ function generateLevel(lv, L){
 
         // 特效觸發
         if(buffs.PLASMA.active){ spawnPlasmaBurst(bk.x+bk.w/2, bk.y+bk.h/2); }
+        if(now<bombDevilActiveUntil){ triggerBombDevilForBrick(bk); }
         if(buffs.FREEZE.active && (b.freeze.state==='idle' || !b.freeze.state)){ const f=GAME_CONFIG.powers.FREEZE.freeze; b.freeze.state = 'delay'; b.freeze.t0 = now; b.freeze.delay = f.delayMs; b.freeze.stop = f.stopMs; b.freeze.oldVX = b.vx; b.freeze.oldVY = b.vy; }
         if(buffs.HOLY.active){ applyHolyStrike(bk.x+bk.w/2, bk.y+bk.h/2); }
         if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
@@ -20057,9 +20323,39 @@ function generateLevel(lv, L){
       // 命中判定
       if(strikeDemonSpearsAtPoint(m.x, m.y, 10, 'missile') || strikeDemonAbyssBricksAtPoint(m.x, m.y, 10, 'missile')){ missiles.splice(i,1); continue; }
       if(rect && m.x>rect.x && m.x<rect.x+rect.w && m.y>rect.y && m.y<rect.y+rect.h){
-        if(m.targetType==='boss'){ damageActiveBoss(1,'missile',{x:m.x,y:m.y}); }
-        else { destroyBrick(m.targetId,'missile'); }
-        missiles.splice(i,1); spawnParticles(m.x,m.y,'#ffbb66',12,1.8,2.2,3);
+        const impactX=m.x;
+        const impactY=m.y;
+        let explosionPlayed=false;
+        if(m.targetType==='boss'){
+          damageActiveBoss(1,'missile',{x:impactX,y:impactY});
+          if(equipmentMissileExplosion){
+            explodeAt(impactX,impactY,{sound:false});
+            playSFX('explosion');
+            explosionPlayed=true;
+          }
+          handleMissileImpact(impactX,impactY);
+        }else{
+          const target=bricks[m.targetId];
+          if(target){
+            const ref=target;
+            let idx=bricks.indexOf(ref);
+            const cx=ref.x+ref.w/2;
+            const cy=ref.y+ref.h/2;
+            if(equipmentMissileExplosion && idx>=0){
+              destroyNeighbors(idx);
+              if(!explosionPlayed){
+                playSFX('explosion');
+                explosionPlayed=true;
+              }
+              idx=bricks.indexOf(ref);
+            }
+            if(idx>=0){
+              destroyBrick(idx,'missile');
+            }
+            handleMissileImpact(cx,cy);
+          }
+        }
+        missiles.splice(i,1); spawnParticles(impactX,impactY,'#ffbb66',12,1.8,2.2,3);
       }
     }
 
