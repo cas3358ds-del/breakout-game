@@ -311,10 +311,12 @@
     .codex-entry.codex-empty{grid-template-columns:1fr;justify-items:center;color:#cfe0ff;font-size:14px;}
     .codex-entry .codex-icon{width:64px;height:64px;border-radius:12px;overflow:hidden;border:2px solid rgba(130,170,250,0.4);display:flex;align-items:center;justify-content:center;background:rgba(12,18,36,0.55);}
     .codex-entry .codex-icon img{width:100%;height:100%;object-fit:contain;display:block;}
-    .codex-entry .codex-info{display:flex;flex-direction:column;gap:4px;}
+    .codex-entry .codex-info{display:flex;flex-direction:column;gap:6px;}
+    .codex-entry .codex-header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+    .codex-entry .codex-number{font-size:13px;font-weight:650;color:#8ea0d8;letter-spacing:0.5px;text-transform:uppercase;}
     .codex-entry .codex-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:#9fb4ff;}
     .codex-entry .codex-meta span{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;background:rgba(20,32,68,0.65);border:1px solid rgba(120,160,240,0.28);}
-    .codex-entry .codex-title{margin:0;font-size:16px;font-weight:700;letter-spacing:0.6px;color:#f0f6ff;}
+    .codex-entry .codex-title{margin:0;font-size:20px;font-weight:750;letter-spacing:0.8px;color:#f0f6ff;line-height:1.2;}
     .codex-entry .codex-id{font-size:12px;color:#8ea0d8;letter-spacing:0.4px;}
     .codex-entry .codex-desc{margin:0;font-size:13px;line-height:1.55;color:#d4defc;}
     .codex-pagination{display:flex;align-items:center;justify-content:center;gap:12px;font-size:14px;color:#dbe4ff;}
@@ -920,6 +922,9 @@ select optgroup { color: #0b1022; }
   .codex-panel { padding: 18px; gap: 12px; }
   .codex-entry { grid-template-columns:56px 1fr; padding:10px; }
   .codex-entry .codex-icon { width:56px; height:56px; }
+  .codex-entry .codex-header { gap:6px; }
+  .codex-entry .codex-title { font-size:17px; }
+  .codex-entry .codex-number { font-size:12px; }
   .codex-overlay .btn { min-width:100px; }
 }
 @media (max-width: 430px) {
@@ -2033,10 +2038,17 @@ select optgroup { color: #0b1022; }
       entry.appendChild(iconWrap);
       const info=document.createElement('div');
       info.className='codex-info';
+      const header=document.createElement('div');
+      header.className='codex-header';
+      const numberSpan=document.createElement('span');
+      numberSpan.className='codex-number';
+      numberSpan.textContent=numberLabel;
+      header.appendChild(numberSpan);
       const title=document.createElement('h3');
       title.className='codex-title';
-      title.textContent=`${numberLabel} ${item.name}`;
-      info.appendChild(title);
+      title.textContent=item.name;
+      header.appendChild(title);
+      info.appendChild(header);
       const idLine=document.createElement('div');
       idLine.className='codex-id';
       idLine.textContent=`編號：${item.id}`;
