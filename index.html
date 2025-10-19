@@ -1816,7 +1816,17 @@ select optgroup { color: #0b1022; }
     {id:'plasmaBloom',name:'雷電展開',icon:'W29.jpg',grade:'A',type:'passive',price:30,description:'被動：電漿消除磚塊時，會在該處再度生成電漿。',effect:{plasmaSpawnOnKill:true}},
     {id:'pierceThunder',name:'穿雷擊',icon:'W30.jpg',grade:'A',type:'passive',price:30,description:'被動：當獲得穿透球效果時，也獲得電漿球效果。',effect:{pierceGrantPlasma:true}},
     {id:'holyJudgment',name:'輝光裁決',icon:'W31.jpg',grade:'S',type:'passive',price:100,description:'被動：神聖球的十字掃蕩升級為米字清線。',effect:{holyPattern:'miz'}},
-    {id:'holyBlessing',name:'神聖加持',icon:'W32.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得神聖球時的持續時間翻倍。',effect:{holyDurationMultiplier:2}}
+    {id:'holyBlessing',name:'神聖加持',icon:'W32.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得神聖球時的持續時間翻倍。',effect:{holyDurationMultiplier:2}},
+    {id:'ultraSplit',name:'超分裂',icon:'W33.jpg',grade:'B',type:'passive',price:10,description:'被動：獲得多球效果時，球數直接提升到最大值。',effect:{multiAlwaysMax:true}},
+    {id:'multiTrack',name:'多重追蹤',icon:'W34.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得追蹤球時同步獲得多球效果，且每顆球鎖定不同目標。',effect:{trackAlsoMulti:true,trackUniqueTargets:true}},
+    {id:'multiPierce',name:'多重穿透',icon:'W35.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得穿透球效果時，也獲得多球效果。',effect:{pierceAlsoMulti:true}},
+    {id:'multiHell',name:'多重地獄',icon:'W36.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得地獄球效果時，也獲得多球效果。',effect:{hellAlsoMulti:true}},
+    {id:'multiMega',name:'多重大球',icon:'W37.jpg',grade:'B',type:'passive',price:10,description:'被動：獲得特大球效果時，也獲得多球效果。',effect:{megaAlsoMulti:true}},
+    {id:'pierceMega',name:'巨大穿透',icon:'W38.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得穿透球效果時，也獲得特大球效果。',effect:{pierceAlsoMega:true}},
+    {id:'multiPoison',name:'多重劇毒',icon:'W39.jpg',grade:'B',type:'passive',price:10,description:'被動：獲得劇毒球效果時，也獲得多球效果。',effect:{poisonAlsoMulti:true}},
+    {id:'doubleMissile',name:'雙倍飛彈',icon:'W40.jpg',grade:'A',type:'passive',price:30,description:'被動：每次發射的飛彈數量翻倍。',effect:{missileDoubleShots:true}},
+    {id:'missileVolley',name:'飛彈連射',icon:'W41.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得飛彈球效果時，球擊破磚塊也會發射飛彈。',effect:{missileVolleyOnBreak:true}},
+    {id:'deathBarrage',name:'死亡彈幕',icon:'W42.jpg',grade:'S',type:'active',price:100,description:'主動：發射 20 發追蹤飛彈，冷卻時間 60 秒。',effect:{missileBarrage:{count:20,cooldown:60000}}}
   ];
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
@@ -1856,6 +1866,15 @@ select optgroup { color: #0b1022; }
   let pendingSlotIndex=null;
   let pendingNextLevel=null;
   let equipmentMessageUntil=0;
+  function getOwnedEquipmentIds(){
+    const owned=new Set();
+    for(const slot of equipmentSlots){
+      if(slot && slot.id){
+        owned.add(slot.id);
+      }
+    }
+    return owned;
+  }
   let brickDamageBonus=0;
   let equipmentAttractBeneficial=false;
   let equipmentRepelDebuff=false;
@@ -1876,7 +1895,19 @@ select optgroup { color: #0b1022; }
   let applyingPierceLinkedPlasma=false;
   let equipmentHolyPattern='cross';
   let equipmentHolyDurationMultiplier=1;
+  let equipmentMultiAlwaysMax=false;
+  let equipmentTrackAlsoMulti=false;
+  let equipmentTrackUniqueTargets=false;
+  let equipmentPierceAlsoMulti=false;
+  let equipmentHellAlsoMulti=false;
+  let equipmentMegaAlsoMulti=false;
+  let equipmentPierceAlsoMega=false;
+  let equipmentPoisonAlsoMulti=false;
+  let equipmentMissileDoubleShots=false;
+  let equipmentMissileVolleyOnBreak=false;
   let plasmaChainNextAt=0;
+  let applyingLinkedMulti=false;
+  let applyingLinkedMega=false;
   const BLOOD_BLADE_DEFAULTS={damageMultiplier:3,duration:10000,cooldown:60000,hpCost:1};
   let bloodBladeActive=false;
   let bloodBladeActiveUntil=0;
@@ -1912,20 +1943,24 @@ select optgroup { color: #0b1022; }
     }
     return entries[entries.length-1][0];
   }
-  function pickEquipmentForGrade(desiredGrade, usedItemIds){
+  function pickEquipmentForGrade(desiredGrade, usedItemIds, excludeIds){
+    const isExcluded=id=>{
+      if(!id) return false;
+      if(usedItemIds && usedItemIds.has(id)) return true;
+      if(excludeIds && excludeIds.has(id)) return true;
+      return false;
+    };
     const order=[desiredGrade,...GRADE_PRIORITY.filter(g=>g!==desiredGrade)];
     for(const grade of order){
       const pool=EQUIPMENT_BY_GRADE.get(grade);
       if(pool && pool.length){
-        const candidates=usedItemIds?pool.filter(item=>!usedItemIds.has(item.id)):pool;
+        const candidates=pool.filter(item=>!isExcluded(item.id));
         if(candidates.length){
           return candidates[Math.floor(Math.random()*candidates.length)];
         }
       }
     }
-    const fallbackPool=usedItemIds
-      ?EQUIPMENT_LIST.filter(item=>!usedItemIds.has(item.id))
-      :EQUIPMENT_LIST;
+    const fallbackPool=EQUIPMENT_LIST.filter(item=>!isExcluded(item.id));
     if(fallbackPool.length){
       return fallbackPool[Math.floor(Math.random()*fallbackPool.length)];
     }
@@ -1940,9 +1975,10 @@ select optgroup { color: #0b1022; }
     }
     currentStoreItems=[];
     const usedItemIds=new Set();
+    const ownedIds=getOwnedEquipmentIds();
     for(let i=0;i<STORE_GRID_SIZE;i++){
       const desired=rollGrade(cfg.probabilities);
-      const item=pickEquipmentForGrade(desired,usedItemIds);
+      const item=pickEquipmentForGrade(desired,usedItemIds,ownedIds);
       if(item){
         const key=`${item.id}#${level}-${i}-${Math.random().toString(36).slice(2,6)}`;
         currentStoreItems.push({key,item});
@@ -2615,6 +2651,16 @@ select optgroup { color: #0b1022; }
     applyingPierceLinkedPlasma=false;
     equipmentHolyPattern='cross';
     equipmentHolyDurationMultiplier=1;
+    equipmentMultiAlwaysMax=false;
+    equipmentTrackAlsoMulti=false;
+    equipmentTrackUniqueTargets=false;
+    equipmentPierceAlsoMulti=false;
+    equipmentHellAlsoMulti=false;
+    equipmentMegaAlsoMulti=false;
+    equipmentPierceAlsoMega=false;
+    equipmentPoisonAlsoMulti=false;
+    equipmentMissileDoubleShots=false;
+    equipmentMissileVolleyOnBreak=false;
     plasmaChainNextAt=0;
     for(const slot of equipmentSlots){
       if(!slot) continue;
@@ -2661,10 +2707,23 @@ select optgroup { color: #0b1022; }
         const mul=Math.max(0, Number(effect.holyDurationMultiplier)||0);
         if(mul>0) equipmentHolyDurationMultiplier*=mul;
       }
+      if(effect.multiAlwaysMax) equipmentMultiAlwaysMax=true;
+      if(effect.trackAlsoMulti) equipmentTrackAlsoMulti=true;
+      if(effect.trackUniqueTargets) equipmentTrackUniqueTargets=true;
+      if(effect.pierceAlsoMulti) equipmentPierceAlsoMulti=true;
+      if(effect.hellAlsoMulti) equipmentHellAlsoMulti=true;
+      if(effect.megaAlsoMulti) equipmentMegaAlsoMulti=true;
+      if(effect.pierceAlsoMega) equipmentPierceAlsoMega=true;
+      if(effect.poisonAlsoMulti) equipmentPoisonAlsoMulti=true;
+      if(effect.missileDoubleShots) equipmentMissileDoubleShots=true;
+      if(effect.missileVolleyOnBreak) equipmentMissileVolleyOnBreak=true;
     }
     if(equipmentPlasmaChainActive && equipmentPlasmaChainInterval>0){
       const now=typeof performance!=='undefined'?performance.now():0;
       plasmaChainNextAt=now+equipmentPlasmaChainInterval;
+    }
+    if(!equipmentTrackUniqueTargets){
+      resetTrackAssignments();
     }
   }
   function activateEquipmentPower(index,slot,powerCfg={}){
@@ -2846,6 +2905,21 @@ select optgroup { color: #0b1022; }
         spawnParticles(pr.x+pr.w/2,pr.y,'#ff4d6a',24,1.8,3.2,2.6);
       }
       beep(520,0.12,0.05);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.missileBarrage){
+      const cfg=effect.missileBarrage||{};
+      const count=Math.max(1, Math.floor(cfg.count||20));
+      const pr=paddleRect();
+      const origin=pr?{x:pr.x+pr.w/2, y:pr.y}:{x:1100/2, y:700-50};
+      emitMissilesFromSource(origin,{shots:count});
+      const cooldown=Math.max(0, cfg.cooldown||0);
+      slot.cooldownDuration=cooldown;
+      slot.cooldownStarted=cooldown>0?now:0;
+      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      slot.lastUsed=now;
+      showEquipmentMessage('死亡彈幕啟動！ 飛彈全方位出擊。','success',2600);
       refreshEquipmentRuntime(performance.now());
       return;
     }
@@ -7317,6 +7391,92 @@ select optgroup { color: #0b1022; }
 
   // 新增容器：飛彈、黑洞特效、雷射光束
   const missiles=[]; // {x,y,vx,vy,targetId,targetType,lifeUntil,trail:[]}
+  function gatherMissileCandidates(src){
+    const origin=src||{x:1100/2,y:layout().top};
+    const candidates=[];
+    for(let i=0;i<bricks.length;i++){
+      const brick=bricks[i];
+      if(!brick || !canDestroyBrick(brick)) continue;
+      const cx=brick.x+brick.w/2;
+      const cy=brick.y+brick.h/2;
+      const dx=cx-origin.x;
+      const dy=cy-origin.y;
+      const dist=dx*dx+dy*dy;
+      candidates.push({type:'brick',targetId:i,x:cx,y:cy,brick,dist});
+    }
+    const bossCenter=isSpecialBossActive()?activeBossCenter():null;
+    if(bossCenter){
+      const dx=bossCenter.x-origin.x;
+      const dy=bossCenter.y-origin.y;
+      const dist=dx*dx+dy*dy;
+      candidates.push({type:'boss',targetId:'boss',x:bossCenter.x,y:bossCenter.y,dist});
+    }
+    candidates.sort((a,b)=>a.dist-b.dist);
+    return candidates;
+  }
+  function pickMissileTargets(candidates,count){
+    if(!candidates.length) return [];
+    const targetCount=Math.max(1, Math.min(count, candidates.length));
+    const picks=[];
+    const base=[0, Math.floor((candidates.length-1)/2), candidates.length-1];
+    for(const idx of base){
+      if(idx>=0 && idx<candidates.length){
+        const candidate=candidates[idx];
+        if(!picks.includes(candidate)) picks.push(candidate);
+        if(picks.length>=targetCount) return picks.slice(0,targetCount);
+      }
+    }
+    for(const candidate of candidates){
+      if(!picks.includes(candidate)) picks.push(candidate);
+      if(picks.length>=targetCount) break;
+    }
+    return picks.slice(0,targetCount);
+  }
+  function spawnMissileForTarget(src,target,now){
+    if(!target) return;
+    const ang=Math.random()*Math.PI*2;
+    missiles.push({
+      x:src.x,
+      y:src.y,
+      vx:Math.cos(ang)*2,
+      vy:Math.sin(ang)*2,
+      targetId:target.targetId,
+      targetType:target.type||'brick',
+      lifeUntil:now+GAME_CONFIG.powers.MISSILE.missile.lifeMs,
+      trail:[]
+    });
+    if(target.type==='boss'){
+      highlightSpaceBossTarget();
+    }else if(target.brick){
+      pushLockBox(target.brick.x, target.brick.y, target.brick.w, target.brick.h, 'target');
+    }
+  }
+  function emitMissilesFromSource(src,options={}){
+    if(!src) return;
+    const candidates=gatherMissileCandidates(src);
+    if(!candidates.length) return;
+    const now=performance.now();
+    if(options.shots!=null){
+      const baseShots=Math.max(1, Math.floor(options.shots));
+      const totalShots=baseShots * (equipmentMissileDoubleShots?2:1);
+      const targetCount=Math.max(1, Math.min(candidates.length, totalShots));
+      const picks=pickMissileTargets(candidates,targetCount);
+      if(!picks.length) return;
+      for(let i=0;i<totalShots;i++){
+        const target=picks[i % picks.length];
+        spawnMissileForTarget(src,target,now);
+      }
+      return;
+    }
+    const baseCount=options.baseCount || 3;
+    const picks=pickMissileTargets(candidates,baseCount);
+    const repeats=equipmentMissileDoubleShots?2:1;
+    for(const target of picks){
+      for(let i=0;i<repeats;i++){
+        spawnMissileForTarget(src,target,now);
+      }
+    }
+  }
   const blackHoles=[]; // {x,y,until}
   const laserBeams=[]; // {x1,y1,x2,y2,until}
   const laserImpacts=[]; // {x,y,t0,tEnd}
@@ -10626,6 +10786,153 @@ let balls=[]; function makeBall(stuck=false,x=null){
   const megaCfg = GAME_CONFIG.powers.MEGA?.mega || {};
   const sizeMul = (buffs.MEGA?.applied && megaCfg.sizeMul) ? megaCfg.sizeMul : 1;
   return {x:x??(1100/2),y:700/2,r:10*sizeMul,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0},blinkAt:0,loopBrick:null,loopHits:0,lastBrickId:null,lastBrickHitTime:0,sameBrickHits:0,lastBounce:null,speedBoostSuppressedUntil:0,lastCeilingBounce:0,capturedByBladeHell:false};
+}
+
+const trackTargetOwners=new Map();
+let trackBallTargets=new WeakMap();
+function resetTrackAssignments(){
+  trackTargetOwners.clear();
+  trackBallTargets=new WeakMap();
+}
+function releaseTrackTarget(ball){
+  if(!ball) return;
+  const key=trackBallTargets.get(ball);
+  if(!key) return;
+  const owner=trackTargetOwners.get(key);
+  if(owner===ball){
+    trackTargetOwners.delete(key);
+  }
+  trackBallTargets.delete(ball);
+}
+function isTrackTargetStillValid(key){
+  if(key==='boss') return isSpecialBossActive();
+  if(typeof key==='string' && key.startsWith('brick:')){
+    const idStr=key.slice(6);
+    const idNum=Number(idStr);
+    if(Number.isFinite(idNum)){
+      return bricks.some(b=>b && b.id===idNum);
+    }
+    return bricks.length>0;
+  }
+  return false;
+}
+function cleanupTrackAssignments(){
+  for(const [key, owner] of Array.from(trackTargetOwners.entries())){
+    if(!owner || !balls.includes(owner) || !isTrackTargetStillValid(key)){
+      trackTargetOwners.delete(key);
+      if(owner){
+        trackBallTargets.delete(owner);
+      }
+    }
+  }
+}
+function maintainTrackAssignments(){
+  if(!equipmentTrackUniqueTargets || !buffs.TRACK?.active){
+    resetTrackAssignments();
+    return;
+  }
+  cleanupTrackAssignments();
+}
+function assignTrackTarget(ball,key){
+  if(!equipmentTrackUniqueTargets || !ball || !key) return;
+  releaseTrackTarget(ball);
+  trackBallTargets.set(ball,key);
+  trackTargetOwners.set(key,ball);
+}
+
+function cloneBallForMulti(base){
+  const copy={...base};
+  copy.trail=[];
+  copy.freeze=base.freeze?{...base.freeze}:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0};
+  copy.lastBounce=null;
+  copy.loopBrick=null;
+  copy.loopHits=0;
+  copy.sameBrickHits=0;
+  copy.capturedByBladeHell=false;
+  return copy;
+}
+function ensureBallCount(targetCount){
+  const startCount=balls.length;
+  if(startCount>=targetCount) return false;
+  const source=balls.slice();
+  if(!source.length) return false;
+  const clones=[];
+  let idx=0;
+  while(startCount + clones.length < targetCount){
+    const base=source[idx % source.length];
+    clones.push(cloneBallForMulti(base));
+    idx++;
+  }
+  if(clones.length){
+    balls=balls.concat(clones);
+    if(equipmentTrackUniqueTargets){
+      resetTrackAssignments();
+    }
+    return true;
+  }
+  return false;
+}
+
+function trackNeighborCount(brick){
+  if(!brick) return 0;
+  const L=layout();
+  const thx=brickW+L.pad+2;
+  const thy=brickH+L.pad+2;
+  let cnt=0;
+  for(const other of bricks){
+    if(!other || other===brick) continue;
+    const dx=Math.abs((other.x+other.w/2)-(brick.x+brick.w/2));
+    const dy=Math.abs((other.y+other.h/2)-(brick.y+brick.h/2));
+    if(dx<=thx && dy<=thy) cnt++;
+  }
+  return cnt;
+}
+function computeTrackCandidates(ball){
+  const srcX=ball?.x??(1100/2);
+  const srcY=ball?.y??(layout().top);
+  const candidates=[];
+  for(let i=0;i<bricks.length;i++){
+    const brick=bricks[i];
+    if(!brick || brick.unbreakable) continue;
+    const iso=trackNeighborCount(brick);
+    const cx=brick.x+brick.w/2;
+    const cy=brick.y+brick.h/2;
+    const dx=cx-srcX;
+    const dy=cy-srcY;
+    const dist=Math.hypot(dx,dy);
+    const score=iso*1000 + dist;
+    const key=brick.id!=null?`brick:${brick.id}`:`brick:${i}`;
+    candidates.push({type:'brick',targetId:i,x:cx,y:cy,brick,score,key});
+  }
+  if(isSpecialBossActive()){
+    const center=activeBossCenter();
+    if(center){
+      candidates.push({type:'boss',targetId:'boss',x:center.x,y:center.y,score:-Infinity,key:'boss'});
+    }
+  }
+  candidates.sort((a,b)=>a.score-b.score);
+  return candidates;
+}
+function chooseTrackTargetForBall(ball){
+  const candidates=computeTrackCandidates(ball);
+  if(!candidates.length){
+    return null;
+  }
+  if(!equipmentTrackUniqueTargets){
+    return candidates[0];
+  }
+  const currentKey=trackBallTargets.get(ball);
+  if(currentKey){
+    const existing=candidates.find(c=>c.key===currentKey && isTrackTargetStillValid(c.key));
+    if(existing) return existing;
+  }
+  for(const candidate of candidates){
+    const owner=trackTargetOwners.get(candidate.key);
+    if(!owner || owner===ball){
+      return candidate;
+    }
+  }
+  return candidates[0];
 }
 
   function isSpeedSuppressed(ball, now){
@@ -16428,7 +16735,15 @@ function generateLevel(lv, L){
     if(def.paddleWidthAdd){ buffs.WIDE.active=true; buffs.WIDE.until=now+durationMs; }
     if(def.longPerStackAdd){ const act=buffs.LONG.stacks.filter(t=>t>now); const max=def.stacksMax??2; if(act.length<max){ buffs.LONG.stacks.push(now+durationMs);} else { const earliest=Math.min(...act); const idx=buffs.LONG.stacks.indexOf(earliest); buffs.LONG.stacks[idx]=now+durationMs; } }
     if(def.sticky){ buffs.STICKY.active=true; buffs.STICKY.until=now+durationMs; }
-    if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; b1.capturedByBladeHell=false; news.push(b1);} balls=balls.concat(news); const cap=def.maxBalls??4; if(balls.length>cap) balls.length=cap; } }
+    if(def.multiDuplicate){
+      const cap=def.maxBalls??4;
+      if(equipmentMultiAlwaysMax){
+        ensureBallCount(cap);
+      }else if(balls.length<3){
+        const desired=Math.min(cap, Math.max(2, balls.length*2 || 2));
+        ensureBallCount(desired);
+      }
+    }
     if(def.speedMul){ buffs.SLOW.active=true; buffs.SLOW.until=now+durationMs; }
     if(def.piercing){
       buffs.PIERCE.active=true;
@@ -16442,6 +16757,24 @@ function generateLevel(lv, L){
           applyingPierceLinkedPlasma=false;
         }
       }
+      if(type==='PIERCE'){
+        if(equipmentPierceAlsoMega && !applyingLinkedMega){
+          applyingLinkedMega=true;
+          try{
+            applyPower('MEGA');
+          }finally{
+            applyingLinkedMega=false;
+          }
+        }
+        if(equipmentPierceAlsoMulti && !applyingLinkedMulti){
+          applyingLinkedMulti=true;
+          try{
+            applyPower('MULTI');
+          }finally{
+            applyingLinkedMulti=false;
+          }
+        }
+      }
     }
     if(def.oneShotShield){ buffs.SHIELD.active=true; }
     if(def.forcePiercing && def.rampageMs){ buffs.RAMPAGE.active=true; buffs.RAMPAGE.until=now+durationMs; for(const b of balls){ b.rampageUntil=now+def.rampageMs; b.piercing=true; } }
@@ -16451,14 +16784,61 @@ function generateLevel(lv, L){
     if(type==='FREEZE'){ buffs.FREEZE.active=true; buffs.FREEZE.until=now+durationMs; }
     if(type==='HOLY'){ buffs.HOLY.active=true; buffs.HOLY.until=now+durationMs; }
     if(type==='FIRE'){ buffs.FIRE.active=true; buffs.FIRE.until=now+durationMs; fireEnergy=0; updateFireEnergy(); }
-    if(type==='POISON'){ buffs.POISON.active=true; buffs.POISON.until=now+durationMs; }
+    if(type==='POISON'){
+      buffs.POISON.active=true;
+      buffs.POISON.until=now+durationMs;
+      if(equipmentPoisonAlsoMulti && !applyingLinkedMulti){
+        applyingLinkedMulti=true;
+        try{
+          applyPower('MULTI');
+        }finally{
+          applyingLinkedMulti=false;
+        }
+      }
+    }
     if(type==='BLINK'){ buffs.BLINK.active=true; buffs.BLINK.until=now+durationMs; }
     if(type==='COMBO'){ buffs.COMBO.active=true; buffs.COMBO.until=now+durationMs; }
 
-    if(type==='TRACK'){ buffs.TRACK.active=true; buffs.TRACK.until=now+durationMs; }
+    if(type==='TRACK'){
+      buffs.TRACK.active=true;
+      buffs.TRACK.until=now+durationMs;
+      if(equipmentTrackUniqueTargets){
+        resetTrackAssignments();
+      }
+      if(equipmentTrackAlsoMulti && !applyingLinkedMulti){
+        applyingLinkedMulti=true;
+        try{
+          applyPower('MULTI');
+        }finally{
+          applyingLinkedMulti=false;
+        }
+      }
+    }
     if(type==='MISSILE'){ buffs.MISSILE.active=true; buffs.MISSILE.until=now+durationMs; }
-    if(type==='HELL'){ buffs.HELL.active=true; buffs.HELL.until=now+durationMs; }
-    if(type==='MEGA'){ buffs.MEGA.active=true; buffs.MEGA.until=now+durationMs; }
+    if(type==='HELL'){
+      buffs.HELL.active=true;
+      buffs.HELL.until=now+durationMs;
+      if(equipmentHellAlsoMulti && !applyingLinkedMulti){
+        applyingLinkedMulti=true;
+        try{
+          applyPower('MULTI');
+        }finally{
+          applyingLinkedMulti=false;
+        }
+      }
+    }
+    if(type==='MEGA'){
+      buffs.MEGA.active=true;
+      buffs.MEGA.until=now+durationMs;
+      if(equipmentMegaAlsoMulti && !applyingLinkedMulti){
+        applyingLinkedMulti=true;
+        try{
+          applyPower('MULTI');
+        }finally{
+          applyingLinkedMulti=false;
+        }
+      }
+    }
     if(type==='CHAIN'){ buffs.CHAIN.active=true; buffs.CHAIN.until=now+durationMs; }
     if(type==='NARROW'){ buffs.NARROW.active=true; buffs.NARROW.until=now+durationMs; }
     if(type==='HOLE'){ buffs.HOLE.active=true; buffs.HOLE.until=now+durationMs; showComboNotice('注意看! 你破洞啦!',5000,3000); }
@@ -19221,6 +19601,7 @@ function generateLevel(lv, L){
     updateBladeHellBallCapture(now);
     const megaCfg = GAME_CONFIG.powers.MEGA?.mega || {};
     const megaDamageMul = (buffs.MEGA?.active && megaCfg.damageMul) ? megaCfg.damageMul : 1;
+    maintainTrackAssignments();
     for(const b of balls){
       if(b.rampageUntil && now>b.rampageUntil){ b.rampageUntil=0; if(!buffs.PIERCE.active) b.piercing=false; }
 
@@ -19350,50 +19731,35 @@ function generateLevel(lv, L){
         if(buffs.STICKY.active){ b.stuck=true; b.offsetX= (!orientLeft) ? (b.x-(paddle.x+paddle.w/2)) : 0; }
         if(buffs.BLINK.active){ b.blinkAt=performance.now()+ (GAME_CONFIG.powers.BLINK.blink.delayMs||1000); }
 
-        // MISSILE：擋板彈出時發射三枚
+        // MISSILE：擋板彈出時發射追蹤飛彈
         if(buffs.MISSILE.active){
-          // 取最近/中距離/最遠
-          const src={x:b.x,y:b.y};
-          const candidates = bricks.map((bk,idx)=>({idx, type:'brick', d: (bk.x+bk.w/2-src.x)**2 + (bk.y+bk.h/2-src.y)**2 })).sort((a,b)=>a.d-b.d);
-          const bossCenter = isSpecialBossActive() ? activeBossCenter() : null;
-          if(bossCenter){
-            const d = (bossCenter.x-src.x)**2 + (bossCenter.y-src.y)**2;
-            candidates.push({idx:'boss', type:'boss', d});
-            candidates.sort((a,b)=>a.d-b.d);
-          }
-          const pickIdxs = [0, Math.floor(candidates.length/2), candidates.length-1].filter(i=>i>=0 && i<candidates.length);
-          for(const i of pickIdxs){
-            const entry = candidates[i];
-            if(!entry) continue;
-            const ang=Math.random()*Math.PI*2;
-            missiles.push({x:src.x,y:src.y,vx:Math.cos(ang)*2,vy:Math.sin(ang)*2,targetId:entry.idx,targetType:entry.type||'brick',lifeUntil:now+GAME_CONFIG.powers.MISSILE.missile.lifeMs,trail:[]});
-            if(entry.type==='boss'){ highlightSpaceBossTarget(); }
-            else {
-              const ttt = bricks[entry.idx];
-              if(ttt){ pushLockBox(ttt.x, ttt.y, ttt.w, ttt.h, 'target'); }
-            }
-          }
+          emitMissilesFromSource({x:b.x,y:b.y});
         }
 
-        // 追蹤球：擋板彈出後瞄準目標磚（獨立優先）
+        // 追蹤球：擋板彈出後瞄準目標
         if(buffs.TRACK.active){
-          function neighborCount(t){
-            let cnt=0; const L=layout(); for(const o of bricks){ if(o===t) continue; const dx=Math.abs((o.x+o.w/2)-(t.x+t.w/2)); const dy=Math.abs((o.y+o.h/2)-(t.y+t.h/2)); const thx=brickW+L.pad+2, thy=brickH+L.pad+2; if(dx<=thx && dy<=thy) cnt++; } return cnt;
+          const candidate=chooseTrackTargetForBall(b);
+          let targetX;
+          let targetY;
+          if(candidate){
+            targetX=candidate.x;
+            targetY=candidate.y;
+            assignTrackTarget(b,candidate.key);
+            if(candidate.type==='boss'){
+              highlightSpaceBossTarget();
+            }else if(candidate.brick){
+              pushLockBox(candidate.brick.x, candidate.brick.y, candidate.brick.w, candidate.brick.h, 'target');
+            }
+          }else{
+            const L=layout();
+            targetX=1100/2;
+            targetY=L.top;
+            releaseTrackTarget(b);
           }
-          let best=null;
-          for(const t of bricks){ if(t.unbreakable) continue; const iso=neighborCount(t); const d=Math.hypot((t.x+t.w/2)-b.x,(t.y+t.h/2)-b.y); const score=iso*1000 + d; if(best==null || score<best.score) best={t,score,type:'brick'}; }
-          const bossTarget = isSpecialBossActive() ? activeBossCenter() : null;
-          if(!best && bossTarget){
-            best={type:'boss', score:-Infinity};
-          }
-          const targetX = best? (best.type==='boss'? (bossTarget?bossTarget.x:1100/2) : best.t.x+best.t.w/2) : (1100/2);
-          const targetY = best? (best.type==='boss'? (bossTarget?bossTarget.y:layout().top) : best.t.y+best.t.h/2) : (layout().top);
-          const sp=Math.hypot(b.vx,b.vy); const ang=Math.atan2(targetY-b.y, targetX-b.x); b.vx=Math.cos(ang)*sp; b.vy=Math.sin(ang)*sp;
-
-          if(best){
-            if(best.type==='boss'){ highlightSpaceBossTarget(); }
-            else { pushLockBox(best.t.x, best.t.y, best.t.w, best.t.h, 'target'); }
-          }
+          const sp=Math.hypot(b.vx,b.vy);
+          const ang=Math.atan2(targetY-b.y,targetX-b.x);
+          b.vx=Math.cos(ang)*sp;
+          b.vy=Math.sin(ang)*sp;
         }
         if(buffs.SWORD.active){ swords.push({x:Math.random()*1100,y:650,vx:(Math.random()-0.5)*2,vy:(Math.random()-0.5)*0.5,state:'wander'}); }
       }
@@ -19463,7 +19829,7 @@ function generateLevel(lv, L){
         if(buffs.FREEZE.active && (b.freeze.state==='idle' || !b.freeze.state)){ const f=GAME_CONFIG.powers.FREEZE.freeze; b.freeze.state = 'delay'; b.freeze.t0 = now; b.freeze.delay = f.delayMs; b.freeze.stop = f.stopMs; b.freeze.oldVX = b.vx; b.freeze.oldVY = b.vy; }
         if(buffs.HOLY.active){ applyHolyStrike(bk.x+bk.w/2, bk.y+bk.h/2); }
         if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
-        if(buffs.HELL.active){ const holeSpin=(Math.random()>0.5?1:-1); blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,r:40,until:now+GAME_CONFIG.powers.HELL.hell.haloMs,start:performance.now(),spinDir:holeSpin}); playSFX('blackhole'); destroyNeighbors(hit); destroyBrick(hit,'none'); }
+        if(buffs.HELL.active){ const holeSpin=(Math.random()>0.5?1:-1); const volleyReady=buffs.MISSILE.active && equipmentMissileVolleyOnBreak; blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,r:40,until:now+GAME_CONFIG.powers.HELL.hell.haloMs,start:performance.now(),spinDir:holeSpin}); playSFX('blackhole'); destroyNeighbors(hit); destroyBrick(hit,'none'); if(volleyReady){ emitMissilesFromSource({x:b.x,y:b.y}); } }
         if(buffs.POISON.active){ bk.poisonUntil = now + (GAME_CONFIG.powers.POISON.durationMs||12000); bk.poisonTick = now + (GAME_CONFIG.powers.POISON.poison?.tickMs||2000); }
 
         // 當前磚扣血（若已在上面被處理則略過）
@@ -19490,8 +19856,13 @@ function generateLevel(lv, L){
               revealBrickArea(bk);
               if(inRampage || b.piercing) playSFX('pierce');
               if(!bk.boss) maybeDropFromBrick(bk);
+              const volleyReady=buffs.MISSILE.active && equipmentMissileVolleyOnBreak;
+              const volleyOrigin={x:b.x,y:b.y};
               if(bk.explosive){ explodeAt(cx,cy); }
               else { bricks.splice(hit,1); updateHUD(); }
+              if(volleyReady){
+                emitMissilesFromSource(volleyOrigin);
+              }
             } else updateHUD();
           }
         }
