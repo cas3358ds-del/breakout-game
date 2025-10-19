@@ -1814,7 +1814,7 @@ select optgroup { color: #0b1022; }
     {id:'triplePlasma',name:'三重雷電',icon:'W27.jpg',grade:'A',type:'passive',price:30,description:'被動：電漿生成時改為三重放電，並朝不同方向飛行。',effect:{plasmaTriple:true}},
     {id:'thunderDevour',name:'雷神噬',icon:'W28.jpg',grade:'S',type:'passive',price:100,description:'被動：電漿存在時間與飛行速度加倍，每 2 秒於鄰近電漿之間釋放閃電鏈。',effect:{plasmaLifeMultiplier:2,plasmaSpeedMultiplier:2,plasmaChain:{intervalMs:2000,range:220}}},
     {id:'plasmaBloom',name:'雷電展開',icon:'W29.jpg',grade:'A',type:'passive',price:30,description:'被動：電漿消除磚塊時，會在該處再度生成電漿。',effect:{plasmaSpawnOnKill:true}},
-    {id:'pierceThunder',name:'穿雷擊',icon:'W30.jpg',grade:'A',type:'passive',price:30,description:'被動：啟動穿透球時，同步在球體位置引發電漿。',effect:{pierceSpawnPlasma:true}},
+    {id:'pierceThunder',name:'穿雷擊',icon:'W30.jpg',grade:'A',type:'passive',price:30,description:'被動：當獲得穿透球效果時，也獲得電漿球效果。',effect:{pierceGrantPlasma:true}},
     {id:'holyJudgment',name:'輝光裁決',icon:'W31.jpg',grade:'S',type:'passive',price:100,description:'被動：神聖球的十字掃蕩升級為米字清線。',effect:{holyPattern:'miz'}},
     {id:'holyBlessing',name:'神聖加持',icon:'W32.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得神聖球時的持續時間翻倍。',effect:{holyDurationMultiplier:2}}
   ];
@@ -1872,7 +1872,8 @@ select optgroup { color: #0b1022; }
   let equipmentPlasmaChainInterval=0;
   let equipmentPlasmaChainRange=0;
   let equipmentPlasmaSpawnOnKill=false;
-  let equipmentPierceSpawnPlasma=false;
+  let equipmentPierceGrantPlasma=false;
+  let applyingPierceLinkedPlasma=false;
   let equipmentHolyPattern='cross';
   let equipmentHolyDurationMultiplier=1;
   let plasmaChainNextAt=0;
@@ -2610,7 +2611,8 @@ select optgroup { color: #0b1022; }
     equipmentPlasmaChainInterval=0;
     equipmentPlasmaChainRange=0;
     equipmentPlasmaSpawnOnKill=false;
-    equipmentPierceSpawnPlasma=false;
+    equipmentPierceGrantPlasma=false;
+    applyingPierceLinkedPlasma=false;
     equipmentHolyPattern='cross';
     equipmentHolyDurationMultiplier=1;
     plasmaChainNextAt=0;
@@ -2651,7 +2653,7 @@ select optgroup { color: #0b1022; }
         if(range>0) equipmentPlasmaChainRange=Math.max(equipmentPlasmaChainRange, range);
       }
       if(effect.plasmaSpawnOnKill) equipmentPlasmaSpawnOnKill=true;
-      if(effect.pierceSpawnPlasma) equipmentPierceSpawnPlasma=true;
+      if(effect.pierceGrantPlasma) equipmentPierceGrantPlasma=true;
       if(effect.holyPattern){
         equipmentHolyPattern=String(effect.holyPattern);
       }
@@ -16428,7 +16430,19 @@ function generateLevel(lv, L){
     if(def.sticky){ buffs.STICKY.active=true; buffs.STICKY.until=now+durationMs; }
     if(def.multiDuplicate){ if(balls.length<3){ const news=[]; for(const b of balls){ const b1={...b}; b1.trail=[]; b1.capturedByBladeHell=false; news.push(b1);} balls=balls.concat(news); const cap=def.maxBalls??4; if(balls.length>cap) balls.length=cap; } }
     if(def.speedMul){ buffs.SLOW.active=true; buffs.SLOW.until=now+durationMs; }
-    if(def.piercing){ buffs.PIERCE.active=true; buffs.PIERCE.until=now+durationMs; for(const b of balls) b.piercing=true; if(equipmentPierceSpawnPlasma && balls.length){ let played=false; for(const ball of balls){ spawnPlasmaBurst(ball.x, ball.y, {sound:!played}); played=true; } } }
+    if(def.piercing){
+      buffs.PIERCE.active=true;
+      buffs.PIERCE.until=now+durationMs;
+      for(const b of balls) b.piercing=true;
+      if(equipmentPierceGrantPlasma && !applyingPierceLinkedPlasma){
+        applyingPierceLinkedPlasma=true;
+        try{
+          applyPower('PLASMA');
+        }finally{
+          applyingPierceLinkedPlasma=false;
+        }
+      }
+    }
     if(def.oneShotShield){ buffs.SHIELD.active=true; }
     if(def.forcePiercing && def.rampageMs){ buffs.RAMPAGE.active=true; buffs.RAMPAGE.until=now+durationMs; for(const b of balls){ b.rampageUntil=now+def.rampageMs; b.piercing=true; } }
     if(def.globalSpeedMul){ buffs.FAST.active=true; buffs.FAST.until=now+durationMs; if(def.screenShakeOnApply) screenShake=def.screenShakeOnApply; }
