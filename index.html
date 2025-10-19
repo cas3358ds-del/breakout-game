@@ -1898,8 +1898,6 @@ select optgroup { color: #0b1022; }
   let equipmentMultiAlwaysMax=false;
   let equipmentTrackAlsoMulti=false;
   let equipmentTrackUniqueTargets=false;
-  let trackTargetOwners=new Map();
-  let trackBallTargets=new WeakMap();
   let equipmentPierceAlsoMulti=false;
   let equipmentHellAlsoMulti=false;
   let equipmentMegaAlsoMulti=false;
@@ -10790,10 +10788,13 @@ let balls=[]; function makeBall(stuck=false,x=null){
   return {x:x??(1100/2),y:700/2,r:10*sizeMul,vx:5,vy:-5,speedCap:GAME_CONFIG.caps.ballSpeedMax,piercing:false,stuck:stuck,offsetX:0,rampageUntil:0,trail:[],freeze:{state:'idle',t0:0,until:0,oldVX:0,oldVY:0,delay:0,stop:0},blinkAt:0,loopBrick:null,loopHits:0,lastBrickId:null,lastBrickHitTime:0,sameBrickHits:0,lastBounce:null,speedBoostSuppressedUntil:0,lastCeilingBounce:0,capturedByBladeHell:false};
 }
 
-function resetTrackAssignments(){
-  trackTargetOwners.clear();
-  trackBallTargets=new WeakMap();
-}
+  const trackTargetOwners=new Map();
+  let trackBallTargets=new WeakMap();
+
+  function resetTrackAssignments(){
+    trackTargetOwners.clear();
+    trackBallTargets=new WeakMap();
+  }
 function releaseTrackTarget(ball){
   if(!ball) return;
   const key=trackBallTargets.get(ball);
