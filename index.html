@@ -4157,6 +4157,7 @@ select optgroup { color: #0b1022; }
         destroyBrick(i,'none');
       }
     }
+    strikeDemonAbyssBricksInCross(cx, cy, {includeDiagonals:diagMode, source:'holyStrike'});
     if(isSpecialBossActive()){
       const bounds=getActiveBossBounds();
       if(bounds){
@@ -4848,6 +4849,33 @@ select optgroup { color: #0b1022; }
       if(!brick || brick.destroyed) continue;
       if(circleIntersectsSegment(brick.x, brick.y, brick.hitRadius, x1,y1,x2,y2)){
         destroyDemonAbyssBrick(brick, source, now);
+        hit=true;
+      }
+    }
+    return hit;
+  }
+
+  function strikeDemonAbyssBricksInCross(x, y, opts={}){
+    if(!demonAbyssBricks.length) return false;
+    const tolerance=Math.max(10, opts.tolerance||40);
+    const diagTolerance=Math.max(10, opts.diagTolerance||50);
+    const includeDiagonals=!!opts.includeDiagonals;
+    const source=opts.source||'cross';
+    let hit=false;
+    for(const brick of demonAbyssBricks){
+      if(!brick || brick.destroyed) continue;
+      const dx=brick.x - x;
+      const dy=brick.y - y;
+      const hitsRow=Math.abs(dx)<=tolerance;
+      const hitsCol=Math.abs(dy)<=tolerance;
+      let hitsDiag=false;
+      if(includeDiagonals){
+        const sum=Math.abs(dx+dy);
+        const diff=Math.abs(dx-dy);
+        hitsDiag = diff<=diagTolerance || sum<=diagTolerance;
+      }
+      if(hitsRow || hitsCol || hitsDiag){
+        destroyDemonAbyssBrick(brick, source);
         hit=true;
       }
     }
@@ -16357,6 +16385,7 @@ function generateLevel(lv, L){
           } else {
             revealBrickArea(t); maybeDropFromBrick(t); bricks.splice(j,1); incrementCombo(); addScore(scoreForBrick(t)); if(t.elite) stats.eliteKills++;
           }
+          strikeDemonAbyssBricksAtPoint(t.x+t.w/2, t.y+t.h/2, Math.max(t.w,t.h)*0.75, 'neighbor');
         }
       }
     }
@@ -16380,6 +16409,7 @@ function generateLevel(lv, L){
         spawnParticles(bx,by,'#ffdd99',14,1.7,2.6,3);
       }
     }
+    strikeDemonAbyssBricksAtPoint(cx, cy, radius, 'explosion');
     if(circleIntersectsActiveBoss(cx,cy,radius)){
       const center=activeBossCenter();
       const impact=center?{x:center.x,y:center.y}:{x:cx,y:cy};
@@ -16408,6 +16438,7 @@ function generateLevel(lv, L){
         spawnParticles(bx,by,'#ffdd99',20,1.8,2.8,3.5);
       }
     }
+    strikeDemonAbyssBricksAtPoint(cx, cy, radius, 'fireExplosion');
     if(circleIntersectsActiveBoss(cx,cy,radius)){
       const center=activeBossCenter();
       const impact=center?{x:center.x,y:center.y}:{x:cx,y:cy};
