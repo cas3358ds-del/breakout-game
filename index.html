@@ -18006,6 +18006,7 @@ function generateLevel(lv, L){
           }
         }
       }
+      strikeDemonAbyssBricksAtPoint(P.x, P.y, Math.max(0, P.radius||0), 'plasma');
       if(circleIntersectsActiveBoss(P.x,P.y,P.radius)){
         const impact=activeBossClampPoint(P.x, P.y);
         damageActiveBoss(1,'plasma',impact);
@@ -18020,7 +18021,7 @@ function generateLevel(lv, L){
   function triggerPlasmaChainLightning(now){ if(!equipmentPlasmaChainActive || equipmentPlasmaChainInterval<=0) return []; if(plasmas.length<2) return []; if(plasmaChainNextAt && now<plasmaChainNextAt) return []; plasmaChainNextAt=now+equipmentPlasmaChainInterval; const range=equipmentPlasmaChainRange>0?equipmentPlasmaChainRange:200; const rangeSq=range*range; const pairs=[];
     for(let i=0;i<plasmas.length;i++){ const a=plasmas[i]; for(let j=i+1;j<plasmas.length;j++){ const b=plasmas[j]; const dx=a.x-b.x, dy=a.y-b.y; if(dx*dx+dy*dy<=rangeSq){ pairs.push({a,b}); } } }
     if(!pairs.length) return []; const toDestroy=new Set(); const destroyedPositions=[]; const threshold=Math.max(brickW, brickH)*0.6;
-    for(const {a,b} of pairs){ plasmaChains.push({x1:a.x,y1:a.y,x2:b.x,y2:b.y,until:now+240}); for(const brick of bricks){ if(!brick) continue; if(!canDestroyBrick(brick)) continue; const cx=brick.x+brick.w/2; const cy=brick.y+brick.h/2; const dist=distancePointToSegment(cx,cy,a.x,a.y,b.x,b.y); if(dist<=threshold){ toDestroy.add(brick); } } }
+    for(const {a,b} of pairs){ plasmaChains.push({x1:a.x,y1:a.y,x2:b.x,y2:b.y,until:now+240}); strikeDemonAbyssBricksAlongLine(a.x,a.y,b.x,b.y,'plasmaChain'); for(const brick of bricks){ if(!brick) continue; if(!canDestroyBrick(brick)) continue; const cx=brick.x+brick.w/2; const cy=brick.y+brick.h/2; const dist=distancePointToSegment(cx,cy,a.x,a.y,b.x,b.y); if(dist<=threshold){ toDestroy.add(brick); } } }
     if(!toDestroy.size) return destroyedPositions; screenShake=Math.max(screenShake,3);
     for(let i=bricks.length-1;i>=0;i--){ const brick=bricks[i]; if(!brick || !toDestroy.has(brick)) continue; const spawnable=!brick.boss; const cx=brick.x+brick.w/2; const cy=brick.y+brick.h/2; destroyBrick(i,'plasmaHit'); if(spawnable){ destroyedPositions.push({x:cx,y:cy}); } }
     return destroyedPositions;
@@ -19638,6 +19639,7 @@ function generateLevel(lv, L){
             if(bk.hp<=0){ revealBrickArea(bk); maybeDropFromBrick(bk); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(bk)); if(bk.elite) stats.eliteKills++; updateHUD(); }
           }
           spawnParticles(bk.x+bk.w/2,bk.y+bk.h/2,'rgba(120,255,120,0.9)',10,1.5,2.4,2);
+          strikeDemonAbyssBricksAtPoint(bk.x+bk.w/2, bk.y+bk.h/2, Math.max(bk.w, bk.h)*0.75, 'poison');
         }
       }
     }
@@ -19860,7 +19862,7 @@ function generateLevel(lv, L){
 
     if(stormTurret){ if(now>=stormTurret.fireAt){ if(stormTurret.shots<=0){ stormTurret=null; buffs.STORM.active=false; } else if(now-stormTurret.lastShot>=200){ const idx=randomBrick(true); if(idx!=null){ if(idx==='boss' && isSpecialBossActive()){ const impact=activeBossImpactPoint(stormTurret.x,stormTurret.y); highlightSpaceBossTarget(); strikeDemonSpearsAlongLine(stormTurret.x, stormTurret.y, impact.x, impact.y, 'laser'); strikeDemonAbyssBricksAlongLine(stormTurret.x, stormTurret.y, impact.x, impact.y, 'laser'); laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:impact.x,y2:impact.y,until:now+200}); laserImpacts.push({x:impact.x,y:impact.y,t0:now,tEnd:now+320}); damageActiveBoss(1,'laser',impact); } else { const t=bricks[idx]; if(t){ const tx=t.x+t.w/2, ty=t.y+t.h/2; strikeDemonSpearsAlongLine(stormTurret.x, stormTurret.y, tx, ty, 'laser'); strikeDemonAbyssBricksAlongLine(stormTurret.x, stormTurret.y, tx, ty, 'laser'); laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:tx,y2:ty,until:now+200}); laserImpacts.push({x:tx,y:ty,t0:now,tEnd:now+320}); destroyBrick(idx,'laser'); } } stormTurret.shots--; stormTurret.lastShot=now; } } } }
 
-    if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ const d=Math.min(8,buffs.BLACKHOLE.deaths||0); const dmg=1+(d/8)*(40-1); const rad=200+(d/8)*(800-200); const pr=paddleRect(); const cx=pr.x+pr.w/2, cy=pr.y-rad; const spinDir=(Math.random()>0.5?1:-1); blackHoles.push({x:cx,y:cy,r:rad,until:now+3000,start:now,spinDir}); for(let i=bricks.length-1;i>=0;i--){ const bk=bricks[i]; const bx=bk.x+bk.w/2, by=bk.y+bk.h/2; if(Math.hypot(bx-cx,by-cy)<=rad){ damageBrick(i,dmg,'none'); } } if(circleIntersectsActiveBoss(cx,cy,rad)){ const impact=activeBossCenter(); damageActiveBoss(1,'blackhole',impact?{x:impact.x,y:impact.y}:{x:cx,y:cy}); } playSFX('blackhole'); buffs.BLACKHOLE.active=false; }
+    if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ const d=Math.min(8,buffs.BLACKHOLE.deaths||0); const dmg=1+(d/8)*(40-1); const rad=200+(d/8)*(800-200); const pr=paddleRect(); const cx=pr.x+pr.w/2, cy=pr.y-rad; const spinDir=(Math.random()>0.5?1:-1); blackHoles.push({x:cx,y:cy,r:rad,until:now+3000,start:now,spinDir}); for(let i=bricks.length-1;i>=0;i--){ const bk=bricks[i]; const bx=bk.x+bk.w/2, by=bk.y+bk.h/2; if(Math.hypot(bx-cx,by-cy)<=rad){ damageBrick(i,dmg,'none'); } } strikeDemonAbyssBricksAtPoint(cx, cy, rad, 'blackhole'); if(circleIntersectsActiveBoss(cx,cy,rad)){ const impact=activeBossCenter(); damageActiveBoss(1,'blackhole',impact?{x:impact.x,y:impact.y}:{x:cx,y:cy}); } playSFX('blackhole'); buffs.BLACKHOLE.active=false; }
 
     if(buffs.ANNIHIL.active && now>=buffs.ANNIHIL.next){ let cand=bricks.filter(b=>canDestroyBrick(b)&&!b.boss); if(!cand.length) cand=bricks.filter(b=>canDestroyBrick(b)); if(cand.length){ const target=cand[Math.floor(Math.random()*cand.length)]; const idx=bricks.indexOf(target); destroyBrick(idx,'annihil'); } else if(isSpecialBossActive()){ const center=activeBossCenter(); damageActiveBoss(1,'annihil',center?{x:center.x,y:center.y}:null); } buffs.ANNIHIL.next+=1000; }
 
@@ -20126,7 +20128,7 @@ function generateLevel(lv, L){
         if(buffs.FREEZE.active && (b.freeze.state==='idle' || !b.freeze.state)){ const f=GAME_CONFIG.powers.FREEZE.freeze; b.freeze.state = 'delay'; b.freeze.t0 = now; b.freeze.delay = f.delayMs; b.freeze.stop = f.stopMs; b.freeze.oldVX = b.vx; b.freeze.oldVY = b.vy; }
         if(buffs.HOLY.active){ applyHolyStrike(bk.x+bk.w/2, bk.y+bk.h/2); }
         if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
-        if(buffs.HELL.active){ const holeSpin=(Math.random()>0.5?1:-1); const volleyReady=buffs.MISSILE.active && equipmentMissileVolleyOnBreak; blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,r:40,until:now+GAME_CONFIG.powers.HELL.hell.haloMs,start:performance.now(),spinDir:holeSpin}); playSFX('blackhole'); destroyNeighbors(hit); destroyBrick(hit,'none'); if(volleyReady){ emitMissilesFromSource({x:b.x,y:b.y}); } }
+        if(buffs.HELL.active){ const holeSpin=(Math.random()>0.5?1:-1); const volleyReady=buffs.MISSILE.active && equipmentMissileVolleyOnBreak; const holeRadius=40; blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,r:holeRadius,until:now+GAME_CONFIG.powers.HELL.hell.haloMs,start:performance.now(),spinDir:holeSpin}); playSFX('blackhole'); strikeDemonAbyssBricksAtPoint(bk.x+bk.w/2, bk.y+bk.h/2, holeRadius, 'blackhole'); destroyNeighbors(hit); destroyBrick(hit,'none'); if(volleyReady){ emitMissilesFromSource({x:b.x,y:b.y}); } }
         if(buffs.POISON.active){ bk.poisonUntil = now + (GAME_CONFIG.powers.POISON.durationMs||12000); bk.poisonTick = now + (GAME_CONFIG.powers.POISON.poison?.tickMs||2000); }
 
         // 當前磚扣血（若已在上面被處理則略過）
