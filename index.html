@@ -1834,7 +1834,17 @@ select optgroup { color: #0b1022; }
     {id:'crimsonFlame',name:'紅蓮之力',icon:'W47.jpg',grade:'B',type:'passive',price:10,description:'被動：獲得火焰球時立即滿蓄能。',effect:{fireInstantCharge:true}},
     {id:'scatterFirework',name:'散落花火',icon:'W48.jpg',grade:'A',type:'passive',price:30,description:'被動：火焰球爆炸時額外在 3 處引爆花火。',effect:{fireScatter:true}},
     {id:'instantFlare',name:'瞬爆',icon:'W49.jpg',grade:'B',type:'active',price:10,description:'主動：立刻引爆火焰球，冷卻時間 10 秒。',effect:{fireInstantDetonate:{cooldown:10000}}},
-    {id:'chainDetonate',name:'連環爆炸',icon:'W50.jpg',grade:'A',type:'active',price:30,description:'主動：立刻引爆場上所有爆炸磚，冷卻時間 10 秒。',effect:{massExplode:{cooldown:10000}}}
+    {id:'chainDetonate',name:'連環爆炸',icon:'W50.jpg',grade:'A',type:'active',price:30,description:'主動：立刻引爆場上所有爆炸磚，冷卻時間 10 秒。',effect:{massExplode:{cooldown:10000}}},
+    {id:'nuke',name:'核爆',icon:'W51.jpg',grade:'S',type:'consumable',price:100,description:'消耗：發生驚人核爆炸銷毀所有磚塊且 Boss HP-30，自身 HP-1，使用後消失。',effect:{nuke:{bossDamage:30,selfDamage:1}}},
+    {id:'poisonSpread',name:'毒性擴散',icon:'W52.jpg',grade:'A',type:'passive',price:30,description:'被動：中毒的磚塊 2 秒後會感染鄰近的磚塊導致其中毒。',effect:{poisonSpread:{delay:2000}}},
+    {id:'poisonBoost',name:'毒性加強',icon:'W53.jpg',grade:'B',type:'passive',price:10,description:'被動：中毒的磚塊每秒損失 1 HP。',effect:{poisonTickMs:1000}},
+    {id:'poisonBurst',name:'毒性爆發',icon:'W54.jpg',grade:'A',type:'active',price:30,description:'主動：引爆所有中毒的磚塊，冷卻時間 30 秒。',effect:{poisonDetonate:{cooldown:30000}}},
+    {id:'greatPlague',name:'大瘟疫',icon:'W55.jpg',grade:'S',type:'active',price:100,description:'主動：場上隨機 15 個磚塊以 0.3 秒間隔依序中毒，冷卻時間 60 秒。',effect:{greatPlague:{count:15,interval:300,cooldown:60000}}},
+    {id:'superSymmetry',name:'超對稱',icon:'W56.jpg',grade:'S',type:'active',price:100,description:'主動：強制左右側磚塊對稱，較多的一側不對稱磚塊爆裂，冷卻時間 60 秒。',effect:{mirrorSymmetry:{cooldown:60000}}},
+    {id:'poisonPlasma',name:'毒性電漿',icon:'W57.jpg',grade:'B',type:'passive',price:10,description:'被動：磚塊因中毒死亡時會產生電漿。',effect:{poisonPlasma:true}},
+    {id:'starForce',name:'星星之力',icon:'W58.jpg',grade:'B',type:'active',price:10,description:'主動：天空隨機 3 處斜向墜落星星，命中造成 4 點傷害，冷卻時間 30 秒。',effect:{starStrike:{count:3,damage:4,cooldown:30000}}},
+    {id:'sunForce',name:'太陽之力',icon:'W59.jpg',grade:'A',type:'passive',price:30,description:'被動：使用 Skin「烈陽．炙金幻焰」時，每 10 秒隨機磚塊產生 3×3 爆炸。',effect:{solarBurst:{interval:10000}}},
+    {id:'moonForce',name:'月亮之力',icon:'W60.jpg',grade:'A',type:'active',price:30,description:'主動：巨大月亮隨機位置斜向墜落，命中造成 4 點傷害並最多反彈 9 次，冷卻時間 30 秒。',effect:{moonFall:{damage:4,maxBounces:9,cooldown:30000}}}
   ];
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
@@ -1920,6 +1930,16 @@ select optgroup { color: #0b1022; }
   let equipmentMissileHolyStrike=false;
   let equipmentFireInstantCharge=false;
   let equipmentFireScatter=false;
+  let equipmentPoisonSpreadDelay=0;
+  let equipmentPoisonTickInterval=0;
+  let equipmentPoisonPlasma=false;
+  let equipmentSolarBurst=false;
+  let equipmentSolarBurstInterval=0;
+  let solarBurstNextAt=0;
+  let equipmentPoisonSpreadDelay=0;
+  let equipmentPoisonTickInterval=0;
+  let equipmentPoisonPlasma=false;
+  let equipmentSolarBurst=false;
   let plasmaChainNextAt=0;
   let applyingLinkedMulti=false;
   let applyingLinkedMega=false;
@@ -2690,6 +2710,12 @@ select optgroup { color: #0b1022; }
     equipmentMissileHolyStrike=false;
     equipmentFireInstantCharge=false;
     equipmentFireScatter=false;
+    equipmentPoisonSpreadDelay=0;
+    equipmentPoisonTickInterval=0;
+    equipmentPoisonPlasma=false;
+    equipmentSolarBurst=false;
+    equipmentSolarBurstInterval=0;
+    solarBurstNextAt=0;
     plasmaChainNextAt=0;
     for(const slot of equipmentSlots){
       if(!slot) continue;
@@ -2751,6 +2777,26 @@ select optgroup { color: #0b1022; }
       if(effect.missileHolyStrike) equipmentMissileHolyStrike=true;
       if(effect.fireInstantCharge) equipmentFireInstantCharge=true;
       if(effect.fireScatter) equipmentFireScatter=true;
+      if(effect.poisonSpread){
+        const delay=Math.max(0, Number(effect.poisonSpread.delay)||0);
+        if(delay>0){
+          equipmentPoisonSpreadDelay = equipmentPoisonSpreadDelay>0 ? Math.min(equipmentPoisonSpreadDelay, delay) : delay;
+        }
+      }
+      if(effect.poisonTickMs){
+        const interval=Math.max(50, Number(effect.poisonTickMs)||0);
+        if(interval>0){
+          equipmentPoisonTickInterval = equipmentPoisonTickInterval>0 ? Math.min(equipmentPoisonTickInterval, interval) : interval;
+        }
+      }
+      if(effect.poisonPlasma) equipmentPoisonPlasma=true;
+      if(effect.solarBurst){
+        const interval=Math.max(1000, Number(effect.solarBurst.interval)||0);
+        equipmentSolarBurst=true;
+        if(interval>0){
+          equipmentSolarBurstInterval = equipmentSolarBurstInterval>0 ? Math.min(equipmentSolarBurstInterval, interval) : interval;
+        }
+      }
     }
     if(equipmentPlasmaChainActive && equipmentPlasmaChainInterval>0){
       const now=typeof performance!=='undefined'?performance.now():0;
@@ -3005,6 +3051,90 @@ select optgroup { color: #0b1022; }
       slot.cooldownUntil=cooldown>0?now+cooldown:0;
       slot.lastUsed=now;
       showEquipmentMessage('爆炸磚引爆完成！','success',2400);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.nuke){
+      const detonated=triggerNuke(effect.nuke||{});
+      if(!detonated){
+        showEquipmentMessage('核爆目前無法啟動。','warning',2200);
+        return;
+      }
+      showEquipmentMessage('核爆啟動！戰場被徹底清空。','success',2600);
+      equipmentSlots[index]=null;
+      recalcEquipmentBonuses();
+      renderEquipmentSlots();
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.poisonDetonate){
+      const triggered=triggerPoisonDetonation();
+      if(!triggered){
+        showEquipmentMessage('目前沒有中毒的磚塊可引爆。','warning',2200);
+        return;
+      }
+      const cooldown=Math.max(0, Number(effect.poisonDetonate.cooldown)||30000);
+      slot.cooldownDuration=cooldown;
+      slot.cooldownStarted=cooldown>0?now:0;
+      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      slot.lastUsed=now;
+      showEquipmentMessage('毒性爆發！中毒磚塊全面引爆。','success',2400);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.greatPlague){
+      const triggered=triggerGreatPlague(effect.greatPlague||{});
+      if(!triggered){
+        showEquipmentMessage('場上沒有適合感染的磚塊。','warning',2200);
+        return;
+      }
+      const cooldown=Math.max(0, Number(effect.greatPlague.cooldown)||60000);
+      slot.cooldownDuration=cooldown;
+      slot.cooldownStarted=cooldown>0?now:0;
+      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      slot.lastUsed=now;
+      showEquipmentMessage('大瘟疫擴散！劇毒蔓延全場。','success',2600);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.mirrorSymmetry){
+      const triggered=triggerMirrorSymmetry();
+      if(!triggered){
+        showEquipmentMessage('目前磚陣已近乎對稱。','warning',2000);
+        return;
+      }
+      const cooldown=Math.max(0, Number(effect.mirrorSymmetry.cooldown)||60000);
+      slot.cooldownDuration=cooldown;
+      slot.cooldownStarted=cooldown>0?now:0;
+      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      slot.lastUsed=now;
+      showEquipmentMessage('超對稱啟動，左右鏡像完成！','success',2400);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.starStrike){
+      const cfg=effect.starStrike||{};
+      const count=Math.max(1, Math.floor(cfg.count||3));
+      const dmg=Math.max(1, Number(cfg.damage)||4);
+      spawnStarProjectiles(count, dmg);
+      const cooldown=Math.max(0, Number(cfg.cooldown)||30000);
+      slot.cooldownDuration=cooldown;
+      slot.cooldownStarted=cooldown>0?now:0;
+      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      slot.lastUsed=now;
+      showEquipmentMessage('星星之力降臨，群星墜落！','success',2200);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.moonFall){
+      const cfg=effect.moonFall||{};
+      spawnMoonProjectile(cfg);
+      const cooldown=Math.max(0, Number(cfg.cooldown)||30000);
+      slot.cooldownDuration=cooldown;
+      slot.cooldownStarted=cooldown>0?now:0;
+      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      slot.lastUsed=now;
+      showEquipmentMessage('月亮之力啟動，巨月橫掃戰場！','success',2200);
       refreshEquipmentRuntime(performance.now());
       return;
     }
@@ -7501,6 +7631,9 @@ select optgroup { color: #0b1022; }
   let phoenixAnim=null; // {x, tEnd}
   const fireBursts=[];  // 火焰片段 {x,y,life}
   const fireExplosions=[]; // 火焰球爆炸效果 {x,y,r,t0,life}
+  const starProjectiles=[]; // 隕落星星 {x,y,vx,vy,damage,radius}
+  const moonProjectiles=[]; // 反彈月亮 {x,y,vx,vy,damage,radius,bounces,maxBounces,alive}
+  const activePlagueTimers=[];
 
   // 新增容器：飛彈、黑洞特效、雷射光束
   const missiles=[]; // {x,y,vx,vy,targetId,targetType,lifeUntil,trail:[]}
@@ -11806,6 +11939,10 @@ function chooseTrackTargetForBall(ball){
     spaceBossAnchor=null;
     spaceBossPlaceholder=null;
     spaceBossBursts=[];
+    clearActivePlagueTimers();
+    starProjectiles.length=0;
+    moonProjectiles.length=0;
+    solarBurstNextAt=0;
     spaceBossMarquee=null;
     spaceBossRevealScheduled=0;
     spaceBossDefeatedAt=0;
@@ -16609,6 +16746,527 @@ function generateLevel(lv, L){
     return true;
   }
 
+  function poisonTickIntervalMs(){
+    const base=GAME_CONFIG.powers.POISON.poison.tickMs||2000;
+    if(equipmentPoisonTickInterval>0){
+      return equipmentPoisonTickInterval;
+    }
+    return base;
+  }
+
+  function applyPoisonToBrick(brick, now=performance.now()){
+    if(!brick) return;
+    const duration=Math.max(0, GAME_CONFIG.powers.POISON.durationMs||12000);
+    const tickInterval=Math.max(50, poisonTickIntervalMs());
+    brick.poisonUntil=now+duration;
+    brick.poisonTick=now+tickInterval;
+    brick.poisonAppliedAt=now;
+    if(equipmentPoisonSpreadDelay>0){
+      brick.poisonSpreadAt=now+equipmentPoisonSpreadDelay;
+      brick.poisonSpreadTriggered=false;
+    }else{
+      brick.poisonSpreadAt=0;
+      brick.poisonSpreadTriggered=true;
+    }
+  }
+
+  function clearBrickPoison(brick){
+    if(!brick) return;
+    delete brick.poisonUntil;
+    delete brick.poisonTick;
+    delete brick.poisonSpreadAt;
+    delete brick.poisonSpreadTriggered;
+    delete brick.poisonAppliedAt;
+  }
+
+  function brickGridPosition(brick){
+    const L=layout();
+    if(!L) return null;
+    const cols=L.cols||0;
+    const rows=L.rows||0;
+    if(!cols || !rows) return null;
+    const col=Math.max(0, Math.min(cols-1, Math.round((brick.x - L.pad)/(brickW + L.pad))));
+    const row=Math.max(0, Math.min(rows-1, Math.round((brick.y - L.top)/(brickH + L.pad))));
+    return {row, col};
+  }
+
+  function isStandardGridBrick(brick){
+    if(!brick) return false;
+    if(Math.abs((brick.w||brickW) - brickW) > 1) return false;
+    if(Math.abs((brick.h||brickH) - brickH) > 1) return false;
+    return true;
+  }
+
+  function spreadPoisonFromBrick(brick, now=performance.now()){
+    if(!brick) return;
+    const origin=brickGridPosition(brick);
+    if(!origin) return;
+    const neighbors=[];
+    for(const other of bricks){
+      if(!other || other===brick) continue;
+      if(other.fallingTreasure) continue;
+      if(other.unbreakable) continue;
+      const pos=brickGridPosition(other);
+      if(!pos) continue;
+      if(Math.abs(pos.row-origin.row)<=1 && Math.abs(pos.col-origin.col)<=1){
+        neighbors.push(other);
+      }
+    }
+    if(!neighbors.length) return;
+    for(const target of neighbors){
+      if(target.poisonUntil && target.poisonUntil>now) continue;
+      applyPoisonToBrick(target, now);
+      const cx=target.x+target.w/2;
+      const cy=target.y+target.h/2;
+      spawnParticles(cx,cy,'rgba(90,255,140,0.45)',12,1.4,2.2,2.0);
+    }
+  }
+
+  function clearActivePlagueTimers(){
+    while(activePlagueTimers.length){
+      const timer=activePlagueTimers.pop();
+      clearTimeout(timer);
+    }
+  }
+
+  function triggerGreatPlague(cfg={}){
+    const candidates=bricks.filter(b=>b && !b.fallingTreasure && canDestroyBrick(b));
+    if(!candidates.length) return false;
+    clearActivePlagueTimers();
+    const count=Math.max(1, Math.min(candidates.length, Math.floor(cfg.count)||15));
+    const interval=Math.max(0, Number(cfg.interval)||300);
+    const pool=[...candidates];
+    const picks=[];
+    while(picks.length<count && pool.length){
+      const idx=Math.floor(Math.random()*pool.length);
+      picks.push(pool.splice(idx,1)[0]);
+    }
+    picks.forEach((brick,idx)=>{
+      const timer=setTimeout(()=>{
+        const currentIndex=bricks.indexOf(brick);
+        if(currentIndex===-1) return;
+        const current=bricks[currentIndex];
+        applyPoisonToBrick(current, performance.now());
+        const cx=current.x+current.w/2;
+        const cy=current.y+current.h/2;
+        spawnParticles(cx,cy,'rgba(120,255,120,0.6)',14,1.6,2.4,2.4);
+      }, idx*interval);
+      activePlagueTimers.push(timer);
+    });
+    return true;
+  }
+
+  function triggerPoisonDetonation(){
+    const infected=[];
+    for(let i=0;i<bricks.length;i++){
+      const brick=bricks[i];
+      if(!brick?.poisonUntil) continue;
+      infected.push(i);
+    }
+    if(!infected.length) return false;
+    infected.sort((a,b)=>a-b);
+    let triggered=false;
+    for(let idx=infected.length-1; idx>=0; idx--){
+      const i=infected[idx];
+      const brick=bricks[i];
+      if(!brick) continue;
+      if(brick.boss){
+        const cx=brick.x+brick.w/2;
+        const cy=brick.y+brick.h/2;
+        damageActiveBoss(1,'poisonDetonate',{x:cx,y:cy});
+        spawnParticles(cx,cy,'rgba(140,255,160,0.85)',26,2.0,3.0,3.2);
+        clearBrickPoison(brick);
+        triggered=true;
+        continue;
+      }
+      if(!canDestroyBrick(brick)){
+        clearBrickPoison(brick);
+        continue;
+      }
+      const cx=brick.x+brick.w/2;
+      const cy=brick.y+brick.h/2;
+      spawnParticles(cx,cy,'rgba(140,255,160,0.85)',26,2.0,3.0,3.2);
+      destroyBrick(i,'none');
+      if(equipmentPoisonPlasma){
+        spawnPlasmaBurst(cx,cy,{sound:false});
+      }
+      triggered=true;
+    }
+    if(triggered){
+      playSFX('explosion');
+      screenShake=Math.max(screenShake,6);
+    }
+    return triggered;
+  }
+
+  function destroyBricksInArea(brick, radiusCells=1){
+    if(!brick) return false;
+    const origin=brickGridPosition(brick);
+    if(!origin) return false;
+    const targets=[];
+    for(let i=0;i<bricks.length;i++){
+      const candidate=bricks[i];
+      if(!candidate) continue;
+      if(candidate.fallingTreasure) continue;
+      if(!canDestroyBrick(candidate)) continue;
+      const pos=brickGridPosition(candidate);
+      if(!pos) continue;
+      if(Math.abs(pos.row-origin.row)<=radiusCells && Math.abs(pos.col-origin.col)<=radiusCells){
+        targets.push(i);
+      }
+    }
+    if(!targets.length) return false;
+    targets.sort((a,b)=>a-b);
+    let triggered=false;
+    for(let idx=targets.length-1; idx>=0; idx--){
+      const index=targets[idx];
+      const target=bricks[index];
+      if(!target) continue;
+      const cx=target.x+target.w/2;
+      const cy=target.y+target.h/2;
+      spawnParticles(cx,cy,'#ffb347',20,2.0,3.2,3.4);
+      destroyBrick(index,'none');
+      triggered=true;
+    }
+    if(triggered){
+      playSFX('explosion');
+      screenShake=Math.max(screenShake,8);
+    }
+    return triggered;
+  }
+
+  function triggerSolarBurst(now=performance.now()){
+    if(!equipmentSolarBurst) return false;
+    if(window.currentSkin?.cssSkin!=='烈陽．炙金幻焰') return false;
+    const candidates=bricks.filter(b=>b && !b.fallingTreasure && canDestroyBrick(b));
+    if(!candidates.length) return false;
+    const target=candidates[Math.floor(Math.random()*candidates.length)];
+    if(!target) return false;
+    return destroyBricksInArea(target,1);
+  }
+
+  function triggerMirrorSymmetry(){
+    const L=layout();
+    if(!L) return false;
+    const cols=L.cols||0;
+    const rows=L.rows||0;
+    if(!cols || !rows) return false;
+    const grid=new Map();
+    let leftCount=0, rightCount=0;
+    for(let i=0;i<bricks.length;i++){
+      const brick=bricks[i];
+      if(!brick) continue;
+      if(brick.fallingTreasure) continue;
+      if(!isStandardGridBrick(brick)) continue;
+      const pos=brickGridPosition(brick);
+      if(!pos) continue;
+      const key=`${pos.row}:${pos.col}`;
+      if(!grid.has(key)) grid.set(key, []);
+      grid.get(key).push({index:i, brick});
+      if(pos.col < cols/2) leftCount++;
+      else if(pos.col > (cols-1)/2) rightCount++;
+    }
+    const dominant=leftCount>rightCount?'left':leftCount<rightCount?'right':'none';
+    const removals=new Set();
+    const clones=[];
+    for(let col=0; col<Math.floor(cols/2); col++){
+      const mirrorCol=cols-1-col;
+      for(let row=0; row<rows; row++){
+        const leftKey=`${row}:${col}`;
+        const rightKey=`${row}:${mirrorCol}`;
+        const leftList=grid.get(leftKey)||[];
+        const rightList=grid.get(rightKey)||[];
+        const leftHas=leftList.some(({brick})=>brick && canDestroyBrick(brick) && !brick.boss && !brick.unbreakable);
+        const rightHas=rightList.some(({brick})=>brick && canDestroyBrick(brick) && !brick.boss && !brick.unbreakable);
+        if(leftHas && rightHas) continue;
+        if(leftHas && !rightHas){
+          if(dominant==='left' || dominant==='none'){
+            for(const entry of leftList){
+              if(entry.brick && canDestroyBrick(entry.brick) && !entry.brick.boss && !entry.brick.unbreakable){
+                removals.add(entry.index);
+              }
+            }
+          }else{
+            const source=leftList.find(({brick})=>brick && canDestroyBrick(brick) && !brick.boss && !brick.unbreakable);
+            if(source){
+              clones.push({source:source.brick, col:mirrorCol, row});
+            }
+          }
+        }else if(rightHas && !leftHas){
+          if(dominant==='right' || dominant==='none'){
+            for(const entry of rightList){
+              if(entry.brick && canDestroyBrick(entry.brick) && !entry.brick.boss && !entry.brick.unbreakable){
+                removals.add(entry.index);
+              }
+            }
+          }else{
+            const source=rightList.find(({brick})=>brick && canDestroyBrick(brick) && !brick.boss && !brick.unbreakable);
+            if(source){
+              clones.push({source:source.brick, col, row});
+            }
+          }
+        }
+      }
+    }
+    if(!removals.size && !clones.length) return false;
+    const removalList=Array.from(removals).sort((a,b)=>a-b);
+    for(let idx=removalList.length-1; idx>=0; idx--){
+      const index=removalList[idx];
+      const brick=bricks[index];
+      if(!brick) continue;
+      const cx=brick.x+brick.w/2;
+      const cy=brick.y+brick.h/2;
+      spawnParticles(cx,cy,'rgba(255,180,90,0.9)',22,2.0,3.2,3.2);
+      destroyBrick(index,'none');
+    }
+    for(const entry of clones){
+      const source=entry.source;
+      if(!source) continue;
+      const col=entry.col;
+      const row=entry.row;
+      const x=L.pad + col*(brickW + L.pad);
+      const y=L.top + row*(brickH + L.pad);
+      const opts={
+        hp:source.boss?source.hp:Math.max(1, source.hp||1),
+        colorIdx:source.colorIdx,
+        explosive:!!source.explosive,
+        strong:!!source.strong,
+        moving:false,
+        vx:0,
+        elite:!!source.elite
+      };
+      addBrick(bricks, x, y, brickW, brickH, opts);
+      spawnParticles(x+brickW/2,y+brickH/2,'rgba(150,200,255,0.8)',18,1.6,2.6,2.6);
+    }
+    if(removals.size || clones.length){
+      playSFX('explosion');
+      screenShake=Math.max(screenShake,8);
+      updateHUD();
+    }
+    return true;
+  }
+
+  function triggerNuke(cfg={}){
+    const bossDamage=Math.max(0, Number(cfg.bossDamage)||0);
+    const selfDamage=Math.max(0, Number(cfg.selfDamage)||0);
+    for(let i=bricks.length-1;i>=0;i--){
+      const brick=bricks[i];
+      if(!brick) continue;
+      if(brick.boss) continue;
+      if(!canDestroyBrick(brick)) continue;
+      const cx=brick.x+brick.w/2;
+      const cy=brick.y+brick.h/2;
+      spawnParticles(cx,cy,'#ffd480',28,2.4,3.6,3.6);
+      destroyBrick(i,'none');
+    }
+    if(bossDamage>0){
+      damageActiveBoss(bossDamage,'nuke',{x:550,y:320});
+    }
+    spawnParticles(550,350,'#fff2a8',160,3.4,4.8,4.8);
+    playSFX('explosion');
+    screenShake=Math.max(screenShake,18);
+    if(selfDamage>0){
+      stats.livesUsed+=selfDamage;
+      lives=Math.max(0, lives-selfDamage);
+      updateHUD();
+      if(lives<=0){
+        running=false;
+        paused=true;
+        showGameOver();
+      }
+    }
+    return true;
+  }
+
+  function spawnStarProjectiles(count=3, damage=4){
+    const L=layout();
+    const pad=L?.pad||0;
+    const top=L?.top||0;
+    for(let i=0;i<count;i++){
+      const startX=pad + Math.random()*Math.max(10, 1100-2*pad);
+      const startY=top - 80 - Math.random()*60;
+      const dir=Math.random()<0.5?-1:1;
+      const speed=7+Math.random()*2.5;
+      const angle=(Math.PI/2) + dir*(Math.PI/6 + Math.random()*0.25);
+      starProjectiles.push({
+        x:startX,
+        y:startY,
+        vx:Math.cos(angle)*speed,
+        vy:Math.sin(angle)*speed,
+        damage:damage,
+        radius:18,
+        created:performance.now()
+      });
+    }
+    playSFX('explosion');
+  }
+
+  function updateStarProjectiles(now){
+    for(let i=starProjectiles.length-1;i>=0;i--){
+      const star=starProjectiles[i];
+      star.x+=star.vx;
+      star.y+=star.vy;
+      star.vy+=0.12;
+      let hit=false;
+      for(let j=bricks.length-1;j>=0;j--){
+        const brick=bricks[j];
+        if(!brick) continue;
+        const rect={x:brick.x,y:brick.y,w:brick.w,h:brick.h};
+        if(star.x>=rect.x && star.x<=rect.x+rect.w && star.y>=rect.y && star.y<=rect.y+rect.h){
+          if(brick.boss){
+            damageActiveBoss(star.damage,'star',{x:star.x,y:star.y});
+          }else{
+            damageBrick(j, star.damage, 'none');
+          }
+          spawnParticles(star.x,star.y,'rgba(255,215,120,0.9)',22,2.0,3.2,3.2);
+          hit=true;
+          break;
+        }
+      }
+      if(!hit && circleIntersectsActiveBoss(star.x, star.y, star.radius||18)){
+        damageActiveBoss(star.damage,'star',{x:star.x,y:star.y});
+        spawnParticles(star.x,star.y,'rgba(255,215,120,0.9)',22,2.0,3.2,3.2);
+        hit=true;
+      }
+      if(hit || star.y>760 || star.x<-80 || star.x>1180){
+        starProjectiles.splice(i,1);
+      }
+    }
+  }
+
+  function drawStarProjectiles(){
+    if(!starProjectiles.length) return;
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    for(const star of starProjectiles){
+      const x=star.x*scaleX;
+      const y=star.y*scaleY;
+      const r=(star.radius||18)*((scaleX+scaleY)/2);
+      const grad=ctx.createRadialGradient(x,y,0,x,y,r);
+      grad.addColorStop(0,'rgba(255,255,200,0.95)');
+      grad.addColorStop(0.6,'rgba(255,200,90,0.6)');
+      grad.addColorStop(1,'rgba(255,180,60,0)');
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function spawnMoonProjectile(cfg={}){
+    const damage=Math.max(1, Number(cfg.damage)||4);
+    const maxBounces=Math.max(1, Number(cfg.maxBounces)||9);
+    const L=layout();
+    const pad=L?.pad||0;
+    const top=L?.top||0;
+    const startX=pad + Math.random()*Math.max(10, 1100-2*pad);
+    const startY=top - 120;
+    const dir=Math.random()<0.5?-1:1;
+    const speed=6.5;
+    const angle=(Math.PI/2) + dir*(Math.PI/8 + Math.random()*0.2);
+    moonProjectiles.push({
+      x:startX,
+      y:startY,
+      vx:Math.cos(angle)*speed,
+      vy:Math.sin(angle)*speed,
+      damage,
+      radius:28,
+      bounces:0,
+      maxBounces
+    });
+    playSFX('explosion');
+  }
+
+  function updateMoonProjectiles(now){
+    for(let i=moonProjectiles.length-1;i>=0;i--){
+      const moon=moonProjectiles[i];
+      const prevX=moon.x;
+      const prevY=moon.y;
+      moon.x+=moon.vx;
+      moon.y+=moon.vy;
+      moon.vy+=0.08;
+      let bounced=false;
+      for(let j=bricks.length-1;j>=0;j--){
+        const brick=bricks[j];
+        if(!brick) continue;
+        const rect={x:brick.x,y:brick.y,w:brick.w,h:brick.h};
+        if(circleIntersectsRect(moon.x, moon.y, moon.radius||26, rect)){
+          if(brick.boss){
+            damageActiveBoss(moon.damage,'moon',{x:moon.x,y:moon.y});
+          }else{
+            damageBrick(j, moon.damage, 'none');
+          }
+          spawnParticles(moon.x,moon.y,'rgba(200,210,255,0.9)',26,2.2,3.4,3.4);
+          if(prevY < rect.y){
+            moon.y = rect.y - (moon.radius||26);
+            moon.vy = -Math.abs(moon.vy);
+          }else if(prevY > rect.y + rect.h){
+            moon.y = rect.y + rect.h + (moon.radius||26);
+            moon.vy = Math.abs(moon.vy);
+          }else{
+            moon.vx *= -1;
+          }
+          bounced=true;
+          break;
+        }
+      }
+      if(!bounced){
+        if(moon.x-(moon.radius||26)<0){
+          moon.x=(moon.radius||26);
+          moon.vx=Math.abs(moon.vx);
+          bounced=true;
+        }else if(moon.x+(moon.radius||26)>1100){
+          moon.x=1100-(moon.radius||26);
+          moon.vx=-Math.abs(moon.vx);
+          bounced=true;
+        }
+        if(moon.y-(moon.radius||26)<0){
+          moon.y=(moon.radius||26);
+          moon.vy=Math.abs(moon.vy);
+          bounced=true;
+        }else if(moon.y+(moon.radius||26)>700){
+          moon.y=700-(moon.radius||26);
+          moon.vy=-Math.abs(moon.vy);
+          bounced=true;
+        }
+      }
+      if(bounced){
+        moon.bounces++;
+        screenShake=Math.max(screenShake,4);
+      }
+      if(circleIntersectsActiveBoss(moon.x, moon.y, moon.radius||26)){
+        damageActiveBoss(moon.damage,'moon',{x:moon.x,y:moon.y});
+        moon.vy = -Math.abs(moon.vy||6);
+        moon.vx *= -1;
+        moon.bounces++;
+        bounced=true;
+      }
+      if(moon.bounces>moon.maxBounces || moon.y>780 || moon.y<-200){
+        moonProjectiles.splice(i,1);
+      }
+    }
+  }
+
+  function drawMoonProjectiles(){
+    if(!moonProjectiles.length) return;
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    for(const moon of moonProjectiles){
+      const x=moon.x*scaleX;
+      const y=moon.y*scaleY;
+      const r=(moon.radius||28)*((scaleX+scaleY)/2);
+      ctx.fillStyle='rgba(220,225,255,0.9)';
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle='rgba(170,180,255,0.6)';
+      ctx.lineWidth=3;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function fireCollide(){ if(buffs.FIRE.active){ fireEnergy++; updateFireEnergy(); } }
 
   // === 掉落道具 ===
@@ -17308,6 +17966,10 @@ function generateLevel(lv, L){
     demonBloodEffects.length=0;
     demonAbyssBricks.length=0;
     demonAbyssExplosions.length=0;
+    starProjectiles.length=0;
+    moonProjectiles.length=0;
+    clearActivePlagueTimers();
+    solarBurstNextAt=0;
     if(demonAttackActive && demonAttackActive.type==='abyssShatter'){
       demonAttackActive=null;
       demonAttackNextAt=0;
@@ -18173,6 +18835,9 @@ function generateLevel(lv, L){
         ctx.fillStyle='rgba(255,255,255,.75)'; const ratio=Math.max(0,(b.hp-1))/3; ctx.fillRect((b.x+4)*scaleX,(b.y+b.h-6)*scaleY,(b.w-8)*ratio*scaleX,4*scaleY);
       }
     }
+
+    drawStarProjectiles();
+    drawMoonProjectiles();
 
     for(const d of demonFallingDebris){
       ctx.save();
@@ -19624,24 +20289,59 @@ function generateLevel(lv, L){
     // 劇毒磚持續扣血
     for(let i=bricks.length-1;i>=0;i--){
       const bk=bricks[i];
-      if(!bk.poisonUntil) continue;
-      if(now>=bk.poisonUntil){ delete bk.poisonUntil; delete bk.poisonTick; continue; }
-      if(!bk.poisonTick) bk.poisonTick = now + (GAME_CONFIG.powers.POISON.poison.tickMs||2000);
+      if(!bk?.poisonUntil) continue;
+      if(now>=bk.poisonUntil){
+        clearBrickPoison(bk);
+        continue;
+      }
+      if(equipmentPoisonSpreadDelay>0 && bk.poisonSpreadAt && !bk.poisonSpreadTriggered && now>=bk.poisonSpreadAt){
+        spreadPoisonFromBrick(bk, now);
+        bk.poisonSpreadTriggered=true;
+      }
+      if(!bk.poisonTick) bk.poisonTick = now + poisonTickIntervalMs();
       if(now >= bk.poisonTick){
-        bk.poisonTick += (GAME_CONFIG.powers.POISON.poison.tickMs||2000);
+        bk.poisonTick += poisonTickIntervalMs();
         if(canDestroyBrick(bk)){
+          const cx=bk.x+bk.w/2;
+          const cy=bk.y+bk.h/2;
           if(bk.boss){
             bk.hp-=1;
+            spawnParticles(cx,cy,'rgba(120,255,120,0.9)',12,1.6,2.4,2.2);
             if(bk.hp<=0){ bossKillEffect(bk); revealBrickArea(bk); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(bk)); stats.bossKills++; updateHUD(); }
+            strikeDemonAbyssBricksAtPoint(cx, cy, Math.max(bk.w, bk.h)*0.75, 'poison');
+            continue;
           }
-          else {
-            bk.hp=(bk.hp||1)-1;
-            if(bk.hp<=0){ revealBrickArea(bk); maybeDropFromBrick(bk); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(bk)); if(bk.elite) stats.eliteKills++; updateHUD(); }
+          bk.hp=(bk.hp||1)-1;
+          spawnParticles(cx,cy,'rgba(120,255,120,0.9)',12,1.6,2.4,2.2);
+          strikeDemonAbyssBricksAtPoint(cx, cy, Math.max(bk.w, bk.h)*0.75, 'poison');
+          if(bk.hp<=0){
+            if(equipmentPoisonPlasma){ spawnPlasmaBurst(cx,cy,{sound:false}); }
+            revealBrickArea(bk);
+            maybeDropFromBrick(bk);
+            bricks.splice(i,1);
+            incrementCombo();
+            addScore(scoreForBrick(bk));
+            if(bk.elite) stats.eliteKills++;
+            updateHUD();
           }
-          spawnParticles(bk.x+bk.w/2,bk.y+bk.h/2,'rgba(120,255,120,0.9)',10,1.5,2.4,2);
-          strikeDemonAbyssBricksAtPoint(bk.x+bk.w/2, bk.y+bk.h/2, Math.max(bk.w, bk.h)*0.75, 'poison');
         }
       }
+    }
+
+    updateStarProjectiles(now);
+    updateMoonProjectiles(now);
+    if(equipmentSolarBurst && equipmentSolarBurstInterval>0 && window.currentSkin?.cssSkin==='烈陽．炙金幻焰'){
+      if(!solarBurstNextAt){
+        solarBurstNextAt = now + equipmentSolarBurstInterval;
+      }else if(now >= solarBurstNextAt){
+        const triggered=triggerSolarBurst(now);
+        solarBurstNextAt = now + equipmentSolarBurstInterval;
+        if(!triggered){
+          solarBurstNextAt = now + Math.max(2000, equipmentSolarBurstInterval);
+        }
+      }
+    }else{
+      solarBurstNextAt=0;
     }
 
     // === 天地翻轉狀態處理 ===
@@ -20129,7 +20829,7 @@ function generateLevel(lv, L){
         if(buffs.HOLY.active){ applyHolyStrike(bk.x+bk.w/2, bk.y+bk.h/2); }
         if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
         if(buffs.HELL.active){ const holeSpin=(Math.random()>0.5?1:-1); const volleyReady=buffs.MISSILE.active && equipmentMissileVolleyOnBreak; const holeRadius=40; blackHoles.push({x:bk.x+bk.w/2,y:bk.y+bk.h/2,r:holeRadius,until:now+GAME_CONFIG.powers.HELL.hell.haloMs,start:performance.now(),spinDir:holeSpin}); playSFX('blackhole'); strikeDemonAbyssBricksAtPoint(bk.x+bk.w/2, bk.y+bk.h/2, holeRadius, 'blackhole'); destroyNeighbors(hit); destroyBrick(hit,'none'); if(volleyReady){ emitMissilesFromSource({x:b.x,y:b.y}); } }
-        if(buffs.POISON.active){ bk.poisonUntil = now + (GAME_CONFIG.powers.POISON.durationMs||12000); bk.poisonTick = now + (GAME_CONFIG.powers.POISON.poison?.tickMs||2000); }
+        if(buffs.POISON.active){ applyPoisonToBrick(bk, now); }
 
         // 當前磚扣血（若已在上面被處理則略過）
         if(!buffs.HELL.active && !buffs.HOLY.active){
