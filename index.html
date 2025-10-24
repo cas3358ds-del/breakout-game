@@ -1941,6 +1941,8 @@ select optgroup { color: #0b1022; }
   let applyingLinkedMega=false;
   const BLOOD_BLADE_DEFAULTS={damageMultiplier:3,duration:10000,cooldown:60000,hpCost:1};
   const BOMB_DEVIL_DEFAULTS={duration:10000,cooldown:30000,intervalMs:300};
+  const BOMB_DEVIL_BOSS_CHAIN_COUNT=5;
+  const BOMB_DEVIL_BOSS_CHAIN_DELAY=160;
   const FIRE_SCATTER_COUNT=3;
   const FIRE_SCATTER_DELAY=500;
   const FIRE_MAX_CHARGE=16;
@@ -1948,6 +1950,7 @@ select optgroup { color: #0b1022; }
   let bombDevilIntervalMs=BOMB_DEVIL_DEFAULTS.intervalMs;
   const bombDevilQueues=[];
   const bombDevilRowCooldown=new Map();
+  const bombDevilBossQueues=[];
   const fireScatterQueue=[];
   let bloodBladeActive=false;
   let bloodBladeActiveUntil=0;
@@ -3010,6 +3013,7 @@ select optgroup { color: #0b1022; }
       bombDevilActiveUntil=Math.max(bombDevilActiveUntil, now+duration);
       bombDevilIntervalMs=Math.max(50, Number(cfg.intervalMs)||BOMB_DEVIL_DEFAULTS.intervalMs);
       bombDevilRowCooldown.clear();
+      bombDevilBossQueues.length=0;
       slot.activeUntil=now+duration;
       slot.activeDuration=duration;
       slot.cooldownDuration=cooldown;
@@ -4331,7 +4335,7 @@ select optgroup { color: #0b1022; }
     screenShake=Math.max(screenShake,4);
   }
 
-  function triggerBallBuffEffectsOnBossHit(ball, impactX, impactY, now){
+  function triggerBallBuffEffectsOnBossHit(ball, impactX, impactY, now, opts={}){
     if(buffs.PLASMA.active){
       spawnPlasmaBurst(impactX, impactY);
     }
@@ -4361,6 +4365,10 @@ select optgroup { color: #0b1022; }
         spinDir:holeSpin
       });
       playSFX('blackhole');
+    }
+
+    if(opts.bossHit!==false && now<bombDevilActiveUntil){
+      queueBombDevilBossExplosions(impactX, impactY, now);
     }
   }
 
@@ -7116,7 +7124,7 @@ select optgroup { color: #0b1022; }
         if(destroyDemonSpear(spear, 'ball', now)){
           collided=true;
           fireCollide();
-          triggerBallBuffEffectsOnBossHit(ball, ball.x, ball.y, now);
+          triggerBallBuffEffectsOnBossHit(ball, ball.x, ball.y, now, {bossHit:false});
         }
       }
     }
@@ -16667,6 +16675,17 @@ function generateLevel(lv, L){
     bombDevilQueues.push({events,playedSound:false});
   }
 
+  function queueBombDevilBossExplosions(cx, cy, startAt){
+    const now=startAt!=null?startAt:performance.now();
+    if(now>=bombDevilActiveUntil) return;
+    const base=Math.max(brickW||0, brickH||0);
+    const radius=base>0 ? base*1.5 : 150;
+    const events=Array.from({length:BOMB_DEVIL_BOSS_CHAIN_COUNT}, (_,i)=>(
+      {x:cx,y:cy,radius,triggerAt:now+i*BOMB_DEVIL_BOSS_CHAIN_DELAY,triggered:false}
+    ));
+    bombDevilBossQueues.push({events});
+  }
+
   function updateBombDevil(now){
     for(let i=bombDevilQueues.length-1;i>=0;i--){
       const seq=bombDevilQueues[i];
@@ -16701,6 +16720,22 @@ function generateLevel(lv, L){
       }
       if(done || seq.events.every(e=>e.triggered)){
         bombDevilQueues.splice(i,1);
+      }
+    }
+    for(let i=bombDevilBossQueues.length-1;i>=0;i--){
+      const burst=bombDevilBossQueues[i];
+      let completed=true;
+      for(const evt of burst.events){
+        if(evt.triggered) continue;
+        if(now<evt.triggerAt){
+          completed=false;
+          continue;
+        }
+        evt.triggered=true;
+        fireExplosionAt(evt.x, evt.y, evt.radius, {noScatter:true});
+      }
+      if(completed || burst.events.every(evt=>evt.triggered)){
+        bombDevilBossQueues.splice(i,1);
       }
     }
     if(now>=bombDevilActiveUntil && bombDevilRowCooldown.size){
@@ -17988,6 +18023,7 @@ function generateLevel(lv, L){
     laserBeams.length=0;
     laserImpacts.length=0;
     bombDevilQueues.length=0;
+    bombDevilBossQueues.length=0;
     bombDevilRowCooldown.clear();
     bombDevilActiveUntil=0;
     bombDevilIntervalMs=BOMB_DEVIL_DEFAULTS.intervalMs;
@@ -21006,6 +21042,7 @@ function generateLevel(lv, L){
               const impactY = Math.max(ry, Math.min(b.y, ry+rh));
               spawnParticles(impactX, impactY, '#b8d6ff', 20, 1.4, 2.4, 2.2);
               fireCollide();
+              triggerBallBuffEffectsOnBossHit(b, impactX, impactY, now);
               damageActiveBoss(megaDamageMul,'ball',{x:impactX,y:impactY});
               collidedWithBrick=true;
             }
