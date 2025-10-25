@@ -1854,7 +1854,17 @@ select optgroup { color: #0b1022; }
     {id:'laserStorm',name:'雷射風暴',icon:'W67.jpg',grade:'S',type:'active',price:100,description:'主動：獲得雷射風暴效果，冷卻時間 60 秒。',effect:{power:{key:'STORM',mode:'active',cooldown:60000,message:'雷射風暴啟動！全場掃射。'}}},
     {id:'blackholeDevour',name:'黑洞吞噬',icon:'W68.jpg',grade:'A',type:'active',price:30,description:'主動：獲得黑洞吞噬效果，冷卻時間 60 秒。',effect:{power:{key:'BLACKHOLE',mode:'active',cooldown:60000,message:'黑洞吞噬啟動！重力吞沒一切。'}}},
     {id:'annihilation',name:'萬物銷毀',icon:'W69.jpg',grade:'S',type:'active',price:100,description:'主動：獲得萬物銷毀效果，冷卻時間 60 秒。',effect:{power:{key:'ANNIHIL',mode:'active',cooldown:60000,message:'萬物銷毀啟動！毀滅能量席捲。'}}},
-    {id:'timeWarp',name:'時間扭曲',icon:'W70.jpg',grade:'S',type:'passive',price:100,description:'被動：裝備冷卻時間縮短為原本的 50%。',effect:{cooldownMultiplier:0.5}}
+    {id:'timeWarp',name:'時間扭曲',icon:'W70.jpg',grade:'S',type:'passive',price:100,description:'被動：裝備冷卻時間縮短為原本的 50%。',effect:{cooldownMultiplier:0.5}},
+    {id:'laserModule',name:'雷射裝置',icon:'W71.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得自動雷射或雷射風暴效果時，擊球平台中心多架一個雷射槍，每次雷射時會一起發射。',effect:{laserExtraTurret:true}},
+    {id:'laserPlasma',name:'雷射電漿',icon:'W72.jpg',grade:'A',type:'passive',price:30,description:'被動：所有雷射攻擊命中磚塊時產生電漿。',effect:{laserPlasma:true}},
+    {id:'laserRapid',name:'連射模式',icon:'W73.jpg',grade:'A',type:'passive',price:30,description:'被動：所有雷射攻擊的間隔時間縮短 50%。',effect:{laserIntervalMultiplier:0.5}},
+    {id:'phoenixHeart',name:'鳳凰之心',icon:'W74.jpg',grade:'S',type:'passive',price:100,description:'被動：鳳凰審判效果發生時，平台閃動火焰光芒且 HP +1。',effect:{phoenixHeart:true}},
+    {id:'instantBlade',name:'瞬殺劍',icon:'W75.jpg',grade:'A',type:'passive',price:30,description:'被動：劍芒裂空產生的飛劍會馬上射出。',effect:{swordInstantFire:true}},
+    {id:'dualBlades',name:'雙劍合璧',icon:'W76.jpg',grade:'A',type:'passive',price:30,description:'被動：劍芒裂空每次產生的飛劍數量變為 2。',effect:{swordDoubleSpawn:true}},
+    {id:'endurance',name:'持久力',icon:'W77.jpg',grade:'A',type:'passive',price:30,description:'被動：劍芒裂空、自動雷射、神速流轉的效果持續時間增加 10 秒。',effect:{powerDurationBonus:{SWORD:10000,LASER:10000,GODSPEED:10000}}},
+    {id:'godspeedPierce',name:'神速貫穿',icon:'W78.jpg',grade:'S',type:'passive',price:100,description:'被動：獲得神速流轉效果時，也獲得穿透球效果。',effect:{godspeedGrantsPierce:true}},
+    {id:'cleanse',name:'淨化',icon:'W79.jpg',grade:'C',type:'consumable',price:5,description:'消耗：立即消除身上所有減益效果，使用後消失。',effect:{cleanse:true}},
+    {id:'darkPower',name:'黑暗之力',icon:'W80.jpg',grade:'A',type:'passive',price:30,description:'被動：獲得黑洞吞噬效果時，立即產生黑洞吞噬攻擊。',effect:{blackholeInstantStrike:true}}
   ];
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
@@ -1940,6 +1950,15 @@ select optgroup { color: #0b1022; }
   let equipmentMissileHolyStrike=false;
   let equipmentFireInstantCharge=false;
   let equipmentFireScatter=false;
+  let equipmentLaserExtraTurret=false;
+  let equipmentLaserPlasma=false;
+  let equipmentLaserIntervalMultiplier=1;
+  let equipmentPhoenixHeart=false;
+  let equipmentSwordInstantFire=false;
+  let equipmentSwordDoubleSpawn=false;
+  let equipmentPowerDurationBonusMs={};
+  let equipmentGodspeedAlsoPierce=false;
+  let equipmentBlackholeInstantStrike=false;
   let equipmentPoisonSpreadDelay=0;
   let equipmentPoisonTickInterval=0;
   let equipmentPoisonPlasma=false;
@@ -1950,6 +1969,7 @@ select optgroup { color: #0b1022; }
   let plasmaChainNextAt=0;
   let applyingLinkedMulti=false;
   let applyingLinkedMega=false;
+  let applyingGodspeedLinkedPierce=false;
   const BLOOD_BLADE_DEFAULTS={damageMultiplier:3,duration:10000,cooldown:60000,hpCost:1};
   const BOMB_DEVIL_DEFAULTS={duration:10000,cooldown:30000,intervalMs:300};
   const BOMB_DEVIL_BOSS_CHAIN_COUNT=5;
@@ -2738,6 +2758,15 @@ select optgroup { color: #0b1022; }
     equipmentMissileHolyStrike=false;
     equipmentFireInstantCharge=false;
     equipmentFireScatter=false;
+    equipmentLaserExtraTurret=false;
+    equipmentLaserPlasma=false;
+    equipmentLaserIntervalMultiplier=1;
+    equipmentPhoenixHeart=false;
+    equipmentSwordInstantFire=false;
+    equipmentSwordDoubleSpawn=false;
+    equipmentPowerDurationBonusMs={};
+    equipmentGodspeedAlsoPierce=false;
+    equipmentBlackholeInstantStrike=false;
     equipmentPoisonSpreadDelay=0;
     equipmentPoisonTickInterval=0;
     equipmentPoisonPlasma=false;
@@ -2806,6 +2835,25 @@ select optgroup { color: #0b1022; }
       if(effect.missileHolyStrike) equipmentMissileHolyStrike=true;
       if(effect.fireInstantCharge) equipmentFireInstantCharge=true;
       if(effect.fireScatter) equipmentFireScatter=true;
+      if(effect.laserExtraTurret) equipmentLaserExtraTurret=true;
+      if(effect.laserPlasma) equipmentLaserPlasma=true;
+      if(effect.laserIntervalMultiplier){
+        const mul=Math.max(0.05, Number(effect.laserIntervalMultiplier)||0);
+        if(mul>0) equipmentLaserIntervalMultiplier*=mul;
+      }
+      if(effect.phoenixHeart) equipmentPhoenixHeart=true;
+      if(effect.swordInstantFire) equipmentSwordInstantFire=true;
+      if(effect.swordDoubleSpawn) equipmentSwordDoubleSpawn=true;
+      if(effect.powerDurationBonus){
+        for(const [key,val] of Object.entries(effect.powerDurationBonus)){
+          const extra=Math.max(0, Number(val)||0);
+          if(extra>0){
+            equipmentPowerDurationBonusMs[key]=(equipmentPowerDurationBonusMs[key]||0)+extra;
+          }
+        }
+      }
+      if(effect.godspeedGrantsPierce) equipmentGodspeedAlsoPierce=true;
+      if(effect.blackholeInstantStrike) equipmentBlackholeInstantStrike=true;
       if(effect.poisonSpread){
         const delay=Math.max(0, Number(effect.poisonSpread.delay)||0);
         if(delay>0){
@@ -2928,6 +2976,11 @@ select optgroup { color: #0b1022; }
       slot.activeUntil=0;
       slot.activeDuration=0;
     }
+    const buffState=buffs[powerKey];
+    if(buffState && buffState.until){
+      slot.activeUntil=buffState.until;
+      slot.activeDuration=Math.max(0, buffState.until-now);
+    }
     let removed=false;
     if(mode==='consumable'){
       applySlotCooldown(slot,0,now);
@@ -3021,6 +3074,18 @@ select optgroup { color: #0b1022; }
       }else{
         showEquipmentMessage('目前沒有可重置的球。','warning',2000);
       }
+      return;
+    }
+    if(effect.cleanse){
+      const cleared=cleanseActiveDebuffs();
+      if(cleared>0){
+        showEquipmentMessage(`已淨化 ${cleared} 種減益效果。`,'success',2200);
+      }else{
+        showEquipmentMessage('目前沒有減益效果。','info',2000);
+      }
+      equipmentSlots[index]=null;
+      recalcEquipmentBonuses();
+      renderEquipmentSlots();
       return;
     }
     if(effect.comboStar){
@@ -3376,6 +3441,34 @@ select optgroup { color: #0b1022; }
     showEquipmentMessage(`HP +${gained}`,'success',2200);
     beep(720,0.08,0.05);
     return true;
+  }
+
+  function cleanseActiveDebuffs(){
+    let cleared=0;
+    const now=performance.now();
+    for(const [key,def] of Object.entries(GAME_CONFIG.powers||{})){
+      if(!def || def.type!=='debuff') continue;
+      const buff=buffs[key];
+      if(!buff) continue;
+      const wasActive=!!buff.active && (!buff.until || buff.until>now);
+      const hasDuration=buff.until && buff.until>now;
+      if(wasActive || hasDuration){
+        cleared++;
+      }
+      buff.active=false;
+      buff.until=0;
+      if('start' in buff) buff.start=0;
+      if('stacks' in buff && Array.isArray(buff.stacks)) buff.stacks.length=0;
+      if('explodeAt' in buff) buff.explodeAt=0;
+      if('returnAt' in buff) buff.returnAt=0;
+      if('exploded' in buff) buff.exploded=false;
+    }
+    if(cleared>0){
+      paddleGoneUntil=0;
+      updateBuffBadges();
+      updateHUD();
+    }
+    return cleared;
   }
   function openStore(nextLevel){
     if(!storeOverlay) return;
@@ -4332,6 +4425,85 @@ select optgroup { color: #0b1022; }
     if(opts.sound!==false){
       playSFX('plasma');
     }
+  }
+
+  function pickLaserTarget(sx, sy){
+    let bestScore=-Infinity;
+    let bestTarget=null;
+    for(let i=0;i<bricks.length;i++){
+      const bk=bricks[i];
+      if(!canDestroyBrick(bk)) continue;
+      const cx=bk.x+bk.w/2;
+      const cy=bk.y+bk.h/2;
+      const dx=cx-sx;
+      const dy=cy-sy;
+      const dist=dx*dx+dy*dy;
+      if(dist>bestScore){
+        bestScore=dist;
+        bestTarget={type:'brick', idx:i, x:cx, y:cy};
+      }
+    }
+    if(isSpecialBossActive()){
+      const center=activeBossCenter();
+      if(center){
+        const dx=center.x-sx;
+        const dy=center.y-sy;
+        const dist=dx*dx+dy*dy;
+        if(dist>bestScore){
+          bestTarget={type:'boss', x:center.x, y:center.y};
+        }
+      }
+    }
+    return bestTarget;
+  }
+
+  function fireLaserFromSource(sx, sy, target, now){
+    if(!target) return false;
+    const impact = target.type==='boss' ? activeBossImpactPoint(sx, sy) : {x:target.x, y:target.y};
+    strikeDemonSpearsAlongLine(sx, sy, impact.x, impact.y, 'laser');
+    strikeDemonAbyssBricksAlongLine(sx, sy, impact.x, impact.y, 'laser');
+    laserBeams.push({x1:sx,y1:sy,x2:impact.x,y2:impact.y,until:now+200});
+    laserImpacts.push({x:impact.x, y:impact.y, t0:now, tEnd:now+320});
+    spawnParticles(impact.x,impact.y,'rgba(160,255,200,0.9)',10,1.8,2.2,2.6);
+    if(target.type==='boss'){
+      highlightSpaceBossTarget();
+      damageActiveBoss(1,'laser',impact);
+    }else if(target.type==='brick'){
+      destroyBrick(target.idx,'laser');
+      if(equipmentLaserPlasma){
+        spawnPlasmaBurst(impact.x, impact.y, {sound:false});
+      }
+    }
+    return true;
+  }
+
+  function triggerBlackholeStrike(now,{deactivate=true}={}){
+    const pr=paddleRect();
+    if(!pr) return false;
+    const d=Math.min(8,buffs.BLACKHOLE.deaths||0);
+    const dmg=1+(d/8)*(40-1);
+    const rad=200+(d/8)*(800-200);
+    const cx=pr.x+pr.w/2;
+    const cy=pr.y-rad;
+    const spinDir=(Math.random()>0.5?1:-1);
+    blackHoles.push({x:cx,y:cy,r:rad,until:now+3000,start:now,spinDir});
+    for(let i=bricks.length-1;i>=0;i--){
+      const bk=bricks[i];
+      const bx=bk.x+bk.w/2, by=bk.y+bk.h/2;
+      if(Math.hypot(bx-cx,by-cy)<=rad){
+        damageBrick(i,dmg,'none');
+      }
+    }
+    strikeDemonAbyssBricksAtPoint(cx, cy, rad, 'blackhole');
+    if(circleIntersectsActiveBoss(cx,cy,rad)){
+      const impact=activeBossCenter();
+      damageActiveBoss(1,'blackhole',impact?{x:impact.x,y:impact.y}:{x:cx,y:cy});
+    }
+    playSFX('blackhole');
+    if(deactivate){
+      buffs.BLACKHOLE.active=false;
+    }
+    return true;
   }
 
   function applyHolyStrike(cx, cy){
@@ -7701,6 +7873,7 @@ select optgroup { color: #0b1022; }
   const plasmaChains=[]; // {x1,y1,x2,y2,until}
   const holyFlashes=[]; // {x,y,until,pattern}
   let phoenixAnim=null; // {x, tEnd}
+  let phoenixHeartGlowUntil=0;
   const fireBursts=[];  // 火焰片段 {x,y,life}
   const fireExplosions=[]; // 火焰球爆炸效果 {x,y,r,t0,life}
   const starProjectiles=[]; // 隕落星星 {x,y,vx,vy,damage,radius}
@@ -17718,7 +17891,15 @@ function generateLevel(lv, L){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type) stats.buffs++; }
     const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
     const baseDurationMs=def.durationMs||0;
-    const durationMs=type==='HOLY'?Math.round(baseDurationMs*equipmentHolyDurationMultiplier):baseDurationMs;
+    let durationMs;
+    if(type==='HOLY'){
+      durationMs=Math.round(baseDurationMs*equipmentHolyDurationMultiplier);
+    }else{
+      durationMs=baseDurationMs;
+    }
+    if(equipmentPowerDurationBonusMs[type]){
+      durationMs+=equipmentPowerDurationBonusMs[type];
+    }
     const fullLabel = def.label + (def.desc ? `(${def.desc})` : '');
     let promptText='';
     if(def.type==='buff') promptText=`增益：${fullLabel}`;
@@ -17759,6 +17940,17 @@ function generateLevel(lv, L){
           const center=activeBossCenter();
           const impact=center?{x:center.x,y:center.y}:null;
           damageActiveBoss(1,'phoenix',impact);
+        }
+        if(equipmentPhoenixHeart){
+          phoenixHeartGlowUntil=Math.max(phoenixHeartGlowUntil, now+2000);
+          const healed=healPlayer(1);
+          if(!healed){
+            showEquipmentMessage('鳳凰之心閃耀，但 HP 已達上限。','info',2000);
+          }
+          const pr=paddleRect();
+          if(pr){
+            spawnParticles(pr.x+pr.w/2, pr.y, '#ffb347', 18, 1.6, 2.6, 2.4);
+          }
         }
       } else if(type==='NINE'){ if(nineCatEaten>=3) return; lives=9; nineCatEaten++; updateHUD(); spawnParticles(550,350,'#ffd',40,2.2,3.5,4); beep(880,0.1,0.06); }
       return;
@@ -17905,11 +18097,29 @@ function generateLevel(lv, L){
       f.until = f.endAt;
       return;
     }
-    if(type==='GODSPEED'){ buffs.GODSPEED.active=true; buffs.GODSPEED.until=now+durationMs; }
+    if(type==='GODSPEED'){
+      buffs.GODSPEED.active=true;
+      buffs.GODSPEED.until=now+durationMs;
+      if(equipmentGodspeedAlsoPierce && !applyingGodspeedLinkedPierce){
+        applyingGodspeedLinkedPierce=true;
+        try{
+          applyPower('PIERCE');
+        }finally{
+          applyingGodspeedLinkedPierce=false;
+        }
+      }
+    }
     if(type==='LASER'){ buffs.LASER.active=true; buffs.LASER.until=now+durationMs; buffs.LASER.lastShot=0; }
     if(type==='SWORD'){ buffs.SWORD.active=true; buffs.SWORD.until=now+durationMs; swordFireStart=0; }
     if(type==='STORM'){ buffs.STORM.active=true; buffs.STORM.until=now+durationMs; const pr=paddleRect(); stormTurret={x:pr.x+pr.w/2,y:pr.y,chargeUntil:now+3000,fireAt:now+4000,shots:Math.max(0,21-lives),lastShot:0}; }
-    if(type==='BLACKHOLE'){ buffs.BLACKHOLE.active=true; buffs.BLACKHOLE.until=now+durationMs; buffs.BLACKHOLE.deaths=0; }
+    if(type==='BLACKHOLE'){
+      buffs.BLACKHOLE.active=true;
+      buffs.BLACKHOLE.until=now+durationMs;
+      buffs.BLACKHOLE.deaths=0;
+      if(equipmentBlackholeInstantStrike){
+        triggerBlackholeStrike(now,{deactivate:false});
+      }
+    }
     if(type==='ANNIHIL'){ buffs.ANNIHIL.active=true; buffs.ANNIHIL.start=now; buffs.ANNIHIL.next=now+1000; buffs.ANNIHIL.until=0; }
 
     updateBuffBadges();
@@ -19133,6 +19343,23 @@ function generateLevel(lv, L){
       drawPadShape();
       ctx.fillStyle = padFill;
       ctx.fill();
+      if(nowPad<phoenixHeartGlowUntil){
+        const remaining=Math.max(0, phoenixHeartGlowUntil-nowPad);
+        const glow=Math.max(0, Math.min(1, remaining/2000));
+        const pulse=0.6+0.4*Math.sin(nowPad/120);
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        const flameGrad=ctx.createLinearGradient(0,-padH/2,0,padH/2);
+        flameGrad.addColorStop(0,`rgba(255,210,120,${0.25+0.35*pulse})`);
+        flameGrad.addColorStop(1,`rgba(255,80,0,${0.18+0.32*glow})`);
+        ctx.fillStyle=flameGrad;
+        drawPadShape();
+        ctx.fill();
+        ctx.strokeStyle=`rgba(255,150,40,${0.35+0.45*pulse})`;
+        ctx.lineWidth=3*scaleUnit;
+        ctx.stroke();
+        ctx.restore();
+      }
       if(isInfiniteCastle){
         ctx.save();
         drawPadShape();
@@ -20197,6 +20424,34 @@ function generateLevel(lv, L){
     if(screenShake>0){ ctx.restore(); }
   }
 
+  function assignSwordTarget(s){
+    if(!s) return false;
+    const idx=randomBrick(true);
+    if(idx==null) return false;
+    if(idx==='boss'){
+      if(!isSpecialBossActive()) return false;
+      const center=activeBossCenter();
+      if(!center) return false;
+      const ang=Math.atan2(center.y-s.y, center.x-s.x);
+      s.vx=Math.cos(ang)*8;
+      s.vy=Math.sin(ang)*8;
+      s.state='fire';
+      s.target=idx;
+      highlightSpaceBossTarget();
+      return true;
+    }
+    const t=bricks[idx];
+    if(!t) return false;
+    const tx=t.x+t.w/2;
+    const ty=t.y+t.h/2;
+    const ang=Math.atan2(ty-s.y, tx-s.x);
+    s.vx=Math.cos(ang)*8;
+    s.vy=Math.sin(ang)*8;
+    s.state='fire';
+    s.target=idx;
+    return true;
+  }
+
   function drawSwords(){ const now=performance.now(); const pr=paddleRect(); for(let i=swords.length-1;i>=0;i--){ const s=swords[i]; if(s.state==='wander'){ s.x+=s.vx; s.y+=s.vy; if(s.x<20||s.x>1080) s.vx*=-1; if(s.y<500||s.y>680) s.vy*=-1; if(!buffs.SWORD.active){ s.state='gather'; s.t0=now; s.tx=pr.x+pr.w/2+ (i-swords.length/2)*20; s.ty=pr.y-40; } } else if(s.state==='gather'){ const prog=Math.min(1,(now-s.t0)/2000); s.x += (s.tx-s.x)*0.15; s.y += (s.ty-s.y)*0.15; if(prog>=1){ s.state='ready'; } } else if(s.state==='fire'){ s.x+=s.vx; s.y+=s.vy; const idx=s.target; if(idx==='boss'){ const bounds=getActiveBossBounds(); if(!isSpecialBossActive() || !bounds){ swords.splice(i,1); continue; } if(s.x>bounds.x && s.x<bounds.x+bounds.w && s.y>bounds.y && s.y<bounds.y+bounds.h){ playSFX('sword'); damageActiveBoss(1,'sword',{x:s.x,y:s.y}); swords.splice(i,1); continue; } } else { const bk=bricks[idx]; if(bk && s.x>bk.x && s.x<bk.x+bk.w && s.y>bk.y && s.y<bk.y+bk.h){ playSFX('sword'); damageBrick(idx,3,'none'); swords.splice(i,1); continue; } } if(s.x<0||s.x>1100||s.y<0||s.y>700){ swords.splice(i,1); continue; } }
       ctx.save();
       ctx.translate(s.x*scaleX, s.y*scaleY);
@@ -20221,27 +20476,7 @@ function generateLevel(lv, L){
       if(now>=nextSwordFire){
         const s=swords.find(z=>z.state==='ready');
         if(s){
-          const idx=randomBrick(true);
-          if(idx!=null){
-            let tx=null, ty=null;
-            if(idx==='boss'){
-              if(isSpecialBossActive()){
-                const center=activeBossCenter();
-                if(center){ tx=center.x; ty=center.y; }
-                highlightSpaceBossTarget();
-              }
-            }else{
-              const t=bricks[idx];
-              if(t){ tx=t.x+t.w/2; ty=t.y+t.h/2; }
-            }
-            if(tx!=null && ty!=null){
-              const ang=Math.atan2(ty-s.y,tx-s.x);
-              s.vx=Math.cos(ang)*8;
-              s.vy=Math.sin(ang)*8;
-              s.state='fire';
-              s.target=idx;
-            }
-          }
+          assignSwordTarget(s);
         }
         nextSwordFire=now+300;
         if(!swords.some(z=>z.state==='ready')) swordFireStart=0;
@@ -20559,46 +20794,21 @@ function generateLevel(lv, L){
 
     // 雷射發射
     if(buffs.LASER.active){
-      const interval = GAME_CONFIG.powers.LASER.laser.intervalMs;
+      const baseInterval = GAME_CONFIG.powers.LASER.laser.intervalMs;
+      const interval = Math.max(50, Math.round(baseInterval*equipmentLaserIntervalMultiplier));
       if(!buffs.LASER.lastShot || now - buffs.LASER.lastShot >= interval){
         buffs.LASER.lastShot = now;
         const pr=paddleRect();
-        const barrels = !orientLeft ? [{x:pr.x, y:pr.y+pr.h/2},{x:pr.x+pr.w, y:pr.y+pr.h/2}] : [{x:pr.x+pr.w/2, y:pr.y},{x:pr.x+pr.w/2, y:pr.y+pr.h}];
+        const barrels = !orientLeft
+          ? [{x:pr.x, y:pr.y+pr.h/2},{x:pr.x+pr.w, y:pr.y+pr.h/2}]
+          : [{x:pr.x+pr.w/2, y:pr.y},{x:pr.x+pr.w/2, y:pr.y+pr.h}];
+        if(equipmentLaserExtraTurret){
+          const centerOrigin={x:pr.x+pr.w/2, y:pr.y+pr.h/2};
+          barrels.push(centerOrigin);
+        }
         for(const s of barrels){
-          let target=null;
-          let best=-1;
-          for(let i=0;i<bricks.length;i++){
-            const bk=bricks[i];
-            if(!canDestroyBrick(bk)) continue;
-            const dx=(bk.x+bk.w/2)-s.x;
-            const dy=(bk.y+bk.h/2)-s.y;
-            const d=dx*dx+dy*dy;
-            if(d>best){ best=d; target={type:'brick', idx:i, x:bk.x+bk.w/2, y:bk.y+bk.h/2}; }
-          }
-          const bossCenter = isSpecialBossActive() ? activeBossCenter() : null;
-          if(bossCenter){
-            const dx=bossCenter.x - s.x;
-            const dy=bossCenter.y - s.y;
-            const d=dx*dx+dy*dy;
-            if(d>best){
-              best=d;
-              target={type:'boss', x:bossCenter.x, y:bossCenter.y};
-              highlightSpaceBossTarget();
-            }
-          }
-          if(target){
-            const impact = target.type==='boss' ? activeBossImpactPoint(s.x,s.y) : {x:target.x, y:target.y};
-            strikeDemonSpearsAlongLine(s.x, s.y, impact.x, impact.y, 'laser');
-            strikeDemonAbyssBricksAlongLine(s.x, s.y, impact.x, impact.y, 'laser');
-            laserBeams.push({x1:s.x,y1:s.y,x2:impact.x,y2:impact.y,until:now+200});
-            laserImpacts.push({x:impact.x, y:impact.y, t0:now, tEnd:now+320});
-            spawnParticles(impact.x,impact.y,'rgba(160,255,200,0.9)',10,1.8,2.2,2.6);
-            if(target.type==='boss'){
-              damageActiveBoss(1,'laser',impact);
-            }else{
-              destroyBrick(target.idx,'laser');
-            }
-          }
+          const target=pickLaserTarget(s.x, s.y);
+          fireLaserFromSource(s.x, s.y, target, now);
         }
       }
     }
@@ -20660,9 +20870,51 @@ function generateLevel(lv, L){
       }
     }
 
-    if(stormTurret){ if(now>=stormTurret.fireAt){ if(stormTurret.shots<=0){ stormTurret=null; buffs.STORM.active=false; } else if(now-stormTurret.lastShot>=200){ const idx=randomBrick(true); if(idx!=null){ if(idx==='boss' && isSpecialBossActive()){ const impact=activeBossImpactPoint(stormTurret.x,stormTurret.y); highlightSpaceBossTarget(); strikeDemonSpearsAlongLine(stormTurret.x, stormTurret.y, impact.x, impact.y, 'laser'); strikeDemonAbyssBricksAlongLine(stormTurret.x, stormTurret.y, impact.x, impact.y, 'laser'); laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:impact.x,y2:impact.y,until:now+200}); laserImpacts.push({x:impact.x,y:impact.y,t0:now,tEnd:now+320}); damageActiveBoss(1,'laser',impact); } else { const t=bricks[idx]; if(t){ const tx=t.x+t.w/2, ty=t.y+t.h/2; strikeDemonSpearsAlongLine(stormTurret.x, stormTurret.y, tx, ty, 'laser'); strikeDemonAbyssBricksAlongLine(stormTurret.x, stormTurret.y, tx, ty, 'laser'); laserBeams.push({x1:stormTurret.x,y1:stormTurret.y,x2:tx,y2:ty,until:now+200}); laserImpacts.push({x:tx,y:ty,t0:now,tEnd:now+320}); destroyBrick(idx,'laser'); } } stormTurret.shots--; stormTurret.lastShot=now; } } } }
+    if(stormTurret){
+      if(now>=stormTurret.fireAt){
+        if(stormTurret.shots<=0){
+          stormTurret=null;
+          buffs.STORM.active=false;
+        }else{
+          const interval=Math.max(50, Math.round(200*equipmentLaserIntervalMultiplier));
+          if(now-stormTurret.lastShot>=interval){
+            const idx=randomBrick(true);
+            if(idx!=null){
+              let target=null;
+              if(idx==='boss'){
+                if(isSpecialBossActive()){
+                  const center=activeBossCenter();
+                  if(center){
+                    target={type:'boss', x:center.x, y:center.y};
+                  }
+                }
+              }else{
+                const t=bricks[idx];
+                if(t){
+                  target={type:'brick', idx, x:t.x+t.w/2, y:t.y+t.h/2};
+                }
+              }
+              if(target){
+                const fired=fireLaserFromSource(stormTurret.x, stormTurret.y, target, now);
+                if(fired && equipmentLaserExtraTurret){
+                  const pr=paddleRect();
+                  if(pr){
+                    const extraTarget=pickLaserTarget(pr.x+pr.w/2, pr.y+pr.h/2);
+                    fireLaserFromSource(pr.x+pr.w/2, pr.y+pr.h/2, extraTarget, now);
+                  }
+                }
+                if(fired){
+                  stormTurret.shots--;
+                  stormTurret.lastShot=now;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
-    if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ const d=Math.min(8,buffs.BLACKHOLE.deaths||0); const dmg=1+(d/8)*(40-1); const rad=200+(d/8)*(800-200); const pr=paddleRect(); const cx=pr.x+pr.w/2, cy=pr.y-rad; const spinDir=(Math.random()>0.5?1:-1); blackHoles.push({x:cx,y:cy,r:rad,until:now+3000,start:now,spinDir}); for(let i=bricks.length-1;i>=0;i--){ const bk=bricks[i]; const bx=bk.x+bk.w/2, by=bk.y+bk.h/2; if(Math.hypot(bx-cx,by-cy)<=rad){ damageBrick(i,dmg,'none'); } } strikeDemonAbyssBricksAtPoint(cx, cy, rad, 'blackhole'); if(circleIntersectsActiveBoss(cx,cy,rad)){ const impact=activeBossCenter(); damageActiveBoss(1,'blackhole',impact?{x:impact.x,y:impact.y}:{x:cx,y:cy}); } playSFX('blackhole'); buffs.BLACKHOLE.active=false; }
+    if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ triggerBlackholeStrike(now); }
 
     if(buffs.ANNIHIL.active && now>=buffs.ANNIHIL.next){ let cand=bricks.filter(b=>canDestroyBrick(b)&&!b.boss); if(!cand.length) cand=bricks.filter(b=>canDestroyBrick(b)); if(cand.length){ const target=cand[Math.floor(Math.random()*cand.length)]; const idx=bricks.indexOf(target); destroyBrick(idx,'annihil'); } else if(isSpecialBossActive()){ const center=activeBossCenter(); damageActiveBoss(1,'annihil',center?{x:center.x,y:center.y}:null); } buffs.ANNIHIL.next+=1000; }
 
@@ -20859,7 +21111,7 @@ function generateLevel(lv, L){
           b.vx=Math.cos(ang)*sp;
           b.vy=Math.sin(ang)*sp;
         }
-        if(buffs.SWORD.active){ swords.push({x:Math.random()*1100,y:650,vx:(Math.random()-0.5)*2,vy:(Math.random()-0.5)*0.5,state:'wander'}); }
+        if(buffs.SWORD.active){ const spawnCount=equipmentSwordDoubleSpawn?2:1; for(let n=0;n<spawnCount;n++){ const sword={x:Math.random()*1100,y:650,vx:(Math.random()-0.5)*2,vy:(Math.random()-0.5)*0.5,state:'wander'}; if(equipmentSwordInstantFire){ sword.state='ready'; sword.vx=0; sword.vy=0; if(!assignSwordTarget(sword)){ sword.state='ready'; } } swords.push(sword); } }
       }
 
       // 碰磚
