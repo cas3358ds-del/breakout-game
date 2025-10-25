@@ -1844,7 +1844,17 @@ select optgroup { color: #0b1022; }
     {id:'poisonPlasma',name:'毒性電漿',icon:'W57.jpg',grade:'B',type:'passive',price:10,description:'被動：磚塊因中毒死亡時會產生電漿。',effect:{poisonPlasma:true}},
     {id:'starForce',name:'星星之力',icon:'W58.jpg',grade:'B',type:'active',price:10,description:'主動：天空隨機 3 處斜向墜落星星，命中造成 4 點傷害，冷卻時間 30 秒。',effect:{starStrike:{count:3,damage:4,cooldown:30000}}},
     {id:'sunForce',name:'太陽之力',icon:'W59.jpg',grade:'A',type:'passive',price:30,description:'被動：使用 Skin「烈陽．炙金幻焰」時，每 10 秒隨機磚塊產生 3×3 爆炸。',effect:{solarBurst:{interval:10000}}},
-    {id:'moonForce',name:'月亮之力',icon:'W60.jpg',grade:'A',type:'active',price:30,description:'主動：巨大月亮隨機位置斜向墜落，命中造成 4 點傷害並最多反彈 9 次，冷卻時間 30 秒。',effect:{moonFall:{damage:4,maxBounces:9,cooldown:30000}}}
+    {id:'moonForce',name:'月亮之力',icon:'W60.jpg',grade:'A',type:'active',price:30,description:'主動：巨大月亮隨機位置斜向墜落，命中造成 4 點傷害並最多反彈 9 次，冷卻時間 30 秒。',effect:{moonFall:{damage:4,maxBounces:9,cooldown:30000}}},
+    {id:'autoLaser',name:'自動雷射',icon:'W61.jpg',grade:'A',type:'active',price:30,description:'主動：獲得自動雷射效果，冷卻時間 60 秒。',effect:{power:{key:'LASER',mode:'active',cooldown:60000,message:'自動雷射啟動！左右砲台全力掃射。'}}},
+    {id:'worldFlip',name:'天地翻轉',icon:'W62.jpg',grade:'A',type:'active',price:30,description:'主動：獲得天地翻轉效果，冷卻時間 60 秒。',effect:{power:{key:'FLIP',mode:'active',cooldown:60000,message:'天地翻轉啟動！上下顛倒請小心。'}}},
+    {id:'phoenixJudgment',name:'鳳凰審判',icon:'W63.jpg',grade:'S',type:'active',price:100,description:'主動：獲得鳳凰審判效果，冷卻時間 60 秒。',effect:{power:{key:'PHOENIX',mode:'active',cooldown:60000,message:'鳳凰審判啟動！聖焰橫掃全場。'}}},
+    {id:'fireSuppression',name:'火力壓制',icon:'W64.jpg',grade:'S',type:'active',price:100,description:'主動：獲得火力壓制效果，冷卻時間 60 秒。',effect:{power:{key:'GATLING',mode:'active',cooldown:60000,message:'火力壓制啟動！機槍掃蕩敵陣。'}}},
+    {id:'swordRift',name:'劍芒裂空',icon:'W65.jpg',grade:'A',type:'active',price:30,description:'主動：獲得劍芒裂空效果，冷卻時間 60 秒。',effect:{power:{key:'SWORD',mode:'active',cooldown:60000,message:'劍芒裂空啟動！飛劍出鞘破空。'}}},
+    {id:'godspeedFlow',name:'神速流轉',icon:'W66.jpg',grade:'A',type:'active',price:30,description:'主動：獲得神速流轉效果，冷卻時間 60 秒。',effect:{power:{key:'GODSPEED',mode:'active',cooldown:60000,message:'神速流轉啟動！速度突破極限。'}}},
+    {id:'laserStorm',name:'雷射風暴',icon:'W67.jpg',grade:'S',type:'active',price:100,description:'主動：獲得雷射風暴效果，冷卻時間 60 秒。',effect:{power:{key:'STORM',mode:'active',cooldown:60000,message:'雷射風暴啟動！全場掃射。'}}},
+    {id:'blackholeDevour',name:'黑洞吞噬',icon:'W68.jpg',grade:'A',type:'active',price:30,description:'主動：獲得黑洞吞噬效果，冷卻時間 60 秒。',effect:{power:{key:'BLACKHOLE',mode:'active',cooldown:60000,message:'黑洞吞噬啟動！重力吞沒一切。'}}},
+    {id:'annihilation',name:'萬物銷毀',icon:'W69.jpg',grade:'S',type:'active',price:100,description:'主動：獲得萬物銷毀效果，冷卻時間 60 秒。',effect:{power:{key:'ANNIHIL',mode:'active',cooldown:60000,message:'萬物銷毀啟動！毀滅能量席捲。'}}},
+    {id:'timeWarp',name:'時間扭曲',icon:'W70.jpg',grade:'S',type:'passive',price:100,description:'被動：裝備冷卻時間縮短為原本的 50%。',effect:{cooldownMultiplier:0.5}}
   ];
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
@@ -1935,6 +1945,7 @@ select optgroup { color: #0b1022; }
   let equipmentPoisonPlasma=false;
   let equipmentSolarBurst=false;
   let equipmentSolarBurstInterval=0;
+  let equipmentCooldownMultiplier=1;
   let solarBurstNextAt=0;
   let plasmaChainNextAt=0;
   let applyingLinkedMulti=false;
@@ -2289,6 +2300,7 @@ select optgroup { color: #0b1022; }
     }
   }
   function createSlotState(itemDef){
+    const baseCooldown=Math.max(0, Number(itemDef.effect?.cooldown)||Number(itemDef.effect?.power?.cooldown)||0);
     return {
       id:itemDef.id,
       def:itemDef,
@@ -2296,12 +2308,13 @@ select optgroup { color: #0b1022; }
       grade:itemDef.grade,
       roman:itemDef.roman,
       cooldownUntil:0,
-      cooldownDuration:Math.max(0, Number(itemDef.effect?.cooldown)||0),
+      cooldownDuration:baseCooldown,
       cooldownStarted:0,
       lastUsed:0,
       activeUntil:0,
       activeDuration:0,
-      pendingRemoval:false
+      pendingRemoval:false,
+      baseCooldownDuration:baseCooldown
     };
   }
   function exportEquipmentSlots(){
@@ -2321,6 +2334,9 @@ select optgroup { color: #0b1022; }
           snapshot.activeDurationMs=Math.round(slot.activeDuration);
         }
         if(slot.pendingRemoval) snapshot.pendingRemoval=true;
+      }
+      if(Number.isFinite(slot.baseCooldownDuration) && slot.baseCooldownDuration>0){
+        snapshot.baseCooldownDurationMs=Math.round(slot.baseCooldownDuration);
       }
       return snapshot;
     });
@@ -2366,6 +2382,18 @@ select optgroup { color: #0b1022; }
               bloodBladeDamageMultiplier=Math.max(1, mul);
             }
           }
+          let baseCooldown=Math.max(0, Number(entry.baseCooldownDurationMs)||0);
+          if(!(baseCooldown>0)){
+            const defCooldown=Math.max(0, Number(state.def.effect?.cooldown)||Number(state.def.effect?.power?.cooldown)||0);
+            if(defCooldown>0){
+              baseCooldown=defCooldown;
+            }else if(Number.isFinite(state.cooldownDuration) && state.cooldownDuration>0){
+              baseCooldown=state.cooldownDuration;
+            }else{
+              baseCooldown=0;
+            }
+          }
+          state.baseCooldownDuration=baseCooldown;
           equipmentSlots[i]=state;
           continue;
         }
@@ -2674,6 +2702,7 @@ select optgroup { color: #0b1022; }
     }
   }
   function recalcEquipmentBonuses(){
+    const prevCooldownMultiplier=equipmentCooldownMultiplier;
     brickDamageBonus=0;
     equipmentAttractBeneficial=false;
     equipmentRepelDebuff=false;
@@ -2714,6 +2743,7 @@ select optgroup { color: #0b1022; }
     equipmentPoisonPlasma=false;
     equipmentSolarBurst=false;
     equipmentSolarBurstInterval=0;
+    equipmentCooldownMultiplier=1;
     solarBurstNextAt=0;
     plasmaChainNextAt=0;
     for(const slot of equipmentSlots){
@@ -2796,7 +2826,14 @@ select optgroup { color: #0b1022; }
           equipmentSolarBurstInterval = equipmentSolarBurstInterval>0 ? Math.min(equipmentSolarBurstInterval, interval) : interval;
         }
       }
+      if(effect.cooldownMultiplier){
+        const mul=Math.max(0, Number(effect.cooldownMultiplier)||0);
+        if(mul>0){
+          equipmentCooldownMultiplier*=mul;
+        }
+      }
     }
+    adjustSlotCooldownsForMultiplierChange(prevCooldownMultiplier);
     if(equipmentPlasmaChainActive && equipmentPlasmaChainInterval>0){
       const now=typeof performance!=='undefined'?performance.now():0;
       plasmaChainNextAt=now+equipmentPlasmaChainInterval;
@@ -2804,6 +2841,65 @@ select optgroup { color: #0b1022; }
     if(!equipmentTrackUniqueTargets){
       resetTrackAssignments();
     }
+  }
+  function adjustSlotCooldownsForMultiplierChange(prevMultiplier){
+    const newMultiplier=equipmentCooldownMultiplier>0?equipmentCooldownMultiplier:1;
+    const prevMul=prevMultiplier>0?prevMultiplier:1;
+    const now=typeof performance!=='undefined'?performance.now():0;
+    for(const slot of equipmentSlots){
+      if(!slot) continue;
+      let base=Number(slot.baseCooldownDuration);
+      if(!Number.isFinite(base) || base<0){
+        const defCooldown=Number(slot.def?.effect?.cooldown)||Number(slot.def?.effect?.power?.cooldown)||0;
+        if(Number.isFinite(defCooldown) && defCooldown>0){
+          base=defCooldown;
+        }else if(Number.isFinite(slot.cooldownDuration) && slot.cooldownDuration>0){
+          base=prevMul>0?slot.cooldownDuration/prevMul:slot.cooldownDuration;
+        }else{
+          base=0;
+        }
+      }
+      base=Math.max(0, base);
+      slot.baseCooldownDuration=base;
+      const targetDuration=Math.round(base*newMultiplier);
+      slot.cooldownDuration=targetDuration;
+      if(targetDuration<=0){
+        slot.cooldownStarted=0;
+        slot.cooldownUntil=0;
+        continue;
+      }
+      if(slot.cooldownUntil && slot.cooldownUntil>now){
+        const elapsedActual=Math.max(0, now-(slot.cooldownStarted||0));
+        const newElapsed=Math.min(elapsedActual, targetDuration);
+        const newStart=now-newElapsed;
+        slot.cooldownStarted=Math.max(0,newStart);
+        slot.cooldownUntil=slot.cooldownStarted+targetDuration;
+      }else if(slot.cooldownUntil && slot.cooldownUntil<=now){
+        slot.cooldownStarted=0;
+        slot.cooldownUntil=0;
+      }else{
+        slot.cooldownStarted=0;
+        slot.cooldownUntil=0;
+      }
+    }
+  }
+  function applySlotCooldown(slot,cooldownMs,now){
+    if(!slot) return 0;
+    const base=Math.max(0, Number(cooldownMs)||0);
+    slot.baseCooldownDuration=base;
+    const multiplier=equipmentCooldownMultiplier>0?equipmentCooldownMultiplier:1;
+    const adjusted=Math.round(base*multiplier);
+    const currentNow=Number.isFinite(now)?now:(typeof performance!=='undefined'?performance.now():0);
+    if(adjusted>0){
+      slot.cooldownDuration=adjusted;
+      slot.cooldownStarted=currentNow;
+      slot.cooldownUntil=currentNow+adjusted;
+    }else{
+      slot.cooldownDuration=0;
+      slot.cooldownStarted=0;
+      slot.cooldownUntil=0;
+    }
+    return adjusted;
   }
   function activateEquipmentPower(index,slot,powerCfg={}){
     if(!slot||!powerCfg||typeof powerCfg!=='object') return false;
@@ -2834,9 +2930,7 @@ select optgroup { color: #0b1022; }
     }
     let removed=false;
     if(mode==='consumable'){
-      slot.cooldownUntil=0;
-      slot.cooldownDuration=0;
-      slot.cooldownStarted=0;
+      applySlotCooldown(slot,0,now);
       if(duration>0){
         slot.pendingRemoval=true;
       }else{
@@ -2846,9 +2940,7 @@ select optgroup { color: #0b1022; }
         removed=true;
       }
     }else if(mode==='active'){
-      slot.cooldownDuration=cooldown>0?cooldown:0;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      applySlotCooldown(slot,cooldown,now);
     }
     showEquipmentMessage(message,tone,messageDuration);
     if(!removed){
@@ -2882,9 +2974,7 @@ select optgroup { color: #0b1022; }
         renderEquipmentSlots();
       }else{
         const cd=def.effect.cooldown||0;
-        slot.cooldownDuration=Math.max(0,cd);
-        slot.cooldownStarted=cd>0?now:0;
-        slot.cooldownUntil=now+cd;
+        applySlotCooldown(slot,cd,now);
         slot.lastUsed=now;
       }
       return;
@@ -2948,9 +3038,7 @@ select optgroup { color: #0b1022; }
         slot.pendingRemoval=true;
       }else{
         const cd=Math.max(0, effect.comboStar.cooldown??60000);
-        slot.cooldownDuration=cd;
-        slot.cooldownStarted=cd>0?now:0;
-        slot.cooldownUntil=now+cd;
+        applySlotCooldown(slot,cd,now);
       }
       showEquipmentMessage('連擊之星啟動！ 連擊效果提升。','success',2200);
       refreshEquipmentRuntime(performance.now());
@@ -2974,9 +3062,7 @@ select optgroup { color: #0b1022; }
       bloodBladeActive=true;
       slot.activeUntil=now+duration;
       slot.activeDuration=duration;
-      slot.cooldownDuration=cooldown;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=now+cooldown;
+      applySlotCooldown(slot,cooldown,now);
       slot.lastUsed=now;
       showEquipmentMessage(`嗜血魔刃啟動！ 接下來 ${(duration/1000).toFixed(0)} 秒傷害 x${dmgMul}。`,'success',2600);
       const pr=paddleRect();
@@ -2994,9 +3080,7 @@ select optgroup { color: #0b1022; }
       const origin=pr?{x:pr.x+pr.w/2, y:pr.y}:{x:1100/2, y:700-50};
       emitMissilesFromSource(origin,{shots:count});
       const cooldown=Math.max(0, cfg.cooldown||0);
-      slot.cooldownDuration=cooldown;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      applySlotCooldown(slot,cooldown,now);
       slot.lastUsed=now;
       showEquipmentMessage('死亡彈幕啟動！ 飛彈全方位出擊。','success',2600);
       refreshEquipmentRuntime(performance.now());
@@ -3016,9 +3100,7 @@ select optgroup { color: #0b1022; }
       bombDevilBossQueues.length=0;
       slot.activeUntil=now+duration;
       slot.activeDuration=duration;
-      slot.cooldownDuration=cooldown;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      applySlotCooldown(slot,cooldown,now);
       slot.lastUsed=now;
       showEquipmentMessage('炸彈惡魔啟動！球擊中磚塊會引爆整列。','success',2600);
       refreshEquipmentRuntime(performance.now());
@@ -3031,9 +3113,7 @@ select optgroup { color: #0b1022; }
         return;
       }
       const cooldown=Math.max(0, Number(effect.fireInstantDetonate.cooldown)||10000);
-      slot.cooldownDuration=cooldown;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      applySlotCooldown(slot,cooldown,now);
       slot.lastUsed=now;
       showEquipmentMessage('火焰球提前引爆！','success',2200);
       refreshEquipmentRuntime(performance.now());
@@ -3046,9 +3126,7 @@ select optgroup { color: #0b1022; }
         return;
       }
       const cooldown=Math.max(0, Number(effect.massExplode.cooldown)||10000);
-      slot.cooldownDuration=cooldown;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      applySlotCooldown(slot,cooldown,now);
       slot.lastUsed=now;
       showEquipmentMessage('爆炸磚引爆完成！','success',2400);
       refreshEquipmentRuntime(performance.now());
@@ -3074,9 +3152,7 @@ select optgroup { color: #0b1022; }
         return;
       }
       const cooldown=Math.max(0, Number(effect.poisonDetonate.cooldown)||30000);
-      slot.cooldownDuration=cooldown;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      applySlotCooldown(slot,cooldown,now);
       slot.lastUsed=now;
       showEquipmentMessage('毒性爆發！中毒磚塊全面引爆。','success',2400);
       refreshEquipmentRuntime(performance.now());
@@ -3089,9 +3165,7 @@ select optgroup { color: #0b1022; }
         return;
       }
       const cooldown=Math.max(0, Number(effect.greatPlague.cooldown)||60000);
-      slot.cooldownDuration=cooldown;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      applySlotCooldown(slot,cooldown,now);
       slot.lastUsed=now;
       showEquipmentMessage('大瘟疫擴散！劇毒蔓延全場。','success',2600);
       refreshEquipmentRuntime(performance.now());
@@ -3104,9 +3178,7 @@ select optgroup { color: #0b1022; }
         return;
       }
       const cooldown=Math.max(0, Number(effect.mirrorSymmetry.cooldown)||60000);
-      slot.cooldownDuration=cooldown;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      applySlotCooldown(slot,cooldown,now);
       slot.lastUsed=now;
       showEquipmentMessage('超對稱啟動，左右鏡像完成！','success',2400);
       refreshEquipmentRuntime(performance.now());
@@ -3118,9 +3190,7 @@ select optgroup { color: #0b1022; }
       const dmg=Math.max(1, Number(cfg.damage)||4);
       spawnStarProjectiles(count, dmg);
       const cooldown=Math.max(0, Number(cfg.cooldown)||30000);
-      slot.cooldownDuration=cooldown;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      applySlotCooldown(slot,cooldown,now);
       slot.lastUsed=now;
       showEquipmentMessage('星星之力降臨，群星墜落！','success',2200);
       refreshEquipmentRuntime(performance.now());
@@ -3130,9 +3200,7 @@ select optgroup { color: #0b1022; }
       const cfg=effect.moonFall||{};
       spawnMoonProjectile(cfg);
       const cooldown=Math.max(0, Number(cfg.cooldown)||30000);
-      slot.cooldownDuration=cooldown;
-      slot.cooldownStarted=cooldown>0?now:0;
-      slot.cooldownUntil=cooldown>0?now+cooldown:0;
+      applySlotCooldown(slot,cooldown,now);
       slot.lastUsed=now;
       showEquipmentMessage('月亮之力啟動，巨月橫掃戰場！','success',2200);
       refreshEquipmentRuntime(performance.now());
