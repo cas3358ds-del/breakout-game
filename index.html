@@ -23557,7 +23557,11 @@ function boot(){
     const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4');
     if(raw){ setTimeout(()=>{ if(confirm('偵測到存檔，要讀取進度嗎？')) loadProgress(); }, 400); }
   }
-  boot();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
   // Ensure audio context unlock on first user gesture (mobile safe)
   try{ document.addEventListener('pointerdown', function(){ try{ ensureAudio(); }catch(e){} }, { once:true, passive:true}); }catch(_e){}
 })();
