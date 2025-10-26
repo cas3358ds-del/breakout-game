@@ -1454,7 +1454,7 @@ select optgroup { color: #0b1022; }
     }
     spawnParticles(projectile.x, projectile.y, '#d7b6ff', 34, 1.8, 2.8, 2.6);
     spawnParticles(projectile.x, projectile.y, '#9c5bff', 22, 1.6, 2.4, 2.4);
-    playSFX('explosion');
+    playSFX('voidBurst');
     demonVoidProjectiles.splice(index,1);
   }
 
@@ -1556,7 +1556,7 @@ select optgroup { color: #0b1022; }
     spawnParticles(centerX, centerY, '#a87dff', 70, 2.8, 3.8, 3.4);
     spawnParticles(centerX, centerY, '#f2dbff', 40, 2.2, 3.2, 3.0);
     spawnParticles(centerX, centerY, '#6930c3', 28, 2.0, 3.0, 2.8);
-    playSFX('explosion');
+    playSFX('voidImpact');
     screenShake=Math.max(screenShake,10);
     const prevLives=lives;
     const burstPos=captureHeartBurstPosition(prevLives);
@@ -1996,6 +1996,7 @@ select optgroup { color: #0b1022; }
   let gunDevilNextShot=0;
   let gunDevilIntervalMs=200;
   let gunDevilTargetsPerShot=2;
+  let gunDevilReloadPending=false;
   let solarBurstNextAt=0;
   let plasmaChainNextAt=0;
   let applyingLinkedMulti=false;
@@ -3165,7 +3166,7 @@ select optgroup { color: #0b1022; }
       }
     }
     screenShake=Math.max(screenShake,6);
-    playSFX('blackhole');
+    playSFX('corrosionPulse');
   }
 
   function triggerDeathLaserAt(x,y){
@@ -3252,9 +3253,14 @@ select optgroup { color: #0b1022; }
         damageActiveBoss(1,'gunDevil',impact);
       }
     }
-    laserBeams.push({x1,y1,x2,y2,until:now+160});
-    laserImpacts.push({x:x2,y:y2,t0:now,tEnd:now+260});
-    playSFX('laser');
+    const dist=Math.hypot(x2-x1,y2-y1)||1;
+    const travelMs=Math.max(140, (dist/2400)*1000);
+    gunDevilMuzzles.push({x:x1,y:y1,t0:now,tEnd:now+160});
+    gunDevilTracers.push({x1,y1,x2,y2,t0:now,tEnd:now+travelMs+180});
+    gunDevilBullets.push({x1,y1,x2,y2,t0:now,tEnd:now+travelMs});
+    const impactStart=now+travelMs;
+    gunDevilImpacts.push({x:x2,y:y2,t0:impactStart,tEnd:impactStart+360});
+    playSFX('sniperShot');
   }
 
   function fireGunDevilVolley(now){
@@ -3624,6 +3630,7 @@ select optgroup { color: #0b1022; }
       gunDevilNextShot=now;
       gunDevilIntervalMs=interval;
       gunDevilTargetsPerShot=targets;
+      gunDevilReloadPending=true;
       slot.activeUntil=now+duration;
       slot.activeDuration=duration;
       applySlotCooldown(slot,cooldown,now);
@@ -4458,7 +4465,7 @@ select optgroup { color: #0b1022; }
       if(spaceBossDeathAnim){ spaceBossDeathAnim.start+=delta; spaceBossDeathAnim.explosionAt+=delta; spaceBossDeathAnim.end+=delta; spaceBossDeathAnim.lastBurst+=delta; }
       if(spaceBossSuppressLifeLossUntil) spaceBossSuppressLifeLossUntil += delta;
       // 調整各種特效物件（粒子、雷射、黑洞等）的 till/until 終止時間
-      const lists = [plasmas, plasmaChains, holyFlashes, blackHoles, laserBeams, laserImpacts, missiles, hostileBeams, hostileArcs, hostileColumns, hazardClouds];
+      const lists = [plasmas, plasmaChains, holyFlashes, blackHoles, laserBeams, laserImpacts, gunDevilTracers, gunDevilBullets, gunDevilMuzzles, gunDevilImpacts, missiles, hostileBeams, hostileArcs, hostileColumns, hazardClouds];
       for(const arr of lists){
         if(!arr) continue;
         for(const item of arr){
@@ -5813,7 +5820,7 @@ select optgroup { color: #0b1022; }
       spawnParticles(centerX, centerY, '#ff2952', 110, 3.2, 4.6, 3.8);
       spawnParticles(centerX, centerY, '#ffc7d9', 60, 2.6, 3.6, 3.2);
     }
-    playSFX('explosion');
+    playSFX('bladeHellBurst');
     screenShake=Math.max(screenShake, cause==='beam'?12:9);
     const prevLives=lives;
     const burstPos = (cause==='slash') ? captureHeartBurstPosition(prevLives) : null;
@@ -6855,7 +6862,7 @@ select optgroup { color: #0b1022; }
             spear.paddleHit=true;
             spawnDemonSpearBlood(pr.x+pr.w/2, pr.y+pr.h/2);
             spawnParticles(spear.x, pr.y+pr.h/2, '#ff8fa3', 20, 2.2, 3.2, 3.4);
-            playSFX('explosion');
+            playSFX('spearImpact');
             paddleStunUntil=Math.max(paddleStunUntil, now+1200);
             screenShake=Math.max(screenShake,18);
           }
@@ -8413,6 +8420,10 @@ select optgroup { color: #0b1022; }
   const blackHoles=[]; // {x,y,until}
   const laserBeams=[]; // {x1,y1,x2,y2,until}
   const laserImpacts=[]; // {x,y,t0,tEnd}
+  const gunDevilTracers=[]; // {x1,y1,x2,y2,t0,tEnd}
+  const gunDevilBullets=[]; // {x1,y1,x2,y2,t0,tEnd}
+  const gunDevilMuzzles=[]; // {x,y,t0,tEnd}
+  const gunDevilImpacts=[]; // {x,y,t0,tEnd}
   const gatlingBullets=[]; // 火力壓制子彈 {x,y,vx,vy}
   const lockBoxes=[]; // {x,y,w,h,until,kind}
   let nextTreasureBrickAt=0;
@@ -10941,7 +10952,7 @@ select optgroup { color: #0b1022; }
           spawnParticles(demonBoss.x, burstY, '#9f0c2e', 120, 3.0, 4.4, 4.0);
           spawnParticles(demonBoss.x, burstY, '#c9184a', 80, 2.6, 3.8, 3.6);
           spawnParticles(demonBoss.x, burstY, '#ff4d6d', 50, 2.4, 3.4, 3.2);
-          playSFX('explosion');
+          playSFX('bloodBurst');
           state.burstDone=true;
         }
         if(now>=state.end){
@@ -12048,13 +12059,378 @@ function chooseTrackTargetForBall(ball){
     const g = audioCtx.createGain();
     o.connect(g); g.connect(audioCtx.destination);
     switch(type){
-      case 'explosion':
+      case 'shockwaveBoom':
+      case 'explosion':{
         o.type='sawtooth';
-        o.frequency.setValueAtTime(200, now);
-        o.frequency.exponentialRampToValueAtTime(40, now+0.4);
+        o.frequency.setValueAtTime(220, now);
+        o.frequency.exponentialRampToValueAtTime(60, now+0.5);
+        g.gain.setValueAtTime(0.08, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.5);
+        const sub=audioCtx.createOscillator();
+        const subGain=audioCtx.createGain();
+        sub.type='sine';
+        sub.frequency.setValueAtTime(90, now);
+        sub.frequency.exponentialRampToValueAtTime(30, now+0.6);
+        subGain.gain.setValueAtTime(0.14, now);
+        subGain.gain.exponentialRampToValueAtTime(0.0001, now+0.6);
+        sub.connect(subGain); subGain.connect(audioCtx.destination);
+        const noiseBuffer=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.45), audioCtx.sampleRate);
+        const noiseData=noiseBuffer.getChannelData(0);
+        for(let i=0;i<noiseData.length;i++){
+          const t=i/noiseData.length;
+          const env=Math.pow(1-t,0.4);
+          noiseData[i]=(Math.random()*2-1)*0.45*env;
+        }
+        const noise=audioCtx.createBufferSource();
+        noise.buffer=noiseBuffer;
+        const noiseFilter=audioCtx.createBiquadFilter(); noiseFilter.type='bandpass'; noiseFilter.frequency.setValueAtTime(620, now); noiseFilter.Q=1.2;
+        const noiseGain=audioCtx.createGain(); noiseGain.gain.setValueAtTime(0.12, now); noiseGain.gain.exponentialRampToValueAtTime(0.0001, now+0.45);
+        noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.5);
+        sub.start(now); sub.stop(now+0.6);
+        noise.start(now); noise.stop(now+0.45);
+        break;
+      }
+      case 'voidBurst':{
+        o.type='triangle';
+        o.frequency.setValueAtTime(1600, now);
+        o.frequency.exponentialRampToValueAtTime(520, now+0.32);
+        g.gain.setValueAtTime(0.05, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.32);
+        const noiseBuffer=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.28), audioCtx.sampleRate);
+        const noiseData=noiseBuffer.getChannelData(0);
+        for(let i=0;i<noiseData.length;i++){
+          const t=i/noiseData.length;
+          const env=1-Math.pow(t,0.6);
+          noiseData[i]=(Math.random()*2-1)*0.32*env;
+        }
+        const noise=audioCtx.createBufferSource(); noise.buffer=noiseBuffer;
+        const filter=audioCtx.createBiquadFilter(); filter.type='highpass'; filter.frequency.setValueAtTime(1500, now); filter.Q=0.9;
+        const noiseGain=audioCtx.createGain(); noiseGain.gain.setValueAtTime(0.08, now); noiseGain.gain.exponentialRampToValueAtTime(0.0001, now+0.26);
+        noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.32);
+        noise.start(now); noise.stop(now+0.26);
+        break;
+      }
+      case 'voidImpact':{
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(180, now);
+        o.frequency.exponentialRampToValueAtTime(45, now+0.55);
         g.gain.setValueAtTime(0.07, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now+0.4);
-        o.start(now); o.stop(now+0.4); break;
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.55);
+        const sub=audioCtx.createOscillator();
+        const subGain=audioCtx.createGain();
+        sub.type='sine';
+        sub.frequency.setValueAtTime(52, now);
+        sub.frequency.exponentialRampToValueAtTime(28, now+0.6);
+        subGain.gain.setValueAtTime(0.16, now);
+        subGain.gain.exponentialRampToValueAtTime(0.0001, now+0.6);
+        sub.connect(subGain); subGain.connect(audioCtx.destination);
+        const rumbleBuffer=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.5), audioCtx.sampleRate);
+        const rumbleData=rumbleBuffer.getChannelData(0);
+        for(let i=0;i<rumbleData.length;i++){
+          const t=i/rumbleData.length;
+          const env=Math.pow(1-t,0.35);
+          rumbleData[i]=(Math.random()*2-1)*0.32*env;
+        }
+        const rumble=audioCtx.createBufferSource(); rumble.buffer=rumbleBuffer;
+        const rumbleFilter=audioCtx.createBiquadFilter(); rumbleFilter.type='lowpass'; rumbleFilter.frequency.setValueAtTime(260, now); rumbleFilter.Q=0.7;
+        const rumbleGain=audioCtx.createGain(); rumbleGain.gain.setValueAtTime(0.12, now); rumbleGain.gain.exponentialRampToValueAtTime(0.0001, now+0.48);
+        rumble.connect(rumbleFilter); rumbleFilter.connect(rumbleGain); rumbleGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.55);
+        sub.start(now); sub.stop(now+0.6);
+        rumble.start(now); rumble.stop(now+0.48);
+        break;
+      }
+      case 'bladeHellBurst':{
+        o.type='triangle';
+        o.frequency.setValueAtTime(1600, now);
+        o.frequency.exponentialRampToValueAtTime(420, now+0.24);
+        g.gain.setValueAtTime(0.06, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.26);
+        const hissBuf=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.22), audioCtx.sampleRate);
+        const hiss=hissBuf.getChannelData(0);
+        for(let i=0;i<hiss.length;i++){
+          const t=i/hiss.length;
+          const env=1-Math.pow(t,0.4);
+          hiss[i]=(Math.random()*2-1)*0.25*env;
+        }
+        const hissSrc=audioCtx.createBufferSource(); hissSrc.buffer=hissBuf;
+        const hissFilter=audioCtx.createBiquadFilter(); hissFilter.type='highpass'; hissFilter.frequency.setValueAtTime(1800, now); hissFilter.Q=0.8;
+        const hissGain=audioCtx.createGain(); hissGain.gain.setValueAtTime(0.06, now); hissGain.gain.exponentialRampToValueAtTime(0.0001, now+0.2);
+        hissSrc.connect(hissFilter); hissFilter.connect(hissGain); hissGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.26);
+        hissSrc.start(now); hissSrc.stop(now+0.2);
+        break;
+      }
+      case 'spearImpact':
+        o.type='square';
+        o.frequency.setValueAtTime(1400, now);
+        o.frequency.exponentialRampToValueAtTime(360, now+0.14);
+        g.gain.setValueAtTime(0.05, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.16);
+        o.start(now); o.stop(now+0.16); break;
+      case 'bloodBurst':{
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(260, now);
+        o.frequency.exponentialRampToValueAtTime(70, now+0.52);
+        g.gain.setValueAtTime(0.075, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.52);
+        const sub=audioCtx.createOscillator(); const subGain=audioCtx.createGain();
+        sub.type='sine'; sub.frequency.setValueAtTime(80, now); sub.frequency.exponentialRampToValueAtTime(32, now+0.6);
+        subGain.gain.setValueAtTime(0.12, now); subGain.gain.exponentialRampToValueAtTime(0.0001, now+0.6);
+        sub.connect(subGain); subGain.connect(audioCtx.destination);
+        const splatterBuf=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.38), audioCtx.sampleRate);
+        const splatter=splatterBuf.getChannelData(0);
+        for(let i=0;i<splatter.length;i++){
+          const t=i/splatter.length;
+          const env=Math.pow(1-t,0.5);
+          splatter[i]=(Math.random()*2-1)*0.4*env;
+        }
+        const splatterSrc=audioCtx.createBufferSource(); splatterSrc.buffer=splatterBuf;
+        const splatterFilter=audioCtx.createBiquadFilter(); splatterFilter.type='bandpass'; splatterFilter.frequency.setValueAtTime(420, now); splatterFilter.Q=0.9;
+        const splatterGain=audioCtx.createGain(); splatterGain.gain.setValueAtTime(0.09, now); splatterGain.gain.exponentialRampToValueAtTime(0.0001, now+0.32);
+        splatterSrc.connect(splatterFilter); splatterFilter.connect(splatterGain); splatterGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.52);
+        sub.start(now); sub.stop(now+0.6);
+        splatterSrc.start(now); splatterSrc.stop(now+0.32);
+        break;
+      }
+      case 'spaceBossNova':{
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(280, now);
+        o.frequency.exponentialRampToValueAtTime(48, now+0.6);
+        g.gain.setValueAtTime(0.09, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.6);
+        const halo=audioCtx.createOscillator(); const haloGain=audioCtx.createGain();
+        halo.type='triangle'; halo.frequency.setValueAtTime(720, now); halo.frequency.linearRampToValueAtTime(380, now+0.4);
+        haloGain.gain.setValueAtTime(0.04, now); haloGain.gain.exponentialRampToValueAtTime(0.0001, now+0.4);
+        halo.connect(haloGain); haloGain.connect(audioCtx.destination);
+        const noiseBuffer=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.6), audioCtx.sampleRate);
+        const data=noiseBuffer.getChannelData(0);
+        for(let i=0;i<data.length;i++){
+          const t=i/data.length;
+          const env=Math.pow(1-t,0.35);
+          data[i]=(Math.random()*2-1)*0.5*env;
+        }
+        const noise=audioCtx.createBufferSource(); noise.buffer=noiseBuffer;
+        const filter=audioCtx.createBiquadFilter(); filter.type='bandpass'; filter.frequency.setValueAtTime(540, now); filter.Q=1.1;
+        const noiseGain=audioCtx.createGain(); noiseGain.gain.setValueAtTime(0.12, now); noiseGain.gain.exponentialRampToValueAtTime(0.0001, now+0.5);
+        noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.6);
+        halo.start(now); halo.stop(now+0.4);
+        noise.start(now); noise.stop(now+0.5);
+        break;
+      }
+      case 'reaperBurst':{
+        o.type='triangle';
+        o.frequency.setValueAtTime(720, now);
+        o.frequency.exponentialRampToValueAtTime(220, now+0.36);
+        g.gain.setValueAtTime(0.06, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.36);
+        const shimmer=audioCtx.createOscillator(); const shimmerGain=audioCtx.createGain();
+        shimmer.type='sine'; shimmer.frequency.setValueAtTime(1600, now); shimmer.frequency.linearRampToValueAtTime(880, now+0.32);
+        shimmerGain.gain.setValueAtTime(0.025, now); shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now+0.32);
+        shimmer.connect(shimmerGain); shimmerGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.36);
+        shimmer.start(now); shimmer.stop(now+0.32);
+        break;
+      }
+      case 'bombDevilPop':{
+        o.type='square';
+        o.frequency.setValueAtTime(980, now);
+        o.frequency.exponentialRampToValueAtTime(240, now+0.22);
+        g.gain.setValueAtTime(0.055, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.24);
+        const fizzBuf=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.2), audioCtx.sampleRate);
+        const fizz=fizzBuf.getChannelData(0);
+        for(let i=0;i<fizz.length;i++){
+          const t=i/fizz.length;
+          const env=Math.pow(1-t,0.5);
+          fizz[i]=(Math.random()*2-1)*0.2*env;
+        }
+        const fizzSrc=audioCtx.createBufferSource(); fizzSrc.buffer=fizzBuf;
+        const fizzGain=audioCtx.createGain(); fizzGain.gain.setValueAtTime(0.05, now); fizzGain.gain.exponentialRampToValueAtTime(0.0001, now+0.18);
+        fizzSrc.connect(fizzGain); fizzGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.24);
+        fizzSrc.start(now); fizzSrc.stop(now+0.18);
+        break;
+      }
+      case 'poisonBloom':{
+        o.type='sine';
+        o.frequency.setValueAtTime(600, now);
+        o.frequency.exponentialRampToValueAtTime(240, now+0.36);
+        g.gain.setValueAtTime(0.045, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.36);
+        const mistBuf=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.28), audioCtx.sampleRate);
+        const mist=mistBuf.getChannelData(0);
+        for(let i=0;i<mist.length;i++){
+          const t=i/mist.length;
+          const env=Math.pow(1-t,0.55);
+          mist[i]=(Math.random()*2-1)*0.22*env;
+        }
+        const mistSrc=audioCtx.createBufferSource(); mistSrc.buffer=mistBuf;
+        const mistFilter=audioCtx.createBiquadFilter(); mistFilter.type='bandpass'; mistFilter.frequency.setValueAtTime(420, now); mistFilter.Q=1.5;
+        const mistGain=audioCtx.createGain(); mistGain.gain.setValueAtTime(0.07, now); mistGain.gain.exponentialRampToValueAtTime(0.0001, now+0.26);
+        mistSrc.connect(mistFilter); mistFilter.connect(mistGain); mistGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.36);
+        mistSrc.start(now); mistSrc.stop(now+0.26);
+        break;
+      }
+      case 'areaBurst':
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(420, now);
+        o.frequency.exponentialRampToValueAtTime(140, now+0.26);
+        g.gain.setValueAtTime(0.06, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.28);
+        o.start(now); o.stop(now+0.28); break;
+      case 'mirrorBurst':{
+        o.type='sine';
+        o.frequency.setValueAtTime(1100, now);
+        o.frequency.linearRampToValueAtTime(620, now+0.3);
+        g.gain.setValueAtTime(0.05, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.3);
+        const shimmer=audioCtx.createOscillator(); const shimmerGain=audioCtx.createGain();
+        shimmer.type='triangle'; shimmer.frequency.setValueAtTime(1800, now); shimmer.frequency.linearRampToValueAtTime(900, now+0.28);
+        shimmerGain.gain.setValueAtTime(0.03, now); shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now+0.28);
+        shimmer.connect(shimmerGain); shimmerGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.3);
+        shimmer.start(now); shimmer.stop(now+0.28);
+        break;
+      }
+      case 'nukeBlast':{
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(160, now);
+        o.frequency.exponentialRampToValueAtTime(24, now+0.8);
+        g.gain.setValueAtTime(0.09, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.8);
+        const rumble=audioCtx.createOscillator(); const rumbleGain=audioCtx.createGain();
+        rumble.type='sine'; rumble.frequency.setValueAtTime(60, now); rumble.frequency.exponentialRampToValueAtTime(18, now+0.9);
+        rumbleGain.gain.setValueAtTime(0.18, now); rumbleGain.gain.exponentialRampToValueAtTime(0.0001, now+0.9);
+        rumble.connect(rumbleGain); rumbleGain.connect(audioCtx.destination);
+        const debrisBuf=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.7), audioCtx.sampleRate);
+        const debris=debrisBuf.getChannelData(0);
+        for(let i=0;i<debris.length;i++){
+          const t=i/debris.length;
+          const env=Math.pow(1-t,0.3);
+          debris[i]=(Math.random()*2-1)*0.55*env;
+        }
+        const debrisSrc=audioCtx.createBufferSource(); debrisSrc.buffer=debrisBuf;
+        const debrisFilter=audioCtx.createBiquadFilter(); debrisFilter.type='lowpass'; debrisFilter.frequency.setValueAtTime(420, now); debrisFilter.Q=0.6;
+        const debrisGain=audioCtx.createGain(); debrisGain.gain.setValueAtTime(0.12, now); debrisGain.gain.exponentialRampToValueAtTime(0.0001, now+0.7);
+        debrisSrc.connect(debrisFilter); debrisFilter.connect(debrisGain); debrisGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.8);
+        rumble.start(now); rumble.stop(now+0.9);
+        debrisSrc.start(now); debrisSrc.stop(now+0.7);
+        break;
+      }
+      case 'starLaunch':
+        o.type='sine';
+        o.frequency.setValueAtTime(950, now);
+        o.frequency.linearRampToValueAtTime(1400, now+0.22);
+        g.gain.setValueAtTime(0.04, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.24);
+        o.start(now); o.stop(now+0.24); break;
+      case 'moonLaunch':
+        o.type='sine';
+        o.frequency.setValueAtTime(360, now);
+        o.frequency.linearRampToValueAtTime(520, now+0.26);
+        g.gain.setValueAtTime(0.05, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.28);
+        o.start(now); o.stop(now+0.28); break;
+      case 'padBoom':
+        o.type='square';
+        o.frequency.setValueAtTime(480, now);
+        o.frequency.exponentialRampToValueAtTime(110, now+0.32);
+        g.gain.setValueAtTime(0.07, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.34);
+        o.start(now); o.stop(now+0.34); break;
+      case 'missileDetonate':{
+        o.type='square';
+        o.frequency.setValueAtTime(1200, now);
+        o.frequency.exponentialRampToValueAtTime(260, now+0.22);
+        g.gain.setValueAtTime(0.06, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.24);
+        const crackleBuf=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.22), audioCtx.sampleRate);
+        const crackle=crackleBuf.getChannelData(0);
+        for(let i=0;i<crackle.length;i++){
+          const t=i/crackle.length;
+          const env=Math.pow(1-t,0.5);
+          crackle[i]=(Math.random()*2-1)*0.3*env;
+        }
+        const crackleSrc=audioCtx.createBufferSource(); crackleSrc.buffer=crackleBuf;
+        const crackleGain=audioCtx.createGain(); crackleGain.gain.setValueAtTime(0.08, now); crackleGain.gain.exponentialRampToValueAtTime(0.0001, now+0.2);
+        crackleSrc.connect(crackleGain); crackleGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.24);
+        crackleSrc.start(now); crackleSrc.stop(now+0.2);
+        break;
+      }
+      case 'sniperShot':{
+        o.type='square';
+        o.frequency.setValueAtTime(2400, now);
+        o.frequency.exponentialRampToValueAtTime(520, now+0.12);
+        g.gain.setValueAtTime(0.12, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.14);
+        const snapBuf=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.12), audioCtx.sampleRate);
+        const snap=snapBuf.getChannelData(0);
+        for(let i=0;i<snap.length;i++){
+          const t=i/snap.length;
+          const env=1-Math.pow(t,0.6);
+          snap[i]=(Math.random()*2-1)*0.5*env;
+        }
+        const snapSrc=audioCtx.createBufferSource(); snapSrc.buffer=snapBuf;
+        const snapFilter=audioCtx.createBiquadFilter(); snapFilter.type='highpass'; snapFilter.frequency.setValueAtTime(1800, now); snapFilter.Q=0.7;
+        const snapGain=audioCtx.createGain(); snapGain.gain.setValueAtTime(0.14, now); snapGain.gain.exponentialRampToValueAtTime(0.0001, now+0.1);
+        snapSrc.connect(snapFilter); snapFilter.connect(snapGain); snapGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.14);
+        snapSrc.start(now); snapSrc.stop(now+0.1);
+        break;
+      }
+      case 'sniperReload':{
+        o.type='square';
+        o.frequency.setValueAtTime(900, now);
+        o.frequency.linearRampToValueAtTime(600, now+0.12);
+        g.gain.setValueAtTime(0.04, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.18);
+        const bolt=audioCtx.createOscillator(); const boltGain=audioCtx.createGain();
+        bolt.type='triangle';
+        bolt.frequency.setValueAtTime(700, now+0.12);
+        bolt.frequency.linearRampToValueAtTime(400, now+0.24);
+        boltGain.gain.setValueAtTime(0.035, now+0.12);
+        boltGain.gain.exponentialRampToValueAtTime(0.0001, now+0.24);
+        bolt.connect(boltGain); boltGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.18);
+        bolt.start(now+0.12); bolt.stop(now+0.24);
+        break;
+      }
+      case 'corrosionPulse':{
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(140, now);
+        o.frequency.exponentialRampToValueAtTime(38, now+0.6);
+        g.gain.setValueAtTime(0.06, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.6);
+        const hazeBuf=audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*0.5), audioCtx.sampleRate);
+        const haze=hazeBuf.getChannelData(0);
+        for(let i=0;i<haze.length;i++){
+          const t=i/haze.length;
+          const env=Math.pow(1-t,0.45);
+          haze[i]=(Math.random()*2-1)*0.28*env;
+        }
+        const hazeSrc=audioCtx.createBufferSource(); hazeSrc.buffer=hazeBuf;
+        const hazeFilter=audioCtx.createBiquadFilter(); hazeFilter.type='bandpass'; hazeFilter.frequency.setValueAtTime(260, now); hazeFilter.Q=0.8;
+        const hazeGain=audioCtx.createGain(); hazeGain.gain.setValueAtTime(0.08, now); hazeGain.gain.exponentialRampToValueAtTime(0.0001, now+0.5);
+        hazeSrc.connect(hazeFilter); hazeFilter.connect(hazeGain); hazeGain.connect(audioCtx.destination);
+        o.start(now); o.stop(now+0.6);
+        hazeSrc.start(now); hazeSrc.stop(now+0.5);
+        break;
+      }
+      case 'brickHit':
+        o.type='triangle';
+        o.frequency.setValueAtTime(920, now);
+        o.frequency.linearRampToValueAtTime(620, now+0.12);
+        g.gain.setValueAtTime(0.045, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.16);
+        o.start(now); o.stop(now+0.16); break;
       case 'coin':
         o.type='sine';
         o.frequency.setValueAtTime(900, now);
@@ -12542,7 +12918,7 @@ function chooseTrackTargetForBall(ball){
   // 特殊磚模板
   function addBrick(list, x,y,w,h, opts={}){
     const id = (opts.id!=null)?opts.id:brickIdCounter++;
-    list.push(Object.assign({id,x,y,w,h,hp:opts.unbreakable?Infinity:(opts.hp||1), colorIdx:0, explosive:false, unbreakable:false, strong:false, moving:false, vx:0, vy:0, boss:false, face:''}, opts));
+    list.push(Object.assign({id,x,y,w,h,hp:opts.unbreakable?Infinity:(opts.hp||1), colorIdx:0, explosive:false, unbreakable:false, strong:false, moving:false, vx:0, vy:0, boss:false, face:'', hitFlashUntil:0}, opts));
   }
 
   
@@ -13008,7 +13384,7 @@ function chooseTrackTargetForBall(ball){
           spaceBossBursts.push({type:'ring',x:spaceBoss.x,y:spaceBoss.y,r0:90,r1:660,width:36,t0:now,life:2200,color:'255,220,190'});
           spaceBossBursts.push({type:'flare',x:spaceBoss.x,y:spaceBoss.y,r0:0,r1:460,t0:now,life:2400,color:'255,244,220'});
           spaceBossBursts.push({type:'halo',x:spaceBoss.x,y:spaceBoss.y,r0:120,r1:720,t0:now,life:2600,color:'255,200,150'});
-          playSFX('explosion');
+          playSFX('spaceBossNova');
           if(!anim.dropSpawned){
             spawnBossNineCatOnce('space', spaceBoss.x-12, spaceBoss.y);
             anim.dropSpawned=true;
@@ -13874,7 +14250,7 @@ function chooseTrackTargetForBall(ball){
     updateHUD();
     spawnParticles(cx, cy, '#ff6a9a', 70, 2.6, 3.8, 3.4);
     screenShake=Math.max(screenShake,12);
-    playSFX('explosion');
+    playSFX('reaperBurst');
     balls.length=0;
     if(lives<=0){ running=false; paused=true; showGameOver(); return; }
     resetBalls(false);
@@ -17191,9 +17567,27 @@ function generateLevel(lv, L){
       amount+=getCurseSwordBonus(now);
     }
     amount=Math.max(1, Math.floor(amount*getBloodBladeMultiplier(now)));
-    for(let k=0;k<amount;k++){
-      if(!bricks[i]) break;
+    if(brick.boss){
+      for(let k=0;k<amount;k++){
+        if(!bricks[i] || !bricks[i].boss) break;
+        destroyBrick(i, sfx);
+      }
+      return;
+    }
+    if(brick.unbreakable || brick.hp===Infinity){
+      return;
+    }
+    const prevHp = Number.isFinite(brick.hp) ? brick.hp : 1;
+    brick.hp = prevHp - amount;
+    if(brick.hp<=0){
       destroyBrick(i, sfx);
+      return;
+    }
+    brick.hitFlashUntil = Math.max(brick.hitFlashUntil||0, now+180);
+    if(sfx==='default'){
+      playSFX('brickHit');
+    }else if(sfx && sfx!=='none'){
+      playSFX(sfx);
     }
   }
   function destroyNeighbors(idx){
@@ -17248,7 +17642,7 @@ function generateLevel(lv, L){
     }
     spawnParticles(cx,cy,'#ffbb55',24,2.1,3.2,4); updateHUD();
     if(opts.sound!==false){
-      playSFX('explosion');
+      playSFX('shockwaveBoom');
     }
   }
 
@@ -17403,7 +17797,7 @@ function generateLevel(lv, L){
           destroyBrick(idx,'none');
           spawnParticles(cx,cy,'#ff9966',24,1.8,2.6,3.2);
           if(!seq.playedSound){
-            playSFX('explosion');
+            playSFX('bombDevilPop');
             seq.playedSound=true;
           }
         }
@@ -17614,7 +18008,7 @@ function generateLevel(lv, L){
       triggered=true;
     }
     if(triggered){
-      playSFX('explosion');
+      playSFX('poisonBloom');
       screenShake=Math.max(screenShake,6);
     }
     return triggered;
@@ -17650,7 +18044,7 @@ function generateLevel(lv, L){
       triggered=true;
     }
     if(triggered){
-      playSFX('explosion');
+      playSFX('areaBurst');
       screenShake=Math.max(screenShake,8);
     }
     return triggered;
@@ -17760,7 +18154,7 @@ function generateLevel(lv, L){
       spawnParticles(x+brickW/2,y+brickH/2,'rgba(150,200,255,0.8)',18,1.6,2.6,2.6);
     }
     if(removals.size || clones.length){
-      playSFX('explosion');
+      playSFX('mirrorBurst');
       screenShake=Math.max(screenShake,8);
       updateHUD();
     }
@@ -17784,7 +18178,7 @@ function generateLevel(lv, L){
       damageActiveBoss(bossDamage,'nuke',{x:550,y:320});
     }
     spawnParticles(550,350,'#fff2a8',160,3.4,4.8,4.8);
-    playSFX('explosion');
+    playSFX('nukeBlast');
     screenShake=Math.max(screenShake,18);
     if(selfDamage>0){
       stats.livesUsed+=selfDamage;
@@ -17819,7 +18213,7 @@ function generateLevel(lv, L){
         created:performance.now()
       });
     }
-    playSFX('explosion');
+    playSFX('starLaunch');
   }
 
   function updateStarProjectiles(now){
@@ -17896,7 +18290,7 @@ function generateLevel(lv, L){
       bounces:0,
       maxBounces
     });
-    playSFX('explosion');
+    playSFX('moonLaunch');
   }
 
   function updateMoonProjectiles(now){
@@ -18749,6 +19143,11 @@ function generateLevel(lv, L){
     blackHoles.length=0;
     laserBeams.length=0;
     laserImpacts.length=0;
+    gunDevilTracers.length=0;
+    gunDevilBullets.length=0;
+    gunDevilMuzzles.length=0;
+    gunDevilImpacts.length=0;
+    gunDevilReloadPending=false;
     bombDevilQueues.length=0;
     bombDevilBossQueues.length=0;
     bombDevilRowCooldown.clear();
@@ -19503,6 +19902,7 @@ function generateLevel(lv, L){
 
     // 磚塊
     for(const b of bricks){
+      const timeNow=performance.now();
       // 移動磚更新
       if(b.moving){
         b.x += b.vx;
@@ -19529,9 +19929,16 @@ function generateLevel(lv, L){
       ctx.fillStyle=fillStyle;
       drawRoundedRect(b.x,b.y,b.w,b.h,6);
       ctx.fill();
+      if(b.hitFlashUntil && timeNow<b.hitFlashUntil){
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        ctx.fillStyle='rgba(255,255,255,0.28)';
+        drawRoundedRect(b.x-1,b.y-1,b.w+2,b.h+2,7);
+        ctx.fill();
+        ctx.restore();
+      }
       if(b.treasure){
-        const now=performance.now();
-        const sheenPos=(now%1400)/1400;
+        const sheenPos=(timeNow%1400)/1400;
         ctx.save();
         ctx.globalCompositeOperation='lighter';
         const sheen=ctx.createLinearGradient((b.x-12)*scaleX,(b.y-12)*scaleY,(b.x+b.w+12)*scaleX,(b.y+b.h+12)*scaleY);
@@ -19548,11 +19955,11 @@ function generateLevel(lv, L){
         drawRoundedRect(b.x-4,b.y-4,b.w+8,b.h+8,9);
         ctx.fill();
 
-        const glowPulse=0.65+0.35*Math.sin(now/320);
+        const glowPulse=0.65+0.35*Math.sin(timeNow/320);
         const rainbow=ctx.createLinearGradient((b.x-10)*scaleX,(b.y-10)*scaleY,(b.x+b.w+10)*scaleX,(b.y+b.h+10)*scaleY);
         const rainbowColors=['#ff6ec7','#ff9f43','#ffe066','#8ce99a','#74c0fc','#b197fc','#ff85f5'];
         rainbowColors.forEach((col,i)=>rainbow.addColorStop(i/(rainbowColors.length-1),col));
-        ctx.globalAlpha=0.8+0.2*Math.sin(now/360);
+        ctx.globalAlpha=0.8+0.2*Math.sin(timeNow/360);
         ctx.strokeStyle=rainbow;
         ctx.lineWidth=3.5+1.5*glowPulse;
         ctx.shadowBlur=20;
@@ -19562,7 +19969,7 @@ function generateLevel(lv, L){
         ctx.restore();
       }
       if(b.placeholderBoss){
-        const pulse=0.5+0.5*Math.sin(performance.now()/200);
+        const pulse=0.5+0.5*Math.sin(timeNow/200);
         ctx.save();
         ctx.globalCompositeOperation='lighter';
         ctx.strokeStyle=`rgba(255,210,150,${0.35+0.35*pulse})`;
@@ -19572,12 +19979,12 @@ function generateLevel(lv, L){
         ctx.restore();
       }
       if(b.elite){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.shadowColor='rgba(120,220,255,0.7)'; ctx.shadowBlur=15; const eg=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x+b.w)*scaleX,(b.y+b.h)*scaleY); eg.addColorStop(0,'rgba(0,255,255,0.9)'); eg.addColorStop(1,'rgba(120,180,255,0.2)'); ctx.strokeStyle=eg; ctx.lineWidth=3; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.stroke(); ctx.shadowBlur=0; ctx.strokeStyle='rgba(120,220,255,0.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo((b.x+6)*scaleX,(b.y+6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+6)*scaleY); ctx.moveTo((b.x+6)*scaleX,(b.y+b.h-6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+b.h-6)*scaleY); ctx.stroke(); ctx.restore(); }
-      if(b.poisonUntil && performance.now()<b.poisonUntil){ ctx.fillStyle='rgba(0,255,0,0.25)'; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.fill(); }
+      if(b.poisonUntil && timeNow<b.poisonUntil){ ctx.fillStyle='rgba(0,255,0,0.25)'; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.fill(); }
       // 鎖鏈覆蓋
-      if(b.lockedUntil && performance.now() < b.lockedUntil){ ctx.fillStyle='rgba(90,0,120,0.35)'; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.fill();
+      if(b.lockedUntil && timeNow < b.lockedUntil){ ctx.fillStyle='rgba(90,0,120,0.35)'; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.fill();
       if(b.elite){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.shadowColor='rgba(120,220,255,0.7)'; ctx.shadowBlur=15; const eg=ctx.createLinearGradient((b.x)*scaleX,(b.y)*scaleY,(b.x+b.w)*scaleX,(b.y+b.h)*scaleY); eg.addColorStop(0,'rgba(0,255,255,0.9)'); eg.addColorStop(1,'rgba(120,180,255,0.2)'); ctx.strokeStyle=eg; ctx.lineWidth=3; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.stroke(); ctx.shadowBlur=0; ctx.strokeStyle='rgba(120,220,255,0.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo((b.x+6)*scaleX,(b.y+6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+6)*scaleY); ctx.moveTo((b.x+6)*scaleX,(b.y+b.h-6)*scaleY); ctx.lineTo((b.x+b.w-6)*scaleX,(b.y+b.h-6)*scaleY); ctx.stroke(); ctx.restore(); } }
       // 菁英聚氣光
-      if(b.elite && b.eliteChargeUntil && performance.now()<b.eliteChargeUntil){ const a=0.5+0.5*Math.sin(performance.now()/80); ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba(120,220,255,'+(0.6*a)+')'; ctx.lineWidth=3; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.stroke(); ctx.restore(); }
+      if(b.elite && b.eliteChargeUntil && timeNow<b.eliteChargeUntil){ const a=0.5+0.5*Math.sin(timeNow/80); ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='rgba(120,220,255,'+(0.6*a)+')'; ctx.lineWidth=3; drawRoundedRect(b.x,b.y,b.w,b.h,6); ctx.stroke(); ctx.restore(); }
       // 血條 / 面孔
       if(b.boss){
         drawBossEmblem(b);
@@ -20817,6 +21224,101 @@ function generateLevel(lv, L){
         ctx.stroke(); ctx.restore();
       }
     }
+    // 槍之惡魔槍口閃光
+    for(let i=gunDevilMuzzles.length-1;i>=0;i--){
+      const fx=gunDevilMuzzles[i];
+      const nowFx=performance.now();
+      if(nowFx>=fx.tEnd){ gunDevilMuzzles.splice(i,1); continue; }
+      const prog=Math.max(0, Math.min(1, (nowFx - fx.t0)/Math.max(1, fx.tEnd-fx.t0)));
+      const intensity=1-prog;
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      const radius=26*((scaleX+scaleY)/2)*(0.8+0.6*intensity);
+      const grad=ctx.createRadialGradient(fx.x*scaleX,fx.y*scaleY,0,fx.x*scaleX,fx.y*scaleY,radius);
+      grad.addColorStop(0,`rgba(255,255,220,${0.85*intensity})`);
+      grad.addColorStop(0.4,`rgba(255,200,120,${0.6*intensity})`);
+      grad.addColorStop(1,'rgba(255,150,80,0)');
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.arc(fx.x*scaleX,fx.y*scaleY,radius,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+    // 槍之惡魔彈道拖曳
+    for(let i=gunDevilTracers.length-1;i>=0;i--){
+      const tr=gunDevilTracers[i];
+      const nowFx=performance.now();
+      if(nowFx>=tr.tEnd){ gunDevilTracers.splice(i,1); continue; }
+      const prog=Math.max(0, Math.min(1,(nowFx-tr.t0)/Math.max(1,tr.tEnd-tr.t0)));
+      const fade=1-prog;
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle=`rgba(255,220,160,${0.35*fade})`;
+      ctx.lineWidth=3*((scaleX+scaleY)/2);
+      ctx.beginPath();
+      ctx.moveTo(tr.x1*scaleX,tr.y1*scaleY);
+      const midX=tr.x1 + (tr.x2-tr.x1)*prog;
+      const midY=tr.y1 + (tr.y2-tr.y1)*prog;
+      ctx.lineTo(midX*scaleX,midY*scaleY);
+      ctx.stroke();
+      ctx.strokeStyle=`rgba(255,255,255,${0.6*fade})`;
+      ctx.lineWidth=1.5*((scaleX+scaleY)/2);
+      ctx.beginPath();
+      ctx.moveTo(tr.x1*scaleX,tr.y1*scaleY);
+      ctx.lineTo(midX*scaleX,midY*scaleY);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // 槍之惡魔子彈
+    for(let i=gunDevilBullets.length-1;i>=0;i--){
+      const shot=gunDevilBullets[i];
+      const nowFx=performance.now();
+      if(nowFx>=shot.tEnd){ gunDevilBullets.splice(i,1); continue; }
+      const prog=Math.max(0, Math.min(1,(nowFx-shot.t0)/Math.max(1,shot.tEnd-shot.t0)));
+      const bx=shot.x1 + (shot.x2-shot.x1)*prog;
+      const by=shot.y1 + (shot.y2-shot.y1)*prog;
+      const avgScale=(scaleX+scaleY)/2;
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.fillStyle='rgba(255,245,220,0.95)';
+      ctx.beginPath();
+      ctx.arc(bx*scaleX,by*scaleY,4*avgScale,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle='rgba(255,200,120,0.8)';
+      ctx.lineWidth=2*avgScale;
+      ctx.beginPath();
+      ctx.arc(bx*scaleX,by*scaleY,6*avgScale,0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // 槍之惡魔命中散落
+    for(let i=gunDevilImpacts.length-1;i>=0;i--){
+      const fx=gunDevilImpacts[i];
+      const nowFx=performance.now();
+      if(nowFx>=fx.tEnd){ gunDevilImpacts.splice(i,1); continue; }
+      if(nowFx<fx.t0){ continue; }
+      const prog=Math.max(0, Math.min(1,(nowFx-fx.t0)/Math.max(1,fx.tEnd-fx.t0)));
+      const fade=1-prog;
+      const baseR=8+32*prog;
+      ctx.save();
+      ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle=`rgba(255,220,160,${0.6*fade})`;
+      ctx.lineWidth=2+4*fade;
+      ctx.beginPath();
+      ctx.arc(fx.x*scaleX,fx.y*scaleY,baseR*((scaleX+scaleY)/2),0,Math.PI*2);
+      ctx.stroke();
+      for(let s=0;s<4;s++){
+        const ang = (s/4)*Math.PI*2 + prog*2*Math.PI;
+        const len = 10 + prog*26;
+        ctx.strokeStyle=`rgba(255,255,220,${0.45*fade})`;
+        ctx.lineWidth=1.2;
+        ctx.beginPath();
+        ctx.moveTo(fx.x*scaleX,fx.y*scaleY);
+        ctx.lineTo((fx.x+Math.cos(ang)*len)*scaleX,(fx.y+Math.sin(ang)*len)*scaleY);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     // 火力壓制子彈
     for(const b of gatlingBullets){
       ctx.save();
@@ -21112,6 +21614,10 @@ function generateLevel(lv, L){
         if(now>=gunDevilActiveUntil){
           gunDevilActiveUntil=0;
           gunDevilNextShot=0;
+          if(gunDevilReloadPending){
+            playSFX('sniperReload');
+            gunDevilReloadPending=false;
+          }
         }else if(gunDevilIntervalMs>0){
           if(!gunDevilNextShot || now>=gunDevilNextShot){
             fireGunDevilVolley(now);
@@ -21120,6 +21626,10 @@ function generateLevel(lv, L){
         }
       }else{
         gunDevilNextShot=0;
+        if(gunDevilReloadPending){
+          playSFX('sniperReload');
+          gunDevilReloadPending=false;
+        }
       }
       if(equipmentGodspeedHolyStrike && equipmentGodspeedHolyInterval>0 && buffs.GODSPEED.active){
         if(!nextGodspeedHolyStrike){
@@ -21417,7 +21927,7 @@ function generateLevel(lv, L){
         spawnParticles(cx, cy, '#ffeeaa', 60, 3.8, 4.8, 4.5);
         spawnParticles(cx, cy, '#ffffff', 40, 3.2, 4.2, 3.5);
         screenShake = Math.max(screenShake,10);
-        playSFX('explosion');
+        playSFX('padBoom');
         showComboNotice('哈哈你爆掉啦? 道具不能亂吃呀!',5000,3000);
         paddleGoneUntil = buffs.PADBOOM.returnAt;
         buffs.PADBOOM.exploded = true;
@@ -22129,7 +22639,7 @@ function generateLevel(lv, L){
           damageActiveBoss(1,'missile',{x:impactX,y:impactY});
           if(equipmentMissileExplosion){
             explodeAt(impactX,impactY,{sound:false});
-            playSFX('explosion');
+            playSFX('missileDetonate');
             explosionPlayed=true;
           }
           handleMissileImpact(impactX,impactY);
@@ -22143,7 +22653,7 @@ function generateLevel(lv, L){
             if(equipmentMissileExplosion && idx>=0){
               destroyNeighbors(idx);
               if(!explosionPlayed){
-                playSFX('explosion');
+                playSFX('missileDetonate');
                 explosionPlayed=true;
               }
               idx=bricks.indexOf(ref);
