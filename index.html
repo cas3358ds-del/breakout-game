@@ -838,10 +838,8 @@ select optgroup { color: #0b1022; }
       --heartGlow:rgba(255,148,122,.35);
     }
     body[data-skin="和風．無限之城"] #game{
-      /* 修正背景位置屬性拼寫錯誤，確保圖片正常顯示 */
-      background:
-        linear-gradient(0deg, rgba(44, 6, 16, 0.68), rgba(44, 6, 16, 0.68)),
-        url("images/d1.JPG") center/cover no-repeat;
+      /* 移除過深的色彩覆蓋層，恢復原始背景圖色調 */
+      background: url("images/d1.JPG") center/cover no-repeat;
     }
     body[data-skin="和風．無限之城"] .hud,
     body[data-skin="和風．無限之城"] #buffs .badge,
