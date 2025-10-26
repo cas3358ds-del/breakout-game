@@ -838,8 +838,8 @@ select optgroup { color: #0b1022; }
       --heartGlow:rgba(255,148,122,.35);
     }
     body[data-skin="和風．無限之城"] #game{
-      /* 移除過深的色彩覆蓋層，恢復原始背景圖色調 */
-      background: url("images/d1.JPG") center/cover no-repeat;
+      /* 修正背景位置屬性拼寫錯誤，確保圖片正常顯示 */
+      background:url("images/d1.JPG") center/cover no-repeat;
     }
     body[data-skin="和風．無限之城"] .hud,
     body[data-skin="和風．無限之城"] #buffs .badge,
@@ -1707,9 +1707,6 @@ select optgroup { color: #0b1022; }
   const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs'), promptsDock=document.getElementById('promptsDock');
   const ledStyleSel=document.getElementById('ledStyle');
 
-  // === Buff 狀態 ===
-  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},COMBO:{active:false,until:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},PADSPIN:{active:false,until:0,start:0},PADBOOM:{active:false,until:0,explodeAt:0,returnAt:0,exploded:false},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0},GATLING:{active:false,until:0},FIRE:{active:false,until:0},POISON:{active:false,until:0},BLINK:{active:false,until:0},SWORD:{active:false,until:0},STORM:{active:false,until:0},BLACKHOLE:{active:false,until:0,deaths:0},ANNIHIL:{active:false,until:0,start:0,next:0}};
-
   // 新增元素參考
   const heartsEl = document.getElementById('hearts');
   const fireEnergyEl = document.getElementById('fireEnergy');
@@ -1877,17 +1874,7 @@ select optgroup { color: #0b1022; }
     {id:'blackholePlasma',name:'黑洞電漿',icon:'W87.jpg',grade:'A',type:'passive',price:30,description:'被動：被黑洞銷毀的磚塊會產生電漿。',effect:{blackholePlasma:true}},
     {id:'deathLaser',name:'死亡雷射',icon:'W88.jpg',grade:'A',type:'active',price:30,description:'主動：10 秒內所有被擊殺的磚塊會在該位置產生 1 道雷射，冷卻時間 60 秒。',effect:{deathLaser:{duration:10000,cooldown:60000}}},
     {id:'godClock',name:'神之懷錶',icon:'W89.jpg',grade:'S',type:'active',price:100,description:'主動：立即將目前身上所有效果的剩餘時間延長為原本的 2 倍，冷卻時間 120 秒。',effect:{godClock:{cooldown:120000,multiplier:2}}},
-    {id:'gunDemon',name:'槍之惡魔',icon:'W90.jpg',grade:'S',type:'active',price:100,description:'主動：4 秒內每 0.2 秒對隨機 2 個遠距離目標發射狙擊子彈，路徑上的磚塊 HP-1，冷卻時間 60 秒。',effect:{gunDevil:{duration:4000,interval:200,cooldown:60000,targets:2}}},
-    {id:'chainsawDemon',name:'鏈鋸惡魔',icon:'W91.jpg',grade:'S',type:'active',price:100,description:'主動：每 2 秒隨機位置揮出鏈鋸斬擊，共 5 道，路徑上的磚塊遭斬殺並造成噴血特效；命中 Boss 造成 5 點傷害，冷卻時間 60 秒。',effect:{chainsawDemon:{count:5,interval:2000,bossDamage:5,cooldown:60000}}},
-    {id:'silverCoinGun',name:'銀幣槍',icon:'W92.jpg',grade:'A',type:'active',price:30,description:'主動：6 秒內每 0.5 秒噴出 1 枚銀幣子彈，命中造成 2 點傷害並消耗 1 枚銀幣，冷卻時間 60 秒。',effect:{silverCoinGun:{duration:6000,interval:500,damage:2,cooldown:60000,coinCost:1}}},
-    {id:'annihilWand',name:'破壞魔杖',icon:'W93.jpg',grade:'S',type:'passive',price:100,description:'被動：萬物銷毀效果的銷毀間隔縮短 50%。',effect:{annihilIntervalMultiplier:0.5}},
-    {id:'firePoison',name:'火毒',icon:'W94.jpg',grade:'B',type:'passive',price:10,description:'被動：火焰球效果期間，球擊中的對象會被施加劇毒。',effect:{firePoison:true}},
-    {id:'unknownScepter',name:'未知權杖',icon:'W95.jpg',grade:'A',type:'active',price:30,description:'主動：隨機獲得 1 個主動裝備的效果，但同時承受隨機 1 個減益效果，冷卻時間 60 秒。',effect:{unknownScepter:{cooldown:60000}}},
-    {id:'blessedArmor',name:'祝福鎧甲',icon:'W96.jpg',grade:'A',type:'passive',price:30,description:'被動：身上獲得的任何減益效果都會被祝福鎧甲抵銷。',effect:{blessedArmor:true}},
-    {id:'cursedHelmet',name:'詛咒頭盔',icon:'W97.jpg',grade:'A',type:'passive',price:30,description:'被動：平台不會被炸裂或破壞，但每次進入關卡時會隨機獲得 1~3 種減益效果。',effect:{cursedHelmet:true}},
-    {id:'floatingCannon',name:'浮游砲',icon:'W98.jpg',grade:'A',type:'active',price:30,description:'主動：放出 3 個球型浮游砲遊走並每 2 秒射出雷射，8 秒後收回，冷卻時間 60 秒。',effect:{floatingTurrets:{count:3,duration:8000,interval:2000,cooldown:60000,variant:'orb'}}},
-    {id:'wingFloatingCannon',name:'翼狀浮游砲',icon:'W99.jpg',grade:'S',type:'active',price:100,description:'主動：放出 8 個翼狀浮游砲疾行並每 1.5 秒射出雷射，6 秒後收回，冷卻時間 60 秒。',effect:{floatingTurrets:{count:8,duration:6000,interval:1500,cooldown:60000,variant:'wing'}}},
-    {id:'comboBurst',name:'連擊爆裂',icon:'W100.jpg',grade:'B',type:'passive',price:10,description:'被動：當 Combo 達到 100 的倍數時，在球的位置引發華麗爆炸。',effect:{comboBurst:true}}
+    {id:'gunDemon',name:'槍之惡魔',icon:'W90.jpg',grade:'S',type:'active',price:100,description:'主動：4 秒內每 0.2 秒對隨機 2 個遠距離目標發射狙擊子彈，路徑上的磚塊 HP-1，冷卻時間 60 秒。',effect:{gunDevil:{duration:4000,interval:200,cooldown:60000,targets:2}}}
   ];
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
@@ -1997,11 +1984,6 @@ select optgroup { color: #0b1022; }
   let equipmentGodspeedHolyStrike=false;
   let equipmentGodspeedHolyInterval=0;
   let equipmentBlackholePlasma=false;
-  let equipmentAnnihilIntervalMultiplier=1;
-  let equipmentFirePoison=false;
-  let equipmentBlessedArmor=false;
-  let equipmentCursedHelmet=false;
-  let equipmentComboBurst=false;
   let silverAssaultCharge=null;
   let silverAssaultSlotIndex=null;
   let nextGodspeedHolyStrike=0;
@@ -2020,17 +2002,6 @@ select optgroup { color: #0b1022; }
   let applyingLinkedMulti=false;
   let applyingLinkedMega=false;
   let applyingGodspeedLinkedPierce=false;
-  let chainsawDemonState=null;
-  const chainsawSlashes=[];
-  let silverCoinGunActiveUntil=0;
-  let silverCoinGunNextShot=0;
-  let silverCoinGunDamage=2;
-  let silverCoinGunCoinCost=1;
-  let silverCoinGunInterval=500;
-  let silverCoinGunWarnedNoCoins=false;
-  const silverCoinBullets=[];
-  const floatingTurretEffects=[];
-  let blessedArmorLastNotice=0;
   const BLOOD_BLADE_DEFAULTS={damageMultiplier:3,duration:10000,cooldown:60000,hpCost:1};
   const BOMB_DEVIL_DEFAULTS={duration:10000,cooldown:30000,intervalMs:300};
   const BOMB_DEVIL_BOSS_CHAIN_COUNT=5;
@@ -2853,11 +2824,6 @@ select optgroup { color: #0b1022; }
     equipmentGodspeedHolyStrike=false;
     equipmentGodspeedHolyInterval=0;
     equipmentBlackholePlasma=false;
-    equipmentAnnihilIntervalMultiplier=1;
-    equipmentFirePoison=false;
-    equipmentBlessedArmor=false;
-    equipmentCursedHelmet=false;
-    equipmentComboBurst=false;
     for(const slot of equipmentSlots){
       if(!slot) continue;
       const effect=slot.def.effect||{};
@@ -2944,14 +2910,6 @@ select optgroup { color: #0b1022; }
       if(effect.godspeedGrantsPierce) equipmentGodspeedAlsoPierce=true;
       if(effect.blackholeInstantStrike) equipmentBlackholeInstantStrike=true;
       if(effect.blackholePlasma) equipmentBlackholePlasma=true;
-      if(effect.annihilIntervalMultiplier){
-        const mul=Math.max(0.05, Number(effect.annihilIntervalMultiplier)||0);
-        equipmentAnnihilIntervalMultiplier*=mul;
-      }
-      if(effect.firePoison) equipmentFirePoison=true;
-      if(effect.blessedArmor) equipmentBlessedArmor=true;
-      if(effect.cursedHelmet) equipmentCursedHelmet=true;
-      if(effect.comboBurst) equipmentComboBurst=true;
       if(effect.poisonSpread){
         const delay=Math.max(0, Number(effect.poisonSpread.delay)||0);
         if(delay>0){
@@ -2993,13 +2951,6 @@ select optgroup { color: #0b1022; }
     }
     if(equipmentGodspeedHolyStrike && equipmentGodspeedHolyInterval<=0){
       equipmentGodspeedHolyInterval=2000;
-    }
-    if(buffs.ANNIHIL.active){
-      const now=performance.now();
-      const interval=Math.max(100, 1000*equipmentAnnihilIntervalMultiplier);
-      if(!buffs.ANNIHIL.next || buffs.ANNIHIL.next<now){
-        buffs.ANNIHIL.next=now+interval;
-      }
     }
       if(silverAssaultSlotIndex!=null){
         const slot=equipmentSlots[silverAssaultSlotIndex];
@@ -3321,459 +3272,6 @@ select optgroup { color: #0b1022; }
     }
     for(const target of targets){
       fireGunDevilShot(origin,target,now);
-    }
-  }
-
-  function activateChainsawDemonEffect(cfg={}, slot=null, index=null, now=performance.now(), opts={}){
-    const count=Math.max(1, Math.floor(cfg.count||5));
-    const interval=Math.max(200, Number(cfg.interval)||2000);
-    const bossDamage=Math.max(0, Number(cfg.bossDamage)||0);
-    const cooldown=Math.max(0, Number(cfg.cooldown)||60000);
-    const totalDuration=interval*Math.max(0,count-1)+800;
-    if(chainsawDemonState && chainsawDemonState.until>now){
-      chainsawDemonState.remaining += count;
-      chainsawDemonState.interval = interval;
-      chainsawDemonState.bossDamage = bossDamage;
-      chainsawDemonState.until = Math.max(chainsawDemonState.until, now+totalDuration);
-      chainsawDemonState.next = now;
-    }else{
-      chainsawDemonState={
-        remaining:count,
-        interval,
-        next:now,
-        until:now+totalDuration,
-        bossDamage
-      };
-    }
-    if(slot){
-      slot.activeUntil=now+totalDuration;
-      slot.activeDuration=totalDuration;
-      applySlotCooldown(slot,cooldown,now);
-      slot.lastUsed=now;
-      if(!opts.silent){
-        showEquipmentMessage('鏈鋸惡魔啟動！鏈鋸斬擊即將肆虐全場。','success',2600);
-      }
-      refreshEquipmentRuntime(performance.now());
-    }else if(!opts.silent){
-      showEquipmentMessage('鏈鋸惡魔之力在你周圍轟鳴！','success',2400);
-    }
-    return true;
-  }
-
-  function spawnChainsawBlood(x1,y1,x2,y2){
-    const segments=8;
-    for(let i=0;i<=segments;i++){
-      const t=i/segments;
-      const px=x1+(x2-x1)*t;
-      const py=y1+(y2-y1)*t;
-      spawnParticles(px,py,'#ff3150',14,1.8,3.2,3.0);
-      spawnParticles(px,py,'#ffa4b2',8,1.4,2.6,2.4);
-    }
-  }
-
-  function triggerChainsawSlash(now, state){
-    if(!state) return;
-    const L=layout()||{};
-    const pad=L.pad||0;
-    const left=pad;
-    const right=1100-pad;
-    const top=L.top||0;
-    const rows=L.rows||8;
-    const totalHeight=rows*(brickH+pad)-pad;
-    const bottom=Math.min(700, top+Math.max(totalHeight, 260));
-    const cx=left+Math.random()*Math.max(10,right-left-20);
-    const cy=top+Math.random()*Math.max(10,bottom-top-20);
-    const angle=Math.random()*Math.PI*2;
-    const len=Math.hypot(1100,700);
-    const dx=Math.cos(angle)*len;
-    const dy=Math.sin(angle)*len;
-    const x1=cx-dx;
-    const y1=cy-dy;
-    const x2=cx+dx;
-    const y2=cy+dy;
-    strikeDemonSpearsAlongLine(x1,y1,x2,y2,'chainsaw');
-    strikeDemonAbyssBricksAlongLine(x1,y1,x2,y2,'chainsaw');
-    for(let i=bricks.length-1;i>=0;i--){
-      const bk=bricks[i];
-      if(!bk) continue;
-      if(!canDestroyBrick(bk)) continue;
-      const rect={x:bk.x,y:bk.y,w:bk.w,h:bk.h};
-      if(lineIntersectsRect(x1,y1,x2,y2,rect)){
-        destroyBrick(i,'none');
-      }
-    }
-    if(isSpecialBossActive()){
-      const bounds=getActiveBossBounds();
-      if(bounds && lineIntersectsRect(x1,y1,x2,y2,bounds) && state.bossDamage>0){
-        const impact=activeBossImpactPoint(cx,cy)||{x:cx,y:cy};
-        damageActiveBoss(state.bossDamage,'chainsaw',impact);
-      }
-    }
-    spawnChainsawBlood(x1,y1,x2,y2);
-    chainsawSlashes.push({x1,y1,x2,y2,t0:now,tEnd:now+620});
-    playSFX('bloodBurst');
-  }
-
-  function activateSilverCoinGun(cfg={}, slot=null, index=null, now=performance.now(), opts={}){
-    const duration=Math.max(0, Number(cfg.duration)||6000);
-    if(duration<=0){
-      if(!opts.silent){
-        showEquipmentMessage('銀幣槍目前無法啟動。','warning',2200);
-      }
-      return false;
-    }
-    const cooldown=Math.max(0, Number(cfg.cooldown)||60000);
-    silverCoinGunActiveUntil=now+duration;
-    silverCoinGunNextShot=now;
-    silverCoinGunDamage=Math.max(1, Number(cfg.damage)||2);
-    silverCoinGunCoinCost=Math.max(1, Number(cfg.coinCost)||1);
-    silverCoinGunInterval=Math.max(50, Number(cfg.interval)||500);
-    silverCoinGunWarnedNoCoins=false;
-    if(slot){
-      slot.activeUntil=now+duration;
-      slot.activeDuration=duration;
-      applySlotCooldown(slot,cooldown,now);
-      slot.lastUsed=now;
-      if(!opts.silent){
-        showEquipmentMessage('銀幣槍啟動！銀幣子彈準備就緒。','success',2400);
-      }
-      refreshEquipmentRuntime(performance.now());
-    }else if(!opts.silent){
-      showEquipmentMessage('銀幣槍咆哮開火！','success',2200);
-    }
-    return true;
-  }
-
-  function pickSilverCoinGunTarget(origin){
-    const candidates=[];
-    for(let i=0;i<bricks.length;i++){
-      const bk=bricks[i];
-      if(!canDestroyBrick(bk)) continue;
-      const cx=bk.x+bk.w/2;
-      const cy=bk.y+bk.h/2;
-      candidates.push({type:'brick',idx:i,x:cx,y:cy});
-    }
-    if(isSpecialBossActive()){
-      const center=activeBossCenter();
-      if(center){
-        candidates.push({type:'boss',x:center.x,y:center.y});
-      }
-    }
-    if(!candidates.length) return null;
-    return candidates[Math.floor(Math.random()*candidates.length)];
-  }
-
-  function fireSilverCoinBullet(now){
-    const pr=paddleRect();
-    const origin=(pr && now>=paddleGoneUntil)
-      ? {x:pr.x+pr.w/2,y:pr.y}
-      : {x:550,y:650};
-    const target=pickSilverCoinGunTarget(origin);
-    const speed=12;
-    let vx=0, vy=-speed;
-    if(target){
-      const dx=target.x-origin.x;
-      const dy=target.y-origin.y;
-      const dist=Math.hypot(dx,dy)||1;
-      vx=dx/dist*speed;
-      vy=dy/dist*speed;
-    }
-    silverCoinBullets.push({x:origin.x,y:origin.y,vx,vy,damage:silverCoinGunDamage,createdAt:now});
-    spawnParticles(origin.x,origin.y,'#f5f0a0',10,1.4,2.4,2.0);
-    playSFX('coin');
-  }
-
-  function activateFloatingTurrets(cfg={}, slot=null, index=null, now=performance.now(), opts={}){
-    const count=Math.max(1, Math.floor(cfg.count||3));
-    const duration=Math.max(0, Number(cfg.duration)||8000);
-    if(duration<=0){
-      if(!opts.silent){
-        showEquipmentMessage('浮游砲目前無法啟動。','warning',2200);
-      }
-      return false;
-    }
-    const interval=Math.max(120, Number(cfg.interval)||2000);
-    const cooldown=Math.max(0, Number(cfg.cooldown)||60000);
-    const effect={
-      until:now+duration,
-      interval,
-      nextShot:now,
-      lastUpdate:now,
-      variant:cfg.variant||'orb',
-      drones:[]
-    };
-    for(let i=0;i<count;i++){
-      effect.drones.push({
-        angle:Math.random()*Math.PI*2,
-        radius:80 + i*18,
-        speed:0.7 + Math.random()*0.6,
-        x:550,
-        y:600
-      });
-    }
-    floatingTurretEffects.push(effect);
-    if(slot){
-      slot.activeUntil=now+duration;
-      slot.activeDuration=duration;
-      applySlotCooldown(slot,cooldown,now);
-      slot.lastUsed=now;
-      if(!opts.silent){
-        showEquipmentMessage('浮游砲啟動！自律雷射準備鎖定敵人。','success',2400);
-      }
-      refreshEquipmentRuntime(performance.now());
-    }else if(!opts.silent){
-      showEquipmentMessage('浮游砲在周遭盤旋。','success',2200);
-    }
-    return true;
-  }
-
-  function pickFloatingTurretTargets(count){
-    const targets=[];
-    const pool=[];
-    for(let i=0;i<bricks.length;i++){
-      const bk=bricks[i];
-      if(!canDestroyBrick(bk)) continue;
-      pool.push({type:'brick',idx:i,x:bk.x+bk.w/2,y:bk.y+bk.h/2});
-    }
-    for(let n=0;n<count;n++){
-      if(pool.length){
-        const idx=Math.floor(Math.random()*pool.length);
-        targets.push(pool.splice(idx,1)[0]);
-      }else if(isSpecialBossActive()){
-        const center=activeBossCenter();
-        if(center){
-          targets.push({type:'boss',x:center.x,y:center.y});
-        }else{
-          targets.push(null);
-        }
-      }else{
-        targets.push(null);
-      }
-    }
-    return targets;
-  }
-
-  function updateFloatingTurretEffects(now){
-    for(let i=floatingTurretEffects.length-1;i>=0;i--){
-      const effect=floatingTurretEffects[i];
-      if(now>=effect.until){
-        floatingTurretEffects.splice(i,1);
-        continue;
-      }
-      const pr=paddleRect();
-      const center=(pr && now>=paddleGoneUntil)
-        ? {x:pr.x+pr.w/2, y:pr.y-50}
-        : {x:550, y:600};
-      const dt=Math.max(0, Math.min(0.5,(now-effect.lastUpdate)/1000));
-      for(const drone of effect.drones){
-        drone.angle += (drone.speed||0.8)*dt;
-        const radius=drone.radius||100;
-        drone.x=center.x + Math.cos(drone.angle)*radius;
-        drone.y=center.y + Math.sin(drone.angle)*radius;
-      }
-      effect.lastUpdate=now;
-      if(effect.interval>0 && now>=effect.nextShot){
-        const targets=pickFloatingTurretTargets(effect.drones.length);
-        for(let n=0;n<effect.drones.length;n++){
-          const drone=effect.drones[n];
-          const target=targets[n];
-          if(!target) continue;
-          const fired=fireLaserFromSource(drone.x, drone.y, target, now);
-          if(fired && equipmentLaserExtraTurret){
-            const pr=paddleRect();
-            if(pr && now>=paddleGoneUntil){
-              const extraTarget=pickLaserTarget(pr.x+pr.w/2, pr.y+pr.h/2);
-              if(extraTarget){
-                fireLaserFromSource(pr.x+pr.w/2, pr.y+pr.h/2, extraTarget, now);
-              }
-            }
-          }
-        }
-        effect.nextShot=now+effect.interval;
-      }
-    }
-  }
-
-  function activateStandaloneEquipmentEffect(item){
-    if(!item || !item.effect) return null;
-    const now=performance.now();
-    const effect=item.effect;
-    const name=item.name||item.id||'未知裝備';
-    if(effect.chainsawDemon){
-      activateChainsawDemonEffect(effect.chainsawDemon,null,null,now,{silent:true});
-      showEquipmentMessage(`借用了「${name}」的鏈鋸之力！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.silverCoinGun){
-      activateSilverCoinGun(effect.silverCoinGun,null,null,now,{silent:true});
-      showEquipmentMessage(`借用了「${name}」的銀幣火力！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.floatingTurrets){
-      activateFloatingTurrets(effect.floatingTurrets,null,null,now,{silent:true});
-      showEquipmentMessage(`浮游砲「${name}」短暫伴飛！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.power && effect.power.key){
-      applyPower(effect.power.key);
-      showEquipmentMessage(`未知權杖觸發了「${name}」的力量！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.bloodBlade){
-      const cfg={...BLOOD_BLADE_DEFAULTS,...effect.bloodBlade};
-      const hpCost=Math.max(1, Math.floor(cfg.hpCost||1));
-      if(lives<=hpCost){
-        return null;
-      }
-      lives=Math.max(0,lives-hpCost);
-      stats.livesUsed+=hpCost;
-      updateHUD();
-      const duration=Math.max(0, Number(cfg.duration)||BLOOD_BLADE_DEFAULTS.duration);
-      const dmgMul=Math.max(1, Number(cfg.damageMultiplier)||BLOOD_BLADE_DEFAULTS.damageMultiplier);
-      bloodBladeDamageMultiplier=dmgMul;
-      bloodBladeActiveUntil=Math.max(bloodBladeActiveUntil, now+duration);
-      bloodBladeActive=true;
-      showEquipmentMessage(`嗜血魔刃「${name}」臨時借用，${(duration/1000).toFixed(0)} 秒傷害 x${dmgMul}！`,'success',2400);
-      return {buffName:name};
-    }
-    if(effect.bombDevil){
-      const cfg={...BOMB_DEVIL_DEFAULTS,...effect.bombDevil};
-      const duration=Math.max(0, Number(cfg.duration)||BOMB_DEVIL_DEFAULTS.duration);
-      if(duration<=0) return null;
-      bombDevilActiveUntil=Math.max(bombDevilActiveUntil, now+duration);
-      bombDevilIntervalMs=Math.max(50, Number(cfg.intervalMs)||BOMB_DEVIL_DEFAULTS.intervalMs);
-      bombDevilRowCooldown.clear();
-      bombDevilBossQueues.length=0;
-      showEquipmentMessage(`炸彈惡魔「${name}」的連鎖爆破展開！`,'success',2400);
-      return {buffName:name};
-    }
-    if(effect.fireInstantDetonate){
-      if(!detonateFireballNow()) return null;
-      showEquipmentMessage(`「${name}」立即引爆火焰！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.massExplode){
-      if(!triggerMassExplosiveDetonation()) return null;
-      showEquipmentMessage(`「${name}」引爆所有爆炸磚！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.nuke){
-      if(!triggerNuke(effect.nuke||{})) return null;
-      showEquipmentMessage(`「${name}」造成毀天滅地的核爆！`,'success',2600);
-      return {buffName:name};
-    }
-    if(effect.deathLaser){
-      const cfg={duration:10000,...(effect.deathLaser||{})};
-      const duration=Math.max(0, Number(cfg.duration)||0);
-      if(duration<=0) return null;
-      deathLaserActiveUntil=Math.max(deathLaserActiveUntil, now+duration);
-      showEquipmentMessage(`死亡雷射「${name}」掃射戰場！`,'success',2400);
-      return {buffName:name};
-    }
-    if(effect.godClock){
-      const cfg={multiplier:2,...(effect.godClock||{})};
-      const mult=Math.max(1, Number(cfg.multiplier)||1);
-      const extended=applyGodClockMultiplier(mult);
-      showEquipmentMessage(extended>0?`「${name}」延長了 ${extended} 項效果。`:'「${name}」啟動，但沒有可延長的效果。',extended>0?'success':'info',2400);
-      return {buffName:name};
-    }
-    if(effect.gunDevil){
-      const cfg={duration:4000,interval:200,targets:2,...(effect.gunDevil||{})};
-      const duration=Math.max(0, Number(cfg.duration)||0);
-      if(duration<=0) return null;
-      gunDevilActiveUntil=Math.max(gunDevilActiveUntil, now+duration);
-      gunDevilNextShot=now;
-      gunDevilIntervalMs=Math.max(50, Number(cfg.interval)||200);
-      gunDevilTargetsPerShot=Math.max(1, Math.floor(cfg.targets)||1);
-      gunDevilReloadPending=true;
-      showEquipmentMessage(`「${name}」的狙擊火力覆蓋全場！`,'success',2400);
-      return {buffName:name};
-    }
-    if(effect.poisonDetonate){
-      if(!triggerPoisonDetonation()) return null;
-      showEquipmentMessage(`「${name}」引爆了所有劇毒！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.greatPlague){
-      if(!triggerGreatPlague(effect.greatPlague||{})) return null;
-      showEquipmentMessage(`「${name}」散播大瘟疫！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.mirrorSymmetry){
-      if(!triggerMirrorSymmetry()) return null;
-      showEquipmentMessage(`「${name}」讓左右磚陣瞬間對稱！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.starStrike){
-      const cfg=effect.starStrike||{};
-      const count=Math.max(1, Math.floor(cfg.count||3));
-      const dmg=Math.max(1, Number(cfg.damage)||4);
-      spawnStarProjectiles(count, dmg);
-      showEquipmentMessage(`「${name}」召喚星辰墜落！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.moonFall){
-      spawnMoonProjectile(effect.moonFall||{});
-      showEquipmentMessage(`「${name}」引來巨月撞擊！`,'success',2200);
-      return {buffName:name};
-    }
-    if(effect.darkDemon){
-      const cfg={interval:2000,pulses:4,blackoutMs:1000,damage:1,bossMultiplier:5,...(effect.darkDemon||{})};
-      const pulses=Math.max(1, Math.floor(cfg.pulses)||1);
-      const interval=Math.max(200, Number(cfg.interval)||2000);
-      darkDemonPulses=[];
-      for(let n=0;n<pulses;n++){
-        darkDemonPulses.push({fireAt:now+n*interval, blackout:cfg.blackoutMs||0, damage:cfg.damage||1, bossMul:cfg.bossMultiplier||1, executed:false});
-      }
-      darkDemonDamagePerPulse=cfg.damage||1;
-      darkDemonBossMultiplier=cfg.bossMultiplier||1;
-      darkDemonBlackoutUntil=0;
-      showEquipmentMessage(`暗之惡魔「${name}」降臨，陰影蔓延。`,'success',2400);
-      return {buffName:name};
-    }
-    return null;
-  }
-
-  function triggerUnknownScepterEffect(){
-    const pool=EQUIPMENT_LIST.filter(item=>item && item.type==='active' && item.effect && item.id!=='unknownScepter');
-    if(!pool.length) return null;
-    const tried=new Set();
-    let activation=null;
-    while(tried.size<pool.length && !activation){
-      const candidate=pool[Math.floor(Math.random()*pool.length)];
-      if(tried.has(candidate.id)) continue;
-      tried.add(candidate.id);
-      activation=activateStandaloneEquipmentEffect(candidate);
-    }
-    const debuffs=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k]?.type==='debuff');
-    let debuffLabel='未知減益';
-    if(debuffs.length){
-      const pick=debuffs[Math.floor(Math.random()*debuffs.length)];
-      const def=GAME_CONFIG.powers[pick];
-      applyPower(pick);
-      debuffLabel=def?.label||pick;
-    }
-    if(!activation){
-      return {buffName:'未知力量',debuffName:debuffLabel};
-    }
-    return {buffName:activation.buffName||'未知力量',debuffName:debuffLabel};
-  }
-
-  function applyCursedHelmetDebuffs(){
-    if(!equipmentCursedHelmet) return;
-    const debuffs=ALL_TYPES.filter(k=>GAME_CONFIG.powers[k]?.type==='debuff');
-    if(!debuffs.length) return;
-    const count=1+Math.floor(Math.random()*3);
-    const picks=[];
-    const pool=[...debuffs];
-    for(let i=0;i<count && pool.length;i++){
-      const idx=Math.floor(Math.random()*pool.length);
-      picks.push(pool.splice(idx,1)[0]);
-    }
-    if(!picks.length) return;
-    showEquipmentMessage('詛咒頭盔蠢動，隨機減益席捲全身。','warning',2600);
-    for(const type of picks){
-      applyPower(type);
     }
   }
   function activateEquipmentPower(index,slot,powerCfg={}){
@@ -4118,44 +3616,6 @@ select optgroup { color: #0b1022; }
       }
       return;
     }
-    if(effect.chainsawDemon){
-      const cfg={count:5,interval:2000,bossDamage:5,cooldown:60000,...(effect.chainsawDemon||{})};
-      const activated=activateChainsawDemonEffect(cfg,slot,index,now);
-      if(!activated){
-        showEquipmentMessage('鏈鋸惡魔目前無法啟動。','warning',2200);
-      }
-      return;
-    }
-    if(effect.silverCoinGun){
-      const cfg={duration:6000,interval:500,damage:2,cooldown:60000,coinCost:1,...(effect.silverCoinGun||{})};
-      const activated=activateSilverCoinGun(cfg,slot,index,now);
-      if(!activated){
-        return;
-      }
-      return;
-    }
-    if(effect.floatingTurrets){
-      const cfg={count:3,duration:8000,interval:2000,cooldown:60000,variant:'orb',...(effect.floatingTurrets||{})};
-      const activated=activateFloatingTurrets(cfg,slot,index,now);
-      if(!activated){
-        return;
-      }
-      return;
-    }
-    if(effect.unknownScepter){
-      const cfg={cooldown:60000,...(effect.unknownScepter||{})};
-      const cooldown=Math.max(0, Number(cfg.cooldown)||60000);
-      const result=triggerUnknownScepterEffect();
-      applySlotCooldown(slot,cooldown,now);
-      slot.lastUsed=now;
-      refreshEquipmentRuntime(performance.now());
-      if(result){
-        showEquipmentMessage(`未知權杖呼喚「${result.buffName}」，卻引來「${result.debuffName}」的詛咒！`,'warning',2600);
-      }else{
-        showEquipmentMessage('未知權杖激發失敗，力量暫時沉寂。','info',2200);
-      }
-      return;
-    }
     if(effect.gunDevil){
       const cfg={duration:4000,interval:200,cooldown:60000,targets:2,...(effect.gunDevil||{})};
       const duration=Math.max(0, Number(cfg.duration)||0);
@@ -4483,9 +3943,6 @@ select optgroup { color: #0b1022; }
     running=false;
     applyBGMThemeForLevel();
     showCenter(`進入關卡 ${level}`,'按 Space 或點畫面開始');
-    if(equipmentCursedHelmet){
-      setTimeout(()=>applyCursedHelmetDebuffs(),300);
-    }
   }
   function enterNextLevelFromStore(){
     const target=pendingNextLevel||level+1;
@@ -8704,17 +8161,6 @@ select optgroup { color: #0b1022; }
     setTimeout(()=>notice.classList.add('fade'),showMs);
     setTimeout(()=>{notice.className=''; notice.innerHTML=''; notice.style.transition='';},showMs+fadeMs);
   }
-  function triggerComboBurstExplosion(){
-    if(!equipmentComboBurst) return;
-    if(!Array.isArray(balls) || !balls.length) return;
-    const ball=balls[0];
-    if(!ball) return;
-    const radius=Math.max(brickW, brickH)*2.5;
-    fireExplosionAt(ball.x, ball.y, radius, {noScatter:true});
-    spawnParticles(ball.x, ball.y, '#ffd966', 36, 2.2, 3.4, 3.2);
-    screenShake=Math.max(screenShake,6);
-  }
-
   function incrementCombo(){
     combo++; comboLastTime=performance.now();
     if(combo>stats.maxCombo) stats.maxCombo=combo;
@@ -8738,9 +8184,6 @@ select optgroup { color: #0b1022; }
     else if(combo===500 && !comboNoticeTriggered[500]){ comboNoticeTriggered[500]=true; showComboNotice('算你狠！有種Combo 1000看看呀！'); }
     else if(combo===800 && !comboNoticeTriggered[800]){ comboNoticeTriggered[800]=true; showComboNotice('我看你是到不了Combo 1000的啦！是不是開始感覺手滑啦？'); }
     else if(combo===1000 && !comboNoticeTriggered[1000]){ comboNoticeTriggered[1000]=true; showComboNotice('快截圖給同事看吧！你是真正的連擊之神！',10000,5000); }
-    if(equipmentComboBurst && combo>0 && combo%100===0){
-      triggerComboBurstExplosion();
-    }
   }
   function getComboMultiplier(){
     if(combo>=1000) return 10;
@@ -12279,6 +11722,9 @@ select optgroup { color: #0b1022; }
     while(promptQueue.length>3){ const old=promptQueue.shift(); old.remove(); }
     setTimeout(()=>{ div.classList.add('fade'); setTimeout(()=>{ const idx=promptQueue.indexOf(div); if(idx>=0) promptQueue.splice(idx,1); div.remove(); },400); },5000);
   }
+
+  // === Buff 狀態 ===
+  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},COMBO:{active:false,until:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},PADSPIN:{active:false,until:0,start:0},PADBOOM:{active:false,until:0,explodeAt:0,returnAt:0,exploded:false},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0},GATLING:{active:false,until:0},FIRE:{active:false,until:0},POISON:{active:false,until:0},BLINK:{active:false,until:0},SWORD:{active:false,until:0},STORM:{active:false,until:0},BLACKHOLE:{active:false,until:0,deaths:0},ANNIHIL:{active:false,until:0,start:0,next:0}};
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
@@ -19289,13 +18735,6 @@ function generateLevel(lv, L){
   function applyPower(type){
     const _defC=GAME_CONFIG.powers[type]; if(_defC){ if(_defC.type==='debuff') stats.debuffs++; else if(_defC.type) stats.buffs++; }
     const def=GAME_CONFIG.powers[type]; if(!def) return; const now=performance.now();
-    if(def.type==='debuff' && equipmentBlessedArmor){
-      if(now-blessedArmorLastNotice>1200){
-        showEquipmentMessage('祝福鎧甲護佑，減益效果被抵銷。','success',2000);
-        blessedArmorLastNotice=now;
-      }
-      return;
-    }
     const baseDurationMs=def.durationMs||0;
     let durationMs;
     if(type==='HOLY'){
@@ -19526,7 +18965,7 @@ function generateLevel(lv, L){
         triggerBlackholeStrike(now,{deactivate:false});
       }
     }
-    if(type==='ANNIHIL'){ buffs.ANNIHIL.active=true; buffs.ANNIHIL.start=now; buffs.ANNIHIL.next=now+Math.max(100,1000*equipmentAnnihilIntervalMultiplier); buffs.ANNIHIL.until=0; }
+    if(type==='ANNIHIL'){ buffs.ANNIHIL.active=true; buffs.ANNIHIL.start=now; buffs.ANNIHIL.next=now+1000; buffs.ANNIHIL.until=0; }
 
     updateBuffBadges();
   }
@@ -19659,9 +19098,6 @@ function generateLevel(lv, L){
   function hideCenter(){ centerNote.style.display='none'; }
 
   function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:9; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; finalVictorySequence=null; if(!load) clearEquipmentSlots(); updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
-    if(equipmentCursedHelmet){
-      setTimeout(()=>applyCursedHelmetDebuffs(),300);
-    }
     bossNineCatDrops.clear();
     stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
     for(const k of Object.keys(buffs)){
@@ -19688,13 +19124,6 @@ function generateLevel(lv, L){
     moonProjectiles.length=0;
     clearActivePlagueTimers();
     solarBurstNextAt=0;
-    chainsawDemonState=null;
-    chainsawSlashes.length=0;
-    floatingTurretEffects.length=0;
-    silverCoinBullets.length=0;
-    silverCoinGunActiveUntil=0;
-    silverCoinGunNextShot=0;
-    silverCoinGunWarnedNoCoins=false;
     if(demonAttackActive && demonAttackActive.type==='abyssShatter'){
       demonAttackActive=null;
       demonAttackNextAt=0;
@@ -20574,9 +20003,6 @@ function generateLevel(lv, L){
         ctx.fillStyle='rgba(255,255,255,.75)'; const ratio=Math.max(0,(b.hp-1))/3; ctx.fillRect((b.x+4)*scaleX,(b.y+b.h-6)*scaleY,(b.w-8)*ratio*scaleX,4*scaleY);
       }
     }
-    drawChainsawSlashes(now);
-    drawFloatingTurrets(now);
-    drawSilverCoinBullets();
 
     drawStarProjectiles();
     drawMoonProjectiles();
@@ -22202,8 +21628,8 @@ function generateLevel(lv, L){
         }
         if(executed){
           darkDemonPulses=darkDemonPulses.filter(p=>p && !p.executed);
+        }
       }
-    }
       if(gunDevilActiveUntil>0){
         if(now>=gunDevilActiveUntil){
           gunDevilActiveUntil=0;
@@ -22225,32 +21651,6 @@ function generateLevel(lv, L){
           gunDevilReloadPending=false;
         }
       }
-      if(chainsawDemonState){
-        if(now>=chainsawDemonState.until){
-          chainsawDemonState=null;
-        }else if(chainsawDemonState.remaining>0 && now>=chainsawDemonState.next){
-          triggerChainsawSlash(now, chainsawDemonState);
-          chainsawDemonState.remaining--;
-          chainsawDemonState.next=now+chainsawDemonState.interval;
-        }
-      }
-      if(silverCoinGunActiveUntil>0){
-        if(now>=silverCoinGunActiveUntil){
-          silverCoinGunActiveUntil=0;
-        }else if(!silverCoinGunNextShot || now>=silverCoinGunNextShot){
-          if(spendSilverCoins(silverCoinGunCoinCost)){
-            fireSilverCoinBullet(now);
-            silverCoinGunWarnedNoCoins=false;
-          }else if(!silverCoinGunWarnedNoCoins){
-            showEquipmentMessage('銀幣不足，銀幣槍停止射擊。','warning',2200);
-            silverCoinGunWarnedNoCoins=true;
-          }
-          silverCoinGunNextShot=now+silverCoinGunInterval;
-        }
-      }else{
-        silverCoinGunNextShot=0;
-      }
-      updateFloatingTurretEffects(now);
       if(equipmentGodspeedHolyStrike && equipmentGodspeedHolyInterval>0 && buffs.GODSPEED.active){
         if(!nextGodspeedHolyStrike){
           nextGodspeedHolyStrike=now+equipmentGodspeedHolyInterval;
@@ -22644,41 +22044,6 @@ function generateLevel(lv, L){
       }
     }
 
-    for(let i=silverCoinBullets.length-1;i>=0;i--){
-      const bl=silverCoinBullets[i];
-      bl.x+=bl.vx;
-      bl.y+=bl.vy;
-      if(bl.x<-40 || bl.x>1140 || bl.y<-40 || bl.y>740){ silverCoinBullets.splice(i,1); continue; }
-      let removed=false;
-      if(strikeDemonSpearsAtPoint(bl.x, bl.y, 8, 'silverCoin') || strikeDemonAbyssBricksAtPoint(bl.x, bl.y, 8, 'silverCoin')){
-        removed=true;
-      }
-      if(!removed){
-        for(let j=bricks.length-1;j>=0;j--){
-          const bk=bricks[j];
-          if(bl.x>bk.x && bl.x<bk.x+bk.w && bl.y>bk.y && bl.y<bk.y+bk.h){
-            if(canDestroyBrick(bk) && !(bk.lockedUntil && now<bk.lockedUntil)){
-              damageBrick(j, bl.damage||2, 'none');
-              spawnParticles(bl.x, bl.y, '#ffd766', 10, 1.4, 2.6, 2.0);
-            }
-            removed=true;
-            break;
-          }
-        }
-      }
-      if(!removed && isSpecialBossActive()){
-        const bounds=getActiveBossBounds();
-        if(bounds && bl.x>bounds.x && bl.x<bounds.x+bounds.w && bl.y>bounds.y && bl.y<bounds.y+bounds.h){
-          damageActiveBoss(bl.damage||2, 'silverCoin', {x:bl.x,y:bl.y});
-          spawnParticles(bl.x, bl.y, '#ffe09a', 12, 1.6, 2.4, 2.0);
-          removed=true;
-        }
-      }
-      if(removed){
-        silverCoinBullets.splice(i,1);
-      }
-    }
-
     if(stormTurret){
       if(now>=stormTurret.fireAt){
         if(stormTurret.shots<=0){
@@ -22725,7 +22090,7 @@ function generateLevel(lv, L){
 
     if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ triggerBlackholeStrike(now); }
 
-    if(buffs.ANNIHIL.active && now>=buffs.ANNIHIL.next){ let cand=bricks.filter(b=>canDestroyBrick(b)&&!b.boss); if(!cand.length) cand=bricks.filter(b=>canDestroyBrick(b)); if(cand.length){ const target=cand[Math.floor(Math.random()*cand.length)]; const idx=bricks.indexOf(target); destroyBrick(idx,'annihil'); } else if(isSpecialBossActive()){ const center=activeBossCenter(); damageActiveBoss(1,'annihil',center?{x:center.x,y:center.y}:null); } buffs.ANNIHIL.next+=Math.max(100,1000*equipmentAnnihilIntervalMultiplier); }
+    if(buffs.ANNIHIL.active && now>=buffs.ANNIHIL.next){ let cand=bricks.filter(b=>canDestroyBrick(b)&&!b.boss); if(!cand.length) cand=bricks.filter(b=>canDestroyBrick(b)); if(cand.length){ const target=cand[Math.floor(Math.random()*cand.length)]; const idx=bricks.indexOf(target); destroyBrick(idx,'annihil'); } else if(isSpecialBossActive()){ const center=activeBossCenter(); damageActiveBoss(1,'annihil',center?{x:center.x,y:center.y}:null); } buffs.ANNIHIL.next+=1000; }
 
     // 全局速度倍率（GODSPEED 時忽略其它）
     function effectiveMul(){
@@ -22993,7 +22358,6 @@ function generateLevel(lv, L){
         if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
         if(buffs.HELL.active){ const holeSpin=(Math.random()>0.5?1:-1); const volleyReady=buffs.MISSILE.active && equipmentMissileVolleyOnBreak; const holeRadius=40; const cx=bk.x+bk.w/2; const cy=bk.y+bk.h/2; blackHoles.push({x:cx,y:cy,r:holeRadius,until:now+GAME_CONFIG.powers.HELL.hell.haloMs,start:performance.now(),spinDir:holeSpin}); playSFX('blackhole'); strikeDemonAbyssBricksAtPoint(cx, cy, holeRadius, 'blackhole'); const destroyedNeighbors=destroyNeighbors(hit); destroyBrick(hit,'none'); if(equipmentBlackholePlasma){ spawnPlasmaBurst(cx,cy,{sound:false}); for(const pos of destroyedNeighbors){ if(pos) spawnPlasmaBurst(pos.x,pos.y,{sound:false}); } } if(silverAssaultCharge){ silverAssaultCharge=null; silverAssaultSlotIndex=null; silverAssaultTriggered=true; } if(volleyReady){ emitMissilesFromSource({x:b.x,y:b.y}); } }
         if(buffs.POISON.active){ applyPoisonToBrick(bk, now); }
-        if(buffs.FIRE.active && equipmentFirePoison){ applyPoisonToBrick(bk, now); }
 
         // 當前磚扣血（若已在上面被處理則略過）
         if(!buffs.HELL.active && !buffs.HOLY.active){
@@ -23557,11 +22921,7 @@ function boot(){
     const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4');
     if(raw){ setTimeout(()=>{ if(confirm('偵測到存檔，要讀取進度嗎？')) loadProgress(); }, 400); }
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot, { once: true });
-  } else {
-    boot();
-  }
+  boot();
   // Ensure audio context unlock on first user gesture (mobile safe)
   try{ document.addEventListener('pointerdown', function(){ try{ ensureAudio(); }catch(e){} }, { once:true, passive:true}); }catch(_e){}
 })();
@@ -23793,84 +23153,6 @@ function boot(){
       }
     }
     ctx.restore();
-  }
-
-  function drawChainsawSlashes(now){
-    if(!chainsawSlashes.length) return;
-    for(let i=chainsawSlashes.length-1;i>=0;i--){
-      const slash=chainsawSlashes[i];
-      if(!slash || now>=slash.tEnd){
-        chainsawSlashes.splice(i,1);
-        continue;
-      }
-      const life=Math.max(0, slash.tEnd-slash.t0||1);
-      const alpha=Math.max(0, Math.min(1,(slash.tEnd-now)/life));
-      ctx.save();
-      ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle=`rgba(255,80,80,${0.45*alpha})`;
-      ctx.lineWidth=Math.max(4,16*((scaleX+scaleY)/2)*(0.7+0.3*alpha));
-      ctx.beginPath();
-      ctx.moveTo(slash.x1*scaleX, slash.y1*scaleY);
-      ctx.lineTo(slash.x2*scaleX, slash.y2*scaleY);
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  function drawSilverCoinBullets(){
-    if(!silverCoinBullets.length) return;
-    const avgScale=(scaleX+scaleY)/2;
-    for(const bl of silverCoinBullets){
-      const x=bl.x*scaleX;
-      const y=bl.y*scaleY;
-      const r=6*avgScale;
-      ctx.save();
-      const grad=ctx.createRadialGradient(x,y,r*0.2,x,y,r);
-      grad.addColorStop(0,'rgba(255,245,200,0.95)');
-      grad.addColorStop(0.6,'rgba(255,210,60,0.85)');
-      grad.addColorStop(1,'rgba(180,120,0,0.05)');
-      ctx.fillStyle=grad;
-      ctx.beginPath();
-      ctx.arc(x,y,r,0,Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    }
-  }
-
-  function drawFloatingTurrets(now){
-    if(!floatingTurretEffects.length) return;
-    const avgScale=(scaleX+scaleY)/2;
-    for(const effect of floatingTurretEffects){
-      for(const drone of effect.drones){
-        const x=drone.x*scaleX;
-        const y=drone.y*scaleY;
-        ctx.save();
-        ctx.globalCompositeOperation='lighter';
-        if(effect.variant==='wing'){
-          ctx.fillStyle='rgba(160,220,255,0.6)';
-          ctx.beginPath();
-          ctx.moveTo(x, y-10*avgScale);
-          ctx.lineTo(x-12*avgScale, y+8*avgScale);
-          ctx.lineTo(x+12*avgScale, y+8*avgScale);
-          ctx.closePath();
-          ctx.fill();
-          ctx.strokeStyle='rgba(255,255,255,0.6)';
-          ctx.lineWidth=2*avgScale;
-          ctx.stroke();
-        }else{
-          const radius=10*avgScale;
-          const grad=ctx.createRadialGradient(x,y,radius*0.2,x,y,radius);
-          grad.addColorStop(0,'rgba(200,240,255,0.95)');
-          grad.addColorStop(0.6,'rgba(120,200,255,0.6)');
-          grad.addColorStop(1,'rgba(80,140,255,0.1)');
-          ctx.fillStyle=grad;
-          ctx.beginPath();
-          ctx.arc(x,y,radius,0,Math.PI*2);
-          ctx.fill();
-        }
-        ctx.restore();
-      }
-    }
   }
 
   function drawSun(w,h,time,opt){
