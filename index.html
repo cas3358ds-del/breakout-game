@@ -4536,12 +4536,14 @@ select optgroup { color: #0b1022; }
   unlockLevel(level);
   const SPACE_BOSS_MAX_HP = 30;
   const SPACE_BOSS_ATTACK_INTERVAL = 15000;
+  const SPACE_BOSS_FIRST_ATTACK_DELAY = 5000;
   const SPACE_BOSS_PADDLE_MIN_WIDTH = 60;
   const SPACE_BOSS_GUN_FIRE_RATE = 100; // ms between each burst per gun
   const SPACE_BOSS_GUN_FIRE_DURATION = 3000;
   const SPACE_BOSS_LASER_SWEEP_DURATION = 2000;
   const DRAGON_MAX_HP = 80;
   const DRAGON_BASE_MODEL_WIDTH = 260;
+  const DRAGON_ATTACK_INTERVAL = 10000;
   let spaceBossPhase='inactive';
   let spaceBoss=null;
   let spaceBossPlaceholder=null;
@@ -4589,6 +4591,8 @@ select optgroup { color: #0b1022; }
   let reaperPaddlePenalty=0;
   let reaperPenaltyLastUpdate=0;
   const REAPER_PADDLE_MIN_WIDTH=80;
+  const REAPER_FIRST_ATTACK_DELAY = 5000;
+  const REAPER_ATTACK_INTERVAL = 15000;
   let dragonPhase='inactive';
   let dragonBoss=null;
   let dragonPlaceholder=null;
@@ -4629,6 +4633,8 @@ select optgroup { color: #0b1022; }
   let demonDefeatedAt=0;
   let demonAttackActive=null;
   let demonAttackNextAt=0;
+  const DEMON_ATTACK_INTERVAL = 15000;
+  const DEMON_FIRST_ATTACK_DELAY = 5000;
   let demonVoidVolleyState=null;
   const demonVoidProjectiles=[];
   let demonVoidNextRoll=0;
@@ -6750,7 +6756,7 @@ select optgroup { color: #0b1022; }
       demonAbyssExplosions.length=0;
     }
     demonAttackActive=null;
-    demonAttackNextAt = now + 15000;
+    demonAttackNextAt = now + DEMON_ATTACK_INTERVAL;
   }
 
   function updateDemonBlackRitual(now, dt){
@@ -8536,7 +8542,7 @@ select optgroup { color: #0b1022; }
       dragonBoss.moveTarget=null;
       dragonBoss.nextMove=now+1400;
     }
-    dragonNextAttackAt=now+20000;
+    dragonNextAttackAt=now+DRAGON_ATTACK_INTERVAL;
   }
 
   function maybeStartDragonAttack(now){
@@ -10645,7 +10651,7 @@ select optgroup { color: #0b1022; }
     spawnParticles(cx, baseY, '#f0e4ff', 80, 1.8, 2.6, 2.4);
     demonEventWave={x:cx,y:baseY,start:now,duration:2000,maxRadius:Math.hypot(1100,700)};
     demonAttackActive=null;
-    demonAttackNextAt=now+15000;
+    demonAttackNextAt=now+DEMON_FIRST_ATTACK_DELAY;
     demonVoidVolleyState=null;
     demonVoidProjectiles.length=0;
     demonVoidNextRoll=now+5000;
@@ -11075,7 +11081,7 @@ select optgroup { color: #0b1022; }
         }
       }
       if(!attack && !demonVoidVolleyState && demonBoss.mode!=='bloodDrain' && demonBoss.mode!=='ascending' && demonBoss.mode!=='recovery' && demonBoss.mode!=='attack'){
-        if(!demonAttackNextAt){ demonAttackNextAt = now + 15000; }
+        if(!demonAttackNextAt){ demonAttackNextAt = now + DEMON_ATTACK_INTERVAL; }
         if(now>=demonAttackNextAt){
           const picks=['blackRitual','bladeHell','abyssShatter'];
           const choice=picks[Math.floor(Math.random()*picks.length)];
@@ -12848,7 +12854,7 @@ function chooseTrackTargetForBall(ball){
     spaceBossPhase='active';
     spaceBossBursts.push({type:'halo',x:cx,y:baseY,r0:40,r1:260,t0:now,life:1600,color:'130,200,255'});
     spaceBossAttack=null;
-    spaceBossNextAttackAt=now + SPACE_BOSS_ATTACK_INTERVAL;
+    spaceBossNextAttackAt=now + SPACE_BOSS_FIRST_ATTACK_DELAY;
     spaceBossBullets.length=0;
     spaceBossPaddlePenalty=0;
     spaceBossPaddleRespawnAt=0;
@@ -13817,7 +13823,7 @@ function chooseTrackTargetForBall(ball){
       burstActive:false
     };
     reaperPhase='active';
-    reaperAttackState={nextAttack: now + 15000, current:null};
+    reaperAttackState={nextAttack: now + REAPER_FIRST_ATTACK_DELAY, current:null};
     reaperSlashZone=null;
     reaperBlackHoleAttack=null;
     reaperBursts.push({type:'halo',x:cx,y:baseY-40,r0:60,r1:320,t0:now,life:1700,color:'200,140,255'});
@@ -13956,7 +13962,7 @@ function chooseTrackTargetForBall(ball){
     }
     if(state.resolved){
       reaperAttackState.current=null;
-      reaperAttackState.nextAttack = now + 15000;
+      reaperAttackState.nextAttack = now + REAPER_ATTACK_INTERVAL;
     }
   }
 
@@ -14085,14 +14091,14 @@ function chooseTrackTargetForBall(ball){
     }
     if(state.resolved){
       reaperAttackState.current=null;
-      reaperAttackState.nextAttack = now + 15000;
+      reaperAttackState.nextAttack = now + REAPER_ATTACK_INTERVAL;
       reaperBlackHoleAttack=null;
     }
   }
 
   function updateReaperAttacks(now){
     if(reaperPhase!=='active' || !reaperBoss) return;
-    if(!reaperAttackState){ reaperAttackState={nextAttack: now + 15000, current:null}; }
+    if(!reaperAttackState){ reaperAttackState={nextAttack: now + REAPER_ATTACK_INTERVAL, current:null}; }
     if(reaperAttackState.current){
       const curr=reaperAttackState.current;
       if(curr.type==='slash'){ updateReaperSlash(curr, now); }
