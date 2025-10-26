@@ -201,6 +201,133 @@
       desc: '極光絲緞：冰藍呼吸＋輕雪＋低對比極光束；2.2s。'
     },
 
+    ironPulse: {
+      label: '金屬．離子脈衝',
+      selectLabel: '金屬．離子脈衝',
+      cssSkin: '金屬．離子脈衝',
+      lifeIcon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" role="img">
+        <defs>
+          <linearGradient id="iron-core" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f4f7f9" />
+            <stop offset="45%" stop-color="#b5c1ce" />
+            <stop offset="100%" stop-color="#6b7683" />
+          </linearGradient>
+          <linearGradient id="iron-rim" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#10141a" />
+            <stop offset="45%" stop-color="#4e5966" />
+            <stop offset="100%" stop-color="#0a0d11" />
+          </linearGradient>
+        </defs>
+        <circle cx="32" cy="32" r="26" fill="url(#iron-rim)" stroke="#c6d0da" stroke-width="2" />
+        <circle cx="32" cy="32" r="16" fill="url(#iron-core)" stroke="#f6fbff" stroke-width="1.8" />
+        <g stroke="#8dd4ff" stroke-width="2.2" stroke-linecap="round">
+          <path d="M32 12L36 20H28Z" />
+          <path d="M52 32L44 36V28Z" />
+          <path d="M32 52L28 44H36Z" />
+          <path d="M12 32L20 28V36Z" />
+        </g>
+        <circle cx="32" cy="32" r="6" fill="#0a1926" stroke="#8dd4ff" stroke-width="2" />
+      </svg>`,
+      cssVars: { '--fxViz': '1', '--panelPattern': 'none' },
+      canvas: {
+        base: [160, 190, 210],
+        hi: [255, 255, 255],
+        period: 1800,
+        effects: {
+          pulse: { color: [120, 210, 255], thickness: 6, intervalMul: 1.35 },
+          sparks: { count: 140 },
+          gears: {
+            rotationMs: 45000,
+            layout: [
+              { x: 0.15, y: 0.78, r: 0.22, teeth: 12, dir: 1 },
+              { x: 0.40, y: 0.82, r: 0.30, teeth: 18, dir: -1 },
+              { x: 0.67, y: 0.78, r: 0.22, teeth: 12, dir: 1 },
+              { x: 0.92, y: 0.82, r: 0.30, teeth: 18, dir: -1 }
+            ]
+          },
+          diffuse: { color: [110, 160, 220], alpha: 0.05 }
+        },
+        bg: ['#04070b', '#0d1116', '#151c24']
+      },
+      desc: '拉絲鋼與冰藍霓光：銀藍 LED 呼吸、雙列齒輪與微光離子霧，1.8s 節奏。'
+    },
+
+    grimRequiem: {
+      label: '死神．幽冥鎌歌',
+      selectLabel: '死神．幽冥鎌歌',
+      cssSkin: '死神．幽冥鎌歌',
+      lifeIcon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" role="img">
+        <defs>
+          <linearGradient id="grim-scythe" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f9f9fb" />
+            <stop offset="45%" stop-color="#d6d7dd" />
+            <stop offset="100%" stop-color="#6b6f7a" />
+          </linearGradient>
+          <radialGradient id="grim-glow" cx="50%" cy="40%" r="70%">
+            <stop offset="0%" stop-color="rgba(120,250,200,0.9)" />
+            <stop offset="60%" stop-color="rgba(90,150,160,0.2)" />
+            <stop offset="100%" stop-color="rgba(10,20,30,0)" />
+          </radialGradient>
+        </defs>
+        <circle cx="32" cy="32" r="28" fill="#05070a" stroke="#7af2d7" stroke-width="1.6" />
+        <path d="M46 14c-10.2-1.8-18.6 2.6-23.8 10.5l-6.2 9.6 5 3.2 5.6-8.4c3-4.5 7.6-7.4 12.9-8.4l2.7 8.6 6.8-1.7z" fill="url(#grim-scythe)" stroke="#ecf4f8" stroke-width="1.4" />
+        <path d="M28 30l-7.5 23.5" stroke="#423638" stroke-width="3.2" stroke-linecap="round" />
+        <circle cx="32" cy="32" r="18" fill="url(#grim-glow)" />
+        <circle cx="40" cy="24" r="3.4" fill="#0fffd8" opacity="0.9" />
+      </svg>`,
+      cssVars: { '--fxViz': '1' },
+      canvas: {
+        base: [100, 255, 200],
+        hi: [255, 255, 255],
+        period: 2400,
+        effects: {
+          embers: { count: 160, omega: -0.0016 },
+          web: { radials: 9, alpha: 0.08, period: 26000, lineWidth: 1.6, color: '#6cf0c8' },
+          slicer: { intervalMs: 3600, lifeMs: 720, widthMul: 0.42, color: 'rgba(160,255,230,0.35)' },
+          ruins: { layers: 4, haze: 0.22 }
+        },
+        bg: ['#010203', '#070b12', '#0e1220']
+      },
+      desc: '深青冥界：幽光 LED 呼吸、鎌影裂隙與飄移靈火，2.4s 緩步。'
+    },
+
+    sacredAurora: {
+      label: '神聖．黎明聖芒',
+      selectLabel: '神聖．黎明聖芒',
+      cssSkin: '神聖．黎明聖芒',
+      lifeIcon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" role="img">
+        <defs>
+          <radialGradient id="holy-core" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="55%" stop-color="#ffe8a6" />
+            <stop offset="100%" stop-color="#f5c76a" />
+          </radialGradient>
+          <linearGradient id="holy-ring" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#fff7d6" />
+            <stop offset="100%" stop-color="#e0a03a" />
+          </linearGradient>
+        </defs>
+        <circle cx="32" cy="32" r="24" fill="url(#holy-ring)" stroke="#fff6d6" stroke-width="2" />
+        <path d="M32 10L36.5 24.5L52 24.5L39.5 33.5L44 48L32 39.5L20 48L24.5 33.5L12 24.5L27.5 24.5Z" fill="url(#holy-core)" stroke="rgba(255,255,255,0.85)" stroke-width="1.6" />
+        <circle cx="32" cy="32" r="6" fill="#fffef9" />
+      </svg>`,
+      cssVars: { '--fxViz': '1', '--panelPattern': 'none' },
+      canvas: {
+        base: [255, 214, 140],
+        hi: [255, 255, 255],
+        period: 2100,
+        effects: {
+          stars: { countScale: 1.3, twinkle: true, sizeMin: 1.4, sizeMax: 3.8, brightness: 1.3 },
+          hexagram: { radiusMul: 0.46, rotationPeriodMs: 28000, color: '#ffe4a8', strokePx: 2.6 },
+          scriptRing: { radiusMul: 0.60, rotationPeriodMs: 36000, strokePx: 2, strokeColor: '#fff5d8', alpha: 0.75 },
+          pulse: { color: [255, 215, 160], thickness: 5, intervalMul: 1.1 },
+          diffuse: { color: [255, 210, 160], alpha: 0.06 }
+        },
+        bg: ['#130e05', '#24190b', '#3b220f']
+      },
+      desc: '晨曦金輝：暖白聖徽 LED、旋轉聖環與星芒緞幕，2.1s 呼吸。'
+    },
+
   solarFlare: {
     label: '烈陽．炙金幻焰',
     selectLabel: '烈陽．炙金幻焰',
