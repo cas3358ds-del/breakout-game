@@ -1707,6 +1707,9 @@ select optgroup { color: #0b1022; }
   const difficultySel=document.getElementById('difficulty'), activeBuffsEl=document.getElementById('buffs'), promptsDock=document.getElementById('promptsDock');
   const ledStyleSel=document.getElementById('ledStyle');
 
+  // === Buff 狀態 ===
+  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},COMBO:{active:false,until:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},PADSPIN:{active:false,until:0,start:0},PADBOOM:{active:false,until:0,explodeAt:0,returnAt:0,exploded:false},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0},GATLING:{active:false,until:0},FIRE:{active:false,until:0},POISON:{active:false,until:0},BLINK:{active:false,until:0},SWORD:{active:false,until:0},STORM:{active:false,until:0},BLACKHOLE:{active:false,until:0,deaths:0},ANNIHIL:{active:false,until:0,start:0,next:0}};
+
   // 新增元素參考
   const heartsEl = document.getElementById('hearts');
   const fireEnergyEl = document.getElementById('fireEnergy');
@@ -12276,9 +12279,6 @@ select optgroup { color: #0b1022; }
     while(promptQueue.length>3){ const old=promptQueue.shift(); old.remove(); }
     setTimeout(()=>{ div.classList.add('fade'); setTimeout(()=>{ const idx=promptQueue.indexOf(div); if(idx>=0) promptQueue.splice(idx,1); div.remove(); },400); },5000);
   }
-
-  // === Buff 狀態 ===
-  const buffs={WIDE:{active:false,until:0},STICKY:{active:false,until:0},MULTI:{active:false,until:0},SLOW:{active:false,until:0},PIERCE:{active:false,until:0},SHIELD:{active:false,until:0},RAMPAGE:{active:false,until:0},FAST:{active:false,until:0},WAVY:{active:false,until:0,start:0},COMBO:{active:false,until:0},LONG:{active:false,until:0,stacks:[]},PLASMA:{active:false,until:0},FREEZE:{active:false,until:0},HOLY:{active:false,until:0},TRACK:{active:false,until:0},MISSILE:{active:false,until:0},HELL:{active:false,until:0},MEGA:{active:false,until:0,applied:false},CHAIN:{active:false,until:0},NARROW:{active:false,until:0},HOLE:{active:false,until:0},PADSPIN:{active:false,until:0,start:0},PADBOOM:{active:false,until:0,explodeAt:0,returnAt:0,exploded:false},FLIP:{active:false,until:0},GODSPEED:{active:false,until:0},LASER:{active:false,until:0,lastShot:0},GATLING:{active:false,until:0},FIRE:{active:false,until:0},POISON:{active:false,until:0},BLINK:{active:false,until:0},SWORD:{active:false,until:0},STORM:{active:false,until:0},BLACKHOLE:{active:false,until:0,deaths:0},ANNIHIL:{active:false,until:0,start:0,next:0}};
 
   // === 擋板 & 球 ===
   let diff=getDiff(); const paddle={w:diff.paddleBaseW,h:18,x:1100/2-diff.paddleBaseW/2,y:700-50,speed:12};
