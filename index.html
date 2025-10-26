@@ -3173,7 +3173,7 @@ select optgroup { color: #0b1022; }
     if(deathLaserActiveUntil<=performance.now()) return;
     const target=pickLaserTarget(x,y);
     if(!target) return;
-    fireLaserFromSource(x,y,target,performance.now());
+    fireLaserFromSource(x,y,target,performance.now(),{variant:'deathLaser'});
   }
 
   function computeSwordSpawnCount(){
@@ -4892,19 +4892,21 @@ select optgroup { color: #0b1022; }
     return bestTarget;
   }
 
-  function fireLaserFromSource(sx, sy, target, now){
+  function fireLaserFromSource(sx, sy, target, now, opts={}){
     if(!target) return false;
+    const variant=(opts && opts.variant)||'default';
     const impact = target.type==='boss' ? activeBossImpactPoint(sx, sy) : {x:target.x, y:target.y};
     strikeDemonSpearsAlongLine(sx, sy, impact.x, impact.y, 'laser');
     strikeDemonAbyssBricksAlongLine(sx, sy, impact.x, impact.y, 'laser');
-    laserBeams.push({x1:sx,y1:sy,x2:impact.x,y2:impact.y,until:now+200});
-    laserImpacts.push({x:impact.x, y:impact.y, t0:now, tEnd:now+320});
-    spawnParticles(impact.x,impact.y,'rgba(160,255,200,0.9)',10,1.8,2.2,2.6);
+    laserBeams.push({x1:sx,y1:sy,x2:impact.x,y2:impact.y,until:now+200,variant});
+    laserImpacts.push({x:impact.x, y:impact.y, t0:now, tEnd:now+320, variant});
+    const impactColor = (variant==='deathLaser') ? 'rgba(255,110,110,0.9)' : 'rgba(160,255,200,0.9)';
+    spawnParticles(impact.x,impact.y,impactColor,10,1.8,2.2,2.6);
     if(target.type==='boss'){
       highlightSpaceBossTarget();
       damageActiveBoss(1,'laser',impact);
     }else if(target.type==='brick'){
-      destroyBrick(target.idx,'laser');
+      destroyBrick(target.idx,'laser',{source:variant});
       if(equipmentLaserPlasma){
         spawnPlasmaBurst(impact.x, impact.y, {sound:false});
       }
@@ -17529,7 +17531,7 @@ function generateLevel(lv, L){
       if(Math.random()<0.5){ spawnPower(cx-12,cy,{forceType:'NINE'}); }
     }
   }
-  function destroyBrick(i, sfx='default'){
+  function destroyBrick(i, sfx='default', opts={}){
     const b=bricks[i]; if(!b) return; if(!canDestroyBrick(b)) return;
     if(b.elite && !b.prompted){ showPrompt('菁英磚'); b.prompted=true; }
     if(b.boss && !b.prompted){ showPrompt('Boss！'); b.prompted=true; }
@@ -17553,7 +17555,7 @@ function generateLevel(lv, L){
     if(sfx==='default'){ beep(420,0.06,0.08); setTimeout(()=>beep(620,0.05,0.06),40); }
     else if(sfx!=='none'){ playSFX(sfx); }
     revealBrickArea(b); maybeDropFromBrick(b); bricks.splice(i,1); incrementCombo(); addScore(scoreForBrick(b)); updateHUD();
-    if(deathLaserActiveUntil>performance.now()){
+    if(opts?.source!=='deathLaser' && deathLaserActiveUntil>performance.now()){
       triggerDeathLaserAt(bx,by);
     }
   }
@@ -21185,16 +21187,27 @@ function generateLevel(lv, L){
       const t = Math.max(0, Math.min(1, (b.until-nowP)/200));
       ctx.save();
       ctx.globalCompositeOperation='lighter';
+      const variant=b.variant||'default';
       // Outer glow
-      ctx.strokeStyle='rgba(120,255,180,'+(0.25*t)+')';
+      const outerColor = (variant==='deathLaser')
+        ? `rgba(255,80,60,${0.28*t})`
+        : `rgba(120,255,180,${0.25*t})`;
+      ctx.strokeStyle=outerColor;
       ctx.lineWidth=8; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
       // Mid beam
       const grd = ctx.createLinearGradient(x1,y1,x2,y2);
-      grd.addColorStop(0,'rgba(160,255,220,'+(0.7*t)+')');
-      grd.addColorStop(1,'rgba(255,255,255,'+(0.9*t)+')');
+      if(variant==='deathLaser'){
+        grd.addColorStop(0,`rgba(255,140,120,${0.8*t})`);
+        grd.addColorStop(1,`rgba(255,220,210,${0.95*t})`);
+      }else{
+        grd.addColorStop(0,`rgba(160,255,220,${0.7*t})`);
+        grd.addColorStop(1,`rgba(255,255,255,${0.9*t})`);
+      }
       ctx.strokeStyle=grd; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
       // Core
-      ctx.strokeStyle='rgba(255,255,255,'+(1*t)+')'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      const coreAlpha = variant==='deathLaser' ? (0.95*t) : (1*t);
+      ctx.strokeStyle=`rgba(255,255,255,${coreAlpha})`;
+      ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
       ctx.restore();
     }
     // Boss 投射物
@@ -21207,8 +21220,12 @@ function generateLevel(lv, L){
       const prog = 1 - Math.max(0, (it.tEnd - nowI)/ (it.tEnd - it.t0));
       const x = it.x*scaleX, y = it.y*scaleY;
       // expanding ring
+      const variant=it.variant||'default';
       ctx.save(); ctx.globalCompositeOperation='lighter';
-      ctx.strokeStyle='rgba(160,255,200,'+(0.8*(1-prog))+')';
+      const ringColor = (variant==='deathLaser')
+        ? `rgba(255,120,120,${0.8*(1-prog)})`
+        : `rgba(160,255,200,${0.8*(1-prog)})`;
+      ctx.strokeStyle=ringColor;
       ctx.lineWidth = 2 + 6*prog;
       ctx.beginPath(); ctx.arc(x,y, 6 + 26*prog, 0, Math.PI*2); ctx.stroke();
       ctx.restore();
@@ -21217,7 +21234,10 @@ function generateLevel(lv, L){
         const ang = (s/6)*Math.PI*2;
         const len = 8 + prog*24;
         ctx.save(); ctx.globalCompositeOperation='lighter';
-        ctx.strokeStyle='rgba(180,255,220,'+(0.7*(1-prog))+')';
+        const sparkColor = (variant==='deathLaser')
+          ? `rgba(255,170,150,${0.7*(1-prog)})`
+          : `rgba(180,255,220,${0.7*(1-prog)})`;
+        ctx.strokeStyle=sparkColor;
         ctx.lineWidth=2;
         ctx.beginPath(); ctx.moveTo(x,y);
         ctx.lineTo(x+Math.cos(ang)*len, y+Math.sin(ang)*len);
@@ -22380,6 +22400,9 @@ function generateLevel(lv, L){
               const volleyOrigin={x:b.x,y:b.y};
               if(bk.explosive){ explodeAt(cx,cy); }
               else { bricks.splice(hit,1); updateHUD(); }
+              if(!bk.boss){
+                triggerDeathLaserAt(cx,cy);
+              }
               if(volleyReady){
                 emitMissilesFromSource(volleyOrigin);
               }
