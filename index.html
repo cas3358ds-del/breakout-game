@@ -1874,7 +1874,11 @@ select optgroup { color: #0b1022; }
     {id:'blackholePlasma',name:'黑洞電漿',icon:'W87.jpg',grade:'A',type:'passive',price:30,description:'被動：被黑洞銷毀的磚塊會產生電漿。',effect:{blackholePlasma:true}},
     {id:'deathLaser',name:'死亡雷射',icon:'W88.jpg',grade:'A',type:'active',price:30,description:'主動：10 秒內所有被擊殺的磚塊會在該位置產生 1 道雷射，冷卻時間 60 秒。',effect:{deathLaser:{duration:10000,cooldown:60000}}},
     {id:'godClock',name:'神之懷錶',icon:'W89.jpg',grade:'S',type:'active',price:100,description:'主動：立即將目前身上所有效果的剩餘時間延長為原本的 2 倍，冷卻時間 120 秒。',effect:{godClock:{cooldown:120000,multiplier:2}}},
-    {id:'gunDemon',name:'槍之惡魔',icon:'W90.jpg',grade:'S',type:'active',price:100,description:'主動：4 秒內每 0.2 秒對隨機 2 個遠距離目標發射狙擊子彈，路徑上的磚塊 HP-1，冷卻時間 60 秒。',effect:{gunDevil:{duration:4000,interval:200,cooldown:60000,targets:2}}}
+    {id:'gunDemon',name:'槍之惡魔',icon:'W90.jpg',grade:'S',type:'active',price:100,description:'主動：4 秒內每 0.2 秒對隨機 2 個遠距離目標發射狙擊子彈，路徑上的磚塊 HP-1，冷卻時間 60 秒。',effect:{gunDevil:{duration:4000,interval:200,cooldown:60000,targets:2}}},
+    {id:'chainsawDemon',name:'鏈鋸惡魔',icon:'W91.jpg',grade:'S',type:'active',price:100,description:'主動：每 2 秒於隨機軌跡施展 1 秒鏈鋸斬切，共 5 道，斬殺路徑上的磚塊並濺血，對 Boss 造成 8 傷害，冷卻時間 60 秒。',effect:{chainsawDevil:{slashes:5,interval:2000,duration:1000,cooldown:60000,bossDamage:8}}},
+    {id:'silverCoinGun',name:'銀幣槍',icon:'W92.jpg',grade:'A',type:'active',price:30,description:'主動：6 秒內每 0.5 秒消耗 1 枚銀幣發射子彈，命中造成 2 傷害，冷卻時間 60 秒。',effect:{silverCoinGun:{duration:6000,interval:500,damage:2,costPerShot:1,cooldown:60000}}},
+    {id:'ruinWand',name:'破壞魔杖',icon:'W93.jpg',grade:'S',type:'passive',price:100,description:'被動：每次進入關卡自動獲得萬物銷毀效果，且萬物銷毀的銷毀間隔縮短 50%。',effect:{autoAnnihil:true,annihilIntervalMultiplier:0.5}},
+    {id:'fireToxin',name:'火毒',icon:'W94.jpg',grade:'B',type:'passive',price:10,description:'被動：火焰球效果期間，球的撞擊會讓目標中毒。',effect:{firePoison:true}}
   ];
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
@@ -1931,6 +1935,9 @@ select optgroup { color: #0b1022; }
   let equipmentComboStarPermanent=false;
   let equipmentPreventDebuffDrops=false;
   let equipmentSpecialDropRateMultiplier=1;
+  let equipmentAutoAnnihil=false;
+  let equipmentAnnihilIntervalMultiplier=1;
+  let equipmentFirePoison=false;
   let equipmentCurseSwordActive=false;
   let equipmentPlasmaTriple=false;
   let equipmentPlasmaLifeMultiplier=1;
@@ -1997,6 +2004,21 @@ select optgroup { color: #0b1022; }
   let gunDevilIntervalMs=200;
   let gunDevilTargetsPerShot=2;
   let gunDevilReloadPending=false;
+  let chainsawDevilActive=false;
+  let chainsawDevilActiveUntil=0;
+  let chainsawDevilNextSlash=0;
+  let chainsawDevilRemaining=0;
+  let chainsawDevilIntervalMs=2000;
+  let chainsawDevilSlashDuration=1000;
+  let chainsawDevilBossDamage=8;
+  let chainsawDevilSlotIndex=null;
+  let silverGunActiveUntil=0;
+  let silverGunNextShot=0;
+  let silverGunIntervalMs=500;
+  let silverGunDamage=2;
+  let silverGunCostPerShot=1;
+  let silverGunSlotIndex=null;
+  let silverGunOutOfSilver=false;
   let solarBurstNextAt=0;
   let plasmaChainNextAt=0;
   let applyingLinkedMulti=false;
@@ -2475,6 +2497,17 @@ select optgroup { color: #0b1022; }
     shieldState.duration=0;
     updateShieldVisual();
     updateEquipmentHint();
+    chainsawDevilActive=false;
+    chainsawDevilActiveUntil=0;
+    chainsawDevilNextSlash=0;
+    chainsawDevilRemaining=0;
+    chainsawDevilSlotIndex=null;
+    chainsawSlashes.length=0;
+    silverGunActiveUntil=0;
+    silverGunNextShot=0;
+    silverGunSlotIndex=null;
+    silverGunOutOfSilver=false;
+    silverGunBullets.length=0;
   }
   function equipItemToSlot(index,itemDef){
     if(index<0||index>=equipmentSlots.length) return;
@@ -2773,6 +2806,9 @@ select optgroup { color: #0b1022; }
     equipmentComboStarPermanent=false;
     equipmentPreventDebuffDrops=false;
     equipmentSpecialDropRateMultiplier=1;
+    equipmentAutoAnnihil=false;
+    equipmentAnnihilIntervalMultiplier=1;
+    equipmentFirePoison=false;
     equipmentCurseSwordActive=false;
     equipmentPlasmaTriple=false;
     equipmentPlasmaLifeMultiplier=1;
@@ -2843,6 +2879,14 @@ select optgroup { color: #0b1022; }
         const mul=Math.max(1, Number(effect.specialDropRateMultiplier)||1);
         equipmentSpecialDropRateMultiplier*=mul;
       }
+      if(effect.autoAnnihil) equipmentAutoAnnihil=true;
+      if(effect.annihilIntervalMultiplier){
+        const mul=Math.max(0.05, Number(effect.annihilIntervalMultiplier)||0);
+        if(mul>0){
+          equipmentAnnihilIntervalMultiplier*=mul;
+        }
+      }
+      if(effect.firePoison) equipmentFirePoison=true;
       if(effect.curseSword) equipmentCurseSwordActive=true;
       if(effect.plasmaTriple) equipmentPlasmaTriple=true;
       if(effect.plasmaLifeMultiplier){
@@ -2952,24 +2996,52 @@ select optgroup { color: #0b1022; }
     if(equipmentGodspeedHolyStrike && equipmentGodspeedHolyInterval<=0){
       equipmentGodspeedHolyInterval=2000;
     }
-      if(silverAssaultSlotIndex!=null){
-        const slot=equipmentSlots[silverAssaultSlotIndex];
-        if(!slot || !slot.def?.effect?.silverAssault){
-          silverAssaultSlotIndex=null;
-          silverAssaultCharge=null;
-        }
+    if(silverAssaultSlotIndex!=null){
+      const slot=equipmentSlots[silverAssaultSlotIndex];
+      if(!slot || !slot.def?.effect?.silverAssault){
+        silverAssaultSlotIndex=null;
+        silverAssaultCharge=null;
       }
-      if(!equipmentToxicRebirthConfig){
-        toxicRebirthTriggered=false;
-        toxicRebirthGlowUntil=0;
+    }
+    if(silverGunSlotIndex!=null){
+      const slot=equipmentSlots[silverGunSlotIndex];
+      if(!slot || !slot.def?.effect?.silverCoinGun){
+        silverGunSlotIndex=null;
+        silverGunActiveUntil=0;
+        silverGunNextShot=0;
       }
-      adjustSlotCooldownsForMultiplierChange(prevCooldownMultiplier);
+    }
+    if(chainsawDevilSlotIndex!=null){
+      const slot=equipmentSlots[chainsawDevilSlotIndex];
+      if(!slot || !slot.def?.effect?.chainsawDevil){
+        chainsawDevilSlotIndex=null;
+        chainsawDevilActive=false;
+        chainsawDevilActiveUntil=0;
+        chainsawDevilNextSlash=0;
+        chainsawDevilRemaining=0;
+      }
+    }
+    if(!equipmentToxicRebirthConfig){
+      toxicRebirthTriggered=false;
+      toxicRebirthGlowUntil=0;
+    }
+    adjustSlotCooldownsForMultiplierChange(prevCooldownMultiplier);
     if(equipmentPlasmaChainActive && equipmentPlasmaChainInterval>0){
       const now=typeof performance!=='undefined'?performance.now():0;
       plasmaChainNextAt=now+equipmentPlasmaChainInterval;
     }
+    if(equipmentAutoAnnihil && !buffs.ANNIHIL?.active){
+      // 在進入關卡時觸發，實際啟用時由 applyLevelStartEquipmentEffects 處理
+    }
     if(!equipmentTrackUniqueTargets){
       resetTrackAssignments();
+    }
+  }
+  function applyLevelStartEquipmentEffects(){
+    if(equipmentAutoAnnihil){
+      applyPower('ANNIHIL');
+      showEquipmentMessage('破壞魔杖啟動，萬物銷毀環繞全場！','success',2200);
+      refreshEquipmentRuntime(performance.now());
     }
   }
   function adjustSlotCooldownsForMultiplierChange(prevMultiplier){
@@ -3107,6 +3179,16 @@ select optgroup { color: #0b1022; }
     if(gunDevilActiveUntil>now){
       gunDevilActiveUntil=extendFutureTime(gunDevilActiveUntil, now, mul);
       if(gunDevilNextShot>now) gunDevilNextShot=extendFutureTime(gunDevilNextShot, now, mul);
+      extended++;
+    }
+    if(chainsawDevilActiveUntil>now){
+      chainsawDevilActiveUntil=extendFutureTime(chainsawDevilActiveUntil, now, mul);
+      if(chainsawDevilNextSlash>now) chainsawDevilNextSlash=extendFutureTime(chainsawDevilNextSlash, now, mul);
+      extended++;
+    }
+    if(silverGunActiveUntil>now){
+      silverGunActiveUntil=extendFutureTime(silverGunActiveUntil, now, mul);
+      if(silverGunNextShot>now) silverGunNextShot=extendFutureTime(silverGunNextShot, now, mul);
       extended++;
     }
     if(phoenixHeartGlowUntil>now){
@@ -3639,6 +3721,59 @@ select optgroup { color: #0b1022; }
       refreshEquipmentRuntime(performance.now());
       return;
     }
+    if(effect.chainsawDevil){
+      const cfg={slashes:5,interval:2000,duration:1000,cooldown:60000,bossDamage:8,...(effect.chainsawDevil||{})};
+      const slashes=Math.max(1, Math.floor(cfg.slashes)||0);
+      const interval=Math.max(100, Number(cfg.interval)||0);
+      const duration=Math.max(0, Number(cfg.duration)||0);
+      const cooldown=Math.max(0, Number(cfg.cooldown)||0);
+      const bossDamage=Math.max(0, Number(cfg.bossDamage)||0);
+      chainsawDevilActive=true;
+      chainsawDevilRemaining=slashes;
+      chainsawDevilIntervalMs=interval;
+      chainsawDevilSlashDuration=duration;
+      chainsawDevilBossDamage=bossDamage;
+      chainsawDevilNextSlash=now;
+      chainsawDevilActiveUntil=now + (slashes>0?((slashes-1)*interval + duration):duration);
+      chainsawDevilSlotIndex=index;
+      slot.activeUntil=chainsawDevilActiveUntil;
+      slot.activeDuration=Math.max(0, chainsawDevilActiveUntil-now);
+      applySlotCooldown(slot,cooldown,now);
+      slot.lastUsed=now;
+      showEquipmentMessage('鏈鋸惡魔啟動，血霧將至！','success',2400);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
+    if(effect.silverCoinGun){
+      const cfg={duration:6000,interval:500,damage:2,costPerShot:1,cooldown:60000,...(effect.silverCoinGun||{})};
+      const duration=Math.max(0, Number(cfg.duration)||0);
+      if(duration<=0){
+        showEquipmentMessage('銀幣槍目前無法啟動。','warning',2200);
+        return;
+      }
+      const interval=Math.max(100, Number(cfg.interval)||0);
+      const damage=Math.max(1, Number(cfg.damage)||0);
+      const cost=Math.max(0, Math.floor(cfg.costPerShot)||0);
+      const cooldown=Math.max(0, Number(cfg.cooldown)||0);
+      if(cost>0 && silverCoins<cost){
+        showEquipmentMessage('銀幣不足，無法啟動銀幣槍。','warning',2200);
+        return;
+      }
+      silverGunActiveUntil=now+duration;
+      silverGunIntervalMs=interval;
+      silverGunDamage=damage;
+      silverGunCostPerShot=Math.max(0,cost);
+      silverGunNextShot=now;
+      silverGunSlotIndex=index;
+      silverGunOutOfSilver=false;
+      slot.activeUntil=silverGunActiveUntil;
+      slot.activeDuration=duration;
+      applySlotCooldown(slot,cooldown,now);
+      slot.lastUsed=now;
+      showEquipmentMessage('銀幣槍啟動！銀幣化作彈雨。','success',2200);
+      refreshEquipmentRuntime(performance.now());
+      return;
+    }
     if(effect.poisonDetonate){
       const triggered=triggerPoisonDetonation();
       if(!triggered){
@@ -3939,6 +4074,7 @@ select optgroup { color: #0b1022; }
     updateHUD();
     initBricks();
     resetBalls();
+    applyLevelStartEquipmentEffects();
     paused=true;
     running=false;
     applyBGMThemeForLevel();
@@ -4464,6 +4600,10 @@ select optgroup { color: #0b1022; }
       if(spaceBossPaddleRespawnAt) spaceBossPaddleRespawnAt += delta;
       if(spaceBossDeathAnim){ spaceBossDeathAnim.start+=delta; spaceBossDeathAnim.explosionAt+=delta; spaceBossDeathAnim.end+=delta; spaceBossDeathAnim.lastBurst+=delta; }
       if(spaceBossSuppressLifeLossUntil) spaceBossSuppressLifeLossUntil += delta;
+      if(chainsawDevilActiveUntil>0) chainsawDevilActiveUntil+=delta;
+      if(chainsawDevilNextSlash>0) chainsawDevilNextSlash+=delta;
+      if(silverGunActiveUntil>0) silverGunActiveUntil+=delta;
+      if(silverGunNextShot>0) silverGunNextShot+=delta;
       // 調整各種特效物件（粒子、雷射、黑洞等）的 till/until 終止時間
       const lists = [plasmas, plasmaChains, holyFlashes, blackHoles, laserBeams, laserImpacts, gunDevilTracers, gunDevilBullets, gunDevilMuzzles, gunDevilImpacts, missiles, hostileBeams, hostileArcs, hostileColumns, hazardClouds];
       for(const arr of lists){
@@ -4475,6 +4615,11 @@ select optgroup { color: #0b1022; }
           if(item.lifeUntil){ item.lifeUntil += delta; }
           if(item.tStart){ item.tStart += delta; }
         }
+      }
+      for(const slash of chainsawSlashes){
+        if(!slash) continue;
+        if(slash.start!=null) slash.start+=delta;
+        if(slash.end!=null) slash.end+=delta;
       }
       // 調整球的凍結狀態
       for(const ball of balls){
@@ -5315,6 +5460,102 @@ select optgroup { color: #0b1022; }
         else{ if(r<t0) return false; if(r<t1) t1=r; }
       }
     }
+    return true;
+  }
+
+  function randomChainsawLine(){
+    const width=1100;
+    const height=700;
+    const cx=Math.random()*width;
+    const cy=Math.random()*height;
+    const angle=Math.random()*Math.PI;
+    const dx=Math.cos(angle);
+    const dy=Math.sin(angle);
+    const points=[];
+    if(Math.abs(dx)>1e-6){
+      let t=(0-cx)/dx;
+      let y=cy+t*dy;
+      if(y>=0 && y<=height) points.push({x:0,y,t});
+      t=(width-cx)/dx;
+      y=cy+t*dy;
+      if(y>=0 && y<=height) points.push({x:width,y,t});
+    }
+    if(Math.abs(dy)>1e-6){
+      let t=(0-cy)/dy;
+      let x=cx+t*dx;
+      if(x>=0 && x<=width) points.push({x,y:0,t});
+      t=(height-cy)/dy;
+      x=cx+t*dx;
+      if(x>=0 && x<=width) points.push({x,y:height,t});
+    }
+    if(points.length<2){
+      return {x1:0,y1:cy,x2:width,y2:cy};
+    }
+    points.sort((a,b)=>a.t-b.t);
+    const start=points[0];
+    const end=points[points.length-1];
+    return {x1:start.x,y1:start.y,x2:end.x,y2:end.y};
+  }
+
+  function spawnChainsawSlash(now){
+    const line=randomChainsawLine();
+    performChainsawStrike(line, now);
+  }
+
+  function performChainsawStrike(line, now){
+    if(!line) return;
+    const {x1,y1,x2,y2}=line;
+    chainsawSlashes.push({x1,y1,x2,y2,start:now,end:now+chainsawDevilSlashDuration});
+    playSFX('bloodBurst');
+    screenShake=Math.max(screenShake,5);
+    strikeDemonSpearsAlongLine(x1,y1,x2,y2,'chainsaw');
+    strikeDemonAbyssBricksAlongLine(x1,y1,x2,y2,'chainsaw');
+    const samples=8;
+    for(let i=0;i<samples;i++){
+      const t=samples<=1?0:i/(samples-1);
+      const px=x1+(x2-x1)*t;
+      const py=y1+(y2-y1)*t;
+      spawnBladeHellBlood(px,py);
+    }
+    for(let i=bricks.length-1;i>=0;i--){
+      const brick=bricks[i];
+      if(!brick) continue;
+      if(!canDestroyBrick(brick)) continue;
+      const rect={x:brick.x,y:brick.y,w:brick.w,h:brick.h};
+      if(lineIntersectsRect(x1,y1,x2,y2,rect)){
+        const cx=brick.x+brick.w/2;
+        const cy=brick.y+brick.h/2;
+        spawnBladeHellBlood(cx,cy);
+        destroyBrick(i,'none');
+      }
+    }
+    const bounds=getActiveBossBounds();
+    if(bounds && lineIntersectsRect(x1,y1,x2,y2,bounds)){
+      const impact={x:bounds.x+bounds.w/2,y:bounds.y+bounds.h/2};
+      spawnBladeHellBlood(impact.x,impact.y);
+      damageActiveBoss(chainsawDevilBossDamage,'chainsaw',impact);
+    }
+  }
+
+  function fireSilverGunBullet(now){
+    const pr=paddleRect();
+    if(!pr) return false;
+    const cost=Math.max(0, silverGunCostPerShot||0);
+    if(cost>0 && !spendSilverCoins(cost)){
+      if(!silverGunOutOfSilver){
+        showEquipmentMessage('銀幣不足，銀幣槍停止射擊。','warning',2000);
+        silverGunOutOfSilver=true;
+      }
+      return false;
+    }
+    const originX=pr.x+pr.w/2;
+    const originY=pr.y-8;
+    const spread=(Math.random()-0.5)*0.25;
+    const angle=-Math.PI/2 + spread;
+    const speed=12;
+    silverGunBullets.push({x:originX,y:originY,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,damage:silverGunDamage});
+    spawnParticles(originX, originY, '#d5e8ff', 6, 1.2, 2.2, 2.0);
+    playSFX('gatlingShoot');
     return true;
   }
 
@@ -8427,6 +8668,8 @@ select optgroup { color: #0b1022; }
   const gunDevilMuzzles=[]; // {x,y,t0,tEnd}
   const gunDevilImpacts=[]; // {x,y,t0,tEnd}
   const gatlingBullets=[]; // 火力壓制子彈 {x,y,vx,vy}
+  const chainsawSlashes=[]; // 鏈鋸惡魔斬擊 {x1,y1,x2,y2,start,end}
+  const silverGunBullets=[]; // 銀幣槍子彈 {x,y,vx,vy,damage}
   const lockBoxes=[]; // {x,y,w,h,until,kind}
   let nextTreasureBrickAt=0;
 
@@ -17871,6 +18114,12 @@ function generateLevel(lv, L){
     return base;
   }
 
+  function annihilIntervalMs(){
+    const base=1000;
+    const mul=equipmentAnnihilIntervalMultiplier>0?equipmentAnnihilIntervalMultiplier:1;
+    return Math.max(100, Math.round(base*mul));
+  }
+
   function applyPoisonToBrick(brick, now=performance.now()){
     if(!brick) return;
     const duration=Math.max(0, GAME_CONFIG.powers.POISON.durationMs||12000);
@@ -18965,7 +19214,7 @@ function generateLevel(lv, L){
         triggerBlackholeStrike(now,{deactivate:false});
       }
     }
-    if(type==='ANNIHIL'){ buffs.ANNIHIL.active=true; buffs.ANNIHIL.start=now; buffs.ANNIHIL.next=now+1000; buffs.ANNIHIL.until=0; }
+    if(type==='ANNIHIL'){ buffs.ANNIHIL.active=true; buffs.ANNIHIL.start=now; buffs.ANNIHIL.next=now+annihilIntervalMs(); buffs.ANNIHIL.until=0; }
 
     updateBuffBadges();
   }
@@ -19097,7 +19346,7 @@ function generateLevel(lv, L){
   }
   function hideCenter(){ centerNote.style.display='none'; }
 
-  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:9; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; finalVictorySequence=null; if(!load) clearEquipmentSlots(); updateHUD(); initBricks(); resetBalls(); paused=true; running=false; resetCombo();
+  function resetGame(load=false){ diff=getDiff(); level=load?level:1; score=load?score:0; lives=load?lives:9; nineCatEaten=load?nineCatEaten:0; scoreUploaded=false; finalVictorySequence=null; if(!load) clearEquipmentSlots(); updateHUD(); initBricks(); resetBalls(); applyLevelStartEquipmentEffects(); paused=true; running=false; resetCombo();
     bossNineCatDrops.clear();
     stats={catches:0,buffs:0,debuffs:0,eliteKills:0,bossKills:0,lifeStart:0,fastestDeath:Infinity,longestLife:0,livesUsed:0,maxCombo:0};
     for(const k of Object.keys(buffs)){
@@ -19141,6 +19390,17 @@ function generateLevel(lv, L){
     stormTurret=null;
     gatling=null;
     gatlingBullets.length=0;
+    chainsawDevilActive=false;
+    chainsawDevilActiveUntil=0;
+    chainsawDevilNextSlash=0;
+    chainsawDevilRemaining=0;
+    chainsawDevilSlotIndex=null;
+    chainsawSlashes.length=0;
+    silverGunActiveUntil=0;
+    silverGunNextShot=0;
+    silverGunSlotIndex=null;
+    silverGunOutOfSilver=false;
+    silverGunBullets.length=0;
     missiles.length=0;
     blackHoles.length=0;
     laserBeams.length=0;
@@ -21289,6 +21549,32 @@ function generateLevel(lv, L){
       ctx.stroke();
       ctx.restore();
     }
+    if(chainsawSlashes.length){
+      const nowFx=performance.now();
+      const avgScale=(scaleX+scaleY)/2;
+      for(const slash of chainsawSlashes){
+        if(!slash) continue;
+        const {start,end,x1,y1,x2,y2}=slash;
+        if(nowFx>=end) continue;
+        const prog=Math.max(0, Math.min(1,(nowFx-start)/Math.max(1,end-start)));
+        const alpha=1-prog;
+        ctx.save();
+        ctx.globalCompositeOperation='lighter';
+        ctx.strokeStyle=`rgba(255,120,140,${0.35*alpha})`;
+        ctx.lineWidth=(18+34*(1-prog))*avgScale;
+        ctx.beginPath();
+        ctx.moveTo(x1*scaleX,y1*scaleY);
+        ctx.lineTo(x2*scaleX,y2*scaleY);
+        ctx.stroke();
+        ctx.strokeStyle=`rgba(80,0,20,${0.45*alpha})`;
+        ctx.lineWidth=(8+16*(1-prog))*avgScale;
+        ctx.beginPath();
+        ctx.moveTo(x1*scaleX,y1*scaleY);
+        ctx.lineTo(x2*scaleX,y2*scaleY);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
     // 槍之惡魔子彈
     for(let i=gunDevilBullets.length-1;i>=0;i--){
       const shot=gunDevilBullets[i];
@@ -21351,6 +21637,21 @@ function generateLevel(lv, L){
       ctx.shadowBlur=8*((scaleX+scaleY)/2);
       ctx.shadowColor='#ffb347';
       ctx.beginPath(); ctx.arc(b.x*scaleX,b.y*scaleY,r,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    for(const b of silverGunBullets){
+      ctx.save();
+      const r=3.5*((scaleX+scaleY)/2);
+      const grad=ctx.createRadialGradient(b.x*scaleX,b.y*scaleY,0,b.x*scaleX,b.y*scaleY,r);
+      grad.addColorStop(0,'#ffffff');
+      grad.addColorStop(0.4,'#e0e8ff');
+      grad.addColorStop(1,'#7fa0ff');
+      ctx.fillStyle=grad;
+      ctx.shadowBlur=6*((scaleX+scaleY)/2);
+      ctx.shadowColor='rgba(180,210,255,0.6)';
+      ctx.beginPath();
+      ctx.arc(b.x*scaleX,b.y*scaleY,r,0,Math.PI*2);
+      ctx.fill();
       ctx.restore();
     }
     // 飛彈
@@ -21650,6 +21951,59 @@ function generateLevel(lv, L){
           playSFX('sniperReload');
           gunDevilReloadPending=false;
         }
+      }
+      if(chainsawDevilActive || (chainsawDevilActiveUntil>0 && now<chainsawDevilActiveUntil)){
+        if(chainsawDevilActiveUntil>0 && now>=chainsawDevilActiveUntil){
+          chainsawDevilActive=false;
+          chainsawDevilActiveUntil=0;
+          chainsawDevilRemaining=0;
+          if(chainsawDevilSlotIndex!=null){ const slot=equipmentSlots[chainsawDevilSlotIndex]; if(slot){ slot.activeUntil=0; slot.activeDuration=0; } }
+          chainsawDevilSlotIndex=null;
+        }else if(chainsawDevilActive){
+          if(chainsawDevilRemaining>0 && (!chainsawDevilNextSlash || now>=chainsawDevilNextSlash)){
+            spawnChainsawSlash(now);
+            chainsawDevilRemaining=Math.max(0, chainsawDevilRemaining-1);
+            chainsawDevilNextSlash=now+chainsawDevilIntervalMs;
+            if(chainsawDevilRemaining<=0){
+              chainsawDevilActive=false;
+            }
+          }
+        }
+      }else{
+        if(chainsawDevilActiveUntil>0 && now>=chainsawDevilActiveUntil){
+          chainsawDevilActiveUntil=0;
+          if(chainsawDevilSlotIndex!=null){ const slot=equipmentSlots[chainsawDevilSlotIndex]; if(slot){ slot.activeUntil=0; slot.activeDuration=0; } }
+          chainsawDevilSlotIndex=null;
+        }
+        chainsawDevilNextSlash=0;
+      }
+      if(chainsawSlashes.length){
+        for(let i=chainsawSlashes.length-1;i>=0;i--){
+          if(now>=chainsawSlashes[i].end){ chainsawSlashes.splice(i,1); }
+        }
+      }
+      if(silverGunActiveUntil>0){
+        if(now>=silverGunActiveUntil){
+          silverGunActiveUntil=0;
+          silverGunNextShot=0;
+          if(silverGunSlotIndex!=null){ const slot=equipmentSlots[silverGunSlotIndex]; if(slot){ slot.activeUntil=0; slot.activeDuration=0; } }
+          silverGunSlotIndex=null;
+        }else if(silverGunIntervalMs>0){
+          if(!silverGunNextShot || now>=silverGunNextShot){
+            const fired=fireSilverGunBullet(now);
+            if(!fired){
+              silverGunActiveUntil=0;
+              silverGunNextShot=0;
+              if(silverGunSlotIndex!=null){ const slot=equipmentSlots[silverGunSlotIndex]; if(slot){ slot.activeUntil=0; slot.activeDuration=0; } }
+              silverGunSlotIndex=null;
+            }else{
+              silverGunNextShot=now+silverGunIntervalMs;
+            }
+          }
+        }
+      }else{
+        silverGunNextShot=0;
+        silverGunSlotIndex=null;
       }
       if(equipmentGodspeedHolyStrike && equipmentGodspeedHolyInterval>0 && buffs.GODSPEED.active){
         if(!nextGodspeedHolyStrike){
@@ -22043,6 +22397,38 @@ function generateLevel(lv, L){
         }
       }
     }
+    for(let i=silverGunBullets.length-1;i>=0;i--){
+      const bullet=silverGunBullets[i];
+      bullet.x+=bullet.vx;
+      bullet.y+=bullet.vy;
+      if(bullet.y<-20 || bullet.y>720 || bullet.x<-20 || bullet.x>1120){ silverGunBullets.splice(i,1); continue; }
+      if(strikeDemonSpearsAtPoint(bullet.x, bullet.y, 6, 'silverGun') || strikeDemonAbyssBricksAtPoint(bullet.x, bullet.y, 6, 'silverGun')){
+        silverGunBullets.splice(i,1);
+        continue;
+      }
+      let removed=false;
+      for(let j=bricks.length-1;j>=0;j--){
+        const bk=bricks[j];
+        if(bullet.x>bk.x && bullet.x<bk.x+bk.w && bullet.y>bk.y && bullet.y<bk.y+bk.h){
+          spawnParticles(bullet.x, bullet.y, '#d5e8ff', 8, 1.4, 2.6, 2.2);
+          damageBrick(j, bullet.damage||silverGunDamage, 'none');
+          playSFX('gatlingHit');
+          removed=true;
+          break;
+        }
+      }
+      if(removed){ silverGunBullets.splice(i,1); continue; }
+      if(isSpecialBossActive()){
+        const bounds=getActiveBossBounds();
+        if(bounds && bullet.x>bounds.x && bullet.x<bounds.x+bounds.w && bullet.y>bounds.y && bullet.y<bounds.y+bounds.h){
+          spawnParticles(bullet.x, bullet.y, '#d5e8ff', 8, 1.4, 2.6, 2.2);
+          damageActiveBoss(bullet.damage||silverGunDamage,'silverGun',{x:bullet.x,y:bullet.y});
+          playSFX('gatlingHit');
+          silverGunBullets.splice(i,1);
+          continue;
+        }
+      }
+    }
 
     if(stormTurret){
       if(now>=stormTurret.fireAt){
@@ -22090,7 +22476,7 @@ function generateLevel(lv, L){
 
     if(buffs.BLACKHOLE.active && now>buffs.BLACKHOLE.until){ triggerBlackholeStrike(now); }
 
-    if(buffs.ANNIHIL.active && now>=buffs.ANNIHIL.next){ let cand=bricks.filter(b=>canDestroyBrick(b)&&!b.boss); if(!cand.length) cand=bricks.filter(b=>canDestroyBrick(b)); if(cand.length){ const target=cand[Math.floor(Math.random()*cand.length)]; const idx=bricks.indexOf(target); destroyBrick(idx,'annihil'); } else if(isSpecialBossActive()){ const center=activeBossCenter(); damageActiveBoss(1,'annihil',center?{x:center.x,y:center.y}:null); } buffs.ANNIHIL.next+=1000; }
+    if(buffs.ANNIHIL.active && now>=buffs.ANNIHIL.next){ let cand=bricks.filter(b=>canDestroyBrick(b)&&!b.boss); if(!cand.length) cand=bricks.filter(b=>canDestroyBrick(b)); if(cand.length){ const target=cand[Math.floor(Math.random()*cand.length)]; const idx=bricks.indexOf(target); destroyBrick(idx,'annihil'); } else if(isSpecialBossActive()){ const center=activeBossCenter(); damageActiveBoss(1,'annihil',center?{x:center.x,y:center.y}:null); } buffs.ANNIHIL.next+=annihilIntervalMs(); }
 
     // 全局速度倍率（GODSPEED 時忽略其它）
     function effectiveMul(){
@@ -22357,7 +22743,7 @@ function generateLevel(lv, L){
         if(buffs.HOLY.active){ applyHolyStrike(bk.x+bk.w/2, bk.y+bk.h/2); }
         if(buffs.CHAIN.active){ bk.lockedUntil = now + GAME_CONFIG.powers.CHAIN.chain.lockMs; }
         if(buffs.HELL.active){ const holeSpin=(Math.random()>0.5?1:-1); const volleyReady=buffs.MISSILE.active && equipmentMissileVolleyOnBreak; const holeRadius=40; const cx=bk.x+bk.w/2; const cy=bk.y+bk.h/2; blackHoles.push({x:cx,y:cy,r:holeRadius,until:now+GAME_CONFIG.powers.HELL.hell.haloMs,start:performance.now(),spinDir:holeSpin}); playSFX('blackhole'); strikeDemonAbyssBricksAtPoint(cx, cy, holeRadius, 'blackhole'); const destroyedNeighbors=destroyNeighbors(hit); destroyBrick(hit,'none'); if(equipmentBlackholePlasma){ spawnPlasmaBurst(cx,cy,{sound:false}); for(const pos of destroyedNeighbors){ if(pos) spawnPlasmaBurst(pos.x,pos.y,{sound:false}); } } if(silverAssaultCharge){ silverAssaultCharge=null; silverAssaultSlotIndex=null; silverAssaultTriggered=true; } if(volleyReady){ emitMissilesFromSource({x:b.x,y:b.y}); } }
-        if(buffs.POISON.active){ applyPoisonToBrick(bk, now); }
+        if(buffs.POISON.active || (buffs.FIRE.active && equipmentFirePoison)){ applyPoisonToBrick(bk, now); }
 
         // 當前磚扣血（若已在上面被處理則略過）
         if(!buffs.HELL.active && !buffs.HOLY.active){
