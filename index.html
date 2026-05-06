@@ -56,6 +56,7 @@
     }
     .pill b{color:#fff;font-variant-numeric:tabular-nums}
     .inline-controls{justify-self:end;display:flex;gap:8px;align-items:center;position:relative}
+    .lang-toggle{width:auto;min-width:58px;padding:0 10px;font-weight:800;letter-spacing:.4px}
     .ic-btn{
       width:48px;height:36px;border-radius:12px;border:1px solid var(--stroke);
       background:radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.16), rgba(255,255,255,0) 58%), var(--glass-1);
@@ -957,54 +958,55 @@ select optgroup { color: #0b1022; }
   <!-- 新增 UI 包裝 -->
   <div class="wrap" id="app">
     <!-- 頂部 HUD -->
-    <section class="hud" aria-label="遊戲 HUD">
+    <section class="hud" aria-label="遊戲 HUD" data-i18n-attr="aria-label:hudAria">
       <div class="stats">
-        <div class="pill">分數 <b id="score">0</b></div>
-        <div class="pill">關卡 <b id="level">1</b>/<span id="totalLevels">20</span></div>
-        <div class="pill">銀幣 <b id="silverCoins">0</b></div>
+        <div class="pill"><span data-i18n="scoreLabel">分數</span> <b id="score">0</b></div>
+        <div class="pill"><span data-i18n="levelLabel">關卡</span> <b id="level">1</b>/<span id="totalLevels">20</span></div>
+        <div class="pill"><span data-i18n="silverLabel">銀幣</span> <b id="silverCoins">0</b></div>
         <div class="inline-controls">
-          <button class="ic-btn" id="sndBtn" aria-haspopup="true" aria-expanded="false" aria-controls="soundMenu" title="聲音"><span class="ico">🔊</span></button>
+          <button class="ic-btn" id="sndBtn" aria-haspopup="true" aria-expanded="false" aria-controls="soundMenu" title="聲音" data-i18n-attr="title:soundTitle"><span class="ico">🔊</span></button>
           <div class="menu" id="soundMenu">
-            <div class="item"><span>🎵</span><label><input type="checkbox" id="bgmOn"> BGM 開關</label></div>
-            <div class="item"><span>🎚</span><label style="width:100%">BGM 音量 <input id="bgmVol" type="range" min="0" max="1" step="0.01" value="0.7" style="width:60%" aria-label="BGM 音量"></label></div>
-            <div class="item"><span>🔈</span><label><input type="checkbox" id="sfxOn" checked> 音效開關</label></div>
+            <div class="item"><span>🎵</span><label><input type="checkbox" id="bgmOn"> <span data-i18n="bgmSwitch">BGM 開關</span></label></div>
+            <div class="item"><span>🎚</span><label style="width:100%"><span data-i18n="bgmVolume">BGM 音量</span> <input id="bgmVol" type="range" min="0" max="1" step="0.01" value="0.7" style="width:60%" aria-label="BGM 音量" data-i18n-attr="aria-label:bgmVolume"></label></div>
+            <div class="item"><span>🔈</span><label><input type="checkbox" id="sfxOn" checked> <span data-i18n="sfxSwitch">音效開關</span></label></div>
             <!-- 隱藏的舊版按鈕，用於腳本維持邏輯 -->
             <button id="soundBtn" style="display:none;"></button>
             <button id="bgmBtn" style="display:none;"></button>
           </div>
-          <button class="ic-btn" id="optBtn" aria-haspopup="true" aria-expanded="false" aria-controls="optMenu" title="選項">⋯</button>
+          <button class="ic-btn lang-toggle" id="langBtn" type="button" title="Switch language" aria-label="Switch language">EN</button>
+          <button class="ic-btn" id="optBtn" aria-haspopup="true" aria-expanded="false" aria-controls="optMenu" title="選項" data-i18n-attr="title:optionsTitle">⋯</button>
           <div class="menu" id="optMenu">
-            <h4>遊戲</h4>
-            <div class="item"><span>🎮</span>難度 <select id="difficulty" aria-label="難度">
-              <option value="easy">簡單</option>
-              <option value="normal" selected>一般</option>
-              <option value="hard">困難</option>
+            <h4 data-i18n="gameSection">遊戲</h4>
+            <div class="item"><span>🎮</span><span data-i18n="difficultyLabel">難度</span> <select id="difficulty" aria-label="難度" data-i18n-attr="aria-label:difficultyLabel">
+              <option value="easy" data-i18n="difficultyEasy">簡單</option>
+              <option value="normal" selected data-i18n="difficultyNormal">一般</option>
+              <option value="hard" data-i18n="difficultyHard">困難</option>
             </select></div>
             <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn" id="pauseBtn" style="display:none;">暫停/繼續</button>
-              <button class="btn" id="resetBtn">重新開始</button>
-              <button class="btn" id="saveBtn">存檔</button>
-              <button class="btn" id="loadBtn">讀檔</button>
-              <button class="btn" id="clearSaveBtn">清除存檔</button>
-              <label class="btn level-select" id="levelJumpLabel">跳至關卡
-                <select id="levelJumpSel" aria-label="跳至關卡"></select>
+              <button class="btn" id="pauseBtn" style="display:none;" data-i18n="pauseResume">暫停/繼續</button>
+              <button class="btn" id="resetBtn" data-i18n="restart">重新開始</button>
+              <button class="btn" id="saveBtn" data-i18n="save">存檔</button>
+              <button class="btn" id="loadBtn" data-i18n="load">讀檔</button>
+              <button class="btn" id="clearSaveBtn" data-i18n="clearSave">清除存檔</button>
+              <label class="btn level-select" id="levelJumpLabel"><span data-i18n="jumpLevel">跳至關卡</span>
+                <select id="levelJumpSel" aria-label="跳至關卡" data-i18n-attr="aria-label:jumpLevel"></select>
               </label>
             </div>
-            <h4>其他</h4>
+            <h4 data-i18n="otherSection">其他</h4>
             <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn" id="fsBtn">全螢幕</button>
-              <button class="btn" id="tutorBtn">教學</button>
-              <button class="btn" id="effectsBtn">效果說明</button>
-              <button class="btn" id="codexBtn">圖鑑</button>
-              <button class="btn" id="galleryBtn">畫廊</button>
-              <button class="btn" id="rankBtn">排行榜</button>
+              <button class="btn" id="fsBtn" data-i18n="fullscreen">全螢幕</button>
+              <button class="btn" id="tutorBtn" data-i18n="tutorial">教學</button>
+              <button class="btn" id="effectsBtn" data-i18n="effects">效果說明</button>
+              <button class="btn" id="codexBtn" data-i18n="codex">圖鑑</button>
+              <button class="btn" id="galleryBtn" data-i18n="gallery">畫廊</button>
+              <button class="btn" id="rankBtn" data-i18n="leaderboard">排行榜</button>
             </div>
             <div class="item"><span>🎨</span>Skin <select aria-label="Skin" id="skinSel">
               <option>經典．冷藍玻璃</option>
             </select></div>
           </div>
         </div>
-        <div class="pill wide">生命 <b id="lives">9</b> <span class="hearts" id="hearts">❤️❤️❤️❤️❤️❤️❤️❤️❤️</span> <span id="fireEnergy" class="fire-energy"></span> <span class="cats" id="cats" style="display:none"></span></div>
+        <div class="pill wide"><span data-i18n="livesLabel">生命</span> <b id="lives">9</b> <span class="hearts" id="hearts">❤️❤️❤️❤️❤️❤️❤️❤️❤️</span> <span id="fireEnergy" class="fire-energy"></span> <span class="cats" id="cats" style="display:none"></span></div>
       </div>
     </section>
     <div class="hud-sentinel" style="height:0"></div>
@@ -1019,13 +1021,13 @@ select optgroup { color: #0b1022; }
         <div id="combo" class="combo"></div>
 
       </div>
-      <div class="equipment-bar" id="equipmentBar" aria-label="裝備欄">
+      <div class="equipment-bar" id="equipmentBar" aria-label="裝備欄" data-i18n-attr="aria-label:equipmentBar">
         <div class="equipment-slots" id="equipmentSlots" role="list">
           <!-- 動態填入裝備欄位 -->
         </div>
         <div class="equipment-status">
-          <span class="equipment-message" id="equipmentMessage">尚未裝備任何武器。</span>
-          <span class="shield-status" id="shieldStatus" hidden>防護罩剩餘 <span id="shieldStatusTime">0.0</span>s</span>
+          <span class="equipment-message" id="equipmentMessage" data-i18n="noEquipment">尚未裝備任何武器。</span>
+          <span class="shield-status" id="shieldStatus" hidden><span data-i18n="shieldRemaining">防護罩剩餘</span> <span id="shieldStatusTime">0.0</span>s</span>
         </div>
       </div>
     </div>
@@ -1037,36 +1039,36 @@ select optgroup { color: #0b1022; }
         <div class="store-panel" role="dialog" aria-labelledby="storeTitle">
           <div class="store-left">
             <img id="storeHeroImg" src="images/S01.jpg" alt="武器商店店員" loading="lazy" />
-            <div class="store-hero-label">ASTRA ARMORY</div>
+            <div class="store-hero-label" data-i18n="armoryLabel">ASTRA ARMORY</div>
           </div>
           <div class="store-content">
             <div class="store-header">
-              <h2 class="store-title" id="storeTitle">星光武裝商會 <small>整備下一場戰鬥吧</small></h2>
-              <div class="store-balance">持有銀幣: <span id="storeSilverCoins">0</span></div>
+              <h2 class="store-title" id="storeTitle"><span data-i18n="storeTitle">星光武裝商會</span> <small data-i18n="storeSubtitle">整備下一場戰鬥吧</small></h2>
+              <div class="store-balance"><span data-i18n="coinBalance">持有銀幣:</span> <span id="storeSilverCoins">0</span></div>
             </div>
             <div class="store-grid" id="storeGrid" role="list"></div>
             <div class="store-detail">
               <div class="slot-modal" id="slotModal" aria-hidden="true">
-                <h4 id="slotModalTitle">選擇要安裝的裝備欄位</h4>
+                <h4 id="slotModalTitle" data-i18n="selectSlot">選擇要安裝的裝備欄位</h4>
                 <div class="slot-grid" id="slotGrid"></div>
                 <div class="slot-confirm" id="slotConfirm">
                   <p id="slotConfirmText"></p>
                   <div class="actions">
-                    <button class="btn primary" id="slotConfirmYes" type="button">是</button>
-                    <button class="btn secondary" id="slotConfirmNo" type="button">否</button>
+                    <button class="btn primary" id="slotConfirmYes" type="button" data-i18n="yes">是</button>
+                    <button class="btn secondary" id="slotConfirmNo" type="button" data-i18n="no">否</button>
                   </div>
                 </div>
               </div>
               <div class="store-headline">
-                <h3 id="storeItemName">選擇一件裝備</h3>
+                <h3 id="storeItemName" data-i18n="chooseEquipment">選擇一件裝備</h3>
                 <span class="store-price-tag" id="storeItemPrice">—</span>
               </div>
               <div class="store-meta" id="storeItemMeta"></div>
-              <p class="store-desc" id="storeItemDesc">完成關卡後可使用銀幣購買裝備，打造專屬打法。</p>
+              <p class="store-desc" id="storeItemDesc" data-i18n="storeHint">完成關卡後可使用銀幣購買裝備，打造專屬打法。</p>
               <div class="store-feedback" id="storeFeedback"></div>
               <div class="store-actions">
-                <button class="btn primary" id="storeBuyBtn" type="button" disabled>購買</button>
-                <button class="btn secondary" id="storeNextBtn" type="button">進入下一關 ▶</button>
+                <button class="btn primary" id="storeBuyBtn" type="button" disabled data-i18n="buy">購買</button>
+                <button class="btn secondary" id="storeNextBtn" type="button" data-i18n="nextLevel">進入下一關 ▶</button>
               </div>
             </div>
           </div>
@@ -1075,21 +1077,21 @@ select optgroup { color: #0b1022; }
       <div class="codex-overlay" id="codexOverlay" aria-hidden="true">
         <div class="backdrop" id="codexBackdrop"></div>
         <div class="codex-panel" role="dialog" aria-labelledby="codexTitle">
-          <button class="codex-close" id="codexClose" type="button" aria-label="關閉圖鑑">✕</button>
-          <h2 id="codexTitle">裝備圖鑑</h2>
-          <p class="codex-subtitle">收藏所有裝備的資訊</p>
+          <button class="codex-close" id="codexClose" type="button" aria-label="關閉圖鑑" data-i18n-attr="aria-label:closeCodex">✕</button>
+          <h2 id="codexTitle" data-i18n="equipmentCodex">裝備圖鑑</h2>
+          <p class="codex-subtitle" data-i18n="codexSubtitle">收藏所有裝備的資訊</p>
           <div class="codex-list" id="codexList" role="list"></div>
           <div class="codex-pagination">
-            <button class="btn" id="codexPrev" type="button">前一頁</button>
+            <button class="btn" id="codexPrev" type="button" data-i18n="prevPage">前一頁</button>
             <span id="codexPageIndicator">1 / 1</span>
-            <button class="btn" id="codexNext" type="button">下一頁</button>
+            <button class="btn" id="codexNext" type="button" data-i18n="nextPage">下一頁</button>
           </div>
         </div>
       </div>
       <div class="gallery" id="gallery">
         <div class="backdrop"></div>
         <img id="galleryImg" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="關卡大圖" />
-        <div class="hint" id="galleryHint">點一下顯示台詞 ▶</div>
+        <div class="hint" id="galleryHint" data-i18n="galleryHint">點一下顯示台詞 ▶</div>
         <div class="dialog" id="galleryDialog"></div>
       </div>
 
@@ -1099,9 +1101,9 @@ select optgroup { color: #0b1022; }
           <div class="close" id="galleryClose">❌</div>
           <div class="thumbs" id="galleryThumbs"></div>
           <div class="nav">
-            <button class="btn" id="galleryPrev">前一頁</button>
+            <button class="btn" id="galleryPrev" data-i18n="prevPage">前一頁</button>
             <span id="galleryPageInfo">1 / 2</span>
-            <button class="btn" id="galleryNext">下一頁</button>
+            <button class="btn" id="galleryNext" data-i18n="nextPage">下一頁</button>
           </div>
         </div>
         <div class="viewer" id="galleryViewer">
@@ -1115,22 +1117,22 @@ select optgroup { color: #0b1022; }
         <div class="backdrop"></div>
         <div class="content">
           <div class="close" id="rankClose">❌</div>
-          <h2 style="text-align:center;margin:4px 0 8px;">排行榜</h2>
+          <h2 style="text-align:center;margin:4px 0 8px;" data-i18n="leaderboard">排行榜</h2>
           <table id="rankTable">
             <thead>
               <tr>
-                <th>名次</th>
-                <th>玩家</th>
-                <th>分數</th>
-                <th>消耗生命</th>
-                <th>接球數</th>
-                <th>增益次數</th>
-                <th>減益次數</th>
-                <th>殺敵數</th>
-                <th>殺Boss數</th>
-                <th>最快死亡</th>
-                <th>最久存活</th>
-                <th>最高Combo數</th>
+                <th data-i18n="rankColRank">名次</th>
+                <th data-i18n="rankColPlayer">玩家</th>
+                <th data-i18n="rankColScore">分數</th>
+                <th data-i18n="rankColLivesUsed">消耗生命</th>
+                <th data-i18n="rankColCatches">接球數</th>
+                <th data-i18n="rankColBuffs">增益次數</th>
+                <th data-i18n="rankColDebuffs">減益次數</th>
+                <th data-i18n="rankColKills">殺敵數</th>
+                <th data-i18n="rankColBossKills">殺Boss數</th>
+                <th data-i18n="rankColFastestDeath">最快死亡</th>
+                <th data-i18n="rankColLongestSurvival">最久存活</th>
+                <th data-i18n="rankColMaxCombo">最高Combo數</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -1142,11 +1144,11 @@ select optgroup { color: #0b1022; }
         <div class="backdrop"></div>
         <div class="thumb-ring" id="ring"></div>
         <div class="center">
-          <h2>恭喜過關！</h2>
-          <div style="font-size:28px;margin:6px 0;">總分數：<span id="finalScore">0</span></div>
+          <h2 data-i18n="winTitle">恭喜過關！</h2>
+          <div style="font-size:28px;margin:6px 0;"><span data-i18n="totalScore">總分數：</span><span id="finalScore">0</span></div>
           <div id="statsWin" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:360px"></div>
-          <div class="small">作者： GPT-5、Codex　／　指導者： Rock</div>
-          <div class="again"><button class="btn" id="uploadWin">上傳排行榜</button> <button class="btn" id="againBtn">再玩一次</button></div>
+          <div class="small"><span data-i18n="credits">作者： GPT-5、Codex　／　指導者： Rock</span></div>
+          <div class="again"><button class="btn" id="uploadWin" data-i18n="uploadLeaderboard">上傳排行榜</button> <button class="btn" id="againBtn" data-i18n="playAgain">再玩一次</button></div>
         </div>
         <div class="thumb-note" id="thumbNote"></div>
       </div>
@@ -1154,16 +1156,16 @@ select optgroup { color: #0b1022; }
       <div class="gameover" id="gameover">
         <div class="backdrop"></div>
         <div class="center">
-          <h2>遊戲結束</h2>
-          <div style="font-size:28px;margin:6px 0;">最終分數：<span id="finalScore2">0</span></div>
+          <h2 data-i18n="gameOverTitle">遊戲結束</h2>
+          <div style="font-size:28px;margin:6px 0;"><span data-i18n="finalScore">最終分數：</span><span id="finalScore2">0</span></div>
           <div id="statsOver" style="text-align:left;font-size:13px;line-height:1.7;margin:6px auto 2px;max-width:320px"></div>
-          <div class="again"><button class="btn" id="uploadOver">上傳排行榜</button> <button class="btn" id="retryBtn">再次遊戲</button></div>
+          <div class="again"><button class="btn" id="uploadOver" data-i18n="uploadLeaderboard">上傳排行榜</button> <button class="btn" id="retryBtn" data-i18n="retry">再次遊戲</button></div>
         </div>
       </div>
       
       <div class="center-note" id="centerNote">
-        <div class="note-box" id="noteBox"><button class="note-close" id="noteClose" aria-label="關閉">×</button>
-          <h2 id="noteTitle">按 <kbd>Space</kbd> 或點畫面開始</h2>
+        <div class="note-box" id="noteBox"><button class="note-close" id="noteClose" aria-label="關閉" data-i18n-attr="aria-label:close">×</button>
+          <h2 id="noteTitle" data-i18n-html="startPrompt">按 <kbd>Space</kbd> 或點畫面開始</h2>
           <p id="noteText"></p>
         </div>
       </div>
@@ -1171,7 +1173,7 @@ select optgroup { color: #0b1022; }
   </div>
   <div id="uploadOverlay">
     <div class="box">
-      <div>上傳中...</div>
+      <div data-i18n="uploading">上傳中...</div>
       <div class="progress"><div id="uploadBar"></div></div>
       <div class="percent" id="uploadPercent">0%</div>
     </div>
@@ -1182,6 +1184,46 @@ select optgroup { color: #0b1022; }
 <script src="skin.js"></script>
 <script>
 (() => {
+
+  const LANG_STORAGE_KEY = 'rockBreakoutLang';
+  const I18N = {
+    zh: {
+      title:'Rock打磚塊 Breakout（最終增強版）', langButton:'EN', langButtonTitle:'Switch to English', hudAria:'遊戲 HUD', scoreLabel:'分數', levelLabel:'關卡', silverLabel:'銀幣', livesLabel:'生命', soundTitle:'聲音', optionsTitle:'選項', bgmSwitch:'BGM 開關', bgmVolume:'BGM 音量', sfxSwitch:'音效開關', gameSection:'遊戲', difficultyLabel:'難度', difficultyEasy:'簡單', difficultyNormal:'一般', difficultyHard:'困難', pauseResume:'暫停/繼續', restart:'重新開始', save:'存檔', load:'讀檔', clearSave:'清除存檔', jumpLevel:'跳至關卡', otherSection:'其他', fullscreen:'全螢幕', tutorial:'教學', effects:'效果說明', codex:'圖鑑', gallery:'畫廊', leaderboard:'排行榜', equipmentBar:'裝備欄', noEquipment:'尚未裝備任何武器。', activeNow:'啟動中', clickToActivate:'點擊啟動', unequipped:'未裝備', shieldRemaining:'防護罩剩餘', armoryLabel:'ASTRA ARMORY', storeTitle:'星光武裝商會', storeSubtitle:'整備下一場戰鬥吧', coinBalance:'持有銀幣:', selectSlot:'選擇要安裝的裝備欄位', yes:'是', no:'否', chooseEquipment:'選擇一件裝備', storeHint:'完成關卡後可使用銀幣購買裝備，打造專屬打法。', buy:'購買', nextLevel:'進入下一關 ▶', closeCodex:'關閉圖鑑', equipmentCodex:'裝備圖鑑', codexSubtitle:'收藏所有裝備的資訊', prevPage:'前一頁', nextPage:'下一頁', galleryHint:'點一下顯示台詞 ▶', galleryFinalHint:'點一下進入最終結算 ▶', rankColRank:'名次', rankColPlayer:'玩家', rankColScore:'分數', rankColLivesUsed:'消耗生命', rankColCatches:'接球數', rankColBuffs:'增益次數', rankColDebuffs:'減益次數', rankColKills:'殺敵數', rankColBossKills:'殺Boss數', rankColFastestDeath:'最快死亡', rankColLongestSurvival:'最久存活', rankColMaxCombo:'最高Combo數', winTitle:'恭喜過關！', totalScore:'總分數：', credits:'作者： GPT-5、Codex　／　指導者： Rock', uploadLeaderboard:'上傳排行榜', playAgain:'再玩一次', gameOverTitle:'遊戲結束', finalScore:'最終分數：', retry:'再次遊戲', close:'關閉', startPrompt:'按 <kbd>Space</kbd> 或點畫面開始', uploading:'上傳中...', rankNoData:'暫無資料', rankLoading:'載入中...', rankLoadFailed:'載入失敗', uploadAlready:'已上傳過，請勿再次上傳', uploadBusy:'上傳中，請勿再次點擊!', playerNamePrompt:'請輸入玩家名稱：\n注意: 姓名最多輸入8個字', nameTooLong:'名字這麼長是想怎樣啦? 請重新輸入!', uploadDone:'上傳完成', uploadFailed:'上傳失敗', livesUsed:'消耗生命', catches:'接球次數', buffs:'增益次數', debuffs:'減益次數', eliteKills:'殺菁英數', bossKills:'殺Boss數', maxCombo:'最高Combo數', fastestDeath:'最快死亡', longestSurvival:'最久存活', levelOption:'第 {level} 關', bossLevelOption:'第 {level} 關 Boss', lockedLevel:'未解鎖', slotLabel:'欄位 {slot}', slotWithItem:'欄位 {slot}：{name}', currentEquipment:'目前裝備：{name}', notEquipped:'尚未裝備', replaceSlotConfirm:'欄位 {slot} 目前裝備「{oldName}」，是否改為「{newName}」？', equipSlotConfirm:'要將「{name}」裝備到欄位 {slot} 嗎？', emptyCodex:'尚未收錄任何裝備。', codeNo:'編號：{id}', grade:'等級 {grade}', type:'類型 {type}', price:'價格 {price} 銀幣', passive:'被動型', active:'主動型', consumable:'消耗型', owned:'已擁有', soldOut:'已售罄', insufficientCoins:'銀幣不足，還需要 {amount} 枚銀幣。', boughtSelectSlot:'已購買「{name}」，請選擇裝備欄位。', storeSelectedMeta:'{type} · 等級 {grade}', storeSelectedPrice:'{price} 銀幣', storeOwned:'已擁有', storeSold:'已售罄', silverGunNoCoins:'銀幣不足，銀幣槍停止射擊。'
+    },
+    en: {
+      title:'Rock Breakout (Final Enhanced Edition)', langButton:'中文', langButtonTitle:'切換成中文', hudAria:'Game HUD', scoreLabel:'Score', levelLabel:'Level', silverLabel:'Coins', livesLabel:'Lives', soundTitle:'Sound', optionsTitle:'Options', bgmSwitch:'BGM', bgmVolume:'BGM Volume', sfxSwitch:'SFX', gameSection:'Game', difficultyLabel:'Difficulty', difficultyEasy:'Easy', difficultyNormal:'Normal', difficultyHard:'Hard', pauseResume:'Pause/Resume', restart:'Restart', save:'Save', load:'Load', clearSave:'Clear Save', jumpLevel:'Jump to Level', otherSection:'Other', fullscreen:'Fullscreen', tutorial:'Tutorial', effects:'Effects Guide', codex:'Codex', gallery:'Gallery', leaderboard:'Leaderboard', equipmentBar:'Equipment bar', noEquipment:'No weapon equipped.', activeNow:'Active', clickToActivate:'Click to activate', unequipped:'Empty', shieldRemaining:'Shield left', armoryLabel:'ASTRA ARMORY', storeTitle:'Starlight Armory', storeSubtitle:'Gear up for the next battle', coinBalance:'Coins:', selectSlot:'Choose an equipment slot', yes:'Yes', no:'No', chooseEquipment:'Choose equipment', storeHint:'After clearing a level, spend coins on equipment and build your own playstyle.', buy:'Buy', nextLevel:'Next Level ▶', closeCodex:'Close codex', equipmentCodex:'Equipment Codex', codexSubtitle:'Collect information for every equipment item.', prevPage:'Previous', nextPage:'Next', galleryHint:'Tap to show dialogue ▶', galleryFinalHint:'Tap to view final results ▶', rankColRank:'Rank', rankColPlayer:'Player', rankColScore:'Score', rankColLivesUsed:'Lives Used', rankColCatches:'Catches', rankColBuffs:'Buffs', rankColDebuffs:'Debuffs', rankColKills:'Kills', rankColBossKills:'Boss Kills', rankColFastestDeath:'Fastest Death', rankColLongestSurvival:'Longest Survival', rankColMaxCombo:'Max Combo', winTitle:'Stage Clear!', totalScore:'Total Score: ', credits:'Author: GPT-5, Codex / Director: Rock', uploadLeaderboard:'Upload Score', playAgain:'Play Again', gameOverTitle:'Game Over', finalScore:'Final Score: ', retry:'Retry', close:'Close', startPrompt:'Press <kbd>Space</kbd> or tap the screen to start', uploading:'Uploading...', rankNoData:'No data yet', rankLoading:'Loading...', rankLoadFailed:'Load failed', uploadAlready:'Score already uploaded. Please do not upload again.', uploadBusy:'Uploading. Please do not click again!', playerNamePrompt:'Enter player name:\nNote: maximum 8 characters', nameTooLong:'That name is too long. Please try again!', uploadDone:'Upload complete', uploadFailed:'Upload failed', livesUsed:'Lives Used', catches:'Catches', buffs:'Buffs', debuffs:'Debuffs', eliteKills:'Elite Kills', bossKills:'Boss Kills', maxCombo:'Max Combo', fastestDeath:'Fastest Death', longestSurvival:'Longest Survival', levelOption:'Level {level}', bossLevelOption:'Level {level} Boss', lockedLevel:'Locked', slotLabel:'Slot {slot}', slotWithItem:'Slot {slot}: {name}', currentEquipment:'Equipped: {name}', notEquipped:'Empty', replaceSlotConfirm:'Slot {slot} currently has “{oldName}”. Replace it with “{newName}”?', equipSlotConfirm:'Equip “{name}” to slot {slot}?', emptyCodex:'No equipment recorded yet.', codeNo:'ID: {id}', grade:'Grade {grade}', type:'Type {type}', price:'Price {price} coins', passive:'Passive', active:'Active', consumable:'Consumable', owned:'Owned', soldOut:'Sold Out', insufficientCoins:'Not enough coins. Need {amount} more.', boughtSelectSlot:'Bought “{name}”. Choose an equipment slot.', storeSelectedMeta:'{type} · Grade {grade}', storeSelectedPrice:'{price} coins', storeOwned:'Owned', storeSold:'Sold Out', silverGunNoCoins:'Not enough coins. Coin Gun stopped firing.'
+    }
+  };
+  let currentLang = (localStorage.getItem(LANG_STORAGE_KEY) === 'en') ? 'en' : 'zh';
+  const formatI18n = (str, vars={}) => String(str ?? '').replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? '');
+  const t = (key, vars) => formatI18n((I18N[currentLang] && I18N[currentLang][key]) || I18N.zh[key] || key, vars);
+  const isEnglish = () => currentLang === 'en';
+  function translateItem(item){
+    if(!item) return '';
+    return isEnglish() ? (item.enName || item.name) : item.name;
+  }
+  function translateItemDescription(item){
+    if(!item) return '';
+    return isEnglish() ? (item.enDescription || item.description) : item.description;
+  }
+  function applyStaticLanguage(){
+    document.documentElement.lang = isEnglish() ? 'en' : 'zh-Hant';
+    document.title = t('title');
+    document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-html]').forEach(el=>{ el.innerHTML = t(el.dataset.i18nHtml); });
+    document.querySelectorAll('[data-i18n-attr]').forEach(el=>{
+      el.dataset.i18nAttr.split(',').forEach(pair=>{
+        const [attr,key] = pair.split(':');
+        if(attr && key) el.setAttribute(attr.trim(), t(key.trim()));
+      });
+    });
+    const langBtn=document.getElementById('langBtn');
+    if(langBtn){
+      langBtn.textContent=t('langButton');
+      langBtn.title=t('langButtonTitle');
+      langBtn.setAttribute('aria-label', t('langButtonTitle'));
+    }
+  }
 
   // Google Apps Script 部署後的 Web App URL，需替換為您自己的網址
   const RANK_API = 'https://script.google.com/macros/s/AKfycbwuIqqynB0ohVwnMhcA3u2Gv9GimGqUvfCJ_Nw_UnoCuEMCHG_rGhlKA_pxOO51HHU/exec';
@@ -1241,6 +1283,22 @@ select optgroup { color: #0b1022; }
     powerCapsule:{width:24,height:16,fallVy:2.2},
     caps:{paddleMaxW:300,ballSpeedMax:19.5}
   };
+
+  const POWER_I18N_EN = {
+    WIDE:{label:'Wide Paddle'}, LONG:{label:'Long Paddle (Stackable)'}, STICKY:{label:'Sticky Paddle'}, MULTI:{label:'Multiball'}, SLOW:{label:'Global Slow'}, PIERCE:{label:'Piercing Ball'}, SHIELD:{label:'Shield (blocks one lost ball)'}, RAMPAGE:{label:'Rampage Ball'}, FAST:{label:'Fast Ball'}, WAVY:{label:'Wavy Ball'}, COMBO:{label:'Combo Star',desc:'Doubles combo time and scores ×1.5'}, PLASMA:{label:'Plasma Ball'}, FREEZE:{label:'Freeze Ball'}, HOLY:{label:'Holy Ball'}, TRACK:{label:'Tracking Ball'}, MISSILE:{label:'Missile Ball'}, HELL:{label:'Hell Ball'}, MEGA:{label:'Mega Ball'}, CHAIN:{label:'Chain Ball'}, NARROW:{label:'Narrow Paddle'}, HOLE:{label:'Hollow Paddle'}, PADSPIN:{label:'Paddle Spin',desc:'Paddle rotates for 8 seconds'}, PADBOOM:{label:'Paddle Bomb',desc:'Flashes, then disappears for 3 seconds'}, FIRE:{label:'Fire Ball'}, POISON:{label:'Poison Ball'}, BLINK:{label:'Blink Ball'}, LASER:{label:'Auto Laser'}, FLIP:{label:'World Flip'}, NINE:{label:'Nine-Lives Cat'}, PHOENIX:{label:'Phoenix Judgement'}, GATLING:{label:'Suppressive Fire',desc:'Paddle gatling fires for 8 seconds'}, SWORD:{label:'Sky-Splitting Sword',desc:'Flying swords sweep the field'}, GODSPEED:{label:'Godspeed Flow'}, STORM:{label:'Laser Storm',desc:'Sweeps the field'}, BLACKHOLE:{label:'Black Hole',desc:'Devours the field'}, ANNIHIL:{label:'Annihilation',desc:'Randomly destroys bricks'}
+  };
+  for(const [key,def] of Object.entries(GAME_CONFIG.powers)){
+    def.zhLabel=def.label;
+    def.zhDesc=def.desc;
+    def.enLabel=POWER_I18N_EN[key]?.label || def.label;
+    def.enDesc=POWER_I18N_EN[key]?.desc || def.desc;
+  }
+  function translatePowerDefs(){
+    for(const [key,def] of Object.entries(GAME_CONFIG.powers)){
+      def.label = isEnglish() ? (def.enLabel || def.zhLabel) : def.zhLabel;
+      if(def.zhDesc || def.enDesc) def.desc = isEnglish() ? (def.enDesc || def.zhDesc) : def.zhDesc;
+    }
+  }
 
   // === 影像載入（支援 .png / .jpg） ===
   const IMG_PAIRS = Array.from({length:10}, (_,i)=> i+1).map(i=>({bg:`images/bg${i}.png`, cg:`images/cg${i}.png`}));
@@ -1686,7 +1744,7 @@ select optgroup { color: #0b1022; }
       if(clearLevel>=req && !unlockedSpecials.has(key)){
         unlockedSpecials.add(key);
         saveUnlockedSpecials();
-        pendingUnlockNotice=`已解鎖特殊增益:${GAME_CONFIG.powers[key].label.split('(')[0]}`;
+        pendingUnlockNotice=isEnglish()?`Special power unlocked: ${GAME_CONFIG.powers[key].label.split('(')[0]}`:`已解鎖特殊增益:${GAME_CONFIG.powers[key].label.split('(')[0]}`;
         recomputePowerTypes();
       }
     }
@@ -1880,6 +1938,20 @@ select optgroup { color: #0b1022; }
     {id:'ruinWand',name:'破壞魔杖',icon:'W93.jpg',grade:'S',type:'passive',price:100,description:'被動：每次進入關卡自動獲得萬物銷毀效果，且萬物銷毀的銷毀間隔縮短 50%。',effect:{autoAnnihil:true,annihilIntervalMultiplier:0.5}},
     {id:'fireToxin',name:'火毒',icon:'W94.jpg',grade:'B',type:'passive',price:10,description:'被動：火焰球效果期間，球的撞擊會讓目標中毒。',effect:{firePoison:true}}
   ];
+  const EQUIPMENT_EN_NAMES = {
+    power1:'Power Ⅰ',power2:'Power Ⅱ',power3:'Power Ⅲ',shield1:'Shield Ⅰ',shield2:'Shield Ⅱ',shield3:'Shield Ⅲ',heal1:'Med Kit Ⅰ',heal2:'Med Kit Ⅱ',heal3:'Med Kit Ⅲ',ninecat:'Nine-Lives Cat',speedReset:'Speed Reset',attractor:'Attractor',repulsor:'Repulsor',bossSlayer:'Boss Slayer',bloodblade:'Blood Blade',comboStar1:'Combo Star Ⅰ',comboStar2:'Combo Star Ⅱ',comboStar3:'Combo Star Ⅲ',luckyStar:'Lucky Star',grandLuckyStar:'Grand Lucky Star',doomSword:'Doom Sword',splitBall1:'Split Ball Ⅰ',splitBall2:'Split Ball Ⅱ',splitBall3:'Split Ball Ⅲ',pierceBall1:'Piercing Ball Ⅰ',pierceBall2:'Piercing Ball Ⅱ',pierceBall3:'Piercing Ball Ⅲ',cleanse:'Cleanse',silverCoinGun:'Coin Gun',silverAssault:'Coin Assault',ruinWand:'Ruin Wand',fireToxin:'Fire Toxin',darkDemon:'Dark Demon',gunDemon:'Gun Demon',chainsawDemon:'Chainsaw Demon',deathLaser:'Death Laser',godClock:'God Watch',godspeedBlade:'Godspeed Holy Sword',blackholePlasma:'Black Hole Plasma',toxicRebirth:'Toxic Rebirth'
+  };
+  function titleFromEquipmentId(id){
+    return String(id||'Equipment').replace(/([a-z])([A-Z0-9])/g,'$1 $2').replace(/^./,c=>c.toUpperCase());
+  }
+  for(const item of EQUIPMENT_LIST){
+    item.zhName=item.name;
+    item.zhDescription=item.description;
+    item.enName=EQUIPMENT_EN_NAMES[item.id] || titleFromEquipmentId(item.id);
+    item.enDescription = item.effect?.power?.key
+      ? `${t(item.type)} equipment: activates ${GAME_CONFIG.powers[item.effect.power.key]?.enLabel || item.enName}.`
+      : `${t(item.type)} equipment. Grade ${item.grade}. Price ${item.price} coins.`;
+  }
   const STORE_CONFIGS=[
     {min:1,max:4,hero:'S01.jpg',probabilities:{C:0.6,B:0.3,A:0.1}},
     {min:5,max:9,hero:'S02.jpg',probabilities:{B:0.7,A:0.28,S:0.02}},
@@ -2135,7 +2207,7 @@ select optgroup { color: #0b1022; }
       thumb.className='shop-thumb';
       const img=document.createElement('img');
       img.src=`images/${item.icon}`;
-      img.alt=item.name;
+      img.alt=translateItem(item);
       thumb.appendChild(img);
       const badge=document.createElement('span');
       badge.className='tier-badge';
@@ -2144,11 +2216,11 @@ select optgroup { color: #0b1022; }
       btn.appendChild(thumb);
       const name=document.createElement('span');
       name.className='shop-name';
-      name.textContent=item.name;
+      name.textContent=translateItem(item);
       btn.appendChild(name);
       const price=document.createElement('span');
       price.className='shop-price';
-      price.textContent=`${item.price} 銀幣`;
+      price.textContent=t('storeSelectedPrice',{price:item.price});
       btn.appendChild(price);
       btn.addEventListener('click',()=>selectStoreItem(entry.key));
       storeGrid.appendChild(btn);
@@ -2164,7 +2236,7 @@ select optgroup { color: #0b1022; }
     const item=key?storeInventoryByKey.get(key):null;
     updateStoreDetail(item);
     if(!opts.silent){
-      if(storeFeedback) storeFeedback.textContent=item?'':'請選擇一件裝備。';
+      if(storeFeedback) storeFeedback.textContent=item?'':t('chooseEquipment');
     }
     refreshStoreAffordability();
   }
@@ -2173,18 +2245,18 @@ select optgroup { color: #0b1022; }
       return;
     }
     if(!item){
-      storeItemName.textContent='選擇一件裝備';
+      storeItemName.textContent=t('chooseEquipment');
       storeItemPrice.textContent='—';
       storeItemMeta.innerHTML='';
-      storeItemDesc.textContent='完成關卡後可使用銀幣購買裝備。';
+      storeItemDesc.textContent=t('storeHint');
       return;
     }
-    storeItemName.textContent=item.name;
-    storeItemPrice.textContent=`${item.price} 銀幣`;
+    storeItemName.textContent=translateItem(item);
+    storeItemPrice.textContent=t('storeSelectedPrice',{price:item.price});
     const gradeColor=GRADE_COLOR[item.grade]||'#f0f6ff';
-    const typeLabel=EQUIPMENT_TYPE_LABEL[item.type]||'';
-    storeItemMeta.innerHTML=`<span>等級：<strong style="color:${gradeColor}">${item.grade}</strong></span><span>類型：${typeLabel}</span>`;
-    storeItemDesc.textContent=item.description;
+    const typeLabel=t(item.type);
+    storeItemMeta.innerHTML=`<span>${t('grade',{grade:`<strong style="color:${gradeColor}">${item.grade}</strong>`})}</span><span>${t('type',{type:typeLabel})}</span>`;
+    storeItemDesc.textContent=translateItemDescription(item);
   }
   function refreshStoreAffordability(){
     if(!storeBuyBtn) return;
@@ -2200,15 +2272,15 @@ select optgroup { color: #0b1022; }
     if(slotModal && slotModal.classList.contains('show')) return;
     const item=selectedStoreItemKey?storeInventoryByKey.get(selectedStoreItemKey):null;
     if(!item){
-      if(storeFeedback) storeFeedback.textContent='請選擇一件裝備。';
+      if(storeFeedback) storeFeedback.textContent=t('chooseEquipment');
       return;
     }
     if(silverCoins<item.price){
-      if(storeFeedback) storeFeedback.textContent=`銀幣不足，尚需 ${item.price-silverCoins} 枚銀幣。`;
+      if(storeFeedback) storeFeedback.textContent=t('insufficientCoins',{amount:item.price-silverCoins});
       return;
     }
     if(!spendSilverCoins(item.price)) return;
-    if(storeFeedback) storeFeedback.textContent=`已購買「${item.name}」，請選擇裝備欄位。`;
+    if(storeFeedback) storeFeedback.textContent=t('boughtSelectSlot',{name:translateItem(item)});
     promptEquipSlot(item);
   }
   const CODEX_PAGE_SIZE=10;
@@ -2227,7 +2299,7 @@ select optgroup { color: #0b1022; }
     if(slice.length===0){
       const empty=document.createElement('div');
       empty.className='codex-entry codex-empty';
-      empty.textContent='尚未收錄任何裝備。';
+      empty.textContent=t('emptyCodex');
       codexList.appendChild(empty);
     }
     slice.forEach((item, idx)=>{
@@ -2241,7 +2313,7 @@ select optgroup { color: #0b1022; }
       iconWrap.className='codex-icon';
       const img=document.createElement('img');
       img.src=`images/${item.icon}`;
-      img.alt=item.name;
+      img.alt=translateItem(item);
       iconWrap.appendChild(img);
       entry.appendChild(iconWrap);
       const info=document.createElement('div');
@@ -2254,31 +2326,31 @@ select optgroup { color: #0b1022; }
       header.appendChild(numberSpan);
       const title=document.createElement('h3');
       title.className='codex-title';
-      title.textContent=item.name;
+      title.textContent=translateItem(item);
       header.appendChild(title);
       info.appendChild(header);
       const idLine=document.createElement('div');
       idLine.className='codex-id';
-      idLine.textContent=`編號：${item.id}`;
+      idLine.textContent=t('codeNo',{id:item.id});
       info.appendChild(idLine);
       const meta=document.createElement('div');
       meta.className='codex-meta';
       const gradeSpan=document.createElement('span');
-      gradeSpan.textContent=`等級 ${item.grade}`;
+      gradeSpan.textContent=t('grade',{grade:item.grade});
       meta.appendChild(gradeSpan);
-      const typeLabel=EQUIPMENT_TYPE_LABEL[item.type]||item.type||'';
+      const typeLabel=t(item.type)||item.type||'';
       if(typeLabel){
         const typeSpan=document.createElement('span');
-        typeSpan.textContent=`類型 ${typeLabel}`;
+        typeSpan.textContent=t('type',{type:typeLabel});
         meta.appendChild(typeSpan);
       }
       const priceSpan=document.createElement('span');
-      priceSpan.textContent=`價格 ${item.price} 銀幣`;
+      priceSpan.textContent=t('price',{price:item.price});
       meta.appendChild(priceSpan);
       info.appendChild(meta);
       const desc=document.createElement('p');
       desc.className='codex-desc';
-      desc.textContent=item.description;
+      desc.textContent=translateItemDescription(item);
       info.appendChild(desc);
       entry.appendChild(info);
       codexList.appendChild(entry);
@@ -2339,11 +2411,11 @@ select optgroup { color: #0b1022; }
       btn.dataset.index=String(idx);
       const name=document.createElement('div');
       name.className='slot-name';
-      name.textContent=slot?`欄位 ${idx+1}：${slot.def.name}`:`欄位 ${idx+1}`;
+      name.textContent=slot?t('slotWithItem',{slot:idx+1,name:translateItem(slot.def)}):t('slotLabel',{slot:idx+1});
       btn.appendChild(name);
       const note=document.createElement('div');
       note.className='slot-note';
-      note.textContent=slot?`目前裝備：${slot.def.name}`:'尚未裝備';
+      note.textContent=slot?t('currentEquipment',{name:translateItem(slot.def)}):t('notEquipped');
       btn.appendChild(note);
       btn.addEventListener('click',()=>handleSlotChoice(idx));
       slotGrid.appendChild(btn);
@@ -2355,8 +2427,8 @@ select optgroup { color: #0b1022; }
     if(slotConfirmText){
       const existing=equipmentSlots[index];
       slotConfirmText.textContent=existing
-        ? `欄位 ${index+1} 目前裝備「${existing.def.name}」，是否改為「${pendingEquipItem.name}」？`
-        : `要將「${pendingEquipItem.name}」裝備到欄位 ${index+1} 嗎？`;
+        ? t('replaceSlotConfirm',{slot:index+1,oldName:translateItem(existing.def),newName:translateItem(pendingEquipItem)})
+        : t('equipSlotConfirm',{slot:index+1,name:translateItem(pendingEquipItem)});
     }
     if(slotConfirm) slotConfirm.classList.add('show');
   }
@@ -2514,7 +2586,7 @@ select optgroup { color: #0b1022; }
     equipmentSlots[index]=createSlotState(itemDef);
     recalcEquipmentBonuses();
     renderEquipmentSlots();
-    showEquipmentMessage(`「${itemDef.name}」已裝備於欄位 ${index+1}`,'success',2600);
+    showEquipmentMessage(isEnglish()?`“${translateItem(itemDef)}” equipped to slot ${index+1}`:`「${translateItem(itemDef)}」已裝備於欄位 ${index+1}`,'success',2600);
   }
   function renderEquipmentSlots(){
     if(!equipmentSlotsEl) return;
@@ -2533,17 +2605,17 @@ select optgroup { color: #0b1022; }
       }
       const name=document.createElement('span');
       name.className='equip-name';
-      name.textContent=slot?slot.def.name:`欄位 ${idx+1}`;
+      name.textContent=slot?translateItem(slot.def):t('slotLabel',{slot:idx+1});
       btn.appendChild(name);
       if(slot){
-        btn.title=slot.def.description||'';
+        btn.title=translateItemDescription(slot.def)||'';
         const type=document.createElement('span');
         type.className='equip-type';
-        type.textContent=EQUIPMENT_TYPE_LABEL[slot.def.type]||'';
+        type.textContent=t(slot.def.type)||'';
         btn.appendChild(type);
       }
       else{
-        btn.title=`欄位 ${idx+1}`;
+        btn.title=t('slotLabel',{slot:idx+1});
       }
       const iconWrapper=document.createElement('div');
       iconWrapper.className='equip-button';
@@ -2553,7 +2625,7 @@ select optgroup { color: #0b1022; }
       if(slot){
         const img=document.createElement('img');
         img.src=`images/${slot.def.icon}`;
-        img.alt=slot.def.name;
+        img.alt=translateItem(slot.def);
         img.draggable=false;
         img.setAttribute('draggable','false');
         iconWrapper.appendChild(img);
@@ -2596,7 +2668,7 @@ select optgroup { color: #0b1022; }
         iconWrapper.appendChild(activeSvg);
         activeLabel=document.createElement('span');
         activeLabel.className='equip-active-label';
-        activeLabel.textContent='啟動中';
+        activeLabel.textContent=t('activeNow');
         iconWrapper.appendChild(activeLabel);
       }
       btn.appendChild(iconWrapper);
@@ -2604,18 +2676,18 @@ select optgroup { color: #0b1022; }
       status.className='equip-status';
       if(slot){
         if(slot.def.type==='active'){
-          status.textContent='點擊啟動';
+          status.textContent=t('clickToActivate');
         }else{
           status.textContent='';
         }
       }else{
-        status.textContent='未裝備';
+        status.textContent=t('unequipped');
       }
       btn.appendChild(status);
       if(slot){
         const effect=document.createElement('span');
         effect.className='equip-effect';
-        effect.textContent=slot.def.description||'';
+        effect.textContent=translateItemDescription(slot.def)||'';
         btn.appendChild(effect);
         const showEffect=()=>{
           btn.classList.add('show-effect');
@@ -2662,7 +2734,7 @@ select optgroup { color: #0b1022; }
     if(!equipmentMessageEl) return;
     if(equipmentMessageUntil) return;
     const hasEquip=equipmentSlots.some(Boolean);
-    equipmentMessageEl.textContent=hasEquip?'':'尚未裝備任何武器。';
+    equipmentMessageEl.textContent=hasEquip?'':t('noEquipment');
     equipmentMessageEl.classList.remove('tone-success','tone-warning','tone-info');
   }
   function showEquipmentMessage(text,tone='info',duration=2400){
@@ -3425,7 +3497,7 @@ select optgroup { color: #0b1022; }
     if(def.effect?.shieldDuration){
       const activated=activateShield(def.effect.shieldDuration,def);
       if(!activated){
-        showEquipmentMessage('防護罩仍在作用中。','warning',1800);
+        showEquipmentMessage(isEnglish()?'Shield is already active.':'防護罩仍在作用中。','warning',1800);
         return;
       }
       if(def.type==='consumable'){
@@ -3928,7 +4000,7 @@ select optgroup { color: #0b1022; }
       const slot=equipmentSlots[i];
       if(!slot) continue;
       if(slot.pendingRemoval && slot.activeUntil && now>=slot.activeUntil){
-        expiredNames.push(slot.def.name);
+        expiredNames.push(translateItem(slot.def));
         equipmentSlots[i]=null;
         changed=true;
         continue;
@@ -3942,7 +4014,7 @@ select optgroup { color: #0b1022; }
       recalcEquipmentBonuses();
       renderEquipmentSlots();
       if(expiredNames.length){
-        showEquipmentMessage(`${expiredNames.join('、')} 的效果已結束。`,'info',2000);
+        showEquipmentMessage(`${expiredNames.join(isEnglish()?', ':'、')}${isEnglish()?' effect ended.':' 的效果已結束。'}`,'info',2000);
       }
     }
   }
@@ -3987,7 +4059,7 @@ select optgroup { color: #0b1022; }
       }
     }
     if(now-lastShieldAbsorbAt>400){
-      showEquipmentMessage('防護罩吸收了傷害！','info',1600);
+      showEquipmentMessage(isEnglish()?'Shield absorbed the hit!':'防護罩吸收了傷害！','info',1600);
       lastShieldAbsorbAt=now;
     }
   }
@@ -4056,7 +4128,7 @@ select optgroup { color: #0b1022; }
     selectStoreItem(defaultKey,{silent:true});
     if(storeNextBtn){
       const labelLevel=Math.max(1,Math.floor(targetLevel));
-      storeNextBtn.textContent=nextLevel?`進入下一關（Lv.${labelLevel}）`:'進入下一關 ▶';
+      storeNextBtn.textContent=nextLevel?(isEnglish()?`Next Level (Lv.${labelLevel})`:`進入下一關（Lv.${labelLevel}）`):t('nextLevel');
       storeNextBtn.disabled=false;
     }
     refreshStoreAffordability();
@@ -4078,7 +4150,7 @@ select optgroup { color: #0b1022; }
     paused=true;
     running=false;
     applyBGMThemeForLevel();
-    showCenter(`進入關卡 ${level}`,'按 Space 或點畫面開始');
+    showCenter(isEnglish()?`Entering Level ${level}`:`進入關卡 ${level}`, t('startPrompt').replace(/<[^>]+>/g,''));
   }
   function enterNextLevelFromStore(){
     const target=pendingNextLevel||level+1;
@@ -4226,7 +4298,7 @@ select optgroup { color: #0b1022; }
         const btn=document.createElement('button');
         btn.className='btn';
         if(mask & (1<<i)){
-          btn.textContent=`台詞${i+1}`;
+          btn.textContent=isEnglish()?`Line ${i+1}`:`台詞${i+1}`;
           btn.addEventListener('click',e=>{ e.stopPropagation(); if(viewerDialog){ viewerDialog.textContent=lines[i]; viewerDialog.style.display='block'; } },{passive:true});
         }else{
           btn.textContent='🔒';
@@ -4275,8 +4347,8 @@ select optgroup { color: #0b1022; }
     if(thumbNote){
       const totalThumbs=ring.childElementCount;
       thumbNote.textContent = totalThumbs
-        ? `${totalThumbs} 張角色收藏已亮相，改以 5×4 滿版網格一次排開。`
-        : '尚未解鎖角色收藏，請再接再厲！';
+        ? (isEnglish()?`${totalThumbs} character collections are now shown in a full 5×4 grid.`:`${totalThumbs} 張角色收藏已亮相，改以 5×4 滿版網格一次排開。`)
+        : (isEnglish()?'No character collection unlocked yet. Keep going!':'尚未解鎖角色收藏，請再接再厲！');
     }
     win.classList.add('show');
     playSFX('win');
@@ -4289,7 +4361,7 @@ select optgroup { color: #0b1022; }
     const img=getLevelImage(level);
     if(img) galleryImg.src=img.src;
     galleryDialog.style.display='none';
-    if(galleryHint) galleryHint.textContent='點一下顯示台詞 ▶';
+    if(galleryHint) galleryHint.textContent=t('galleryHint');
     gallery.style.display='flex';
     requestAnimationFrame(()=>gallery.classList.add('show'));
     const proceed=()=>{
@@ -4298,7 +4370,7 @@ select optgroup { color: #0b1022; }
       setTimeout(()=>{
         gallery.style.display='none';
         galleryDialog.style.display='none';
-        if(galleryHint) galleryHint.textContent='點一下顯示台詞 ▶';
+        if(galleryHint) galleryHint.textContent=t('galleryHint');
       },220);
       showFinalWinOverlay();
     };
@@ -4308,7 +4380,7 @@ select optgroup { color: #0b1022; }
       unlockDialog(key, dlg.idx);
       galleryDialog.textContent=dlg.text;
       galleryDialog.style.display='block';
-      if(galleryHint) galleryHint.textContent='點一下進入最終結算 ▶';
+      if(galleryHint) galleryHint.textContent=t('galleryFinalHint');
       gallery.addEventListener('click', proceed, {once:true, passive:true});
     };
     finalVictorySequence={stage:'gallery'};
@@ -4376,20 +4448,20 @@ select optgroup { color: #0b1022; }
       rankTableBody.appendChild(tr);
     });
     if(!rankTableBody.children.length){
-      rankTableBody.innerHTML='<tr><td colspan="12">暫無資料</td></tr>';
+      rankTableBody.innerHTML=`<tr><td colspan="12">${t('rankNoData')}</td></tr>`;
     }
   }
   async function openRankPage(){
     document.getElementById('optMenu')?.classList.remove('show');
     rankPage.style.display='flex';
-    rankTableBody.innerHTML='<tr><td colspan="12">載入中...</td></tr>';
+    rankTableBody.innerHTML=`<tr><td colspan="12">${t('rankLoading')}</td></tr>`;
     window.__setMenuPause?.(true);
     try{
       const data = await fetchLeaderboard();
       renderLeaderboard(data);
     }catch(e){
       console.error(e);
-      rankTableBody.innerHTML='<tr><td colspan="12">載入失敗</td></tr>';
+      rankTableBody.innerHTML=`<tr><td colspan="12">${t('rankLoadFailed')}</td></tr>`;
     }
   }
   function closeRankPage(){
@@ -4401,19 +4473,19 @@ select optgroup { color: #0b1022; }
 
     async function uploadScore(){
       if(scoreUploaded){
-        alert('已上傳過，請勿再次上傳');
+        alert(t('uploadAlready'));
         return;
       }
       if(uploading){
-        alert('上傳中，請勿再次點擊!');
+        alert(t('uploadBusy'));
         return;
       }
-      const rawName = prompt('請輸入玩家名稱：\n注意: 姓名最多輸入8個字');
+      const rawName = prompt(t('playerNamePrompt'));
     if(rawName==null) return;
     const name = (rawName||'').trim();
     if(!name) return;
     if([...(name||'')].length>8){
-      alert('名字這麼長是想怎樣啦? 請重新輸入!');
+      alert(t('nameTooLong'));
       return uploadScore();
     }
       const payload = {
@@ -4450,17 +4522,17 @@ select optgroup { color: #0b1022; }
         setProg(100);
         uploadOverlay.style.display='none';
         if (res.ok && /ok/i.test(text.trim())) {
-          alert('上傳完成');
+          alert(t('uploadDone'));
           scoreUploaded = true;
         } else {
-          alert('上傳失敗');
+          alert(t('uploadFailed'));
         }
       }catch(e){
         clearTimeout(to);
         clearInterval(progTimer);
         uploadOverlay.style.display='none';
         console.error(e);
-        alert('上傳失敗');
+        alert(t('uploadFailed'));
       }finally{
         uploading = false;
       }
@@ -5543,7 +5615,7 @@ select optgroup { color: #0b1022; }
     const cost=Math.max(0, silverGunCostPerShot||0);
     if(cost>0 && !spendSilverCoins(cost)){
       if(!silverGunOutOfSilver){
-        showEquipmentMessage('銀幣不足，銀幣槍停止射擊。','warning',2000);
+        showEquipmentMessage(t('silverGunNoCoins'),'warning',2000);
         silverGunOutOfSilver=true;
       }
       return false;
@@ -8459,19 +8531,54 @@ select optgroup { color: #0b1022; }
     const fd = (stats.fastestDeath===Infinity)? '-' : stats.fastestDeath.toFixed(1);
     const ld = (stats.longestLife===0)? '-' : stats.longestLife.toFixed(1);
     return `<div class="grid">
-      <div>消耗生命：<strong>${stats.livesUsed}</strong></div>
-      <div>接球次數：<strong>${stats.catches}</strong></div>
-      <div>增益次數：<strong>${stats.buffs}</strong></div>
-      <div>減益次數：<strong>${stats.debuffs}</strong></div>
-      <div>殺菁英數：<strong>${stats.eliteKills}</strong></div>
-      <div>殺Boss數：<strong>${stats.bossKills}</strong></div>
-      <div>最高Combo數：<strong>${stats.maxCombo}</strong></div>
-      <div>最快死亡：<strong>${fd}</strong> s</div>
-      <div>最久存活：<strong>${ld}</strong> s</div>
+      <div>${t('livesUsed')}：<strong>${stats.livesUsed}</strong></div>
+      <div>${t('catches')}：<strong>${stats.catches}</strong></div>
+      <div>${t('buffs')}：<strong>${stats.buffs}</strong></div>
+      <div>${t('debuffs')}：<strong>${stats.debuffs}</strong></div>
+      <div>${t('eliteKills')}：<strong>${stats.eliteKills}</strong></div>
+      <div>${t('bossKills')}：<strong>${stats.bossKills}</strong></div>
+      <div>${t('maxCombo')}：<strong>${stats.maxCombo}</strong></div>
+      <div>${t('fastestDeath')}：<strong>${fd}</strong> s</div>
+      <div>${t('longestSurvival')}：<strong>${ld}</strong> s</div>
     </div>`;
   }
 
   let bgTime=0; let screenShake=0;
+
+  function refreshLevelJumpLabels(){
+    if(!levelJumpSel) return;
+    for(const option of Array.from(levelJumpSel.options)){
+      const i=parseInt(option.value,10);
+      if(Number.isNaN(i)) continue;
+      const isBoss=option.classList.contains('boss-level') || i%5===0;
+      option.textContent=isBoss ? (isEnglish()?`Level ${i} ★ Boss`:`第 ${i} 關 ★ Boss`) : t('levelOption',{level:i});
+    }
+  }
+  function applyLanguage(refreshDynamic=true){
+    translatePowerDefs();
+    applyStaticLanguage();
+    refreshLevelJumpLabels();
+    updateBuffBadges?.();
+    if(storeOverlay?.classList.contains('show')){
+      renderStoreItems();
+      updateStoreDetail(selectedStoreItemKey?storeInventoryByKey.get(selectedStoreItemKey):null);
+      refreshStoreAffordability();
+    }
+    if(codexOverlay?.classList.contains('show')) renderCodexPage();
+    if(slotModal?.classList.contains('show')) renderSlotSelection();
+    if(equipmentSlotsEl) renderEquipmentSlots();
+    updateEquipmentHint?.();
+    if(document.getElementById('statsWin')) document.getElementById('statsWin').innerHTML = renderStatsHtml();
+    if(document.getElementById('statsOver')) document.getElementById('statsOver').innerHTML = renderStatsHtml();
+    const selected=currentStoreItems.find(entry=>entry.key===selectedStoreItemKey);
+    if(selected) selectStoreItem(selected.key,{silent:true});
+  }
+  document.getElementById('langBtn')?.addEventListener('click',()=>{
+    currentLang = isEnglish() ? 'zh' : 'en';
+    localStorage.setItem(LANG_STORAGE_KEY,currentLang);
+    applyLanguage();
+  });
+
   let countdownTimer=null, countdownShow=0, resumePending=false;
   // === 新增暫停時間追蹤與自動增益掉落計時 ===
   // pauseStartedAt: 記錄暫停開始時的時間戳。當非 null 時表遊戲處於暫停狀態（包括開啟音效/選項菜單、教學說明等）。
@@ -19435,7 +19542,7 @@ function generateLevel(lv, L){
     paddle.x = 1100/2 - paddle.w/2;
     // 確保 paddle 在水平方向時位於底部
     paddle.y = 700 - 50;
-    showCenter('按 Space 或點畫面開始','用 ←/→ 或 A/D 移動；手指拖曳畫面也可。');
+    showCenter(t('startPrompt').replace(/<[^>]+>/g,''), isEnglish()?'Use ←/→ or A/D to move; dragging on touch screens also works.':'用 ←/→ 或 A/D 移動；手指拖曳畫面也可。');
     countdownShow=0;
     scheduleNextSkyDrop();
   }
@@ -19443,9 +19550,9 @@ function generateLevel(lv, L){
   // === 存讀檔（含音效/BGM與影像選擇） ===
   function saveProgress(){ try{
       const data={level,score,lives,difficulty:difficultySel.value, imageChoice, soundsOn, bgmOn, bgmVol: parseFloat(bgmVol.value), maxLevelReached, equipmentSlots: exportEquipmentSlots()};
-      localStorage.setItem('breakout_save_v_final_cfg', JSON.stringify(data)); alert('已存檔！');
-    }catch(e){ alert('存檔失敗：'+e); } }
-  function loadProgress(){ try{ const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4'); if(!raw){ alert('沒有存檔'); return; } const data=JSON.parse(raw);
+      localStorage.setItem('breakout_save_v_final_cfg', JSON.stringify(data)); alert(isEnglish()?'Saved!':'已存檔！');
+    }catch(e){ alert((isEnglish()?'Save failed: ':'存檔失敗：')+e); } }
+  function loadProgress(){ try{ const raw=localStorage.getItem('breakout_save_v_final_cfg')||localStorage.getItem('breakout_save_v4'); if(!raw){ alert(isEnglish()?'No save data':'沒有存檔'); return; } const data=JSON.parse(raw);
       difficultySel.value=data.difficulty||'normal'; level=data.level||1; score=data.score||0; lives=typeof data.lives==='number'?data.lives:9; if(Array.isArray(data.imageChoice)) imageChoice=data.imageChoice;
       const savedMaxLevel=parseInt(data.maxLevelReached,10);
       if(!Number.isNaN(savedMaxLevel)){
@@ -19455,10 +19562,10 @@ function generateLevel(lv, L){
       try{ localStorage.setItem('breakout_max_level', String(maxLevelReached)); }catch(e){}
       if(typeof updateLevelJumpAvailability==='function') updateLevelJumpAvailability();
       if(Array.isArray(data.equipmentSlots)) importEquipmentSlots(data.equipmentSlots); else importEquipmentSlots([]);
-      soundsOn=!!data.soundsOn; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
+      soundsOn=!!data.soundsOn; soundBtn.textContent=isEnglish()?`SFX: ${soundsOn?'On':'Off'}`:`音效：${soundsOn?'開':'關'}`;
       if(typeof data.bgmOn==='boolean'){ bgmOn=data.bgmOn; } if(typeof data.bgmVol==='number'){ bgmVol.value=String(data.bgmVol); if(bgmGain) bgmGain.gain.value=data.bgmVol; localStorage.setItem('bgm_vol', data.bgmVol); }
-      resetGame(true); updateHUD(); alert(`已讀檔：等級 ${level}，分數 ${score}，生命 ${lives}`);}catch(e){ alert('讀檔失敗：'+e); } }
-  function clearSave(){ localStorage.removeItem('breakout_save_v_final_cfg'); localStorage.removeItem('gallery_unlocks'); localStorage.removeItem('dialog_unlocks'); localStorage.removeItem('breakout_max_level'); maxLevelReached=1; if(typeof updateLevelJumpAvailability==='function') updateLevelJumpAvailability(); alert('已清除存檔'); }
+      resetGame(true); updateHUD(); alert(isEnglish()?`Loaded: Level ${level}, Score ${score}, Lives ${lives}`:`已讀檔：等級 ${level}，分數 ${score}，生命 ${lives}`);}catch(e){ alert((isEnglish()?'Load failed: ':'讀檔失敗：')+e); } }
+  function clearSave(){ localStorage.removeItem('breakout_save_v_final_cfg'); localStorage.removeItem('gallery_unlocks'); localStorage.removeItem('dialog_unlocks'); localStorage.removeItem('breakout_max_level'); maxLevelReached=1; if(typeof updateLevelJumpAvailability==='function') updateLevelJumpAvailability(); alert(isEnglish()?'Save cleared':'已清除存檔'); }
 
   // === 輸入（含觸控） ===
   let keyL=false, keyR=false; let touchActive=false;
@@ -19496,7 +19603,7 @@ function generateLevel(lv, L){
   canvas.addEventListener('touchmove',(e)=>{ if(!touchActive) return; if(performance.now()<=paddleStunUntil) return; const t=e.touches[0]; const rect=canvas.getBoundingClientRect(); if(!orientLeft){ const x=(t.clientX-rect.left)*(1100/rect.width); paddle.x=Math.max(0, Math.min(1100-paddle.w, x - paddle.w/2)); } else { const y=(t.clientY-rect.top)*(700/rect.height); paddle.y=Math.max(0, Math.min(700-paddle.w, y - paddle.w/2)); } }, {passive:true});
   canvas.addEventListener('touchend',()=>{ touchActive=false; }, {passive:true});
   pauseBtn.addEventListener('click',()=>togglePause()); resetBtn.addEventListener('click',()=>resetGame()); fsBtn.addEventListener('click',()=>toggleFullscreen());
-  soundBtn.addEventListener('click',()=>{ soundsOn=!soundsOn; localStorage.setItem('sfx_on', soundsOn?'1':'0'); soundBtn.textContent=`音效：${soundsOn?'開':'關'}`; ensureAudio(); audioCtx?.resume?.(); beep(880,0.06,0.05); });
+  soundBtn.addEventListener('click',()=>{ soundsOn=!soundsOn; localStorage.setItem('sfx_on', soundsOn?'1':'0'); soundBtn.textContent=isEnglish()?`SFX: ${soundsOn?'On':'Off'}`:`音效：${soundsOn?'開':'關'}`; ensureAudio(); audioCtx?.resume?.(); beep(880,0.06,0.05); });
   difficultySel.addEventListener('change',()=>{ resetGame(); });
   if(ledStyleSel){ ledStyleSel.value = ledStyle; ledStyleSel.addEventListener('change', ()=>{ ledStyle = ledStyleSel.value; localStorage.setItem('led_style', ledStyle); }); }
   saveBtn.addEventListener('click',saveProgress); loadBtn.addEventListener('click',loadProgress); clearSaveBtn.addEventListener('click',clearSave);
@@ -19528,7 +19635,7 @@ function generateLevel(lv, L){
         const option=document.createElement('option');
         const isBoss = i%5===0;
         option.value=String(i);
-        option.textContent=isBoss ? `第 ${i} 關 ★ Boss` : `第 ${i} 關`;
+        option.textContent=isBoss ? (isEnglish()?`Level ${i} ★ Boss`:`第 ${i} 關 ★ Boss`) : t('levelOption',{level:i});
         if(isBoss){
           option.classList.add('boss-level');
         }
@@ -19553,16 +19660,17 @@ function generateLevel(lv, L){
       resetBalls();
       applyBGMThemeForLevel();
       updateHUD();
-      showCenter(`暫時跳至第 ${level} 關`,`按 Space 或點畫面開始`);
+      showCenter(isEnglish()?`Jumped to Level ${level}`:`暫時跳至第 ${level} 關`, t('startPrompt').replace(/<[^>]+>/g,''));
     });
   }
+  applyLanguage(false);
   tutorBtn.addEventListener('click', ()=> toggleHelp('tutor'));
   effectsBtn.addEventListener('click', ()=> toggleHelp('effects'));
   againBtn.addEventListener('click', ()=>{ win.classList.remove('show'); resetGame(); });
 
   // BGM UI
   bgmBtn.addEventListener('click', ()=>{
-    bgmOn=!bgmOn; localStorage.setItem('bgm_on', bgmOn?'1':'0'); bgmBtn.textContent= bgmOn?'開':'關';
+    bgmOn=!bgmOn; localStorage.setItem('bgm_on', bgmOn?'1':'0'); bgmBtn.textContent=isEnglish()?(bgmOn?'On':'Off'):(bgmOn?'開':'關');
     if(bgmOn){ ensureAudio(); startBGM(); } else { stopBGM(); }
   });
   bgmVol.addEventListener('input', ()=>{
@@ -23244,7 +23352,7 @@ function generateLevel(lv, L){
         const key = getLevelImageKey(level);
         galleryImg.src=getLevelImage(level).src;
         galleryDialog.style.display='none';
-        if(galleryHint) galleryHint.textContent='點一下顯示台詞 ▶';
+        if(galleryHint) galleryHint.textContent=t('galleryHint');
         gallery.style.display='flex'; requestAnimationFrame(()=>gallery.classList.add('show'));
         const proceed=()=>{
           gallery.classList.remove('show');
@@ -23300,7 +23408,7 @@ function generateLevel(lv, L){
 function boot(){
     resetGame(); updateHUD(); loop();
     // 自動讀取音效/BGM偏好
-    soundsOn = (localStorage.getItem('sfx_on')||'0')==='1'; soundBtn.textContent=`音效：${soundsOn?'開':'關'}`;
+    soundsOn = (localStorage.getItem('sfx_on')||'0')==='1'; soundBtn.textContent=isEnglish()?`SFX: ${soundsOn?'On':'Off'}`:`音效：${soundsOn?'開':'關'}`;
     const v = parseFloat(localStorage.getItem('bgm_vol')||'0.7'); bgmVol.value=String(v);
     bgmOn = (localStorage.getItem('bgm_on')||'0')==='1'; bgmBtn.textContent = bgmOn?'開':'關';
     // 若有存檔給提示
