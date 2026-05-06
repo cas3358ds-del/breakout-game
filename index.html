@@ -114,14 +114,25 @@
       font-weight:700;
     }
     select,input[type="range"]{background:var(--glass-2);color:#fff;border:1px solid var(--stroke);border-radius:8px;padding:6px 10px}
-    @media (max-width: 520px){
-      .hud{padding:8px 10px;border-radius:16px;max-width:calc(100vw - 20px)}
-      .stats{gap:6px 8px;grid-auto-rows:minmax(30px,auto)}
-      .pill{padding:6px 12px;min-height:30px;font-size:13px;gap:6px}
+    @media (max-width: 640px){
+      .hud{padding:8px 10px;border-radius:16px;max-width:calc(100vw - 20px);box-sizing:border-box}
+      .stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 8px;grid-auto-rows:minmax(30px,auto)}
+      .stats > .pill:not(.wide){justify-content:center;min-width:0;white-space:nowrap}
+      .stats .wide{order:3;grid-column:1 / -1;justify-content:flex-start;overflow:hidden}
+      .pill{padding:6px 10px;min-height:30px;font-size:13px;gap:6px;box-sizing:border-box}
       .pill b{font-size:1em}
-      .inline-controls{gap:6px}
-      .ic-btn{width:40px;height:32px;border-radius:10px}
+      .inline-controls{order:2;grid-column:1 / -1;justify-self:center;justify-content:center;gap:6px;max-width:100%;flex-wrap:wrap}
+      .ic-btn{width:40px;height:32px;border-radius:10px;flex:0 0 auto}
+      .lang-toggle{min-width:52px;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .ic-btn .ico{font-size:16px}
+      .menu{position:fixed;top:calc(8px + env(safe-area-inset-top) + 92px);left:10px;right:10px;min-width:0;width:auto;max-height:calc(100vh - 112px - env(safe-area-inset-top));overflow:auto;transform:translateY(-4px);transform-origin:top center}
+      .menu.show{transform:translateY(0)}
+    }
+    @media (max-width: 360px){
+      .stats{gap:6px}
+      .pill{padding:6px 8px;font-size:12px}
+      .ic-btn{width:38px;height:32px}
+      .lang-toggle{min-width:48px}
     }
     /* Buffs & Prompts */
     #buffs{
@@ -718,8 +729,8 @@
     .note-close:hover{filter:brightness(1.1);}
     .note-close:active{transform:translateY(1px);}
     @media (max-width:390px){
-      .pill{font-size:14px;padding:7px 14px}
-      .ic-btn{width:44px;height:36px}
+      .pill{font-size:12.5px;padding:6px 8px}
+      .ic-btn{width:38px;height:32px}
     }
 
   
